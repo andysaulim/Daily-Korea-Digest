@@ -484,14 +484,53 @@ def render(digest: dict) -> str:
         """)
 
     # ── 15. US-Korea Trade & Investment Deals ───────────────────────────────
-    deals = digest.get("us_korea_deals") or []
-    if deals:
+    us_korea = digest.get("us_korea_deals") or {}
+    # Support both old (array) and new (object with deals/tariff/package) format
+    if isinstance(us_korea, list):
+        deal_list = us_korea
+        tariff_snap = None
+        inv_package = None
+    else:
+        deal_list = us_korea.get("deals") or []
+        tariff_snap = us_korea.get("tariff_snapshot")
+        inv_package = us_korea.get("investment_package")
+
+    has_content = deal_list or tariff_snap or inv_package
+    if has_content:
+        header_html = ""
+
+        # Tariff snapshot bar
+        if tariff_snap:
+            header_html += f"""
+            <div style="margin-bottom:12px;padding:8px 12px;background:#FDF6E3;border-radius:4px;border-left:3px solid #D4AC0D;">
+              <div style="font-size:10px;text-transform:uppercase;color:#888;letter-spacing:0.5px;">Tariff Snapshot</div>
+              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">{_esc(tariff_snap)}</div>
+            </div>"""
+
+        # $350B investment package tracker
+        if inv_package:
+            announced = _esc(str(inv_package.get("announced_to_date", "—")))
+            total = _esc(str(inv_package.get("total_pledged", "$350B")))
+            pct = inv_package.get("pct_fulfilled", 0)
+            latest = _esc(inv_package.get("latest_update", ""))
+            bar_width = min(max(int(pct), 0), 100)
+            header_html += f"""
+            <div style="margin-bottom:12px;padding:8px 12px;background:#F8F9FA;border-radius:4px;border-left:3px solid #16A085;">
+              <div style="font-size:10px;text-transform:uppercase;color:#888;letter-spacing:0.5px;">ROK Investment Commitment</div>
+              <div style="font-size:14px;font-weight:700;color:#1B2A4A;margin-top:2px;">{announced} <span style="font-size:11px;font-weight:400;color:#888;">of {total} pledged</span></div>
+              <div style="margin-top:4px;background:#E0E0E0;border-radius:3px;height:8px;overflow:hidden;">
+                <div style="width:{bar_width}%;background:#16A085;height:100%;border-radius:3px;"></div>
+              </div>
+              <div style="font-size:11px;color:#555;margin-top:4px;">{pct}% fulfilled · {latest}</div>
+            </div>"""
+
+        # Individual deals
         deals_html = ""
         sector_colors = {
             "defense": "#C0392B", "energy": "#16A085", "tech": "#8E44AD",
-            "manufacturing": "#1B2A4A", "trade": "#D4AC0D",
+            "manufacturing": "#1B2A4A", "trade": "#D4AC0D", "tariff": "#E67E22",
         }
-        for deal in deals:
+        for deal in deal_list:
             headline = _esc(deal.get("headline", ""))
             value = _esc(deal.get("value", "")) if deal.get("value") else ""
             sector = deal.get("sector", "trade")
@@ -510,9 +549,11 @@ def render(digest: dict) -> str:
               <div style="font-size:11px;color:#2980B9;">{parties}</div>
               <div style="font-size:12px;line-height:1.4;color:#555;">{detail}</div>
             </div>"""
+
         sections.append(f"""
         <div {_SEC}>
           <h2 {_H2("#16A085")}>US-Korea Trade &amp; Investment</h2>
+          {header_html}
           {deals_html}
         </div>
         """)
