@@ -616,9 +616,13 @@ def render(digest: dict) -> str:
         inv = inv_package or {}
         announced = _esc(str(inv.get("announced_to_date", "—")))
         total = _esc(str(inv.get("total_pledged", "$350B")))
-        pct = inv.get("pct_fulfilled", 0)
+        pct_raw = inv.get("pct_fulfilled", 0)
+        try:
+            pct = int(str(pct_raw).replace("%", "").strip())
+        except (ValueError, TypeError):
+            pct = 0
         latest = _esc(inv.get("latest_update", "No new deals today"))
-        bar_width = min(max(int(pct), 0), 100)
+        bar_width = min(max(pct, 0), 100)
         if True:
             header_html += f"""
             <div style="margin-bottom:12px;padding:8px 12px;background:#F8F9FA;border-radius:4px;border-left:3px solid #16A085;">
