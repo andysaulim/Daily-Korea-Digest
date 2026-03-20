@@ -235,7 +235,7 @@ def _collect_tier1() -> list:
         # Korean-language feeds get lang="KO"
         lang = "KO" if source in ("조선일보", "한겨레", "동아일보", "MBN") else "EN"
         for entry in entries:
-            if not _is_recent(entry, hours=36):
+            if not _is_recent(entry, hours=24):
                 continue
             if not _is_korea_related(entry):
                 continue
@@ -250,7 +250,7 @@ def _collect_tier2() -> list:
     results = _fetch_feeds_parallel(TIER2_FEEDS, is_tiered=True)
     for source, (entries, prestige) in results.items():
         for entry in entries:
-            if not _is_recent(entry, hours=72):
+            if not _is_recent(entry, hours=36):
                 continue
             if not _is_korea_related(entry):
                 continue
@@ -264,6 +264,8 @@ def _collect_tier3() -> list:
     results = _fetch_feeds_parallel(TIER3_FEEDS, is_tiered=True)
     for source, (entries, tier) in results.items():
         for entry in entries:
+            if not _is_recent(entry, hours=72):
+                continue
             if not _is_korea_related(entry):
                 continue
             # Extra filter: must mention academic-like terms or the journal name
@@ -283,7 +285,7 @@ def _collect_tier4() -> list:
     results = _fetch_feeds_parallel(TIER4_FEEDS)
     for source, (entries, _) in results.items():
         for entry in entries:
-            if not _is_recent(entry, hours=48):
+            if not _is_recent(entry, hours=24):
                 continue
             article = _entry_to_article(entry, source, lang="KO")
             articles.append(article)
