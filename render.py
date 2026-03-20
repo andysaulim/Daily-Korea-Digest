@@ -294,7 +294,7 @@ def render(digest: dict) -> str:
         sections.append(f"""
         <div style="padding:16px 32px;background:#1B2A4A;color:#fff;border-bottom:1px solid #E0E0E0;text-align:center;" class="sec">
           <div style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;opacity:0.6;margin-bottom:2px;">Stat of the Day</div>
-          <div style="font-size:32px;font-weight:700;font-family:Georgia,serif;">{_esc(str(key_stat.get("number", "")))}</div>
+          <div class="key-stat-num" style="font-size:32px;font-weight:700;font-family:Georgia,serif;">{_esc(str(key_stat.get("number", "")))}</div>
           <div style="font-size:12px;opacity:0.85;margin-top:2px;">{_esc(key_stat.get("label", ""))}</div>
           <div style="font-size:11px;opacity:0.65;margin-top:4px;font-style:italic;">{_esc(key_stat.get("context", ""))}</div>
           {"<div style='font-size:10px;opacity:0.45;margin-top:4px;'>Source: " + _esc(key_stat.get("source", "")) + "</div>" if key_stat.get("source") else ""}
@@ -385,7 +385,7 @@ def render(digest: dict) -> str:
           <h2 {_H2("#1B2A4A")}>KCNA Delta {'<span style="color:#C0392B;">&#9888; WATCH</span>' if watch else ''}</h2>
           {"<div style='margin-bottom:10px;padding:6px 12px;background:#C0392B;color:#fff;border-radius:4px;font-size:12px;font-weight:600;'>&#9888; Complete KCNA silence today</div>" if silence else ""}
           <div style="margin-bottom:10px;font-size:13px;color:#333;">{kim_line}</div>
-          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:10px;">
+          <table class="tone-table" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:10px;">
             <tr>
               <td width="25%" style="padding:3px 8px;font-size:10px;text-transform:uppercase;color:#888;letter-spacing:0.5px;">Toward US</td>
               <td width="25%" style="padding:3px 8px;font-size:10px;text-transform:uppercase;color:#888;letter-spacing:0.5px;">Toward ROK</td>
@@ -455,10 +455,7 @@ def render(digest: dict) -> str:
         """)
 
     # ── 14. Also Today (includes Trade/Tech/Energy) ────────────────────────
-    also_today = digest.get("also_today") or []
-    # Merge trade_tech_stories into also_today for backward compat
-    trade_tech = digest.get("trade_tech_stories") or []
-    combined_also = also_today + trade_tech
+    combined_also = digest.get("also_today") or []
     if combined_also:
         items_html = ""
         for item in combined_also:
@@ -673,13 +670,21 @@ def render(digest: dict) -> str:
       .sec, .header, .footer {{ padding:16px 14px !important; }}
       .loc-table td {{ display:block !important; width:100% !important; padding:3px 0 !important; }}
       .loc-table td[style*="white-space"] {{ white-space:normal !important; }}
+      .tone-table td {{ display:block !important; width:100% !important; padding:4px 8px !important; }}
       h1 {{ font-size:19px !important; }}
       h2 {{ font-size:12px !important; }}
       h3 {{ font-size:14px !important; }}
+      .key-stat-num {{ font-size:24px !important; }}
+      img {{ max-width:100% !important; height:auto !important; }}
     }}
     /* Dark mode support */
     @media (prefers-color-scheme: dark) {{
       .wrapper {{ background:#1a1a1a !important; }}
+      .wrapper .sec {{ background:#222 !important; border-bottom-color:#333 !important; }}
+      .wrapper h1, .wrapper h2, .wrapper h3 {{ color:#E0E0E0 !important; }}
+      .wrapper p, .wrapper div {{ color:#CCC !important; }}
+      .wrapper a {{ color:#5DADE2 !important; }}
+      .wrapper .footer {{ background:#1a1a1a !important; }}
     }}
   </style>
   <!--[if mso]>

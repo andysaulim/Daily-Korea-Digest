@@ -137,6 +137,7 @@ Return a SINGLE kcna_delta object:
 - notable_omissions: anything conspicuously absent that was previously regular (e.g. "No mention of Russia for 3rd day", "Kim Yo Jong silent on ROK provocation"). null if nothing notable.
 - key_phrase_changes: list of new or notably different phrases/formulations
 - silence_today: boolean (complete KCNA blackout)
+- watch_flag: boolean — true if KCNA output contains ESCALATION-level rhetoric, silence after regular output, unusual Kim absence (7+ days), or nuclear/ICBM-related content
 - delta_note: 1-2 sentences on what changed and why it matters
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 DIGEST SYNTHESIS
