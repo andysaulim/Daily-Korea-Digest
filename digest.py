@@ -155,7 +155,7 @@ Return a digest object with:
 - overnight_items: 5-7 highest-priority items. Each: url, source, category, headline (under 100 chars), body_text (1-2 sentences)
 - top_stories: 3-4 highest-scored articles (score >= 7) with full treatment: url, source, category_tag, signal_type, headline, body (2-3 sentences), so_what (1 sentence), pattern_note (1 sentence, if applicable), src_line
 - also_today: remaining articles score >= 5, INCLUDING Technology/Business/Energy stories. Each: url, source, category, headline, body_text (1 sentence), color_bar_class (cb-navy=DPRK, cb-red=Security, cb-lt=Policy, cb-mid=Assembly, cb-nkch=NK-Russia-China, cb-tech=Technology/Energy, cb-biz=Business)
-- social_statements: 2-4 key statements from the news corpus. Each: avatar_initials, who, handle_context, platform_date, quote_text, analyst_note, badge_class (sb-p/sb-r/sb-s)
+- social_statements: 2-4 notable statements from TODAY's news by government officials, senior policymakers, or military leaders. Prioritize: ROK President, ROK opposition leader (e.g. Lee Jae Myung), ROK FM/DM, US SecState/SecDef/NSA, USFK Commander, UN officials, Japan PM/FM, DPRK officials (via KCNA). Pull direct quotes from today's articles. Each: avatar_initials (2 letters), who (name), handle_context (title/role), platform_date (source · date), quote_text (the direct quote), analyst_note (1 sentence on significance), badge_class (sb-p=policy, sb-r=security/red, sb-s=specialist/purple)
 - opeds_today: qualifying Tier 2 pieces, ordered by prestige then score
 - academic_today: qualifying Tier 3 pieces, ordered by journal_tier then score
 - kcna_delta: the Tier 4 object

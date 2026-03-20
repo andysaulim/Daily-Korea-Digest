@@ -212,19 +212,7 @@ def render(digest: dict) -> str:
         </div>
         """)
 
-    # ── 6. Key Stat of the Day ─────────────────────────────────────────────
-    key_stat = digest.get("key_stat") or {}
-    if key_stat and key_stat.get("number"):
-        sections.append(f"""
-        <div style="padding:16px 32px;background:#1B2A4A;color:#fff;border-bottom:1px solid #E0E0E0;text-align:center;" class="sec">
-          <div style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;opacity:0.6;margin-bottom:2px;">Stat of the Day</div>
-          <div style="font-size:32px;font-weight:700;font-family:Georgia,serif;">{_esc(str(key_stat.get("number", "")))}</div>
-          <div style="font-size:12px;opacity:0.85;margin-top:2px;">{_esc(key_stat.get("label", ""))}</div>
-          <div style="font-size:11px;opacity:0.65;margin-top:4px;font-style:italic;">{_esc(key_stat.get("context", ""))}</div>
-        </div>
-        """)
-
-    # ── 7. On This Day in Korea ────────────────────────────────────────────
+    # ── 6. On This Day in Korea ────────────────────────────────────────────
     on_this_day = digest.get("on_this_day") or []
     if on_this_day:
         otd_html = ""
@@ -244,7 +232,124 @@ def render(digest: dict) -> str:
         </div>
         """)
 
-    # ── 8. BP Facility Tracker ─────────────────────────────────────────────
+    # ── 7. ROK Government Activity ────────────────────────────────────────
+    rok_gov = digest.get("rok_government") or []
+    if rok_gov:
+        gov_html = ""
+        for item in rok_gov:
+            ministry = _esc(item.get("ministry", ""))
+            action = _esc(item.get("action", ""))
+            detail = _esc(item.get("detail", ""))
+            url = item.get("url", "")
+            link = f' <a href="{url}" style="font-size:11px;color:#2980B9;">&#8594;</a>' if url else ""
+            gov_html += f"""
+            <div style="margin-bottom:8px;padding-left:12px;border-left:3px solid #2980B9;">
+              <div style="font-size:11px;color:#2980B9;font-weight:600;text-transform:uppercase;">{ministry}</div>
+              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">{action}{link}</div>
+              <div style="font-size:12px;line-height:1.4;color:#555;">{detail}</div>
+            </div>"""
+        sections.append(f"""
+        <div {_SEC}>
+          <h2 {_H2("#2980B9")}>ROK Government Activity</h2>
+          {gov_html}
+        </div>
+        """)
+
+    # ── 8. ROK National Assembly ──────────────────────────────────────────
+    rok_assembly = digest.get("rok_assembly") or []
+    if rok_assembly:
+        asm_html = ""
+        for item in rok_assembly:
+            committee = _esc(item.get("committee", ""))
+            action = _esc(item.get("action", ""))
+            detail = _esc(item.get("detail", ""))
+            url = item.get("url", "")
+            link = f' <a href="{url}" style="font-size:11px;color:#2980B9;">&#8594;</a>' if url else ""
+            asm_html += f"""
+            <div style="margin-bottom:8px;padding-left:12px;border-left:3px solid #7F8C8D;">
+              <div style="font-size:11px;color:#7F8C8D;font-weight:600;text-transform:uppercase;">{committee}</div>
+              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">{action}{link}</div>
+              <div style="font-size:12px;line-height:1.4;color:#555;">{detail}</div>
+            </div>"""
+        sections.append(f"""
+        <div {_SEC}>
+          <h2 {_H2("#7F8C8D")}>National Assembly</h2>
+          {asm_html}
+        </div>
+        """)
+
+    # ── 9. Overnight Flash ────────────────────────────────────────────────
+    overnight = digest.get("overnight_items") or []
+    if overnight:
+        items_html = ""
+        for item in overnight:
+            cat = _esc(item.get("category", ""))
+            headline = _esc(item.get("headline", ""))
+            body = _esc(item.get("body_text", ""))
+            src = _esc(item.get("source", ""))
+            url = item.get("url", "#")
+            items_html += f"""
+            <div style="margin-bottom:12px;padding-left:14px;border-left:3px solid #1B2A4A;">
+              <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.5px;">{cat} &middot; {src}</div>
+              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
+                <a href="{url}" style="color:#1B2A4A;text-decoration:none;">{headline}</a>
+              </div>
+              <div style="font-size:12px;line-height:1.4;color:#444;">{body}</div>
+            </div>"""
+        sections.append(f"""
+        <div {_SEC}>
+          <h2 {_H2("#C0392B")}>Overnight Flash</h2>
+          {items_html}
+        </div>
+        """)
+
+    # ── 10. Top Stories ───────────────────────────────────────────────────
+    top_stories = digest.get("top_stories") or []
+    if top_stories:
+        stories_html = ""
+        for story in top_stories:
+            cat = _esc(story.get("category_tag", story.get("category", "")))
+            sig = story.get("signal_type", "")
+            headline = _esc(story.get("headline", ""))
+            body = _esc(story.get("body", ""))
+            so_what = _esc(story.get("so_what", ""))
+            pattern = _esc(story.get("pattern_note", ""))
+            src_line = _esc(story.get("src_line", story.get("source", "")))
+            url = story.get("url", "#")
+            stories_html += f"""
+            <div style="margin-bottom:20px;padding:14px;background:#F8F9FA;border-radius:6px;border-left:4px solid #1B2A4A;">
+              <div style="margin-bottom:6px;">
+                {_signal_badge(sig)}
+                <span style="font-size:11px;color:#888;margin-left:8px;text-transform:uppercase;">{cat}</span>
+              </div>
+              <h3 style="margin:0 0 6px 0;font-size:15px;color:#1B2A4A;font-family:Georgia,serif;">
+                <a href="{url}" style="color:#1B2A4A;text-decoration:none;">{headline}</a>
+              </h3>
+              <p style="margin:0 0 8px 0;font-size:13px;line-height:1.5;color:#333;">{body}</p>
+              {{"<p style='margin:0 0 6px 0;font-size:12px;line-height:1.4;color:#2980B9;'><strong>So what:</strong> " + so_what + "</p>" if so_what else ""}}
+              {{"<p style='margin:0 0 6px 0;font-size:12px;line-height:1.4;color:#8E44AD;'><strong>Pattern:</strong> " + pattern + "</p>" if pattern else ""}}
+              <div style="font-size:11px;color:#999;">{src_line}</div>
+            </div>"""
+        sections.append(f"""
+        <div {_SEC}>
+          <h2 {_H2("#1B2A4A")}>Top Stories</h2>
+          {stories_html}
+        </div>
+        """)
+
+    # ── 11. Key Stat of the Day ──────────────────────────────────────────
+    key_stat = digest.get("key_stat") or {}
+    if key_stat and key_stat.get("number"):
+        sections.append(f"""
+        <div style="padding:16px 32px;background:#1B2A4A;color:#fff;border-bottom:1px solid #E0E0E0;text-align:center;" class="sec">
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;opacity:0.6;margin-bottom:2px;">Stat of the Day</div>
+          <div style="font-size:32px;font-weight:700;font-family:Georgia,serif;">{_esc(str(key_stat.get("number", "")))}</div>
+          <div style="font-size:12px;opacity:0.85;margin-top:2px;">{_esc(key_stat.get("label", ""))}</div>
+          <div style="font-size:11px;opacity:0.65;margin-top:4px;font-style:italic;">{_esc(key_stat.get("context", ""))}</div>
+        </div>
+        """)
+
+    # ── 12. BP Facility Tracker ──────────────────────────────────────────
     locations = digest.get("bp_locations") or []
     if locations:
         loc_rows = ""
@@ -351,111 +456,6 @@ def render(digest: dict) -> str:
         </div>
         """)
 
-    # ── 10. ROK Government Activity ────────────────────────────────────────
-    rok_gov = digest.get("rok_government") or []
-    if rok_gov:
-        gov_html = ""
-        for item in rok_gov:
-            ministry = _esc(item.get("ministry", ""))
-            action = _esc(item.get("action", ""))
-            detail = _esc(item.get("detail", ""))
-            url = item.get("url", "")
-            link = f' <a href="{url}" style="font-size:11px;color:#2980B9;">&#8594;</a>' if url else ""
-            gov_html += f"""
-            <div style="margin-bottom:8px;padding-left:12px;border-left:3px solid #2980B9;">
-              <div style="font-size:11px;color:#2980B9;font-weight:600;text-transform:uppercase;">{ministry}</div>
-              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">{action}{link}</div>
-              <div style="font-size:12px;line-height:1.4;color:#555;">{detail}</div>
-            </div>"""
-        sections.append(f"""
-        <div {_SEC}>
-          <h2 {_H2("#2980B9")}>ROK Government Activity</h2>
-          {gov_html}
-        </div>
-        """)
-
-    # ── 11. ROK National Assembly ──────────────────────────────────────────
-    rok_assembly = digest.get("rok_assembly") or []
-    if rok_assembly:
-        asm_html = ""
-        for item in rok_assembly:
-            committee = _esc(item.get("committee", ""))
-            action = _esc(item.get("action", ""))
-            detail = _esc(item.get("detail", ""))
-            url = item.get("url", "")
-            link = f' <a href="{url}" style="font-size:11px;color:#2980B9;">&#8594;</a>' if url else ""
-            asm_html += f"""
-            <div style="margin-bottom:8px;padding-left:12px;border-left:3px solid #7F8C8D;">
-              <div style="font-size:11px;color:#7F8C8D;font-weight:600;text-transform:uppercase;">{committee}</div>
-              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">{action}{link}</div>
-              <div style="font-size:12px;line-height:1.4;color:#555;">{detail}</div>
-            </div>"""
-        sections.append(f"""
-        <div {_SEC}>
-          <h2 {_H2("#7F8C8D")}>National Assembly</h2>
-          {asm_html}
-        </div>
-        """)
-
-    # ── 12. Overnight Flash ────────────────────────────────────────────────
-    overnight = digest.get("overnight_items") or []
-    if overnight:
-        items_html = ""
-        for item in overnight:
-            cat = _esc(item.get("category", ""))
-            headline = _esc(item.get("headline", ""))
-            body = _esc(item.get("body_text", ""))
-            src = _esc(item.get("source", ""))
-            url = item.get("url", "#")
-            items_html += f"""
-            <div style="margin-bottom:12px;padding-left:14px;border-left:3px solid #1B2A4A;">
-              <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.5px;">{cat} &middot; {src}</div>
-              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
-                <a href="{url}" style="color:#1B2A4A;text-decoration:none;">{headline}</a>
-              </div>
-              <div style="font-size:12px;line-height:1.4;color:#444;">{body}</div>
-            </div>"""
-        sections.append(f"""
-        <div {_SEC}>
-          <h2 {_H2("#C0392B")}>Overnight Flash</h2>
-          {items_html}
-        </div>
-        """)
-
-    # ── 13. Top Stories ────────────────────────────────────────────────────
-    top_stories = digest.get("top_stories") or []
-    if top_stories:
-        stories_html = ""
-        for story in top_stories:
-            cat = _esc(story.get("category_tag", story.get("category", "")))
-            sig = story.get("signal_type", "")
-            headline = _esc(story.get("headline", ""))
-            body = _esc(story.get("body", ""))
-            so_what = _esc(story.get("so_what", ""))
-            pattern = _esc(story.get("pattern_note", ""))
-            src_line = _esc(story.get("src_line", story.get("source", "")))
-            url = story.get("url", "#")
-            stories_html += f"""
-            <div style="margin-bottom:20px;padding:14px;background:#F8F9FA;border-radius:6px;border-left:4px solid #1B2A4A;">
-              <div style="margin-bottom:6px;">
-                {_signal_badge(sig)}
-                <span style="font-size:11px;color:#888;margin-left:8px;text-transform:uppercase;">{cat}</span>
-              </div>
-              <h3 style="margin:0 0 6px 0;font-size:15px;color:#1B2A4A;font-family:Georgia,serif;">
-                <a href="{url}" style="color:#1B2A4A;text-decoration:none;">{headline}</a>
-              </h3>
-              <p style="margin:0 0 8px 0;font-size:13px;line-height:1.5;color:#333;">{body}</p>
-              {"<p style='margin:0 0 6px 0;font-size:12px;line-height:1.4;color:#2980B9;'><strong>So what:</strong> " + so_what + "</p>" if so_what else ""}
-              {"<p style='margin:0 0 6px 0;font-size:12px;line-height:1.4;color:#8E44AD;'><strong>Pattern:</strong> " + pattern + "</p>" if pattern else ""}
-              <div style="font-size:11px;color:#999;">{src_line}</div>
-            </div>"""
-        sections.append(f"""
-        <div {_SEC}>
-          <h2 {_H2("#1B2A4A")}>Top Stories</h2>
-          {stories_html}
-        </div>
-        """)
-
     # ── 14. Also Today (includes Trade/Tech/Energy) ────────────────────────
     also_today = digest.get("also_today") or []
     # Merge trade_tech_stories into also_today for backward compat
@@ -541,7 +541,7 @@ def render(digest: dict) -> str:
             </div>"""
         sections.append(f"""
         <div {_SEC}>
-          <h2 {_H2("#1B2A4A")}>Statements &amp; Social</h2>
+          <h2 {_H2("#1B2A4A")}>Official Statements</h2>
           {cards_html}
         </div>
         """)
