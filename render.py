@@ -492,7 +492,7 @@ def render(digest: dict) -> str:
         tariff_snap = us_korea.get("tariff_snapshot")
         inv_package = us_korea.get("investment_package")
 
-    has_content = deal_list or tariff_snap or inv_package
+    has_content = True  # Always show — investment tracker is persistent
     if has_content:
         header_html = ""
 
@@ -504,13 +504,14 @@ def render(digest: dict) -> str:
               <div style="font-size:13px;font-weight:600;color:#1B2A4A;">{_esc(tariff_snap)}</div>
             </div>"""
 
-        # $350B investment package tracker
-        if inv_package:
-            announced = _esc(str(inv_package.get("announced_to_date", "—")))
-            total = _esc(str(inv_package.get("total_pledged", "$350B")))
-            pct = inv_package.get("pct_fulfilled", 0)
-            latest = _esc(inv_package.get("latest_update", ""))
-            bar_width = min(max(int(pct), 0), 100)
+        # $350B investment package tracker — always show
+        inv = inv_package or {}
+        announced = _esc(str(inv.get("announced_to_date", "—")))
+        total = _esc(str(inv.get("total_pledged", "$350B")))
+        pct = inv.get("pct_fulfilled", 0)
+        latest = _esc(inv.get("latest_update", "No new deals today"))
+        bar_width = min(max(int(pct), 0), 100)
+        if True:
             header_html += f"""
             <div style="margin-bottom:12px;padding:8px 12px;background:#F8F9FA;border-radius:4px;border-left:3px solid #16A085;">
               <div style="font-size:10px;text-transform:uppercase;color:#888;letter-spacing:0.5px;">ROK Investment Commitment</div>
