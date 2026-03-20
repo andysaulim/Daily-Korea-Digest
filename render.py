@@ -183,15 +183,12 @@ def render(digest: dict) -> str:
     watch_today = digest.get("watch_today") or []
     if watch_today:
         watch_html = ""
-        type_icons = {"event": "&#128197;", "deadline": "&#9200;", "anniversary": "&#128338;", "exercise": "&#9876;"}
         for item in watch_today:
             headline = _esc(item.get("headline", ""))
             detail = _esc(item.get("detail", ""))
-            wtype = item.get("type", "event")
-            icon = type_icons.get(wtype, "&#8226;")
             watch_html += f"""
             <div style="margin-bottom:8px;padding-left:12px;border-left:3px solid #E67E22;">
-              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">{icon} {headline}</div>
+              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">{headline}</div>
               <div style="font-size:12px;line-height:1.4;color:#555;">{detail}</div>
             </div>"""
         sections.append(f"""
