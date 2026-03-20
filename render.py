@@ -80,7 +80,7 @@ _H2 = lambda color: f'style="margin:0 0 14px 0;font-size:14px;color:{color};text
 
 
 def render(digest: dict) -> str:
-    date_str = digest.get("digest_date", datetime.now(timezone.utc).strftime("%A, %d %B %Y"))
+    date_str = datetime.now(timezone.utc).strftime("%m/%d/%Y")
     re_line = _esc(digest.get("re_line", "CSIS Korea Digest"))
     editor_note = _esc(digest.get("editor_note", ""))
     story_count = digest.get("story_count", 0)

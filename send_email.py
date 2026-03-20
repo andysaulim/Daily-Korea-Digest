@@ -28,7 +28,7 @@ def send(html: str, re_line: Optional[str] = None, subject: Optional[str] = None
         recipients = [r.strip() for r in to_str.split(",") if r.strip()]
 
     if subject is None:
-        date_str = datetime.now(timezone.utc).strftime("%-d %B %Y")
+        date_str = datetime.now(timezone.utc).strftime("%m/%d/%Y")
         if re_line:
             # Truncate RE: line for subject (max ~120 chars total)
             max_re = 100
