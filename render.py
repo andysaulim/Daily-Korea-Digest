@@ -141,7 +141,7 @@ def render(digest: dict) -> str:
         brent = markets.get("brent") or {}
         krw = markets.get("usd_krw") or {}
         sections.append(f"""
-        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#1B2A4A;color:#fff;border-bottom:1px solid rgba(255,255,255,0.1);">
+        <table class="mkt-table" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#1B2A4A;color:#fff;border-bottom:1px solid rgba(255,255,255,0.1);">
           <tr>
             <td width="33%" align="center" style="padding:10px 8px 12px;">
               <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;">KOSPI</div>
@@ -164,7 +164,7 @@ def render(digest: dict) -> str:
 
     # ── 3. Metrics bar ─────────────────────────────────────────────────────
     sections.append(f"""
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F8F9FA;border-bottom:1px solid #E0E0E0;">
+    <table class="metrics-bar" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F8F9FA;border-bottom:1px solid #E0E0E0;">
       <tr>
         <td width="33%" align="center" style="padding:10px 4px;font-family:Arial,sans-serif;">
           <div style="font-size:20px;font-weight:700;color:#1B2A4A;">{story_count}</div>
@@ -279,7 +279,7 @@ def render(digest: dict) -> str:
             src_line = _esc(story.get("src_line", story.get("source", "")))
             url = story.get("url", "")
             stories_html += f"""
-            <div style="margin-bottom:20px;padding:14px;background:#F8F9FA;border-radius:6px;border-left:4px solid #1B2A4A;">
+            <div class="story-card" style="margin-bottom:20px;padding:14px;background:#F8F9FA;border-radius:6px;border-left:4px solid #1B2A4A;">
               <div style="margin-bottom:6px;">
                 {_signal_badge(sig)}
                 <span style="font-size:11px;color:#888;margin-left:8px;text-transform:uppercase;">{cat}</span>
@@ -371,7 +371,7 @@ def render(digest: dict) -> str:
                 qt = _esc(q.get("quote", ""))
                 src_art = _esc(q.get("source_article", ""))
                 sig = _esc(q.get("significance", ""))
-                quotes_html += f"""<div style='margin-top:8px;padding:8px 12px;background:rgba(0,0,0,0.04);border-radius:4px;border-left:2px solid #888;'>
+                quotes_html += f"""<div class='kcna-quote' style='margin-top:8px;padding:8px 12px;background:rgba(0,0,0,0.04);border-radius:4px;border-left:2px solid #888;'>
                   <div style='font-size:12px;color:#333;font-style:italic;line-height:1.4;'>&ldquo;{qt}&rdquo;</div>
                   <div style='font-size:10px;color:#888;margin-top:3px;'>{src_art}</div>
                   <div style='font-size:11px;color:#2980B9;margin-top:2px;'>{sig}</div>
@@ -780,14 +780,30 @@ def render(digest: dict) -> str:
     @media only screen and (max-width: 620px) {{
       .wrapper {{ width:100% !important; }}
       .sec, .header, .footer {{ padding:16px 14px !important; }}
+      /* Market indicator table — stack on mobile */
+      .mkt-table td {{ display:block !important; width:100% !important; padding:8px 14px !important; text-align:left !important; border-left:0 !important; border-right:0 !important; border-bottom:1px solid rgba(255,255,255,0.1) !important; }}
+      /* Metrics bar — stack on mobile */
+      .metrics-bar td {{ display:block !important; width:100% !important; padding:6px 14px !important; text-align:left !important; }}
+      .metrics-bar td div:first-child {{ display:inline !important; margin-right:6px !important; }}
+      .metrics-bar td div:last-child {{ display:inline !important; }}
+      /* BP Facility tracker — wrap long names */
       .loc-table td {{ display:block !important; width:100% !important; padding:3px 0 !important; }}
       .loc-table td[style*="white-space"] {{ white-space:normal !important; }}
-      .tone-table td {{ display:block !important; width:100% !important; padding:4px 8px !important; }}
+      .loc-table tr {{ display:block !important; padding:6px 0 !important; border-bottom:1px solid #f0f0f0 !important; }}
+      /* KCNA tone table — 2x2 grid on mobile */
+      .tone-table td {{ display:inline-block !important; width:48% !important; padding:6px 4px !important; box-sizing:border-box !important; }}
+      /* Typography */
       h1 {{ font-size:19px !important; }}
       h2 {{ font-size:12px !important; }}
       h3 {{ font-size:14px !important; }}
       .key-stat-num {{ font-size:24px !important; }}
       img {{ max-width:100% !important; height:auto !important; }}
+      /* Top story cards — reduce padding */
+      .story-card {{ padding:12px 10px !important; }}
+      /* Tighter body text on mobile */
+      p, div {{ word-wrap:break-word !important; overflow-wrap:break-word !important; }}
+      /* Quote cards in KCNA */
+      .kcna-quote {{ padding:6px 10px !important; }}
     }}
     /* Dark mode support */
     @media (prefers-color-scheme: dark) {{
@@ -797,6 +813,7 @@ def render(digest: dict) -> str:
       .wrapper p, .wrapper div {{ color:#CCC !important; }}
       .wrapper a {{ color:#5DADE2 !important; }}
       .wrapper .footer {{ background:#1a1a1a !important; }}
+      .wrapper .story-card {{ background:#2a2a2a !important; }}
     }}
   </style>
   <!--[if mso]>

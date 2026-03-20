@@ -13,14 +13,30 @@
     @media only screen and (max-width: 620px) {
       .wrapper { width:100% !important; }
       .sec, .header, .footer { padding:16px 14px !important; }
+      /* Market indicator table — stack on mobile */
+      .mkt-table td { display:block !important; width:100% !important; padding:8px 14px !important; text-align:left !important; border-left:0 !important; border-right:0 !important; border-bottom:1px solid rgba(255,255,255,0.1) !important; }
+      /* Metrics bar — stack on mobile */
+      .metrics-bar td { display:block !important; width:100% !important; padding:6px 14px !important; text-align:left !important; }
+      .metrics-bar td div:first-child { display:inline !important; margin-right:6px !important; }
+      .metrics-bar td div:last-child { display:inline !important; }
+      /* BP Facility tracker — wrap long names */
       .loc-table td { display:block !important; width:100% !important; padding:3px 0 !important; }
       .loc-table td[style*="white-space"] { white-space:normal !important; }
-      .tone-table td { display:block !important; width:100% !important; padding:4px 8px !important; }
+      .loc-table tr { display:block !important; padding:6px 0 !important; border-bottom:1px solid #f0f0f0 !important; }
+      /* KCNA tone table — 2x2 grid on mobile */
+      .tone-table td { display:inline-block !important; width:48% !important; padding:6px 4px !important; box-sizing:border-box !important; }
+      /* Typography */
       h1 { font-size:19px !important; }
       h2 { font-size:12px !important; }
       h3 { font-size:14px !important; }
       .key-stat-num { font-size:24px !important; }
       img { max-width:100% !important; height:auto !important; }
+      /* Top story cards — reduce padding */
+      .story-card { padding:12px 10px !important; }
+      /* Tighter body text on mobile */
+      p, div { word-wrap:break-word !important; overflow-wrap:break-word !important; }
+      /* Quote cards in KCNA */
+      .kcna-quote { padding:6px 10px !important; }
     }
     /* Dark mode support */
     @media (prefers-color-scheme: dark) {
@@ -30,6 +46,7 @@
       .wrapper p, .wrapper div { color:#CCC !important; }
       .wrapper a { color:#5DADE2 !important; }
       .wrapper .footer { background:#1a1a1a !important; }
+      .wrapper .story-card { background:#2a2a2a !important; }
     }
   </style>
   <!--[if mso]>
@@ -76,7 +93,7 @@
     </div>
     
 
-        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#1B2A4A;color:#fff;border-bottom:1px solid rgba(255,255,255,0.1);">
+        <table class="mkt-table" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#1B2A4A;color:#fff;border-bottom:1px solid rgba(255,255,255,0.1);">
           <tr>
             <td width="33%" align="center" style="padding:10px 8px 12px;">
               <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;">KOSPI</div>
@@ -97,7 +114,7 @@
         </table>
         
 
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F8F9FA;border-bottom:1px solid #E0E0E0;">
+    <table class="metrics-bar" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F8F9FA;border-bottom:1px solid #E0E0E0;">
       <tr>
         <td width="33%" align="center" style="padding:10px 4px;font-family:Arial,sans-serif;">
           <div style="font-size:20px;font-weight:700;color:#1B2A4A;">128</div>
@@ -193,7 +210,7 @@
         <div style="padding:20px 32px;border-bottom:1px solid #E0E0E0;" class="sec">
           <h2 style="margin:0 0 12px 0;font-size:13px;color:#1B2A4A;text-transform:uppercase;letter-spacing:1px;font-family:Arial,sans-serif;">Top Stories</h2>
           
-            <div style="margin-bottom:20px;padding:14px;background:#F8F9FA;border-radius:6px;border-left:4px solid #1B2A4A;">
+            <div class="story-card" style="margin-bottom:20px;padding:14px;background:#F8F9FA;border-radius:6px;border-left:4px solid #1B2A4A;">
               <div style="margin-bottom:6px;">
                 <span style="display:inline-block;padding:2px 8px;border-radius:3px;font-size:11px;font-weight:600;color:#fff;background:#C0392B;letter-spacing:0.5px;">ESCALATION</span>
                 <span style="font-size:11px;color:#888;margin-left:8px;text-transform:uppercase;">NK-Russia</span>
@@ -206,7 +223,7 @@
               <p style='margin:0 0 6px 0;font-size:12px;line-height:1.4;color:#8E44AD;'><strong>Pattern:</strong> Mirrors the September 2024 Rajin transfers that preceded the NK–Russia mutual defense treaty signing. Previous transfers at this tempo preceded DPRK provocative actions within 30–60 days.</p>
               <div style="font-size:11px;color:#999;">Sources: NK News Mar 20 · 38 North Mar 19 · Reuters Mar 20</div>
             </div>
-            <div style="margin-bottom:20px;padding:14px;background:#F8F9FA;border-radius:6px;border-left:4px solid #1B2A4A;">
+            <div class="story-card" style="margin-bottom:20px;padding:14px;background:#F8F9FA;border-radius:6px;border-left:4px solid #1B2A4A;">
               <div style="margin-bottom:6px;">
                 <span style="display:inline-block;padding:2px 8px;border-radius:3px;font-size:11px;font-weight:600;color:#fff;background:#8E44AD;letter-spacing:0.5px;">ANOMALY</span>
                 <span style="font-size:11px;color:#888;margin-left:8px;text-transform:uppercase;">ROK Policy</span>
@@ -219,7 +236,7 @@
               <p style='margin:0 0 6px 0;font-size:12px;line-height:1.4;color:#8E44AD;'><strong>Pattern:</strong> The 2004 impeachment of President Roh and the 2016 Park impeachment both created 60–90 day windows where DPRK conducted provocative tests. A defense minister impeachment is unprecedented but could create similar paralysis.</p>
               <div style="font-size:11px;color:#999;">Sources: Yonhap Mar 20 · Korea Herald Mar 20 · Chosun Ilbo Mar 20</div>
             </div>
-            <div style="margin-bottom:20px;padding:14px;background:#F8F9FA;border-radius:6px;border-left:4px solid #1B2A4A;">
+            <div class="story-card" style="margin-bottom:20px;padding:14px;background:#F8F9FA;border-radius:6px;border-left:4px solid #1B2A4A;">
               <div style="margin-bottom:6px;">
                 <span style="display:inline-block;padding:2px 8px;border-radius:3px;font-size:11px;font-weight:600;color:#fff;background:#2980B9;letter-spacing:0.5px;">DEVELOPMENT</span>
                 <span style="font-size:11px;color:#888;margin-left:8px;text-transform:uppercase;">US-Korea</span>
@@ -329,11 +346,11 @@
           <div style='margin-bottom:6px;font-size:12px;color:#C0392B;font-weight:600;'>&#8644; Russia tone shifted from Warm to Very Warm</div>
           <div style='margin:8px 0;padding:6px 12px;background:#8E44AD;color:#fff;border-radius:4px;font-size:12px;'><strong>Doctrinal shift:</strong> 'Sacred nuclear deterrent force' replaces standard 'treasured sword of justice' formulation. This linguistic upgrade historically precedes capability announcements — the 2017 shift to 'state nuclear force' preceded the Hwasong-15 ICBM test by 3 months.</div>
           <p style="margin:0;font-size:12px;line-height:1.5;color:#333;">The single most important signal is the doctrinal language shift: 'sacred nuclear deterrent force' is a novel formulation that historically precedes hardware developments by 12-18 months. Combined with the Russia rhetoric escalation to 'eternal comrade-in-arms' and confirmed Rajin port activity, KCNA is messaging alignment between diplomatic positioning and military action. Watch for Kim reappearance — if his next public event is a weapons inspection, this rhetorical escalation was likely coordinated.</p>
-          <div style='margin-top:8px;padding:8px 12px;background:rgba(0,0,0,0.04);border-radius:4px;border-left:2px solid #888;'>
+          <div class='kcna-quote' style='margin-top:8px;padding:8px 12px;background:rgba(0,0,0,0.04);border-radius:4px;border-left:2px solid #888;'>
                   <div style='font-size:12px;color:#333;font-style:italic;line-height:1.4;'>&ldquo;The sacred nuclear deterrent force of the DPRK serves as the absolute guarantee for the sovereignty and security of the state.&rdquo;</div>
                   <div style='font-size:10px;color:#888;margin-top:3px;'>Rodong Sinmun Editorial — March 20</div>
                   <div style='font-size:11px;color:#2980B9;margin-top:2px;'>First use of 'sacred nuclear deterrent force' — elevates nuclear program from military tool to quasi-religious national mandate.</div>
-                </div><div style='margin-top:8px;padding:8px 12px;background:rgba(0,0,0,0.04);border-radius:4px;border-left:2px solid #888;'>
+                </div><div class='kcna-quote' style='margin-top:8px;padding:8px 12px;background:rgba(0,0,0,0.04);border-radius:4px;border-left:2px solid #888;'>
                   <div style='font-size:12px;color:#333;font-style:italic;line-height:1.4;'>&ldquo;The DPRK-Russia friendship, forged in the flames of anti-imperialist struggle, has entered a new era as an eternal comrade-in-arms relationship.&rdquo;</div>
                   <div style='font-size:10px;color:#888;margin-top:3px;'>KCNA Commentary — March 20</div>
                   <div style='font-size:11px;color:#2980B9;margin-top:2px;'>Upgrade from 'strategic partner' to 'eternal comrade-in-arms' mirrors Soviet-era alliance language not used since the 1980s.</div>
@@ -616,7 +633,7 @@
     <div style="padding:16px 32px;background:#F8F9FA;text-align:center;" class="sec footer">
       <div style="font-size:11px;color:#999;line-height:1.5;">
         CSIS Korea Digest &middot; CSIS Korea Chair<br>
-        Generated 22:55 UTC &middot; Read alongside primary sources<br>
+        Generated 22:58 UTC &middot; Read alongside primary sources<br>
         <span style="color:#bbb;">Produced by CSIS Korea Chair</span>
       </div>
     </div>
