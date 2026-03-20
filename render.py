@@ -75,6 +75,13 @@ def _tone_color(tone: str) -> str:
     return "#7F8C8D"
 
 
+def _link_or_text(text: str, url: str, style: str = "color:#1B2A4A;text-decoration:none;") -> str:
+    """Render as <a> only if url is a real link, otherwise plain text."""
+    if url and url != "#" and url.startswith("http"):
+        return f'<a href="{url}" style="{style}">{text}</a>'
+    return text
+
+
 # ── Section padding helper (responsive via class) ────────────────────────
 _SEC = 'style="padding:20px 32px;border-bottom:1px solid #E0E0E0;" class="sec"'
 _SEC_BG = lambda bg: f'style="padding:20px 32px;background:{bg};border-bottom:1px solid #E0E0E0;" class="sec"'
@@ -234,12 +241,12 @@ def render(digest: dict) -> str:
             headline = _esc(item.get("headline", ""))
             body = _esc(item.get("body_text", ""))
             src = _esc(item.get("source", ""))
-            url = item.get("url", "#")
+            url = item.get("url", "")
             items_html += f"""
             <div style="margin-bottom:12px;padding-left:14px;border-left:3px solid #1B2A4A;">
               <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.5px;">{cat} &middot; {src}</div>
               <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
-                <a href="{url}" style="color:#1B2A4A;text-decoration:none;">{headline}</a>
+                {_link_or_text(headline, url)}
               </div>
               <div style="font-size:12px;line-height:1.4;color:#444;">{body}</div>
             </div>"""
@@ -262,7 +269,7 @@ def render(digest: dict) -> str:
             so_what = _esc(story.get("so_what", ""))
             pattern = _esc(story.get("pattern_note", ""))
             src_line = _esc(story.get("src_line", story.get("source", "")))
-            url = story.get("url", "#")
+            url = story.get("url", "")
             stories_html += f"""
             <div style="margin-bottom:20px;padding:14px;background:#F8F9FA;border-radius:6px;border-left:4px solid #1B2A4A;">
               <div style="margin-bottom:6px;">
@@ -270,7 +277,7 @@ def render(digest: dict) -> str:
                 <span style="font-size:11px;color:#888;margin-left:8px;text-transform:uppercase;">{cat}</span>
               </div>
               <h3 style="margin:0 0 6px 0;font-size:15px;color:#1B2A4A;font-family:Georgia,serif;">
-                <a href="{url}" style="color:#1B2A4A;text-decoration:none;">{headline}</a>
+                {_link_or_text(headline, url)}
               </h3>
               <p style="margin:0 0 8px 0;font-size:13px;line-height:1.5;color:#333;">{body}</p>
               {"<p style='margin:0 0 6px 0;font-size:12px;line-height:1.4;color:#2980B9;'><strong>So what:</strong> " + so_what + "</p>" if so_what else ""}
@@ -459,13 +466,13 @@ def render(digest: dict) -> str:
             headline = _esc(item.get("headline", ""))
             body = _esc(item.get("body_text", ""))
             src = _esc(item.get("source", ""))
-            url = item.get("url", "#")
+            url = item.get("url", "")
             bar_color = _color_bar(item.get("color_bar_class", "cb-navy"))
             items_html += f"""
             <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid {bar_color};">
               <div style="font-size:11px;color:#888;text-transform:uppercase;">{cat} &middot; {src}</div>
               <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
-                <a href="{url}" style="color:#1B2A4A;text-decoration:none;">{headline}</a>
+                {_link_or_text(headline, url)}
               </div>
               <div style="font-size:12px;line-height:1.4;color:#555;">{body}</div>
             </div>"""
@@ -531,14 +538,14 @@ def render(digest: dict) -> str:
             parties = _esc(deal.get("parties", ""))
             detail = _esc(deal.get("detail", ""))
             src = _esc(deal.get("source", ""))
-            url = deal.get("url", "#")
+            url = deal.get("url", "")
             bar_color = sector_colors.get(sector, "#1B2A4A")
             value_badge = f'<span style="display:inline-block;padding:1px 6px;border-radius:3px;font-size:11px;font-weight:700;color:#fff;background:#27AE60;margin-left:6px;">{value}</span>' if value else ""
             deals_html += f"""
             <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid {bar_color};">
               <div style="font-size:11px;color:#888;text-transform:uppercase;">{_esc(sector)} &middot; {src}</div>
               <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
-                <a href="{url}" style="color:#1B2A4A;text-decoration:none;">{headline}</a>{value_badge}
+                {_link_or_text(headline, url)}{value_badge}
               </div>
               <div style="font-size:11px;color:#2980B9;">{parties}</div>
               <div style="font-size:12px;line-height:1.4;color:#555;">{detail}</div>
@@ -561,12 +568,12 @@ def render(digest: dict) -> str:
             arg = _esc(op.get("central_argument", ""))
             summary = _esc(op.get("summary", ""))
             so_what = _esc(op.get("policy_so_what", ""))
-            url = op.get("url", "#")
+            url = op.get("url", "")
             items_html += f"""
             <div style="margin-bottom:12px;padding-left:12px;border-left:3px solid #D4AC0D;">
               <div style="font-size:11px;color:#888;">{src}</div>
               <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
-                <a href="{url}" style="color:#1B2A4A;text-decoration:none;">{arg}</a>
+                {_link_or_text(arg, url)}
               </div>
               <div style="font-size:12px;line-height:1.4;color:#555;">{summary}</div>
               {"<div style='font-size:11px;color:#2980B9;margin-top:3px;'><strong>So what:</strong> " + so_what + "</div>" if so_what else ""}
@@ -588,7 +595,9 @@ def render(digest: dict) -> str:
             handle = _esc(s.get("handle_context", ""))
             quote = _esc(s.get("quote_text", ""))
             note = _esc(s.get("analyst_note", ""))
+            url = s.get("url", "")
             badge_color = _social_badge(s.get("badge_class", "sb-p"))
+            source_link = f'<a href="{url}" style="font-size:10px;color:#2980B9;text-decoration:none;">Source &#8594;</a>' if url and url != "#" and url.startswith("http") else ""
             cards_html += f"""
             <div style="margin-bottom:12px;padding:12px;background:#F8F9FA;border-radius:6px;border-left:3px solid {badge_color};">
               <table cellpadding="0" cellspacing="0" border="0" style="margin-bottom:6px;">
@@ -604,6 +613,7 @@ def render(digest: dict) -> str:
               </table>
               <p style="margin:0 0 6px 0;font-size:12px;line-height:1.4;color:#333;font-style:italic;">&ldquo;{quote}&rdquo;</p>
               {"<p style='margin:0;font-size:11px;color:#2980B9;'><strong>Analyst:</strong> " + note + "</p>" if note else ""}
+              {source_link}
             </div>"""
         sections.append(f"""
         <div {_SEC}>
@@ -621,13 +631,14 @@ def render(digest: dict) -> str:
             tier = _esc(a.get("journal_tier", ""))
             summary = _esc(a.get("summary", ""))
             implication = _esc(a.get("policy_implication", ""))
-            url = a.get("url", "#")
+            url = a.get("url", "")
+            read_link = f'<a href="{url}" style="font-size:11px;color:#2980B9;">Read &#8594;</a>' if url and url != "#" and url.startswith("http") else ""
             items_html += f"""
             <div style="margin-bottom:12px;padding-left:12px;border-left:3px solid #8E44AD;">
               <div style="font-size:11px;color:#888;">{src} &middot; {tier}</div>
               <div style="font-size:12px;line-height:1.4;color:#555;">{summary}</div>
               {"<div style='font-size:11px;color:#8E44AD;margin-top:3px;'><strong>Implication:</strong> " + implication + "</div>" if implication else ""}
-              <a href="{url}" style="font-size:11px;color:#2980B9;">Read &#8594;</a>
+              {read_link}
             </div>"""
         sections.append(f"""
         <div {_SEC}>
