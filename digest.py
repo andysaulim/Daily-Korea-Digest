@@ -115,7 +115,6 @@ Return a SINGLE kcna_delta object:
 - key_phrase_changes: list of notable new terminology vs. recent baseline. Empty list if none.
 - silence_today: true if no KCNA output at all
 - delta_note: 1 sentence — what changed and why it might matter
-- watch_flag: true if ANY of: Kim absent 5+ days, tone toward US shifts 2+ levels, complete silence, nuclear posture mentioned
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 DIGEST SYNTHESIS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -123,7 +122,6 @@ Return a digest object with:
 - digest_date: "{date_str}"
 - tension_score: 1-10 for today, considering all tiers
 - re_line: one-line RE: summary for the cable header (max 120 chars, key themes separated by ·)
-- watch_flag: true if tension >= 7 or kcna_delta.watch_flag is true
 - market_indicators: object with kospi (value, change_pct), brent (value, change_pct), usd_krw (value, change_pct). Extract from news articles if mentioned; use approximate values from financial news. If no market data found, use null for the whole object.
 - editor_note: 3-4 sentences synthesizing the dominant analytical theme across ALL tiers today. Not a list of stories — an observation about what the collective signal means for Korea policy. Written in Libre Baskerville italic voice (senior analyst, not journalist).
 - bp_locations: array of 6 monitored DPRK facility objects. For EACH of these locations, assess status from today's articles: Yongbyon Nuclear Complex, Sohae Satellite Launch Station, Punggye-ri Nuclear Test Site, Sinpo South Shipyard, Sunan Airfield/Missile Complex, Kaesong Industrial Complex. Each object: name, status (normal/activity/elevated/alert), note (1 sentence — what was detected or "No change"). Base status on any satellite imagery reports, military activity mentions, or relevant news. Default to "normal" if no information.

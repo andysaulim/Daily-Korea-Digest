@@ -111,7 +111,6 @@ def render(digest: dict) -> str:
       <div style="margin-top:12px;padding:8px 14px;background:rgba(255,255,255,0.12);border-radius:4px;font-size:13px;">
         <strong>RE:</strong> {re_line}
       </div>
-      {"<div style='margin-top:10px;padding:6px 12px;background:#C0392B;border-radius:4px;font-size:12px;font-weight:600;'>&#9888; WATCH FLAG ACTIVE</div>" if watch_flag else ""}
     </div>
     """)
 
