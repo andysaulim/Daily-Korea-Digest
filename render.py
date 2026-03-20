@@ -114,9 +114,9 @@ def render(digest: dict) -> str:
     # ── Market Indicators (KOSPI, Brent, KRW) ─────────────────────────────
     markets = digest.get("market_indicators", {})
     if markets:
-        kospi = markets.get("kospi", {})
-        brent = markets.get("brent", {})
-        krw = markets.get("usd_krw", {})
+        kospi = markets.get("kospi") or {}
+        brent = markets.get("brent") or {}
+        krw = markets.get("usd_krw") or {}
 
         sections.append(f"""
         <div style="background:#1B2A4A;color:#fff;padding:10px 32px 14px;display:flex;border-bottom:1px solid rgba(255,255,255,0.1);">
@@ -174,7 +174,7 @@ def render(digest: dict) -> str:
         """)
 
     # ── BP Locations Tracker ──────────────────────────────────────────────
-    locations = digest.get("bp_locations", [])
+    locations = digest.get("bp_locations") or []
     if locations:
         loc_html = ""
         for loc in locations:
@@ -204,7 +204,7 @@ def render(digest: dict) -> str:
         """)
 
     # ── ROK Government Activity ───────────────────────────────────────────
-    rok_gov = digest.get("rok_government", [])
+    rok_gov = digest.get("rok_government") or []
     if rok_gov:
         gov_html = ""
         for item in rok_gov:
@@ -230,7 +230,7 @@ def render(digest: dict) -> str:
         """)
 
     # ── KCNA Delta ────────────────────────────────────────────────────────
-    kcna = digest.get("kcna_delta", {})
+    kcna = digest.get("kcna_delta") or {}
     if kcna:
         delta_note = _esc(kcna.get("delta_note", ""))
         us_tone = _esc(str(kcna.get("us_tone", "—")))
@@ -286,7 +286,7 @@ def render(digest: dict) -> str:
         """)
 
     # ── Overnight Flash ───────────────────────────────────────────────────
-    overnight = digest.get("overnight_items", [])
+    overnight = digest.get("overnight_items") or []
     if overnight:
         items_html = ""
         for item in overnight:
@@ -314,7 +314,7 @@ def render(digest: dict) -> str:
         """)
 
     # ── Top Stories ────────────────────────────────────────────────────────
-    top_stories = digest.get("top_stories", [])
+    top_stories = digest.get("top_stories") or []
     if top_stories:
         stories_html = ""
         for story in top_stories:
@@ -351,7 +351,7 @@ def render(digest: dict) -> str:
         """)
 
     # ── Also Today ────────────────────────────────────────────────────────
-    also_today = digest.get("also_today", [])
+    also_today = digest.get("also_today") or []
     if also_today:
         items_html = ""
         for item in also_today:
@@ -380,7 +380,7 @@ def render(digest: dict) -> str:
         """)
 
     # ── Trade & Tech ──────────────────────────────────────────────────────
-    trade_tech = digest.get("trade_tech_stories", [])
+    trade_tech = digest.get("trade_tech_stories") or []
     if trade_tech:
         items_html = ""
         for item in trade_tech:
@@ -407,7 +407,7 @@ def render(digest: dict) -> str:
         """)
 
     # ── Social Statements ─────────────────────────────────────────────────
-    social = digest.get("social_statements", [])
+    social = digest.get("social_statements") or []
     if social:
         cards_html = ""
         for s in social:
@@ -440,7 +440,7 @@ def render(digest: dict) -> str:
         """)
 
     # ── Op-Eds ────────────────────────────────────────────────────────────
-    opeds = digest.get("opeds_today", [])
+    opeds = digest.get("opeds_today") or []
     if opeds:
         items_html = ""
         for op in opeds:
@@ -470,7 +470,7 @@ def render(digest: dict) -> str:
         """)
 
     # ── Academic ──────────────────────────────────────────────────────────
-    academic = digest.get("academic_today", [])
+    academic = digest.get("academic_today") or []
     if academic:
         items_html = ""
         for a in academic:
