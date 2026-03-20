@@ -106,6 +106,10 @@
     {"category": "DPRK", "headline": "WFP reports DPRK rejected food aid shipment at Nampo port", "body_text": "World Food Programme confirms North Korea turned away a grain shipment at Nampo, the third rejection this year. WFP estimates 40% of DPRK population faces food insecurity.", "source": "Reuters", "url": "#", "color_bar_class": "cb-red"},
     {"category": "Security", "headline": "ROK Navy conducts live-fire drill near Northern Limit Line", "body_text": "The ROK Navy's Second Fleet conducted a live-fire exercise near Baengnyeong Island, the first such drill in the area since DPRK's abrogation of the inter-Korean military agreement.", "source": "Yonhap", "url": "#", "color_bar_class": "cb-navy"}
   ],
+  "us_korea_deals": [
+    {"headline": "Samsung SDI to build $2.3B EV battery plant in Indiana", "value": "$2.3B", "sector": "manufacturing", "parties": "Samsung SDI \u2192 Kokomo, Indiana (2nd US plant)", "detail": "Deepens ROK-US industrial integration in EV supply chain amid decoupling from China.", "source": "Korea Herald", "url": "#"},
+    {"headline": "ROK\u2013UAE nuclear cooperation agreement for Barakah expansion", "value": null, "sector": "energy", "parties": "Korea Hydro & Nuclear Power \u2194 Emirates Nuclear Energy Corp", "detail": "Framework for potential Units 5-6 at Barakah; strengthens ROK nuclear export portfolio.", "source": "Korea Times", "url": "#"}
+  ],
   "trade_tech_stories": [
     {"headline": "SK Hynix reports record HBM3E chip orders from US AI firms", "body_text": "SK Hynix announced record quarterly orders for its HBM3E memory chips, driven by demand from US hyperscalers. The company now holds 53% of the global HBM market.", "source": "Nikkei Asia", "url": "#"},
     {"headline": "ROK–UAE nuclear cooperation agreement signed for Barakah expansion", "body_text": "Korea Hydro & Nuclear Power signed a framework agreement with Emirates Nuclear Energy Corporation for potential construction of Units 5-6 at the Barakah plant.", "source": "Korea Times", "url": "#"}

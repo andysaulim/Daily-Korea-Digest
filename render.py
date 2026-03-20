@@ -483,7 +483,41 @@ def render(digest: dict) -> str:
         </div>
         """)
 
-    # ── 15. Op-Eds & Commentary ────────────────────────────────────────────
+    # ── 15. US-Korea Trade & Investment Deals ───────────────────────────────
+    deals = digest.get("us_korea_deals") or []
+    if deals:
+        deals_html = ""
+        sector_colors = {
+            "defense": "#C0392B", "energy": "#16A085", "tech": "#8E44AD",
+            "manufacturing": "#1B2A4A", "trade": "#D4AC0D",
+        }
+        for deal in deals:
+            headline = _esc(deal.get("headline", ""))
+            value = _esc(deal.get("value", "")) if deal.get("value") else ""
+            sector = deal.get("sector", "trade")
+            parties = _esc(deal.get("parties", ""))
+            detail = _esc(deal.get("detail", ""))
+            src = _esc(deal.get("source", ""))
+            url = deal.get("url", "#")
+            bar_color = sector_colors.get(sector, "#1B2A4A")
+            value_badge = f'<span style="display:inline-block;padding:1px 6px;border-radius:3px;font-size:11px;font-weight:700;color:#fff;background:#27AE60;margin-left:6px;">{value}</span>' if value else ""
+            deals_html += f"""
+            <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid {bar_color};">
+              <div style="font-size:11px;color:#888;text-transform:uppercase;">{_esc(sector)} &middot; {src}</div>
+              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
+                <a href="{url}" style="color:#1B2A4A;text-decoration:none;">{headline}</a>{value_badge}
+              </div>
+              <div style="font-size:11px;color:#2980B9;">{parties}</div>
+              <div style="font-size:12px;line-height:1.4;color:#555;">{detail}</div>
+            </div>"""
+        sections.append(f"""
+        <div {_SEC}>
+          <h2 {_H2("#16A085")}>US-Korea Trade &amp; Investment</h2>
+          {deals_html}
+        </div>
+        """)
+
+    # ── 16. Op-Eds & Commentary ────────────────────────────────────────────
     opeds = digest.get("opeds_today") or []
     if opeds:
         items_html = ""
