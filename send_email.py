@@ -1,6 +1,6 @@
 """
-Korea Intelligence Digest — Email Sender
-Beyond Parallel × CSIS Korea Chair
+CSIS Korea Digest — Email Sender
+CSIS Korea Chair
 Sends the rendered HTML digest via Gmail SMTP (app password).
 Configure via environment variables — no credentials in code.
 """
@@ -26,14 +26,14 @@ def send(html: str, subject: Optional[str] = None, recipients: Optional[list] = 
         recipients = [r.strip() for r in to_str.split(",") if r.strip()]
     if subject is None:
         date_str = datetime.now(timezone.utc).strftime("%-d %B %Y")
-        subject  = f"Korea Intelligence Digest · {date_str}"
+        subject  = f"CSIS Korea Digest · {date_str}"
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
-    msg["From"]    = f"Beyond Parallel Ops <{gmail_user}>"
+    msg["From"]    = f"CSIS Korea Chair <{gmail_user}>"
     msg["To"]      = ", ".join(recipients)
     # Plain text fallback
     plain = (
-        "Korea Intelligence Digest — Beyond Parallel × CSIS Korea Chair\n"
+        "CSIS Korea Digest — CSIS Korea Chair\n"
         "This digest is best viewed in an HTML-capable email client.\n"
         f"Date: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}"
     )
