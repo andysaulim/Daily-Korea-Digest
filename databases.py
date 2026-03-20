@@ -33,50 +33,206 @@ TIMEOUT = 15
 # PARSER: Extract JS arrays from HTML
 # ─────────────────────────────────────────────────────────────────────────────
 
+def _strip_js_comments(text: str) -> str:
+    """Remove JS block and line comments, but not inside strings."""
+    out = []
+    i = 0
+    n = len(text)
+    while i < n:
+        # Single-quoted string
+        if text[i] == "'":
+            j = i + 1
+            while j < n:
+                if text[j] == "\\" and j + 1 < n:
+                    j += 2
+                    continue
+                if text[j] == "'":
+                    j += 1
+                    break
+                j += 1
+            out.append(text[i:j])
+            i = j
+        # Double-quoted string
+        elif text[i] == '"':
+            j = i + 1
+            while j < n:
+                if text[j] == "\\" and j + 1 < n:
+                    j += 2
+                    continue
+                if text[j] == '"':
+                    j += 1
+                    break
+                j += 1
+            out.append(text[i:j])
+            i = j
+        # Block comment
+        elif text[i:i+2] == "/*":
+            end = text.find("*/", i + 2)
+            i = end + 2 if end != -1 else n
+        # Line comment
+        elif text[i:i+2] == "//":
+            end = text.find("\n", i)
+            i = end if end != -1 else n
+        else:
+            out.append(text[i])
+            i += 1
+    return "".join(out)
+
+
+def _extract_bracket(html: str, start: int) -> str:
+    """Extract a balanced [...] from html starting at position start."""
+    depth = 0
+    for i in range(start, len(html)):
+        if html[i] == "[":
+            depth += 1
+        elif html[i] == "]":
+            depth -= 1
+            if depth == 0:
+                return html[start:i + 1]
+    return ""
+
+
+def _js_to_json(raw: str) -> str:
+    """Convert JS object/array notation to valid JSON.
+    Handles: unquoted keys, single-quoted values with escaped quotes,
+    trailing commas, JS booleans/null.
+    """
+    out = []
+    i = 0
+    n = len(raw)
+    while i < n:
+        c = raw[i]
+
+        # Skip whitespace
+        if c in " \t\n\r":
+            out.append(c)
+            i += 1
+            continue
+
+        # Single-quoted string → double-quoted
+        if c == "'":
+            i += 1
+            s = []
+            while i < n and raw[i] != "'":
+                if raw[i] == "\\" and i + 1 < n:
+                    nxt = raw[i + 1]
+                    if nxt == "'":
+                        s.append("'")
+                        i += 2
+                        continue
+                    elif nxt == '"':
+                        s.append('\\"')
+                        i += 2
+                        continue
+                    else:
+                        s.append(raw[i])
+                        i += 1
+                        continue
+                if raw[i] == '"':
+                    s.append('\\"')
+                else:
+                    s.append(raw[i])
+                i += 1
+            i += 1  # skip closing '
+            out.append('"')
+            out.append("".join(s))
+            out.append('"')
+            continue
+
+        # Double-quoted string — pass through as-is
+        if c == '"':
+            out.append(c)
+            i += 1
+            while i < n and raw[i] != '"':
+                if raw[i] == "\\" and i + 1 < n:
+                    out.append(raw[i])
+                    out.append(raw[i + 1])
+                    i += 2
+                    continue
+                out.append(raw[i])
+                i += 1
+            if i < n:
+                out.append(raw[i])  # closing "
+                i += 1
+            continue
+
+        # Unquoted key (word followed by colon)
+        if c.isalpha() or c == "_":
+            j = i
+            while j < n and (raw[j].isalnum() or raw[j] == "_"):
+                j += 1
+            word = raw[i:j]
+            # Check if followed by colon (it's a key)
+            k = j
+            while k < n and raw[k] in " \t":
+                k += 1
+            if k < n and raw[k] == ":":
+                out.append('"')
+                out.append(word)
+                out.append('"')
+                i = j
+            else:
+                # It's a bare value: true, false, null
+                if word in ("true", "false", "null"):
+                    out.append(word)
+                else:
+                    out.append('"')
+                    out.append(word)
+                    out.append('"')
+                i = j
+            continue
+
+        # Trailing comma: skip comma before } or ]
+        if c == ",":
+            j = i + 1
+            while j < n and raw[j] in " \t\n\r":
+                j += 1
+            if j < n and raw[j] in "}]":
+                i = j  # skip the comma
+                continue
+            out.append(c)
+            i += 1
+            continue
+
+        # Everything else (digits, braces, brackets, colons, etc.)
+        out.append(c)
+        i += 1
+
+    return "".join(out)
+
+
 def _extract_js_array(html: str, var_name: str) -> list:
-    """Extract a JavaScript array variable from HTML and parse as JSON."""
-    # Match: const EVENTS = [ ... ]; or const RECORDS = [ ... ];
-    pattern = rf"(?:const|let|var)\s+{var_name}\s*=\s*(\[.*?\])\s*;"
-    match = re.search(pattern, html, re.DOTALL)
+    """Extract a JavaScript array variable from HTML and parse it."""
+    # Flexible match: const/let/var or bare assignment, flexible whitespace
+    pattern = rf"(?:const|let|var)?\s*{var_name}\s*=\s*\["
+    match = re.search(pattern, html)
     if not match:
         print(f"    ⚠  Could not find {var_name} array in HTML")
         return []
 
-    raw = match.group(1)
+    # Find the opening bracket
+    bracket_pos = html.index("[", match.start())
+    raw = _extract_bracket(html, bracket_pos)
+    if not raw:
+        print(f"    ⚠  Could not extract balanced array for {var_name}")
+        return []
 
-    # Convert JS object notation to valid JSON:
-    # - Unquoted keys: {key: "val"} → {"key": "val"}
-    # - Single quotes: 'val' → "val"
-    # - Trailing commas: [1, 2, ] → [1, 2]
-    # - Boolean lowercase already valid
+    # Strip JS comments outside of strings
+    raw = _strip_js_comments(raw)
 
-    # Replace single-quoted strings with double-quoted (careful with apostrophes)
-    # First handle keys: word followed by colon
-    raw = re.sub(r"(\b\w+)\s*:", r'"\1":', raw)
-    # Replace single quotes around values with double quotes
-    raw = re.sub(r":\s*'([^']*)'", lambda m: ': "' + m.group(1).replace('"', '\\"') + '"', raw)
-    # Handle single-quoted strings in arrays
-    raw = re.sub(r"(?<=[\[,])\s*'([^']*)'", lambda m: ' "' + m.group(1).replace('"', '\\"') + '"', raw)
-    # Remove trailing commas before ] or }
-    raw = re.sub(r",\s*([}\]])", r"\1", raw)
-    # Handle true/false that might have been quoted by key regex
-    raw = raw.replace('"true"', "true").replace('"false"', "false")
-    # Fix "null" → null
-    raw = raw.replace('"null"', "null")
-
+    # Try direct JSON parse first (EVENTS uses valid JSON)
     try:
         return json.loads(raw)
+    except json.JSONDecodeError:
+        pass
+
+    # Convert JS notation to JSON (RECORDS uses single quotes / unquoted keys)
+    try:
+        converted = _js_to_json(raw)
+        return json.loads(converted)
     except json.JSONDecodeError as e:
-        # Try a more lenient approach — eval-like parsing
         print(f"    ⚠  JSON parse error for {var_name}: {e}")
-        # Fallback: try to fix common issues
-        try:
-            # Remove any remaining JS-isms
-            raw = re.sub(r'(?<!\\)"(\w+)":', r'"\1":', raw)
-            return json.loads(raw)
-        except Exception:
-            print(f"    ⚠  Fallback parse also failed for {var_name}")
-            return []
+        return []
 
 
 # ─────────────────────────────────────────────────────────────────────────────
