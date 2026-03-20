@@ -1,11 +1,12 @@
 """
 CSIS Korea Digest — Main Runner
 CSIS Korea Chair
-Orchestrates: collect → digest → render → send
+Orchestrates: collect → databases → digest → render → push → send
 Usage:
   python run.py              # Full pipeline (collect + digest + render + send)
   python run.py --no-send    # Render to file only, no email
   python run.py --from-cache # Skip collection, use existing collected.json
+  python run.py --no-push    # Skip pushing new entries to databases
 """
 import sys
 import json
@@ -19,6 +20,7 @@ def main():
     parser.add_argument("--no-send",    action="store_true", help="Render to file only, do not send email")
     parser.add_argument("--from-cache", action="store_true", help="Skip collection, use existing collected.json")
     parser.add_argument("--dry-run",    action="store_true", help="Collect only, don't call Claude")
+    parser.add_argument("--no-push",    action="store_true", help="Skip pushing new entries to NK-Russia/provocations databases")
     args = parser.parse_args()
 
     print("=" * 60)
@@ -42,10 +44,22 @@ def main():
         print("\n  --dry-run: stopping after collection. See collected.json")
         return
 
+    # ── Step 1b: Fetch CSIS databases for context ─────────────────────────────
+    from databases import fetch_all, build_context_block, process_digest_entries
+    print("\n📚  Loading CSIS databases...")
+    databases = fetch_all()
+    db_context = build_context_block(databases)
+
     # ── Step 2: Generate digest via Claude ───────────────────────────────────
     from digest import generate_digest
-    digest_data = generate_digest(payload)
+    digest_data = generate_digest(payload, db_context=db_context)
     Path("digest.json").write_text(json.dumps(digest_data, ensure_ascii=False, indent=2))
+
+    # ── Step 2b: Push flagged entries to databases ────────────────────────────
+    if not args.no_push:
+        push_summary = process_digest_entries(digest_data)
+    else:
+        print("\n  --no-push: skipping database updates")
 
     # ── Step 3: Render HTML ──────────────────────────────────────────────────
     from render import render

@@ -43,7 +43,7 @@ Return ONLY valid JSON. No markdown, no preamble, no commentary outside the JSON
 # ─────────────────────────────────────────────────────────────────────────────
 # USER PROMPT BUILDER
 # ─────────────────────────────────────────────────────────────────────────────
-def build_user_prompt(payload: dict, date_str: str) -> str:
+def build_user_prompt(payload: dict, date_str: str, db_context: str = "") -> str:
     def tier_json(articles: list, max_items: int = 60) -> str:
         trimmed = articles[:max_items]
         return json.dumps([{
@@ -67,9 +67,23 @@ MARKET DATA (pre-collected, include as-is in output)
 {json.dumps(markets, indent=1)}
 Pass this data through directly as the market_indicators field in your output. Do NOT modify the values."""
 
+    # Database context (NK-Russia timeline + provocations)
+    db_block = ""
+    if db_context:
+        db_block = f"""
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CSIS DATABASES (NK-Russia Timeline + NK Provocations)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{db_context}
+
+IMPORTANT: Use this data for on_this_day, watch_today, and pattern_note fields.
+For timeline_candidates: flag any NK-Russia stories that should be added to the CSIS NK-Russia cooperation timeline (268+ verified events since 2022).
+For ESCALATION + DPRK stories: these may be added to the CSIS NK provocations database (540+ events since 1958). Ensure headline and description are suitable for database entry."""
+
     return f"""Today's date: {date_str}
 Process each tier according to its instructions and return a single JSON object.
 {market_block}
+{db_block}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 TIER 1: NEWS ARTICLES (last 24h)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -135,11 +149,11 @@ Return ONLY valid JSON. No markdown fences, no preamble."""
 # ─────────────────────────────────────────────────────────────────────────────
 # MAIN DIGEST FUNCTION
 # ─────────────────────────────────────────────────────────────────────────────
-def generate_digest(payload: dict) -> dict:
+def generate_digest(payload: dict, db_context: str = "") -> dict:
     """Call Claude and return structured digest JSON. Retries once on failure."""
     client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
     date_str = datetime.now(timezone.utc).strftime("%A, %d %B %Y")
-    user_prompt = build_user_prompt(payload, date_str)
+    user_prompt = build_user_prompt(payload, date_str, db_context=db_context)
     total_articles = sum(len(v) for k, v in payload.items() if isinstance(v, list))
     print(f"\n🤖  Generating digest ({total_articles} articles → Claude)...")
 
