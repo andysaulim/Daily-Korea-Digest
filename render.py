@@ -232,53 +232,7 @@ def render(digest: dict) -> str:
         </div>
         """)
 
-    # ── 7. ROK Government Activity ────────────────────────────────────────
-    rok_gov = digest.get("rok_government") or []
-    if rok_gov:
-        gov_html = ""
-        for item in rok_gov:
-            ministry = _esc(item.get("ministry", ""))
-            action = _esc(item.get("action", ""))
-            detail = _esc(item.get("detail", ""))
-            url = item.get("url", "")
-            link = f' <a href="{url}" style="font-size:11px;color:#2980B9;">&#8594;</a>' if url else ""
-            gov_html += f"""
-            <div style="margin-bottom:8px;padding-left:12px;border-left:3px solid #2980B9;">
-              <div style="font-size:11px;color:#2980B9;font-weight:600;text-transform:uppercase;">{ministry}</div>
-              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">{action}{link}</div>
-              <div style="font-size:12px;line-height:1.4;color:#555;">{detail}</div>
-            </div>"""
-        sections.append(f"""
-        <div {_SEC}>
-          <h2 {_H2("#2980B9")}>ROK Government Activity</h2>
-          {gov_html}
-        </div>
-        """)
-
-    # ── 8. ROK National Assembly ──────────────────────────────────────────
-    rok_assembly = digest.get("rok_assembly") or []
-    if rok_assembly:
-        asm_html = ""
-        for item in rok_assembly:
-            committee = _esc(item.get("committee", ""))
-            action = _esc(item.get("action", ""))
-            detail = _esc(item.get("detail", ""))
-            url = item.get("url", "")
-            link = f' <a href="{url}" style="font-size:11px;color:#2980B9;">&#8594;</a>' if url else ""
-            asm_html += f"""
-            <div style="margin-bottom:8px;padding-left:12px;border-left:3px solid #7F8C8D;">
-              <div style="font-size:11px;color:#7F8C8D;font-weight:600;text-transform:uppercase;">{committee}</div>
-              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">{action}{link}</div>
-              <div style="font-size:12px;line-height:1.4;color:#555;">{detail}</div>
-            </div>"""
-        sections.append(f"""
-        <div {_SEC}>
-          <h2 {_H2("#7F8C8D")}>National Assembly</h2>
-          {asm_html}
-        </div>
-        """)
-
-    # ── 9. Overnight Flash ────────────────────────────────────────────────
+    # ── 7. Overnight Flash ────────────────────────────────────────────────
     overnight = digest.get("overnight_items") or []
     if overnight:
         items_html = ""
@@ -303,7 +257,7 @@ def render(digest: dict) -> str:
         </div>
         """)
 
-    # ── 10. Top Stories ───────────────────────────────────────────────────
+    # ── 8. Top Stories ────────────────────────────────────────────────────
     top_stories = digest.get("top_stories") or []
     if top_stories:
         stories_html = ""
@@ -326,8 +280,8 @@ def render(digest: dict) -> str:
                 <a href="{url}" style="color:#1B2A4A;text-decoration:none;">{headline}</a>
               </h3>
               <p style="margin:0 0 8px 0;font-size:13px;line-height:1.5;color:#333;">{body}</p>
-              {{"<p style='margin:0 0 6px 0;font-size:12px;line-height:1.4;color:#2980B9;'><strong>So what:</strong> " + so_what + "</p>" if so_what else ""}}
-              {{"<p style='margin:0 0 6px 0;font-size:12px;line-height:1.4;color:#8E44AD;'><strong>Pattern:</strong> " + pattern + "</p>" if pattern else ""}}
+              {"<p style='margin:0 0 6px 0;font-size:12px;line-height:1.4;color:#2980B9;'><strong>So what:</strong> " + so_what + "</p>" if so_what else ""}
+              {"<p style='margin:0 0 6px 0;font-size:12px;line-height:1.4;color:#8E44AD;'><strong>Pattern:</strong> " + pattern + "</p>" if pattern else ""}
               <div style="font-size:11px;color:#999;">{src_line}</div>
             </div>"""
         sections.append(f"""
@@ -337,7 +291,7 @@ def render(digest: dict) -> str:
         </div>
         """)
 
-    # ── 11. Key Stat of the Day ──────────────────────────────────────────
+    # ── 9. Key Stat of the Day ───────────────────────────────────────────
     key_stat = digest.get("key_stat") or {}
     if key_stat and key_stat.get("number"):
         sections.append(f"""
@@ -349,7 +303,7 @@ def render(digest: dict) -> str:
         </div>
         """)
 
-    # ── 12. BP Facility Tracker ──────────────────────────────────────────
+    # ── 10. BP Facility Tracker ─────────────────────────────────────────
     locations = digest.get("bp_locations") or []
     if locations:
         loc_rows = ""
@@ -378,7 +332,7 @@ def render(digest: dict) -> str:
         </div>
         """)
 
-    # ── 9. KCNA Delta ──────────────────────────────────────────────────────
+    # ── 11. KCNA Delta ─────────────────────────────────────────────────────
     kcna = digest.get("kcna_delta") or {}
     if kcna:
         delta_note = _esc(kcna.get("delta_note", ""))
@@ -453,6 +407,52 @@ def render(digest: dict) -> str:
           {phrases_html}
           {omissions_html}
           {senior_html}
+        </div>
+        """)
+
+    # ── 12. ROK Government Activity ────────────────────────────────────────
+    rok_gov = digest.get("rok_government") or []
+    if rok_gov:
+        gov_html = ""
+        for item in rok_gov:
+            ministry = _esc(item.get("ministry", ""))
+            action = _esc(item.get("action", ""))
+            detail = _esc(item.get("detail", ""))
+            url = item.get("url", "")
+            link = f' <a href="{url}" style="font-size:11px;color:#2980B9;">&#8594;</a>' if url else ""
+            gov_html += f"""
+            <div style="margin-bottom:8px;padding-left:12px;border-left:3px solid #2980B9;">
+              <div style="font-size:11px;color:#2980B9;font-weight:600;text-transform:uppercase;">{ministry}</div>
+              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">{action}{link}</div>
+              <div style="font-size:12px;line-height:1.4;color:#555;">{detail}</div>
+            </div>"""
+        sections.append(f"""
+        <div {_SEC}>
+          <h2 {_H2("#2980B9")}>ROK Government Activity</h2>
+          {gov_html}
+        </div>
+        """)
+
+    # ── 13. ROK National Assembly ────────────────────────────────────────
+    rok_assembly = digest.get("rok_assembly") or []
+    if rok_assembly:
+        asm_html = ""
+        for item in rok_assembly:
+            committee = _esc(item.get("committee", ""))
+            action = _esc(item.get("action", ""))
+            detail = _esc(item.get("detail", ""))
+            url = item.get("url", "")
+            link = f' <a href="{url}" style="font-size:11px;color:#2980B9;">&#8594;</a>' if url else ""
+            asm_html += f"""
+            <div style="margin-bottom:8px;padding-left:12px;border-left:3px solid #7F8C8D;">
+              <div style="font-size:11px;color:#7F8C8D;font-weight:600;text-transform:uppercase;">{committee}</div>
+              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">{action}{link}</div>
+              <div style="font-size:12px;line-height:1.4;color:#555;">{detail}</div>
+            </div>"""
+        sections.append(f"""
+        <div {_SEC}>
+          <h2 {_H2("#7F8C8D")}>National Assembly</h2>
+          {asm_html}
         </div>
         """)
 
