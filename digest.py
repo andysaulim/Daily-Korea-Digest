@@ -165,6 +165,7 @@ Return a digest object with:
 - academic_today: qualifying Tier 3 pieces, ordered by journal_tier then score
 - kcna_delta: the Tier 4 object
 - timeline_candidates: list of urls flagged as timeline_candidate=true
+IMPORTANT — NO OVERLAP: Each article must appear in exactly ONE section. A story in top_stories must NOT also appear in overnight_items, also_today, or us_korea_deals. A story in overnight_items must NOT repeat in also_today. Deduplicate by URL — if a story qualifies for multiple sections, place it in the highest-priority section: top_stories > overnight_items > us_korea_deals > also_today.
 - story_count: total Tier 1 articles processed
 - oped_count: qualifying Tier 2 count
 - academic_count: qualifying Tier 3 count
