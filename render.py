@@ -83,7 +83,6 @@ _H2 = lambda color: f'style="margin:0 0 12px 0;font-size:13px;color:{color};text
 
 def render(digest: dict) -> str:
     date_str = datetime.now(timezone.utc).strftime("%m/%d/%Y")
-    re_line = _esc(digest.get("re_line", "CSIS Korea Digest"))
     editor_note = _esc(digest.get("editor_note", ""))
     story_count = digest.get("story_count", 0)
     oped_count = digest.get("oped_count", 0)
@@ -125,9 +124,6 @@ def render(digest: dict) -> str:
         CSIS Korea Digest
       </h1>
       <div style="margin-top:6px;font-size:13px;opacity:0.8;">{_esc(date_str)}</div>
-      <div style="margin-top:10px;padding:8px 14px;background:rgba(255,255,255,0.12);border-radius:4px;font-size:13px;">
-        <strong>RE:</strong> {re_line}
-      </div>
     </div>
     """)
 
@@ -213,7 +209,7 @@ def render(digest: dict) -> str:
     on_this_day = digest.get("on_this_day") or []
     if on_this_day:
         otd_html = ""
-        for item in on_this_day:
+        for item in on_this_day[:1]:
             date = _esc(item.get("date", ""))
             event = _esc(item.get("event", ""))
             relevance = _esc(item.get("relevance", ""))
