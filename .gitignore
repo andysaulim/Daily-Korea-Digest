@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+collected.json
+digest.json
+digest_*.html
+latest.html
+test_digest.json
+test_preview.html
