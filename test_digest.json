@@ -16,9 +16,10 @@
     {"headline": "Cheonan sinking anniversary (Mar 26)", "detail": "16th anniversary of ROKS Cheonan sinking. Heightened NLL monitoring expected.", "type": "anniversary"}
   ],
   "key_stat": {
-    "number": "7",
-    "label": "Confirmed NK\u2013Russia munitions transfers since Sept 2024",
-    "context": "CSIS BP database shows pipeline has become routinized, not episodic."
+    "number": "$2.3B",
+    "label": "Samsung SDI investment in new Indiana EV battery plant",
+    "context": "Second US plant signals deepening ROK\u2013US industrial integration amid supply chain decoupling from China.",
+    "source": "Korea Herald"
   },
   "on_this_day": [
     {"date": "March 26, 2010", "event": "ROKS Cheonan sunk by North Korean torpedo, killing 46 sailors.", "relevance": "Anniversary falls during heightened NLL tensions and ROK Navy live-fire drills near Baengnyeong."}
