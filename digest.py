@@ -93,6 +93,7 @@ For ESCALATION + DPRK stories: these may be added to the CSIS NK provocations da
 
     return f"""Today's date: {date_str}
 Process each tier according to its instructions and return a single JSON object.
+CRITICAL — SOURCE URLs: Every article, op-ed, academic paper, deal, and statement MUST include the original source URL from the input data. Use the exact URL provided in the feed data. Never use "#" or placeholder URLs. If no URL is available for an item, omit the url field entirely rather than using a placeholder.
 {market_block}
 {db_block}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -130,15 +131,18 @@ Return a SINGLE kcna_delta object:
 - kim_appearance_today: boolean
 - kim_activity: if appeared, 1 sentence on what he did (inspection, meeting, guidance, etc.), else null
 - days_since_last_appearance: integer
-- senior_officials: array of notable non-Kim appearances/activities (e.g. Choe Son Hui, Kim Yo Jong, Ri Pyong Chol). Each: name, activity (1 sentence). Max 3.
+- senior_officials: array of notable non-Kim appearances/activities (e.g. Choe Son Hui, Kim Yo Jong, Ri Pyong Chol). Each: name, role (title), activity (1 sentence), significance (1 sentence on why this matters). Max 3.
 - us_tone, rok_tone, russia_tone, china_tone: each a string (Hostile/Elevated/Neutral/Warm/Very Warm/Silent)
 - tone_shift: any tone that changed from yesterday's baseline, e.g. "US tone shifted from Neutral to Hostile". null if no change detected.
 - propaganda_focus: top 2-3 topics KCNA is prioritizing today (e.g. "self-reliance economy", "nuclear deterrent", "anti-US imperialism")
 - notable_omissions: anything conspicuously absent that was previously regular (e.g. "No mention of Russia for 3rd day", "Kim Yo Jong silent on ROK provocation"). null if nothing notable.
 - key_phrase_changes: list of new or notably different phrases/formulations
+- doctrinal_shift: if any phrase represents a new doctrinal position (e.g. new weapons designation, revised nuclear posture language, novel alliance framing), describe in 1-2 sentences. These shifts historically precede hardware developments by 12-18 months. null if routine rhetoric.
+- key_quotes: 1-2 direct quotes from KCNA that are most analytically significant today. Each: quote (exact text, translated to English), source_article (KCNA article title), significance (1 sentence). Empty array if nothing notable.
+- output_volume: string assessment of today's KCNA output volume vs. normal (e.g. "Heavy — 23 articles (avg: 15)", "Light — 8 articles", "Normal — 14 articles"). Unusually high or low volume is a signal.
 - silence_today: boolean (complete KCNA blackout)
 - watch_flag: boolean — true if KCNA output contains ESCALATION-level rhetoric, silence after regular output, unusual Kim absence (7+ days), or nuclear/ICBM-related content
-- delta_note: 1-2 sentences on what changed and why it matters
+- bottom_line: 2-3 sentences. Lead with the single most important signal from KCNA today and why a Korea policy analyst should care. Connect to broader patterns (e.g. "Russia rhetoric escalation coincides with confirmed Rajin port activity — this is messaging alignment with military action"). End with what to watch next.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 DIGEST SYNTHESIS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -147,12 +151,12 @@ Return a digest object with:
 - re_line: one-line RE: summary (max 120 chars, key themes separated by ·)
 - market_indicators: pass through the pre-collected market data object exactly as provided above. If no market data was provided, use null.
 - editor_note: 2-3 sentences synthesizing the dominant analytical theme across ALL tiers. Not a list of stories — an observation about what the collective signal means for Korea policy. Senior analyst voice.
-- watch_today: array of 2-3 items for "What to Watch Today" — upcoming events, scheduled meetings, votes, exercise dates, anniversaries of past provocations, or deadlines relevant to Korea policy in the next 48 hours. Each: headline (short), detail (1-2 sentences), type (event/deadline/anniversary/exercise).
+- watch_today: array of 2-3 items for "What to Watch Today" — upcoming events, scheduled meetings, votes, exercise dates, anniversaries of past provocations, or deadlines relevant to Korea policy in the next 48 hours. Each: headline (short), detail (1-2 sentences), type (event/deadline/anniversary/exercise), time (specific time + timezone if known, e.g. "3 PM KST" or "TBD"), urgency (critical/high/monitor — critical = requires immediate senior attention, high = track closely, monitor = background awareness), decision_point (1 sentence: what outcome or signal should the analyst watch for, e.g. "Watch for PPP defections — 3+ would signal bipartisan consensus").
 - on_this_day: 1 historical Korea event that happened on today's date or within the next 7 days. Array with exactly 1 item: date (e.g. "March 26, 2010"), event (1 sentence), relevance (1 sentence connecting to current situation). Draw from major events: Cheonan sinking, nuclear tests, inter-Korean summits, armistice, provocations, key policy moments. If nothing notable, return empty array.
 - key_stat: a single striking statistic or number pulled directly from TODAY's articles — not from databases or historical data. Must come from a story in the current digest. Object with: number (the stat, e.g. "$2.3B", "53%", "12"), label (what it measures, under 60 chars), context (1 sentence explaining why it matters today), source (which article it came from). Pick the most policy-relevant number from today's news — trade figures, military spending, sanctions data, economic indicators, deployment numbers, etc.
 - bp_locations: array of 10 monitored location status objects. Each: name, status (normal/activity/elevated/alert), note (1 sentence). Locations: Yongbyon Nuclear Complex, Sohae Satellite Launch Station, Punggye-ri Nuclear Test Site, Sinpo South Shipyard, Sunan Airfield/Missile Complex, Tumangang–Khasan (NK-Russia border crossing — track train movements, cargo activity, troop/labor transfers), Sinuiju–Dandong (NK-China border crossing — track trade volume signals, bridge activity, diplomatic traffic), Yellow Sea NLL/PMZ (Northern Limit Line — track naval activity, fishing boat incursions, military posture), Vostochny/Dunai (Russian Far East — NK labor deployments, military cargo staging, ship transfers), Rason SEZ (DPRK special economic zone — port operations at Rajin, trade activity, foreign presence).
-- rok_government: array of ROK ministry/agency actions from today's news (Presidential Office, MOFA, MND, MOU, MOTIE, NIS, FSC, MOJ — see system prompt for full list). Each: ministry, action (1-line headline), detail (1-2 sentences), url or null. Include only substantive policy actions — meetings, statements, personnel changes, policy announcements. This section is critical for tracking ROK government posture.
-- rok_assembly: array of ROK National Assembly activity from today's news — committee hearings, bills, votes related to defense/foreign affairs/unification/intelligence. Each: committee, action (1 line), detail (1-2 sentences), url or null. Empty array if no relevant activity.
+- rok_government: array of ROK ministry/agency actions from today's news (Presidential Office, MOFA, MND, MOU, MOTIE, NIS, FSC, MOJ — see system prompt for full list). Each: ministry, official (name of the official who acted/spoke, e.g. "FM Cho Tae-yul"), action (1-line headline), detail (1-2 sentences). Include only substantive policy actions — meetings, statements, personnel changes, policy announcements. This section is critical for tracking ROK government posture.
+- rok_assembly: array of ROK National Assembly activity from today's news — committee hearings, bills, votes related to defense/foreign affairs/unification/intelligence. Each: committee, action (1 line), detail (1-2 sentences). Empty array if no relevant activity.
 - overnight_items: 5-7 highest-priority items. Each: url, source, category, headline (under 100 chars), body_text (1-2 sentences)
 - top_stories: 3-4 highest-scored articles (score >= 7) with full treatment: url, source, category_tag, signal_type, headline, body (2-3 sentences), so_what (1 sentence), pattern_note (1 sentence, if applicable), src_line
 - also_today: remaining articles score >= 5, INCLUDING Technology/Business/Energy stories. Each: url, source, category, headline, body_text (1 sentence), color_bar_class (cb-navy=DPRK, cb-red=Security, cb-lt=Policy, cb-mid=Assembly, cb-nkch=NK-Russia-China, cb-tech=Technology/Energy, cb-biz=Business)

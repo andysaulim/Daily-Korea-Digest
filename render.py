@@ -185,14 +185,22 @@ def render(digest: dict) -> str:
     # ── 4. What to Watch Today ─────────────────────────────────────────────
     watch_today = digest.get("watch_today") or []
     if watch_today:
+        urgency_colors = {"critical": "#C0392B", "high": "#E67E22", "monitor": "#7F8C8D"}
         watch_html = ""
         for item in watch_today:
             headline = _esc(item.get("headline", ""))
             detail = _esc(item.get("detail", ""))
+            time_str = _esc(item.get("time", ""))
+            urgency = item.get("urgency", "monitor")
+            decision = _esc(item.get("decision_point", ""))
+            u_color = urgency_colors.get(urgency, "#7F8C8D")
+            time_badge = f'<span style="display:inline-block;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:600;color:#fff;background:{u_color};margin-left:6px;text-transform:uppercase;">{_esc(urgency)}</span>' if urgency else ""
+            time_line = f'<span style="font-size:11px;color:#888;margin-left:8px;">{time_str}</span>' if time_str else ""
             watch_html += f"""
-            <div style="margin-bottom:8px;padding-left:12px;border-left:3px solid #E67E22;">
-              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">{headline}</div>
+            <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid {u_color};">
+              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">{headline}{time_badge}{time_line}</div>
               <div style="font-size:12px;line-height:1.4;color:#555;">{detail}</div>
+              {"<div style='font-size:11px;color:#2980B9;margin-top:2px;font-style:italic;'>&#9654; " + decision + "</div>" if decision else ""}
             </div>"""
         sections.append(f"""
         <div {_SEC}>
@@ -336,7 +344,7 @@ def render(digest: dict) -> str:
     # ── 11. KCNA Delta ─────────────────────────────────────────────────────
     kcna = digest.get("kcna_delta") or {}
     if kcna:
-        delta_note = _esc(kcna.get("delta_note", ""))
+        bottom_line = _esc(kcna.get("bottom_line", kcna.get("delta_note", "")))
         us_tone = _esc(str(kcna.get("us_tone", "—")))
         rok_tone = _esc(str(kcna.get("rok_tone", "—")))
         russia_tone = _esc(str(kcna.get("russia_tone", "—")))
@@ -347,6 +355,27 @@ def render(digest: dict) -> str:
         watch = kcna.get("watch_flag", False)
         silence = kcna.get("silence_today", False)
         tone_shift = _esc(kcna.get("tone_shift", "")) if kcna.get("tone_shift") else ""
+        output_vol = _esc(kcna.get("output_volume", "")) if kcna.get("output_volume") else ""
+
+        # Doctrinal shift (high priority — rendered prominently)
+        doctrinal = _esc(kcna.get("doctrinal_shift", "")) if kcna.get("doctrinal_shift") else ""
+        doctrinal_html = ""
+        if doctrinal:
+            doctrinal_html = f"<div style='margin:8px 0;padding:6px 12px;background:#8E44AD;color:#fff;border-radius:4px;font-size:12px;'><strong>Doctrinal shift:</strong> {doctrinal}</div>"
+
+        # Key quotes from KCNA
+        key_quotes = kcna.get("key_quotes") or []
+        quotes_html = ""
+        if key_quotes:
+            for q in key_quotes[:2]:
+                qt = _esc(q.get("quote", ""))
+                src_art = _esc(q.get("source_article", ""))
+                sig = _esc(q.get("significance", ""))
+                quotes_html += f"""<div style='margin-top:8px;padding:8px 12px;background:rgba(0,0,0,0.04);border-radius:4px;border-left:2px solid #888;'>
+                  <div style='font-size:12px;color:#333;font-style:italic;line-height:1.4;'>&ldquo;{qt}&rdquo;</div>
+                  <div style='font-size:10px;color:#888;margin-top:3px;'>{src_art}</div>
+                  <div style='font-size:11px;color:#2980B9;margin-top:2px;'>{sig}</div>
+                </div>"""
 
         key_phrases = kcna.get("key_phrase_changes") or []
         phrases_html = ""
@@ -369,12 +398,18 @@ def render(digest: dict) -> str:
         senior = kcna.get("senior_officials") or []
         senior_html = ""
         if senior:
-            senior_lines = []
+            senior_items = ""
             for s in senior:
                 name = _esc(s.get("name", ""))
+                role = _esc(s.get("role", ""))
                 act = _esc(s.get("activity", ""))
-                senior_lines.append(f"<strong>{name}</strong>: {act}")
-            senior_html = "<div style='margin-top:8px;font-size:11px;color:#555;'>" + " · ".join(senior_lines) + "</div>"
+                sig = _esc(s.get("significance", ""))
+                role_str = f' <span style="color:#888;">({role})</span>' if role else ""
+                senior_items += f"<div style='margin-bottom:4px;'><strong>{name}</strong>{role_str}: {act}"
+                if sig:
+                    senior_items += f" <span style='color:#2980B9;font-style:italic;'>{sig}</span>"
+                senior_items += "</div>"
+            senior_html = f"<div style='margin-top:8px;font-size:11px;color:#555;'>{senior_items}</div>"
 
         kim_line = f"<strong>Kim Jong Un:</strong> {'Appeared' if kim_today == 'Yes' else 'No appearance'}"
         if kim_today == "Yes" and kim_activity:
@@ -382,10 +417,12 @@ def render(digest: dict) -> str:
         elif days_absent and kim_today == "No":
             kim_line += f" ({days_absent} days since last)"
 
+        vol_html = f"<span style='font-size:11px;color:#888;margin-left:8px;'>{output_vol}</span>" if output_vol else ""
+
         bg = '#FBE9E7' if watch else '#FDF6E3'
         sections.append(f"""
         <div {_SEC_BG(bg)}>
-          <h2 {_H2("#1B2A4A")}>KCNA Delta {'<span style="color:#C0392B;">&#9888; WATCH</span>' if watch else ''}</h2>
+          <h2 {_H2("#1B2A4A")}>KCNA Delta {'<span style="color:#C0392B;">&#9888; WATCH</span>' if watch else ''}{vol_html}</h2>
           {"<div style='margin-bottom:10px;padding:6px 12px;background:#C0392B;color:#fff;border-radius:4px;font-size:12px;font-weight:600;'>&#9888; Complete KCNA silence today</div>" if silence else ""}
           <div style="margin-bottom:10px;font-size:13px;color:#333;">{kim_line}</div>
           <table class="tone-table" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:10px;">
@@ -403,7 +440,9 @@ def render(digest: dict) -> str:
             </tr>
           </table>
           {"<div style='margin-bottom:6px;font-size:12px;color:#C0392B;font-weight:600;'>&#8644; " + tone_shift + "</div>" if tone_shift else ""}
-          <p style="margin:0;font-size:12px;line-height:1.5;color:#333;">{delta_note}</p>
+          {doctrinal_html}
+          <p style="margin:0;font-size:12px;line-height:1.5;color:#333;">{bottom_line}</p>
+          {quotes_html}
           {prop_html}
           {phrases_html}
           {omissions_html}
@@ -417,14 +456,14 @@ def render(digest: dict) -> str:
         gov_html = ""
         for item in rok_gov:
             ministry = _esc(item.get("ministry", ""))
+            official = _esc(item.get("official", ""))
             action = _esc(item.get("action", ""))
             detail = _esc(item.get("detail", ""))
-            url = item.get("url", "")
-            link = f' <a href="{url}" style="font-size:11px;color:#2980B9;">&#8594;</a>' if url else ""
+            official_line = f' <span style="font-size:11px;color:#555;font-weight:400;">— {official}</span>' if official else ""
             gov_html += f"""
             <div style="margin-bottom:8px;padding-left:12px;border-left:3px solid #2980B9;">
               <div style="font-size:11px;color:#2980B9;font-weight:600;text-transform:uppercase;">{ministry}</div>
-              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">{action}{link}</div>
+              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">{action}{official_line}</div>
               <div style="font-size:12px;line-height:1.4;color:#555;">{detail}</div>
             </div>"""
         sections.append(f"""
@@ -442,12 +481,10 @@ def render(digest: dict) -> str:
             committee = _esc(item.get("committee", ""))
             action = _esc(item.get("action", ""))
             detail = _esc(item.get("detail", ""))
-            url = item.get("url", "")
-            link = f' <a href="{url}" style="font-size:11px;color:#2980B9;">&#8594;</a>' if url else ""
             asm_html += f"""
             <div style="margin-bottom:8px;padding-left:12px;border-left:3px solid #7F8C8D;">
               <div style="font-size:11px;color:#7F8C8D;font-weight:600;text-transform:uppercase;">{committee}</div>
-              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">{action}{link}</div>
+              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">{action}</div>
               <div style="font-size:12px;line-height:1.4;color:#555;">{detail}</div>
             </div>"""
         sections.append(f"""

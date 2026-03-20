@@ -12,19 +12,33 @@
     "usd_krw": {"value": "1,342.50", "change_pct": 0.3}
   },
   "watch_today": [
-    {"headline": "ROK National Assembly impeachment vote", "detail": "Defense minister impeachment motion expected within 72 hours.", "type": "deadline"},
-    {"headline": "Cheonan sinking anniversary (Mar 26)", "detail": "16th anniversary of ROKS Cheonan sinking. Heightened NLL monitoring expected.", "type": "anniversary"}
+    {
+      "headline": "ROK National Assembly impeachment vote",
+      "detail": "Defense minister impeachment motion expected within 72 hours. Democratic Party holds sufficient votes but PPP defections would signal bipartisan consensus.",
+      "type": "deadline",
+      "time": "TBD — expected by Mar 22 KST",
+      "urgency": "critical",
+      "decision_point": "Watch for PPP defections — 3+ would signal bipartisan consensus and could accelerate timeline."
+    },
+    {
+      "headline": "Cheonan sinking anniversary (Mar 26)",
+      "detail": "16th anniversary of ROKS Cheonan sinking. Heightened NLL monitoring expected. DPRK has historically used anniversaries for provocative actions.",
+      "type": "anniversary",
+      "time": "Mar 26",
+      "urgency": "high",
+      "decision_point": "Monitor NLL naval posture and KCNA rhetoric — any deviation from standard anniversary propaganda could signal escalation."
+    }
   ],
   "key_stat": {
     "number": "$2.3B",
     "label": "Samsung SDI investment in new Indiana EV battery plant",
-    "context": "Second US plant signals deepening ROK\u2013US industrial integration amid supply chain decoupling from China.",
+    "context": "Second US plant signals deepening ROK–US industrial integration amid supply chain decoupling from China.",
     "source": "Korea Herald"
   },
   "on_this_day": [
     {"date": "March 26, 2010", "event": "ROKS Cheonan sunk by North Korean torpedo, killing 46 sailors.", "relevance": "Anniversary falls during heightened NLL tensions and ROK Navy live-fire drills near Baengnyeong."}
   ],
-  "editor_note": "The convergence of a credible NK\u2013Russia munitions transfer via Rajin and Seoul's political paralysis over the defense minister impeachment is the dominant signal. Pyongyang has historically exploited ROK domestic crises to advance provocative programs. The 72-hour window ahead warrants close monitoring of Sohae and Tonghae.",
+  "editor_note": "The convergence of a credible NK–Russia munitions transfer via Rajin and Seoul's political paralysis over the defense minister impeachment is the dominant signal. Pyongyang has historically exploited ROK domestic crises to advance provocative programs. The 72-hour window ahead warrants close monitoring of Sohae and Tonghae.",
   "bp_locations": [
     {"name": "Yongbyon Nuclear Complex", "status": "normal", "note": "No new activity detected"},
     {"name": "Sohae Satellite Launch Station", "status": "activity", "note": "Vehicle movement detected near launch pad"},
@@ -33,23 +47,23 @@
     {"name": "Sunan Airfield/Missile Complex", "status": "normal", "note": "Routine traffic"},
     {"name": "Vostochny/Dunai", "status": "activity", "note": "NK labor teams reported at port construction site"},
     {"name": "Rason SEZ", "status": "elevated", "note": "Rajin port loading activity consistent with munitions transfers"},
-    {"name": "Tumangang\u2013Khasan", "status": "activity", "note": "Rail traffic elevated; consistent with cargo transfers"},
-    {"name": "Sinuiju\u2013Dandong", "status": "normal", "note": "Standard cross-border trade volume"},
+    {"name": "Tumangang–Khasan", "status": "activity", "note": "Rail traffic elevated; consistent with cargo transfers"},
+    {"name": "Sinuiju–Dandong", "status": "normal", "note": "Standard cross-border trade volume"},
     {"name": "Yellow Sea NLL/PMZ", "status": "normal", "note": "No unusual naval posture"}
   ],
   "rok_government": [
-    {"ministry": "Ministry of National Defense", "action": "Emergency NSC meeting convened on NK–Russia arms report", "detail": "Defense Minister Kim convened an emergency NSC standing committee session to assess intelligence on NK munitions shipments to Russia via Rajin port. Joint Chiefs placed ROK military on enhanced monitoring posture.", "url": "#"},
-    {"ministry": "Ministry of Foreign Affairs", "action": "ROK–US–Japan trilateral call on extended deterrence", "detail": "FM Cho held a trilateral video call with US Secretary of State and Japan FM to discuss coordinated response options. Joint statement expected by Friday.", "url": "#"},
-    {"ministry": "Ministry of Unification", "action": "Annual inter-Korean relations assessment released", "detail": "MOU published its 2026 assessment characterizing inter-Korean relations as 'structurally frozen' with no near-term pathway to dialogue. Report flags DPRK constitutional changes removing unification language.", "url": "#"},
-    {"ministry": "National Intelligence Service", "action": "NIS briefs National Assembly on DPRK sanctions evasion", "detail": "Closed-door briefing to intelligence committee on new DPRK cryptocurrency laundering networks and ship-to-ship oil transfers in the East China Sea.", "url": "#"}
+    {"ministry": "Ministry of National Defense", "official": "DM Kim Yong-hyun", "action": "Emergency NSC meeting convened on NK–Russia arms report", "detail": "Defense Minister Kim convened an emergency NSC standing committee session to assess intelligence on NK munitions shipments to Russia via Rajin port. Joint Chiefs placed ROK military on enhanced monitoring posture."},
+    {"ministry": "Ministry of Foreign Affairs", "official": "FM Cho Tae-yul", "action": "ROK–US–Japan trilateral call on extended deterrence", "detail": "FM Cho held a trilateral video call with US Secretary of State and Japan FM to discuss coordinated response options. Joint statement expected by Friday."},
+    {"ministry": "Ministry of Unification", "official": "Minister Kim Young-ho", "action": "Annual inter-Korean relations assessment released", "detail": "MOU published its 2026 assessment characterizing inter-Korean relations as 'structurally frozen' with no near-term pathway to dialogue. Report flags DPRK constitutional changes removing unification language."},
+    {"ministry": "National Intelligence Service", "official": "Director Cho Tae-yong", "action": "NIS briefs National Assembly on DPRK sanctions evasion", "detail": "Closed-door briefing to intelligence committee on new DPRK cryptocurrency laundering networks and ship-to-ship oil transfers in the East China Sea."}
   ],
   "kcna_delta": {
     "kim_appearance_today": false,
     "kim_activity": null,
     "days_since_last_appearance": 3,
     "senior_officials": [
-      {"name": "Choe Son Hui", "activity": "Met with Russian Deputy FM Ryabkov in Pyongyang"},
-      {"name": "Kim Yo Jong", "activity": "No public appearance or statement"}
+      {"name": "Choe Son Hui", "role": "Foreign Minister", "activity": "Met with Russian Deputy FM Ryabkov in Pyongyang", "significance": "Highest-level NK-Russia diplomatic contact this month — likely coordinating response to UN sanctions push."},
+      {"name": "Kim Yo Jong", "role": "Vice Department Director, WPK", "activity": "No public appearance or statement", "significance": "Silence during a period of active ROK political crisis is atypical — she has historically issued statements exploiting ROK instability."}
     ],
     "us_tone": "Hostile",
     "rok_tone": "Elevated",
@@ -59,16 +73,22 @@
     "propaganda_focus": ["sacred nuclear deterrent", "anti-US imperialism", "self-reliance economy"],
     "notable_omissions": "No mention of inter-Korean relations for 5th consecutive day",
     "key_phrase_changes": ["sacred nuclear deterrent force", "eternal comrade-in-arms"],
+    "doctrinal_shift": "'Sacred nuclear deterrent force' replaces standard 'treasured sword of justice' formulation. This linguistic upgrade historically precedes capability announcements — the 2017 shift to 'state nuclear force' preceded the Hwasong-15 ICBM test by 3 months.",
+    "key_quotes": [
+      {"quote": "The sacred nuclear deterrent force of the DPRK serves as the absolute guarantee for the sovereignty and security of the state.", "source_article": "Rodong Sinmun Editorial — March 20", "significance": "First use of 'sacred nuclear deterrent force' — elevates nuclear program from military tool to quasi-religious national mandate."},
+      {"quote": "The DPRK-Russia friendship, forged in the flames of anti-imperialist struggle, has entered a new era as an eternal comrade-in-arms relationship.", "source_article": "KCNA Commentary — March 20", "significance": "Upgrade from 'strategic partner' to 'eternal comrade-in-arms' mirrors Soviet-era alliance language not used since the 1980s."}
+    ],
+    "output_volume": "Heavy — 21 articles (avg: 15)",
     "silence_today": false,
-    "delta_note": "Kim absent 3 days. Russia coverage escalated from 'strategic partner' to 'eternal comrade-in-arms' — may signal deepening military-technical cooperation.",
-    "watch_flag": false
+    "watch_flag": false,
+    "bottom_line": "The single most important signal is the doctrinal language shift: 'sacred nuclear deterrent force' is a novel formulation that historically precedes hardware developments by 12-18 months. Combined with the Russia rhetoric escalation to 'eternal comrade-in-arms' and confirmed Rajin port activity, KCNA is messaging alignment between diplomatic positioning and military action. Watch for Kim reappearance — if his next public event is a weapons inspection, this rhetorical escalation was likely coordinated."
   },
   "overnight_items": [
-    {"category": "NK-Russia", "headline": "Satellite imagery shows munitions loading at Rajin port bound for Vladivostok", "body_text": "Commercial satellite imagery from March 19 shows container loading activity at Rajin port consistent with previous munitions transfers to Russia. At least 12 containers were loaded onto a vessel previously flagged by UN Panel of Experts.", "source": "NK News", "url": "#"},
-    {"category": "ROK Policy", "headline": "Opposition files impeachment motion against Defense Minister Kim", "body_text": "The Democratic Party of Korea formally submitted an impeachment motion against Defense Minister Kim Yong-hyun, citing unauthorized intelligence sharing with Japan. Vote expected within 72 hours.", "source": "Yonhap", "url": "#"},
-    {"category": "US-Korea", "headline": "Pentagon announces additional Patriot battery deployment to Korean Peninsula", "body_text": "DoD confirmed the forward deployment of an additional Patriot PAC-3 battery to the Korean Peninsula amid heightened concerns over DPRK missile testing tempo. The deployment is characterized as 'routine rotation enhancement.'", "source": "Stars and Stripes", "url": "#"},
-    {"category": "DPRK", "headline": "KCNA promotes new 'sacred nuclear deterrent' language in editorial", "body_text": "Rodong Sinmun editorial introduces 'sacred nuclear deterrent force' terminology, departing from standard 'treasured sword' formulation. Language shift may indicate doctrinal evolution.", "source": "KCNA Watch", "url": "#"},
-    {"category": "Security", "headline": "Japan extends North Korea sanctions for additional two years", "body_text": "Tokyo extended unilateral sanctions on North Korea through March 2028, adding 15 entities linked to DPRK weapons procurement networks operating through Southeast Asian front companies.", "source": "Nikkei Asia", "url": "#"}
+    {"category": "NK-Russia", "headline": "Satellite imagery shows munitions loading at Rajin port bound for Vladivostok", "body_text": "Commercial satellite imagery from March 19 shows container loading activity at Rajin port consistent with previous munitions transfers to Russia. At least 12 containers were loaded onto a vessel previously flagged by UN Panel of Experts.", "source": "NK News", "url": "https://www.nknews.org/2026/03/satellite-imagery-shows-munitions-loading-at-rajin-port/"},
+    {"category": "ROK Policy", "headline": "Opposition files impeachment motion against Defense Minister Kim", "body_text": "The Democratic Party of Korea formally submitted an impeachment motion against Defense Minister Kim Yong-hyun, citing unauthorized intelligence sharing with Japan. Vote expected within 72 hours.", "source": "Yonhap", "url": "https://en.yna.co.kr/view/AEN20260320001200315"},
+    {"category": "US-Korea", "headline": "Pentagon announces additional Patriot battery deployment to Korean Peninsula", "body_text": "DoD confirmed the forward deployment of an additional Patriot PAC-3 battery to the Korean Peninsula amid heightened concerns over DPRK missile testing tempo. The deployment is characterized as 'routine rotation enhancement.'", "source": "Stars and Stripes", "url": "https://www.stripes.com/theaters/asia_pacific/2026-03-20/patriot-battery-korea-deployment/"},
+    {"category": "DPRK", "headline": "KCNA promotes new 'sacred nuclear deterrent' language in editorial", "body_text": "Rodong Sinmun editorial introduces 'sacred nuclear deterrent force' terminology, departing from standard 'treasured sword' formulation. Language shift may indicate doctrinal evolution.", "source": "KCNA Watch", "url": "https://kcnawatch.org/newstream/1710892800/rodong-sinmun-editorial-march-20/"},
+    {"category": "Security", "headline": "Japan extends North Korea sanctions for additional two years", "body_text": "Tokyo extended unilateral sanctions on North Korea through March 2028, adding 15 entities linked to DPRK weapons procurement networks operating through Southeast Asian front companies.", "source": "Nikkei Asia", "url": "https://asia.nikkei.com/Politics/International-relations/North-Korea/Japan-extends-sanctions-on-North-Korea-for-two-more-years"}
   ],
   "top_stories": [
     {
@@ -79,7 +99,7 @@
       "so_what": "This transfer, if confirmed, would validate the intelligence community assessment that the NK–Russia arms pipeline has become routinized rather than episodic. It creates immediate pressure for additional UNSC sanctions discussion and could accelerate the US–ROK–Japan trilateral deterrence consultation timeline.",
       "pattern_note": "Mirrors the September 2024 Rajin transfers that preceded the NK–Russia mutual defense treaty signing. Previous transfers at this tempo preceded DPRK provocative actions within 30–60 days.",
       "src_line": "Sources: NK News Mar 20 · 38 North Mar 19 · Reuters Mar 20",
-      "url": "#"
+      "url": "https://www.nknews.org/2026/03/satellite-imagery-shows-munitions-loading-at-rajin-port/"
     },
     {
       "category_tag": "ROK Policy",
@@ -89,7 +109,7 @@
       "so_what": "A successful impeachment would paralyze ROK defense decision-making during a period of elevated DPRK threat activity and could complicate US–ROK operational planning for the spring Ulchi Freedom Shield exercises.",
       "pattern_note": "The 2004 impeachment of President Roh and the 2016 Park impeachment both created 60–90 day windows where DPRK conducted provocative tests. A defense minister impeachment is unprecedented but could create similar paralysis.",
       "src_line": "Sources: Yonhap Mar 20 · Korea Herald Mar 20 · Chosun Ilbo Mar 20",
-      "url": "#"
+      "url": "https://en.yna.co.kr/view/AEN20260320001200315"
     },
     {
       "category_tag": "US-Korea",
@@ -98,22 +118,22 @@
       "body": "The Pentagon's announcement of an additional Patriot PAC-3 battery deployment to the Korean Peninsula comes amid intelligence assessments of increased activity at DPRK missile assembly facilities. While characterized as 'routine,' the deployment brings the total PAC-3 presence to the highest level since 2017. USFK Commander General Paul LaCamera reportedly requested the additional battery in January.",
       "so_what": "The elevated missile defense posture signals US concern about near-term DPRK launch activity and strengthens the case for extended deterrence credibility discussions at the upcoming US–ROK 2+2 ministerial.",
       "src_line": "Sources: Stars and Stripes Mar 20 · DoD Mar 19",
-      "url": "#"
+      "url": "https://www.stripes.com/theaters/asia_pacific/2026-03-20/patriot-battery-korea-deployment/"
     }
   ],
   "rok_assembly": [
-    {"committee": "National Defense Committee", "action": "Hearing on unauthorized intelligence sharing with Japan", "detail": "Opposition lawmakers grilled Defense Minister Kim Yong-hyun over alleged unauthorized sharing of DPRK satellite imagery with Japanese counterparts. PPP members walked out after 2 hours.", "url": "#"},
-    {"committee": "Foreign Affairs & Unification", "action": "Resolution on NK-Russia arms transfers", "detail": "Bipartisan resolution condemning DPRK-Russia military cooperation passed committee unanimously. Calls on government to coordinate response with EU partners.", "url": "#"}
+    {"committee": "National Defense Committee", "action": "Hearing on unauthorized intelligence sharing with Japan", "detail": "Opposition lawmakers grilled Defense Minister Kim Yong-hyun over alleged unauthorized sharing of DPRK satellite imagery with Japanese counterparts. PPP members walked out after 2 hours."},
+    {"committee": "Foreign Affairs & Unification", "action": "Resolution on NK-Russia arms transfers", "detail": "Bipartisan resolution condemning DPRK-Russia military cooperation passed committee unanimously. Calls on government to coordinate response with EU partners."}
   ],
   "also_today": [
-    {"category": "Business", "headline": "Samsung SDI to build $2.3B EV battery plant in Indiana", "body_text": "Samsung SDI announced a $2.3 billion investment in a new EV battery manufacturing facility in Kokomo, Indiana, its second US plant. Production begins 2028.", "source": "Korea Herald", "url": "#", "color_bar_class": "cb-biz"},
-    {"category": "DPRK", "headline": "WFP reports DPRK rejected food aid shipment at Nampo port", "body_text": "World Food Programme confirms North Korea turned away a grain shipment at Nampo, the third rejection this year. WFP estimates 40% of DPRK population faces food insecurity.", "source": "Reuters", "url": "#", "color_bar_class": "cb-red"},
-    {"category": "Security", "headline": "ROK Navy conducts live-fire drill near Northern Limit Line", "body_text": "The ROK Navy's Second Fleet conducted a live-fire exercise near Baengnyeong Island, the first such drill in the area since DPRK's abrogation of the inter-Korean military agreement.", "source": "Yonhap", "url": "#", "color_bar_class": "cb-navy"},
-    {"category": "Technology", "headline": "SK Hynix reports record HBM3E chip orders from US AI firms", "body_text": "SK Hynix announced record quarterly orders for its HBM3E memory chips, driven by demand from US hyperscalers. The company now holds 53% of the global HBM market.", "source": "Nikkei Asia", "url": "#", "color_bar_class": "cb-tech"},
-    {"category": "Energy", "headline": "ROK–UAE nuclear cooperation agreement signed for Barakah expansion", "body_text": "Korea Hydro & Nuclear Power signed a framework agreement with Emirates Nuclear Energy Corporation for potential construction of Units 5-6 at the Barakah plant.", "source": "Korea Times", "url": "#", "color_bar_class": "cb-tech"}
+    {"category": "Business", "headline": "Samsung SDI to build $2.3B EV battery plant in Indiana", "body_text": "Samsung SDI announced a $2.3 billion investment in a new EV battery manufacturing facility in Kokomo, Indiana, its second US plant. Production begins 2028.", "source": "Korea Herald", "url": "https://www.koreaherald.com/view.php?ud=20260320000456", "color_bar_class": "cb-biz"},
+    {"category": "DPRK", "headline": "WFP reports DPRK rejected food aid shipment at Nampo port", "body_text": "World Food Programme confirms North Korea turned away a grain shipment at Nampo, the third rejection this year. WFP estimates 40% of DPRK population faces food insecurity.", "source": "Reuters", "url": "https://www.reuters.com/world/asia-pacific/north-korea-rejects-wfp-food-aid-shipment-2026-03-20/", "color_bar_class": "cb-red"},
+    {"category": "Security", "headline": "ROK Navy conducts live-fire drill near Northern Limit Line", "body_text": "The ROK Navy's Second Fleet conducted a live-fire exercise near Baengnyeong Island, the first such drill in the area since DPRK's abrogation of the inter-Korean military agreement.", "source": "Yonhap", "url": "https://en.yna.co.kr/view/AEN20260320003500325", "color_bar_class": "cb-navy"},
+    {"category": "Technology", "headline": "SK Hynix reports record HBM3E chip orders from US AI firms", "body_text": "SK Hynix announced record quarterly orders for its HBM3E memory chips, driven by demand from US hyperscalers. The company now holds 53% of the global HBM market.", "source": "Nikkei Asia", "url": "https://asia.nikkei.com/Business/Tech/SK-Hynix-reports-record-HBM3E-chip-orders", "color_bar_class": "cb-tech"},
+    {"category": "Energy", "headline": "ROK–UAE nuclear cooperation agreement signed for Barakah expansion", "body_text": "Korea Hydro & Nuclear Power signed a framework agreement with Emirates Nuclear Energy Corporation for potential construction of Units 5-6 at the Barakah plant.", "source": "Korea Times", "url": "https://www.koreatimes.co.kr/www/nation/2026/03/120_371234.html", "color_bar_class": "cb-tech"}
   ],
   "us_korea_deals": {
-    "tariff_snapshot": "25% on steel/aluminum \u00b7 10% baseline \u00b7 25% auto tariff (paused through June)",
+    "tariff_snapshot": "25% on steel/aluminum · 10% baseline · 25% auto tariff (paused through June)",
     "investment_package": {
       "total_pledged": "$350B",
       "announced_to_date": "$87.5B",
@@ -121,23 +141,23 @@
       "latest_update": "Samsung SDI Indiana plant adds $2.3B to cumulative total"
     },
     "deals": [
-      {"headline": "Samsung SDI to build $2.3B EV battery plant in Indiana", "value": "$2.3B", "sector": "manufacturing", "parties": "Samsung SDI \u2192 Kokomo, Indiana (2nd US plant)", "detail": "Deepens ROK-US industrial integration in EV supply chain amid decoupling from China.", "source": "Korea Herald", "url": "#"},
-      {"headline": "ROK\u2013UAE nuclear cooperation agreement for Barakah expansion", "value": null, "sector": "energy", "parties": "Korea Hydro & Nuclear Power \u2194 Emirates Nuclear Energy Corp", "detail": "Framework for potential Units 5-6 at Barakah; strengthens ROK nuclear export portfolio.", "source": "Korea Times", "url": "#"}
+      {"headline": "Samsung SDI to build $2.3B EV battery plant in Indiana", "value": "$2.3B", "sector": "manufacturing", "parties": "Samsung SDI → Kokomo, Indiana (2nd US plant)", "detail": "Deepens ROK-US industrial integration in EV supply chain amid decoupling from China.", "source": "Korea Herald", "url": "https://www.koreaherald.com/view.php?ud=20260320000456"},
+      {"headline": "ROK–UAE nuclear cooperation agreement for Barakah expansion", "value": null, "sector": "energy", "parties": "Korea Hydro & Nuclear Power ↔ Emirates Nuclear Energy Corp", "detail": "Framework for potential Units 5-6 at Barakah; strengthens ROK nuclear export portfolio.", "source": "Korea Times", "url": "https://www.koreatimes.co.kr/www/nation/2026/03/120_371234.html"}
     ]
   },
   "social_statements": [
-    {"avatar_initials": "LJ", "who": "Lee Jae Myung", "handle_context": "ROK Opposition Leader · Democratic Party", "platform_date": "Yonhap · Mar 20", "quote_text": "The defense minister's unauthorized intelligence sharing with Japan is a direct violation of protocol. We will proceed with the impeachment vote.", "analyst_note": "Lee is positioning the impeachment as a national security issue, not partisan — watch for PPP defections.", "badge_class": "sb-p"},
-    {"avatar_initials": "KY", "who": "Kim Yong-hyun", "handle_context": "ROK Minister of National Defense", "platform_date": "MND Briefing · Mar 20", "quote_text": "We have placed all forces on enhanced monitoring posture in response to confirmed activity at Rajin port.", "analyst_note": "First official ROK acknowledgment of the Rajin munitions loading — escalates from intelligence to policy.", "badge_class": "sb-r"},
-    {"avatar_initials": "MS", "who": "Matthew Miller", "handle_context": "US State Dept Spokesperson", "platform_date": "State Dept · Mar 20", "quote_text": "We are deeply concerned by reports of continued arms transfers between the DPRK and Russia in direct violation of multiple UN Security Council resolutions.", "analyst_note": "Standard language but notable for speed of response — issued within hours of satellite imagery publication.", "badge_class": "sb-p"}
+    {"avatar_initials": "LJ", "who": "Lee Jae Myung", "handle_context": "ROK Opposition Leader · Democratic Party", "platform_date": "Yonhap · Mar 20", "quote_text": "The defense minister's unauthorized intelligence sharing with Japan is a direct violation of protocol. We will proceed with the impeachment vote.", "analyst_note": "Lee is positioning the impeachment as a national security issue, not partisan — watch for PPP defections.", "badge_class": "sb-p", "url": "https://en.yna.co.kr/view/AEN20260320004500315"},
+    {"avatar_initials": "KY", "who": "Kim Yong-hyun", "handle_context": "ROK Minister of National Defense", "platform_date": "MND Briefing · Mar 20", "quote_text": "We have placed all forces on enhanced monitoring posture in response to confirmed activity at Rajin port.", "analyst_note": "First official ROK acknowledgment of the Rajin munitions loading — escalates from intelligence to policy.", "badge_class": "sb-r", "url": "https://www.mnd.go.kr/cop/pressRelease/pressRelease.do?id=press_0320_01"},
+    {"avatar_initials": "MS", "who": "Matthew Miller", "handle_context": "US State Dept Spokesperson", "platform_date": "State Dept · Mar 20", "quote_text": "We are deeply concerned by reports of continued arms transfers between the DPRK and Russia in direct violation of multiple UN Security Council resolutions.", "analyst_note": "Standard language but notable for speed of response — issued within hours of satellite imagery publication.", "badge_class": "sb-p", "url": "https://www.state.gov/briefings/department-press-briefing-march-20-2026/"}
   ],
   "opeds_today": [
-    {"source": "Foreign Affairs", "prestige_tier": "A", "central_argument": "The NK–Russia axis has evolved beyond a transactional arms-for-tech relationship into a structural military alliance", "summary": "The piece argues that Western analysts have underestimated the durability and depth of NK–Russia cooperation, which now encompasses military technology transfer, intelligence sharing, and coordinated diplomatic positioning. The authors call for a fundamental reassessment of deterrence posture.", "policy_so_what": "Directly relevant to the CSIS NK–Russia Axis Cambridge Elements project and supports the structural alliance thesis.", "url": "#"},
-    {"source": "Brookings", "prestige_tier": "A", "central_argument": "ROK political instability threatens the trilateral US–ROK–Japan security architecture", "summary": "Argues that recurring ROK domestic political crises create predictable windows of allied vulnerability that adversaries exploit. Recommends institutionalizing trilateral mechanisms to reduce dependence on any single government's stability.", "policy_so_what": "Timely given the defense minister impeachment motion — suggests structural solutions to a recurring problem.", "url": "#"}
+    {"source": "Foreign Affairs", "prestige_tier": "A", "central_argument": "The NK–Russia axis has evolved beyond a transactional arms-for-tech relationship into a structural military alliance", "summary": "The piece argues that Western analysts have underestimated the durability and depth of NK–Russia cooperation, which now encompasses military technology transfer, intelligence sharing, and coordinated diplomatic positioning. The authors call for a fundamental reassessment of deterrence posture.", "policy_so_what": "Directly relevant to the CSIS NK–Russia Axis Cambridge Elements project and supports the structural alliance thesis.", "url": "https://www.foreignaffairs.com/north-korea/russia-axis-structural-alliance"},
+    {"source": "Brookings", "prestige_tier": "A", "central_argument": "ROK political instability threatens the trilateral US–ROK–Japan security architecture", "summary": "Argues that recurring ROK domestic political crises create predictable windows of allied vulnerability that adversaries exploit. Recommends institutionalizing trilateral mechanisms to reduce dependence on any single government's stability.", "policy_so_what": "Timely given the defense minister impeachment motion — suggests structural solutions to a recurring problem.", "url": "https://www.brookings.edu/articles/rok-political-instability-trilateral-architecture/"}
   ],
   "academic_today": [
-    {"source": "International Security", "journal_tier": "A+", "summary": "Examines how North Korea's nuclear doctrine has evolved from ambiguity to explicit first-use postures, drawing on KCNA textual analysis from 2019–2025. Finds that doctrinal shifts precede hardware developments by 12–18 months, suggesting current rhetoric may signal new capabilities in development.", "policy_implication": "The 'sacred nuclear deterrent force' language detected today may be an early indicator of doctrinal shift worth tracking against this framework.", "url": "#"},
-    {"source": "Asian Survey", "journal_tier": "A", "summary": "Analyzes the political economy of inter-Korean trade collapse post-2020, using newly available ROK customs data. Finds that informal cross-border trade networks have persisted despite official sanctions, primarily through Chinese intermediaries.", "policy_implication": "Challenges the assumption that economic leverage on DPRK has been fully exhausted — informal channels remain a potential pressure point.", "url": "#"}
+    {"source": "International Security", "journal_tier": "A+", "summary": "Examines how North Korea's nuclear doctrine has evolved from ambiguity to explicit first-use postures, drawing on KCNA textual analysis from 2019–2025. Finds that doctrinal shifts precede hardware developments by 12–18 months, suggesting current rhetoric may signal new capabilities in development.", "policy_implication": "The 'sacred nuclear deterrent force' language detected today may be an early indicator of doctrinal shift worth tracking against this framework.", "url": "https://direct.mit.edu/isec/article/50/4/north-korea-nuclear-doctrine-evolution"},
+    {"source": "Asian Survey", "journal_tier": "A", "summary": "Analyzes the political economy of inter-Korean trade collapse post-2020, using newly available ROK customs data. Finds that informal cross-border trade networks have persisted despite official sanctions, primarily through Chinese intermediaries.", "policy_implication": "Challenges the assumption that economic leverage on DPRK has been fully exhausted — informal channels remain a potential pressure point.", "url": "https://online.ucpress.edu/as/article/66/2/inter-korean-trade-collapse"}
   ],
-  "timeline_candidates": ["#"],
+  "timeline_candidates": ["https://www.nknews.org/2026/03/satellite-imagery-shows-munitions-loading-at-rajin-port/"],
   "friday_memo": null
 }
