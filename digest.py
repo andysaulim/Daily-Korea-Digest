@@ -51,7 +51,6 @@ def build_user_prompt(payload: dict, date_str: str) -> str:
             "prestige":    a.get("prestige"),
             "journal_tier": a.get("journal_tier"),
         } for a in trimmed], ensure_ascii=False, indent=1)
-    is_friday = datetime.now(timezone.utc).weekday() == 4
     return f"""Today's date: {date_str}
 Process each tier according to its instructions and return a single JSON object.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -125,7 +124,10 @@ Return a digest object with:
 - tension_score: 1-10 for today, considering all tiers
 - re_line: one-line RE: summary for the cable header (max 120 chars, key themes separated by ·)
 - watch_flag: true if tension >= 7 or kcna_delta.watch_flag is true
+- market_indicators: object with kospi (value, change_pct), brent (value, change_pct), usd_krw (value, change_pct). Extract from news articles if mentioned; use approximate values from financial news. If no market data found, use null for the whole object.
 - editor_note: 3-4 sentences synthesizing the dominant analytical theme across ALL tiers today. Not a list of stories — an observation about what the collective signal means for Korea policy. Written in Libre Baskerville italic voice (senior analyst, not journalist).
+- bp_locations: array of 6 monitored DPRK facility objects. For EACH of these locations, assess status from today's articles: Yongbyon Nuclear Complex, Sohae Satellite Launch Station, Punggye-ri Nuclear Test Site, Sinpo South Shipyard, Sunan Airfield/Missile Complex, Kaesong Industrial Complex. Each object: name, status (normal/activity/elevated/alert), note (1 sentence — what was detected or "No change"). Base status on any satellite imagery reports, military activity mentions, or relevant news. Default to "normal" if no information.
+- rok_government: array of ROK government ministry/agency actions from today's news. Include any actions by: Blue House/Presidential Office, Ministry of National Defense, Ministry of Foreign Affairs, Ministry of Unification, National Intelligence Service, Joint Chiefs of Staff, or other ROK agencies. Each: ministry, action (1 line headline), detail (2-3 sentences), url (from source article or null). Include only substantive policy actions, not routine.
 - overnight_items: 5-7 highest-priority items for the overnight flash section, each with: url, source, category, headline (crisp, under 100 chars), body_text (2-3 sentences, factual)
 - top_stories: 3-4 highest-scored Tier 1 articles (score >= 7) with full treatment: url, source, category_tag, signal_type, headline, body (3-4 sentences), so_what (2 sentences), pattern_note (if applicable), src_line (e.g. "Sources: WaPo Mar 18 · Korea Herald Mar 18")
 - also_today: remaining Tier 1 articles score >= 5, each with: url, source, category, headline, body_text (2 sentences), color_bar_class (cb-navy/cb-red/cb-lt/cb-mid/cb-nkch/cb-tech/cb-biz)
@@ -138,7 +140,6 @@ Return a digest object with:
 - story_count: total Tier 1 articles processed
 - oped_count: qualifying Tier 2 pieces count
 - academic_count: qualifying Tier 3 pieces count
-{f'- friday_memo: A 400-word analytical memo identifying (1) the dominant thread of the week, (2) 2-3 anomalies or patterns worth continued watching, (3) 1 question the team should answer by next Friday. Written as a senior policy analyst, not a journalist.' if is_friday else '- friday_memo: null'}
 Return ONLY valid JSON. No markdown fences, no preamble."""
 # ─────────────────────────────────────────────────────────────────────────────
 # MAIN DIGEST FUNCTION
@@ -152,7 +153,7 @@ def generate_digest(payload: dict) -> dict:
     print(f"\n🤖  Generating digest ({total_articles} articles → Claude)...")
     response = client.messages.create(
         model="claude-sonnet-4-20250514",
-        max_tokens=8000,
+        max_tokens=12000,
         system=SYSTEM_PROMPT,
         messages=[{"role": "user", "content": user_prompt}]
     )
