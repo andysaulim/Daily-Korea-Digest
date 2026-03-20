@@ -30,7 +30,8 @@
     {"name": "Punggye-ri Nuclear Test Site", "status": "normal", "note": "Consistent with maintenance posture"},
     {"name": "Sinpo South Shipyard", "status": "elevated", "note": "SLBM barge repositioned; possible test prep"},
     {"name": "Sunan Airfield/Missile Complex", "status": "normal", "note": "Routine traffic"},
-    {"name": "Kaesong Industrial Complex", "status": "normal", "note": "No change"},
+    {"name": "Vostochny/Dunai", "status": "activity", "note": "NK labor teams reported at port construction site"},
+    {"name": "Rason SEZ", "status": "elevated", "note": "Rajin port loading activity consistent with munitions transfers"},
     {"name": "Tumangang\u2013Khasan", "status": "activity", "note": "Rail traffic elevated; consistent with cargo transfers"},
     {"name": "Sinuiju\u2013Dandong", "status": "normal", "note": "Standard cross-border trade volume"},
     {"name": "Yellow Sea NLL/PMZ", "status": "normal", "note": "No unusual naval posture"}
