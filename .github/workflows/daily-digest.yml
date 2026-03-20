@@ -2,9 +2,8 @@ name: Daily Korea News Digest
 
 on:
   schedule:
-    # 5:00 AM ET = 10:00 AM UTC (EST) / 9:00 AM UTC (EDT)
-    # Using 9 AM UTC to cover EDT (summer time)
-    - cron: '0 9 * * *'
+    # 6:00 AM ET = 11:00 AM UTC (EST) / 10:00 AM UTC (EDT)
+    - cron: '0 10 * * *'
   workflow_dispatch: # Allow manual trigger
 
 jobs:
