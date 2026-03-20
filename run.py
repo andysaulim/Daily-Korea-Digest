@@ -31,7 +31,7 @@ def main():
     if args.from_cache and Path("collected.json").exists():
         print("\n📦  Using cached collection (collected.json)")
         payload = json.loads(Path("collected.json").read_text())
-        total = sum(len(v) for v in payload.values())
+        total = sum(len(v) for v in payload.values() if isinstance(v, list))
         print(f"  {total} articles loaded from cache")
     else:
         from collect import collect
@@ -64,7 +64,8 @@ def main():
         print("\n  --no-send: skipping email. Open latest.html to review.")
     else:
         from send_email import send
-        send(html)
+        re_line = digest_data.get("re_line")
+        send(html, re_line=re_line)
 
     print("\n✅  Done.\n")
 
