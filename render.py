@@ -558,14 +558,13 @@ def render(digest: dict) -> str:
         items_html = ""
         for op in opeds:
             src = _esc(op.get("source", ""))
-            tier = _esc(op.get("prestige_tier", ""))
             arg = _esc(op.get("central_argument", ""))
             summary = _esc(op.get("summary", ""))
             so_what = _esc(op.get("policy_so_what", ""))
             url = op.get("url", "#")
             items_html += f"""
             <div style="margin-bottom:12px;padding-left:12px;border-left:3px solid #D4AC0D;">
-              <div style="font-size:11px;color:#888;">{src} &middot; Tier {tier}</div>
+              <div style="font-size:11px;color:#888;">{src}</div>
               <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
                 <a href="{url}" style="color:#1B2A4A;text-decoration:none;">{arg}</a>
               </div>
