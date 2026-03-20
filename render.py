@@ -473,6 +473,34 @@ def render(digest: dict) -> str:
         </div>
         """)
 
+    # ── 12b. ROK Personnel Changes ─────────────────────────────────────────
+    rok_personnel = digest.get("rok_personnel") or []
+    if rok_personnel:
+        pers_html = ""
+        action_colors = {"appointed": "#27AE60", "nominated": "#2980B9", "resigned": "#E67E22", "dismissed": "#C0392B", "confirmed": "#16A085"}
+        for item in rok_personnel:
+            position = _esc(item.get("position", ""))
+            name = _esc(item.get("name", ""))
+            action = item.get("action", "appointed")
+            detail = _esc(item.get("detail", ""))
+            predecessor = _esc(item.get("predecessor", ""))
+            a_color = action_colors.get(action, "#1B2A4A")
+            action_badge = f'<span style="display:inline-block;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:600;color:#fff;background:{a_color};text-transform:uppercase;margin-left:6px;">{_esc(action)}</span>'
+            pred_line = f'<div style="font-size:11px;color:#888;margin-top:2px;">Replaces: {predecessor}</div>' if predecessor else ""
+            pers_html += f"""
+            <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid {a_color};">
+              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">{name}{action_badge}</div>
+              <div style="font-size:12px;color:#555;">{position}</div>
+              <div style="font-size:12px;line-height:1.4;color:#555;">{detail}</div>
+              {pred_line}
+            </div>"""
+        sections.append(f"""
+        <div {_SEC}>
+          <h2 {_H2("#2C3E50")}>ROK Personnel Changes</h2>
+          {pers_html}
+        </div>
+        """)
+
     # ── 13. ROK National Assembly ────────────────────────────────────────
     rok_assembly = digest.get("rok_assembly") or []
     if rok_assembly:
@@ -520,7 +548,47 @@ def render(digest: dict) -> str:
         </div>
         """)
 
-    # ── 15. US-Korea Trade & Investment Deals ───────────────────────────────
+    # ── 15. Business & Economy ─────────────────────────────────────────────
+    biz_econ = digest.get("business_economy") or []
+    if biz_econ:
+        sector_colors = {
+            "tech": "#8E44AD", "auto": "#1B2A4A", "energy": "#16A085",
+            "finance": "#D4AC0D", "manufacturing": "#2980B9",
+            "real-estate": "#E67E22", "macro": "#C0392B",
+        }
+        biz_html = ""
+        for item in biz_econ:
+            headline = _esc(item.get("headline", ""))
+            body = _esc(item.get("body_text", ""))
+            src = _esc(item.get("source", ""))
+            url = item.get("url", "")
+            sector = item.get("sector", "macro")
+            companies = item.get("companies") or []
+            bar_color = sector_colors.get(sector, "#1B2A4A")
+            company_tags = ""
+            if companies:
+                company_tags = " ".join(
+                    f'<span style="display:inline-block;padding:1px 5px;border-radius:3px;font-size:9px;background:#E8E8E8;color:#555;margin-right:3px;">{_esc(c)}</span>'
+                    for c in companies[:3]
+                )
+                company_tags = f'<div style="margin-top:3px;">{company_tags}</div>'
+            biz_html += f"""
+            <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid {bar_color};">
+              <div style="font-size:11px;color:#888;text-transform:uppercase;">{_esc(sector)} &middot; {src}</div>
+              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
+                {_link_or_text(headline, url)}
+              </div>
+              <div style="font-size:12px;line-height:1.4;color:#555;">{body}</div>
+              {company_tags}
+            </div>"""
+        sections.append(f"""
+        <div {_SEC}>
+          <h2 {_H2("#27AE60")}>Business &amp; Economy</h2>
+          {biz_html}
+        </div>
+        """)
+
+    # ── 16. US-Korea Trade & Investment Deals ───────────────────────────────
     us_korea = digest.get("us_korea_deals") or {}
     # Support both old (array) and new (object with deals/tariff/package) format
     if isinstance(us_korea, list):
