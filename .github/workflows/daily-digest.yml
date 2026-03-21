@@ -6,6 +6,10 @@ on:
     - cron: '0 10 * * *'
   workflow_dispatch: # Allow manual trigger
 
+permissions:
+  contents: write
+  pages: write
+
 jobs:
   send-digest:
     runs-on: ubuntu-latest
@@ -27,12 +31,12 @@ jobs:
           GMAIL_APP_PASS: ${{ secrets.GMAIL_APP_PASS }}
           DIGEST_TO: ${{ secrets.DIGEST_TO }}
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
-          WEB_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+          WEB_URL: https://andysaulim.github.io/Daily-Korea-News
         run: python run.py
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          personal_token: ${{ secrets.GH_PAT }}
           publish_dir: ./public
           keep_files: true
