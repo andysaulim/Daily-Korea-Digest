@@ -120,33 +120,19 @@ def render(digest: dict) -> str:
     sections = []
 
     # ── 1. Header ────────────────────────────────────────────────────────
-    logo_url = digest.get("logo_url", "https://raw.githubusercontent.com/andysaulim/Daily-Korea-News/main/assets/csis-korea-chair-logo.png")
     sections.append(f"""
-    <div style="background:#FFFFFF;padding:14px 32px 10px;" class="sec header">
-      <!--[if !mso]><!-->
-      <img src="{logo_url}" alt="" width="420" style="max-width:100%;height:auto;display:block;" />
-      <!--<![endif]-->
-      <!--[if mso]>
-      <table cellpadding="0" cellspacing="0" border="0"><tr>
-        <td style="font-size:22px;font-weight:700;color:#1B2A4A;font-family:Georgia,serif;padding-right:10px;border-right:2px solid #8BAFCB;">CSIS</td>
-        <td style="padding-left:10px;font-size:10px;color:#1B2A4A;font-family:Arial,sans-serif;line-height:1.3;text-transform:uppercase;letter-spacing:0.5px;">Korea Chair</td>
-      </tr></table>
-      <![endif]-->
-      <noscript>
-        <div style="font-size:16px;font-weight:700;color:#1B2A4A;font-family:Georgia,serif;">CSIS Korea Chair</div>
-      </noscript>
-    </div>
     <div style="background:#1B2A4A;color:#fff;padding:14px 32px 12px;" class="sec">
       <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
         <td style="vertical-align:top;">
           <h1 style="margin:0;font-size:24px;font-weight:700;font-family:Georgia,serif;color:#fff;letter-spacing:0.5px;">
             Korea Daily Brief
           </h1>
-          <div style="margin-top:4px;font-size:13px;color:rgba(255,255,255,0.7);">{_esc(date_str)}</div>
+          <div style="margin-top:4px;font-size:11px;color:rgba(255,255,255,0.5);font-family:Arial,sans-serif;">CSIS Korea Chair</div>
+          <div style="margin-top:2px;font-size:13px;color:rgba(255,255,255,0.7);">{_esc(date_str)}</div>
         </td>
         <td style="vertical-align:top;text-align:right;">
           <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.4);margin-bottom:2px;">{gen_time}</div>
-          <div style="font-size:10px;color:rgba(255,255,255,0.35);">{story_count + oped_count + academic_count} sources &middot; {read_min} min read</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.35);">{word_count:,} words &middot; {read_min} min read</div>
         </td>
       </tr></table>
       {"<div style='margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.15);font-size:13px;color:rgba(255,255,255,0.85);font-family:Georgia,serif;'><strong style=" + '"' + "color:rgba(255,255,255,0.5);" + '"' + ">RE:</strong> " + re_line + "</div>" if re_line else ""}
@@ -202,7 +188,6 @@ def render(digest: dict) -> str:
             detail = _esc(item.get("detail", ""))
             time_str = _esc(item.get("time", ""))
             urgency = item.get("urgency", "monitor")
-            decision = _esc(item.get("decision_point", ""))
             u_color = urgency_colors.get(urgency, "#7F8C8D")
             time_badge = f'<span style="display:inline-block;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:600;color:#fff;background:{u_color};margin-left:6px;text-transform:uppercase;">{_esc(urgency)}</span>' if urgency else ""
             time_line = f'<span style="font-size:11px;color:#888;margin-left:8px;">{time_str}</span>' if time_str else ""
@@ -210,7 +195,6 @@ def render(digest: dict) -> str:
             <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid {u_color};">
               <div style="font-size:13px;font-weight:600;color:#1B2A4A;">{headline}{time_badge}{time_line}</div>
               <div style="font-size:12px;line-height:1.4;color:#555;">{detail}</div>
-              {"<div style='font-size:11px;color:#2980B9;margin-top:2px;font-style:italic;'>&#9654; " + decision + "</div>" if decision else ""}
             </div>"""
         sections.append(f"""
         <div {_SEC}>
