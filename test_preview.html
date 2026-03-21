@@ -19,8 +19,7 @@
       .loc-table td { display:block !important; width:100% !important; padding:3px 0 !important; }
       .loc-table td[style*="white-space"] { white-space:normal !important; }
       .loc-table tr { display:block !important; padding:6px 0 !important; border-bottom:1px solid #f0f0f0 !important; }
-      /* KCNA tone table — 2x2 grid on mobile */
-      .tone-table td { display:inline-block !important; width:48% !important; padding:6px 4px !important; box-sizing:border-box !important; }
+      /* Calendar watch tables — stack on mobile */
       /* ROK Government grid — stack on mobile */
       .gov-grid td { display:block !important; width:100% !important; padding:4px 0 !important; }
       /* Calendar watch — reduce date font */
@@ -48,7 +47,8 @@
       .wrapper .footer { background:#1a1a1a !important; }
       .wrapper .story-card { background:#2a2a2a !important; }
       .wrapper .kcna-dark { background:#1a2a1a !important; }
-      .wrapper .kcna-dark div { background:transparent !important; }
+      .wrapper .kcna-dark table { background:#1a2a1a !important; }
+      .wrapper .gov-grid div { background:#2a2a2a !important; }
     }
   </style>
   <!--[if mso]>
@@ -85,7 +85,7 @@
           <div style="margin-top:4px;font-size:13px;color:rgba(255,255,255,0.7);">Saturday, 21 March 2026</div>
         </td>
         <td style="vertical-align:top;text-align:right;">
-          <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.4);margin-bottom:2px;">17:57 UTC</div>
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.4);margin-bottom:2px;">18:06 UTC</div>
           <div style="font-size:10px;color:rgba(255,255,255,0.35);">144 sources &middot; 5 min read</div>
         </td>
       </tr></table>
@@ -193,13 +193,17 @@
         
 
         <div style="padding:0;border-bottom:1px solid #333;" class="sec kcna-dark">
-          <div style="padding:10px 32px;background:#1a2a1a;display:flex;justify-content:space-between;align-items:center;">
-            <div style="display:flex;align-items:center;gap:10px;">
-              <span style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#E8DCC8;font-family:Arial,sans-serif;">KCNA Rhetoric Delta</span>
-              <span style="display:inline-block;width:60px;height:2px;background:#27AE60;"></span>
-            </div>
-            <span style="font-size:11px;color:rgba(255,255,255,0.4);">7-day baseline · Mar 13-19</span>
-          </div>
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#1a2a1a;">
+            <tr>
+              <td style="padding:10px 32px;">
+                <span style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#E8DCC8;font-family:Arial,sans-serif;">KCNA Rhetoric Delta</span>
+                <span style="display:inline-block;width:60px;height:2px;background:#27AE60;vertical-align:middle;margin-left:10px;"></span>
+              </td>
+              <td style="padding:10px 32px;text-align:right;">
+                <span style="font-size:11px;color:#8a8a8a;">7-day baseline · Mar 13-19</span>
+              </td>
+            </tr>
+          </table>
           <div style="padding:14px 32px;background:#1a2a1a;color:#E0E0E0;">
             
             <div style='margin:12px 0;padding:8px 14px;background:#8E44AD;color:#fff;border-radius:4px;font-size:12px;'><strong>Doctrinal shift:</strong> 'Sacred nuclear deterrent force' replaces standard 'treasured sword of justice' formulation. This linguistic upgrade historically precedes capability announcements — the 2017 shift to 'state nuclear force' preceded the Hwasong-15 ICBM test by 3 months.</div>
@@ -407,66 +411,78 @@
             </div>
             
             <div style="margin-top:20px;">
-              <div style="padding:10px 0;display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #1B2A4A;margin-bottom:4px;">
-                <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#1B2A4A;">Calendar Watch</span>
-                <span style="font-size:11px;color:#888;">14 days forward</span>
-              </div>
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-bottom:2px solid #1B2A4A;margin-bottom:4px;">
+                <tr>
+                  <td style="padding:10px 0;"><span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#1B2A4A;">Calendar Watch</span></td>
+                  <td style="padding:10px 0;text-align:right;"><span style="font-size:11px;color:#888;">14 days forward</span></td>
+                </tr>
+              </table>
               
-                <div style="display:flex;padding:14px 0;border-bottom:1px solid #E8E8E8;">
-                  <div style="min-width:60px;text-align:center;padding-right:14px;">
-                    <div style="font-size:10px;text-transform:uppercase;color:#C0392B;font-weight:600;letter-spacing:0.5px;">MAR</div>
-                    <div style="font-size:28px;font-weight:300;color:#1B2A4A;line-height:1;">19</div>
-                  </div>
-                  <div style="flex:1;">
-                    <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:#D4AC0D;font-weight:600;margin-bottom:3px;">TODAY · WATCH</div>
-                    <div style="font-size:14px;font-weight:600;color:#1B2A4A;margin-bottom:3px;">KCNA Response Window — THAAD Redeployment</div>
-                    <div style="font-size:12px;line-height:1.5;color:#555;">Pyongyang has not yet issued a formal response. NK typically responds within 24–72 hours. Watch KCNA Watch feed through Mar 22.</div>
-                  </div>
-                </div>
-                <div style="display:flex;padding:14px 0;border-bottom:1px solid #E8E8E8;">
-                  <div style="min-width:60px;text-align:center;padding-right:14px;">
-                    <div style="font-size:10px;text-transform:uppercase;color:#C0392B;font-weight:600;letter-spacing:0.5px;">MAR</div>
-                    <div style="font-size:28px;font-weight:300;color:#1B2A4A;line-height:1;">20</div>
-                  </div>
-                  <div style="flex:1;">
-                    <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:#888;font-weight:600;margin-bottom:3px;">EVENT</div>
-                    <div style="font-size:14px;font-weight:600;color:#1B2A4A;margin-bottom:3px;">US-ROK Combined Working Group (Virtual)</div>
-                    <div style="font-size:12px;line-height:1.5;color:#555;">Routine bilateral coordination. THAAD and OPCON transfer likely on agenda given this week's developments.</div>
-                  </div>
-                </div>
-                <div style="display:flex;padding:14px 0;border-bottom:1px solid #E8E8E8;">
-                  <div style="min-width:60px;text-align:center;padding-right:14px;">
-                    <div style="font-size:10px;text-transform:uppercase;color:#C0392B;font-weight:600;letter-spacing:0.5px;">MAR</div>
-                    <div style="font-size:28px;font-weight:300;color:#1B2A4A;line-height:1;">25</div>
-                  </div>
-                  <div style="flex:1;">
-                    <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:#C0392B;font-weight:600;margin-bottom:3px;">SFRC HEARING — PREP REQUIRED · <span style="color:#C0392B;font-weight:600;">ELEVATED</span></div>
-                    <div style="font-size:14px;font-weight:600;color:#1B2A4A;margin-bottom:3px;">Senate Foreign Relations — Asia Subcommittee: US Alliance Posture</div>
-                    <div style="font-size:12px;line-height:1.5;color:#555;">THAAD redeployment and terminal defense gap likely to be raised. Witness list unpublished. Brief may be warranted — see Congressional section above.</div>
-                  </div>
-                </div>
-                <div style="display:flex;padding:14px 0;border-bottom:1px solid #E8E8E8;">
-                  <div style="min-width:60px;text-align:center;padding-right:14px;">
-                    <div style="font-size:10px;text-transform:uppercase;color:#C0392B;font-weight:600;letter-spacing:0.5px;">APR</div>
-                    <div style="font-size:28px;font-weight:300;color:#1B2A4A;line-height:1;">2</div>
-                  </div>
-                  <div style="flex:1;">
-                    <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:#888;font-weight:600;margin-bottom:3px;">EVENT</div>
-                    <div style="font-size:14px;font-weight:600;color:#1B2A4A;margin-bottom:3px;">Freedom Shield 26 Official Debrief — USFK</div>
-                    <div style="font-size:12px;line-height:1.5;color:#555;">USFK releases formal assessment. OPCON transfer capability evaluation results expected — or notably absent.</div>
-                  </div>
-                </div>
-                <div style="display:flex;padding:14px 0;border-bottom:1px solid #E8E8E8;">
-                  <div style="min-width:60px;text-align:center;padding-right:14px;">
-                    <div style="font-size:10px;text-transform:uppercase;color:#C0392B;font-weight:600;letter-spacing:0.5px;">APR</div>
-                    <div style="font-size:28px;font-weight:300;color:#1B2A4A;line-height:1;">11</div>
-                  </div>
-                  <div style="flex:1;">
-                    <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:#C0392B;font-weight:600;margin-bottom:3px;">WATCH · ELEVATED RISK · <span style="color:#C0392B;font-weight:600;">ELEVATED</span></div>
-                    <div style="font-size:14px;font-weight:600;color:#1B2A4A;margin-bottom:3px;">NK Party Founding Anniversary</div>
-                    <div style="font-size:12px;line-height:1.5;color:#555;">Apr 11 (WPK Founding Day) historically associated with elevated provocation risk. Current SRBM test tempo (×3) and KCNA escalatory language raise the risk profile heading into this window.</div>
-                  </div>
-                </div>
+                <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-bottom:1px solid #E8E8E8;">
+                  <tr>
+                    <td width="60" style="padding:14px 14px 14px 0;text-align:center;vertical-align:top;">
+                      <div style="font-size:10px;text-transform:uppercase;color:#C0392B;font-weight:600;letter-spacing:0.5px;">MAR</div>
+                      <div class="cal-date" style="font-size:28px;font-weight:300;color:#1B2A4A;line-height:1;">19</div>
+                    </td>
+                    <td style="padding:14px 0;vertical-align:top;">
+                      <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:#D4AC0D;font-weight:600;margin-bottom:3px;">TODAY · WATCH</div>
+                      <div style="font-size:14px;font-weight:600;color:#1B2A4A;margin-bottom:3px;">KCNA Response Window — THAAD Redeployment</div>
+                      <div style="font-size:12px;line-height:1.5;color:#555;">Pyongyang has not yet issued a formal response. NK typically responds within 24–72 hours. Watch KCNA Watch feed through Mar 22.</div>
+                    </td>
+                  </tr>
+                </table>
+                <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-bottom:1px solid #E8E8E8;">
+                  <tr>
+                    <td width="60" style="padding:14px 14px 14px 0;text-align:center;vertical-align:top;">
+                      <div style="font-size:10px;text-transform:uppercase;color:#C0392B;font-weight:600;letter-spacing:0.5px;">MAR</div>
+                      <div class="cal-date" style="font-size:28px;font-weight:300;color:#1B2A4A;line-height:1;">20</div>
+                    </td>
+                    <td style="padding:14px 0;vertical-align:top;">
+                      <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:#888;font-weight:600;margin-bottom:3px;">EVENT</div>
+                      <div style="font-size:14px;font-weight:600;color:#1B2A4A;margin-bottom:3px;">US-ROK Combined Working Group (Virtual)</div>
+                      <div style="font-size:12px;line-height:1.5;color:#555;">Routine bilateral coordination. THAAD and OPCON transfer likely on agenda given this week's developments.</div>
+                    </td>
+                  </tr>
+                </table>
+                <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-bottom:1px solid #E8E8E8;">
+                  <tr>
+                    <td width="60" style="padding:14px 14px 14px 0;text-align:center;vertical-align:top;">
+                      <div style="font-size:10px;text-transform:uppercase;color:#C0392B;font-weight:600;letter-spacing:0.5px;">MAR</div>
+                      <div class="cal-date" style="font-size:28px;font-weight:300;color:#1B2A4A;line-height:1;">25</div>
+                    </td>
+                    <td style="padding:14px 0;vertical-align:top;">
+                      <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:#C0392B;font-weight:600;margin-bottom:3px;">SFRC HEARING — PREP REQUIRED · <span style="color:#C0392B;font-weight:600;">ELEVATED</span></div>
+                      <div style="font-size:14px;font-weight:600;color:#1B2A4A;margin-bottom:3px;">Senate Foreign Relations — Asia Subcommittee: US Alliance Posture</div>
+                      <div style="font-size:12px;line-height:1.5;color:#555;">THAAD redeployment and terminal defense gap likely to be raised. Witness list unpublished. Brief may be warranted — see Congressional section above.</div>
+                    </td>
+                  </tr>
+                </table>
+                <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-bottom:1px solid #E8E8E8;">
+                  <tr>
+                    <td width="60" style="padding:14px 14px 14px 0;text-align:center;vertical-align:top;">
+                      <div style="font-size:10px;text-transform:uppercase;color:#C0392B;font-weight:600;letter-spacing:0.5px;">APR</div>
+                      <div class="cal-date" style="font-size:28px;font-weight:300;color:#1B2A4A;line-height:1;">2</div>
+                    </td>
+                    <td style="padding:14px 0;vertical-align:top;">
+                      <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:#888;font-weight:600;margin-bottom:3px;">EVENT</div>
+                      <div style="font-size:14px;font-weight:600;color:#1B2A4A;margin-bottom:3px;">Freedom Shield 26 Official Debrief — USFK</div>
+                      <div style="font-size:12px;line-height:1.5;color:#555;">USFK releases formal assessment. OPCON transfer capability evaluation results expected — or notably absent.</div>
+                    </td>
+                  </tr>
+                </table>
+                <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-bottom:1px solid #E8E8E8;">
+                  <tr>
+                    <td width="60" style="padding:14px 14px 14px 0;text-align:center;vertical-align:top;">
+                      <div style="font-size:10px;text-transform:uppercase;color:#C0392B;font-weight:600;letter-spacing:0.5px;">APR</div>
+                      <div class="cal-date" style="font-size:28px;font-weight:300;color:#1B2A4A;line-height:1;">11</div>
+                    </td>
+                    <td style="padding:14px 0;vertical-align:top;">
+                      <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:#C0392B;font-weight:600;margin-bottom:3px;">WATCH · ELEVATED RISK · <span style="color:#C0392B;font-weight:600;">ELEVATED</span></div>
+                      <div style="font-size:14px;font-weight:600;color:#1B2A4A;margin-bottom:3px;">NK Party Founding Anniversary</div>
+                      <div style="font-size:12px;line-height:1.5;color:#555;">Apr 11 (WPK Founding Day) historically associated with elevated provocation risk. Current SRBM test tempo (×3) and KCNA escalatory language raise the risk profile heading into this window.</div>
+                    </td>
+                  </tr>
+                </table>
             </div>
           </div>
         </div>
@@ -528,40 +544,32 @@
                 </tr>
               </table>
             </div>
-            <div style="margin-bottom:12px;padding:8px 12px;background:#F8F9FA;border-radius:4px;border-left:3px solid #16A085;">
-              <div style="font-size:10px;text-transform:uppercase;color:#888;letter-spacing:0.5px;">ROK Investment Commitment</div>
-              <div style="font-size:14px;font-weight:700;color:#1B2A4A;margin-top:2px;">$87.5B <span style="font-size:11px;font-weight:400;color:#888;">of $350B pledged</span></div>
-              <div style="margin-top:4px;background:#E0E0E0;border-radius:3px;height:8px;overflow:hidden;">
-                <div style="width:25%;background:#16A085;height:100%;border-radius:3px;"></div>
-              </div>
-              <div style="font-size:11px;color:#555;margin-top:4px;">25% fulfilled · Samsung SDI Indiana plant adds $2.3B to cumulative total</div>
-            </div>
+        <div style="margin-bottom:12px;padding:8px 12px;background:#F8F9FA;border-radius:4px;border-left:3px solid #16A085;">
+          <div style="font-size:10px;text-transform:uppercase;color:#888;letter-spacing:0.5px;">ROK Investment Commitment</div>
+          <div style="font-size:14px;font-weight:700;color:#1B2A4A;margin-top:2px;">$87.5B <span style="font-size:11px;font-weight:400;color:#888;">of $350B pledged</span></div>
+          <div style="margin-top:4px;background:#E0E0E0;border-radius:3px;height:8px;overflow:hidden;">
+            <div style="width:25%;background:#16A085;height:100%;border-radius:3px;"></div>
+          </div>
+          <div style="font-size:11px;color:#555;margin-top:4px;">25% fulfilled · Samsung SDI Indiana plant adds $2.3B to cumulative total</div>
+        </div>
           
             <div style="margin-bottom:14px;padding:12px 0;border-top:1px solid #E8E8E8;">
               <div style="margin-bottom:4px;"><span style="display:inline-block;padding:2px 6px;border:1px solid #2980B9;border-radius:2px;font-size:9px;font-weight:600;color:#2980B9;text-transform:uppercase;margin-right:4px;">ENERGY</span> <span style="display:inline-block;padding:2px 6px;border:1px solid #2980B9;border-radius:2px;font-size:9px;font-weight:600;color:#2980B9;text-transform:uppercase;margin-right:4px;">TRADE</span></div>
-              <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-                <div style="flex:1;">
-                  <div style="font-size:11px;color:#888;margin-bottom:2px;"><span style="font-size:11px;color:#888;">Venture Global · US Embassy Seoul</span> &middot; Venture Global press release</div>
-                </div>
-              </div>
+              <div style="font-size:11px;color:#888;margin-bottom:2px;"><span style="font-size:11px;color:#888;">Venture Global · US Embassy Seoul</span> &middot; Venture Global press release</div>
               <div style="font-size:15px;font-weight:700;color:#1B2A4A;line-height:1.3;margin-bottom:4px;">
                 <a href="https://example.com/venture-global" style="color:#1B4A6A;text-decoration:none;">Venture Global Signs First Korean LNG Deal: 1.5 MTPA for 20 Years with Hanwha Aerospace</a>
               </div>
               <div style="font-size:13px;line-height:1.5;color:#444;">Venture Global and Hanwha Aerospace signed a 20-year Sales and Purchase Agreement for 1.5 million tonnes per annum of US LNG beginning 2030. Signed at the Indo-Pacific Energy Ministerial in Tokyo on March 18, attended by US Secretary of the Interior Doug Burgum and ROK Trade Minister Kim Jeonggwan. Hanwha is building an integrated LNG value chain across Aerospace, Ocean, Energy, and Shipping subsidiaries.</div>
-              <div style='margin-top:6px;'><a href='https://example.com/venture-global' style='font-size:11px;font-family:monospace;color:#888;text-decoration:none;'>Venture Global press release ↗</a></div>
+              <div style='margin-top:6px;'><a href="https://example.com/venture-global" style="font-size:11px;font-family:monospace;color:#888;text-decoration:none;">Venture Global press release ↗</a></div>
             </div>
             <div style="margin-bottom:14px;padding:12px 0;border-top:1px solid #E8E8E8;">
               <div style="margin-bottom:4px;"><span style="display:inline-block;padding:2px 6px;border:1px solid #2980B9;border-radius:2px;font-size:9px;font-weight:600;color:#2980B9;text-transform:uppercase;margin-right:4px;">ENERGY SUPPLY</span></div>
-              <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-                <div style="flex:1;">
-                  <div style="font-size:11px;color:#888;margin-bottom:2px;"><span style="font-size:11px;color:#888;">ROK Ministry of Energy · UAE</span> &middot; Korea Herald</div>
-                </div>
-              </div>
+              <div style="font-size:11px;color:#888;margin-bottom:2px;"><span style="font-size:11px;color:#888;">ROK Ministry of Energy · UAE</span> &middot; Korea Herald</div>
               <div style="font-size:15px;font-weight:700;color:#1B2A4A;line-height:1.3;margin-bottom:4px;">
                 <a href="https://example.com/oil-alert" style="color:#1B4A6A;text-decoration:none;">Seoul Raises Oil Alert; Secures Emergency 18M Barrels from UAE as Hormuz Threatened</a>
               </div>
               <div style="font-size:13px;line-height:1.5;color:#444;">ROK Ministry of Energy raised oil resource security alert. Seoul secured 18 million emergency barrels from UAE with priority delivery. Major refiners delaying maintenance to stabilize supply. ROK shipping industry calling for state-backed 200-vessel strategic merchant fleet.</div>
-              <div style='margin-top:6px;'><a href='https://example.com/oil-alert' style='font-size:11px;font-family:monospace;color:#888;text-decoration:none;'>Korea Herald ↗</a></div>
+              <div style='margin-top:6px;'><a href="https://example.com/oil-alert" style="font-size:11px;font-family:monospace;color:#888;text-decoration:none;">Korea Herald ↗</a></div>
             </div>
         </div>
         
@@ -775,7 +783,7 @@
         </div>
       <div style="font-size:11px;color:#999;line-height:1.5;">
         Korea Daily Brief &middot; CSIS Korea Chair<br>
-        Saturday, 21 March 2026 &middot; 17:57 UTC<br>
+        Saturday, 21 March 2026 &middot; 18:06 UTC<br>
         <span style="color:#bbb;">Read alongside primary sources</span>
       </div>
     </div>

@@ -351,7 +351,6 @@ def render(digest: dict) -> str:
         if prop_focus:
             prop_html = "<div style='margin-top:8px;font-size:11px;color:#888;'><strong style=\"color:#BBB;\">Focus:</strong> " + " · ".join(_esc(str(p)) for p in prop_focus) + "</div>"
 
-        kim_line_html = ""
         kim_line = ""
         if kim_today == "Yes":
             kim_line = f"Kim Jong Un public appearance"
@@ -375,13 +374,17 @@ def render(digest: dict) -> str:
 
         sections.append(f"""
         <div style="padding:0;border-bottom:1px solid #333;" class="sec kcna-dark">
-          <div style="padding:10px 32px;background:#1a2a1a;display:flex;justify-content:space-between;align-items:center;">
-            <div style="display:flex;align-items:center;gap:10px;">
-              <span style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#E8DCC8;font-family:Arial,sans-serif;">KCNA Rhetoric Delta</span>
-              <span style="display:inline-block;width:60px;height:2px;background:#27AE60;"></span>
-            </div>
-            <span style="font-size:11px;color:rgba(255,255,255,0.4);">{baseline_html}</span>
-          </div>
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#1a2a1a;">
+            <tr>
+              <td style="padding:10px 32px;">
+                <span style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#E8DCC8;font-family:Arial,sans-serif;">KCNA Rhetoric Delta</span>
+                <span style="display:inline-block;width:60px;height:2px;background:#27AE60;vertical-align:middle;margin-left:10px;"></span>
+              </td>
+              <td style="padding:10px 32px;text-align:right;">
+                <span style="font-size:11px;color:#8a8a8a;">{baseline_html}</span>
+              </td>
+            </tr>
+          </table>
           <div style="padding:14px 32px;background:#1a2a1a;color:#E0E0E0;">
             {"<div style='margin-bottom:12px;padding:8px 14px;background:#C0392B;color:#fff;border-radius:4px;font-size:12px;font-weight:600;'>&#9888; Complete KCNA silence today</div>" if silence else ""}
             {doctrinal_html}
@@ -563,23 +566,27 @@ def render(digest: dict) -> str:
                 if cal_urgency and cal_urgency.lower() in ("critical", "elevated", "high"):
                     urgency_html = f' · <span style="color:#C0392B;font-weight:600;">{_esc(cal_urgency.upper())}</span>'
                 cal_items += f"""
-                <div style="display:flex;padding:14px 0;border-bottom:1px solid #E8E8E8;">
-                  <div style="min-width:60px;text-align:center;padding-right:14px;">
-                    <div style="font-size:10px;text-transform:uppercase;color:#C0392B;font-weight:600;letter-spacing:0.5px;">{cal_month}</div>
-                    <div style="font-size:28px;font-weight:300;color:#1B2A4A;line-height:1;">{cal_day}</div>
-                  </div>
-                  <div style="flex:1;">
-                    <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:{t_color};font-weight:600;margin-bottom:3px;">{cal_type_label}{urgency_html}</div>
-                    <div style="font-size:14px;font-weight:600;color:#1B2A4A;margin-bottom:3px;">{cal_headline}</div>
-                    <div style="font-size:12px;line-height:1.5;color:#555;">{cal_detail}</div>
-                  </div>
-                </div>"""
+                <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-bottom:1px solid #E8E8E8;">
+                  <tr>
+                    <td width="60" style="padding:14px 14px 14px 0;text-align:center;vertical-align:top;">
+                      <div style="font-size:10px;text-transform:uppercase;color:#C0392B;font-weight:600;letter-spacing:0.5px;">{cal_month}</div>
+                      <div class="cal-date" style="font-size:28px;font-weight:300;color:#1B2A4A;line-height:1;">{cal_day}</div>
+                    </td>
+                    <td style="padding:14px 0;vertical-align:top;">
+                      <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:{t_color};font-weight:600;margin-bottom:3px;">{cal_type_label}{urgency_html}</div>
+                      <div style="font-size:14px;font-weight:600;color:#1B2A4A;margin-bottom:3px;">{cal_headline}</div>
+                      <div style="font-size:12px;line-height:1.5;color:#555;">{cal_detail}</div>
+                    </td>
+                  </tr>
+                </table>"""
             cal_html = f"""
             <div style="margin-top:20px;">
-              <div style="padding:10px 0;display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #1B2A4A;margin-bottom:4px;">
-                <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#1B2A4A;">Calendar Watch</span>
-                <span style="font-size:11px;color:#888;">14 days forward</span>
-              </div>
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-bottom:2px solid #1B2A4A;margin-bottom:4px;">
+                <tr>
+                  <td style="padding:10px 0;"><span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#1B2A4A;">Calendar Watch</span></td>
+                  <td style="padding:10px 0;text-align:right;"><span style="font-size:11px;color:#888;">14 days forward</span></td>
+                </tr>
+              </table>
               {cal_items}
             </div>"""
 
@@ -714,16 +721,15 @@ def render(digest: dict) -> str:
             pct = 0
         latest = _esc(inv.get("latest_update", "No new deals today"))
         bar_width = min(max(pct, 0), 100)
-        if True:
-            header_html += f"""
-            <div style="margin-bottom:12px;padding:8px 12px;background:#F8F9FA;border-radius:4px;border-left:3px solid #16A085;">
-              <div style="font-size:10px;text-transform:uppercase;color:#888;letter-spacing:0.5px;">ROK Investment Commitment</div>
-              <div style="font-size:14px;font-weight:700;color:#1B2A4A;margin-top:2px;">{announced} <span style="font-size:11px;font-weight:400;color:#888;">of {total} pledged</span></div>
-              <div style="margin-top:4px;background:#E0E0E0;border-radius:3px;height:8px;overflow:hidden;">
-                <div style="width:{bar_width}%;background:#16A085;height:100%;border-radius:3px;"></div>
-              </div>
-              <div style="font-size:11px;color:#555;margin-top:4px;">{pct}% fulfilled · {latest}</div>
-            </div>"""
+        header_html += f"""
+        <div style="margin-bottom:12px;padding:8px 12px;background:#F8F9FA;border-radius:4px;border-left:3px solid #16A085;">
+          <div style="font-size:10px;text-transform:uppercase;color:#888;letter-spacing:0.5px;">ROK Investment Commitment</div>
+          <div style="font-size:14px;font-weight:700;color:#1B2A4A;margin-top:2px;">{announced} <span style="font-size:11px;font-weight:400;color:#888;">of {total} pledged</span></div>
+          <div style="margin-top:4px;background:#E0E0E0;border-radius:3px;height:8px;overflow:hidden;">
+            <div style="width:{bar_width}%;background:#16A085;height:100%;border-radius:3px;"></div>
+          </div>
+          <div style="font-size:11px;color:#555;margin-top:4px;">{pct}% fulfilled · {latest}</div>
+        </div>"""
 
         # Individual deals
         deals_html = ""
@@ -755,16 +761,12 @@ def render(digest: dict) -> str:
             deals_html += f"""
             <div style="margin-bottom:14px;padding:12px 0;border-top:1px solid #E8E8E8;">
               {tags_html}
-              <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-                <div style="flex:1;">
-                  <div style="font-size:11px;color:#888;margin-bottom:2px;">{meta_right} {('&middot; ' + src) if src else ''}</div>
-                </div>
-              </div>
+              <div style="font-size:11px;color:#888;margin-bottom:2px;">{meta_right} {('&middot; ' + src) if src else ''}</div>
               <div style="font-size:15px;font-weight:700;color:#1B2A4A;line-height:1.3;margin-bottom:4px;">
                 {_link_or_text(headline, url, style="color:#1B4A6A;text-decoration:none;")}{value_badge}
               </div>
               <div style="font-size:13px;line-height:1.5;color:#444;">{detail}</div>
-              {"<div style='margin-top:6px;'><a href='" + url + "' style='font-size:11px;font-family:monospace;color:#888;text-decoration:none;'>" + _esc(src) + " ↗</a></div>" if src and url and url != "#" and url.startswith("http") else ""}
+              {"<div style='margin-top:6px;'>" + _link_or_text(_esc(src) + " ↗", url, style="font-size:11px;font-family:monospace;color:#888;text-decoration:none;") + "</div>" if src and url and url != "#" and url.startswith("http") else ""}
             </div>"""
 
         sections.append(f"""
@@ -939,8 +941,7 @@ def render(digest: dict) -> str:
       .loc-table td {{ display:block !important; width:100% !important; padding:3px 0 !important; }}
       .loc-table td[style*="white-space"] {{ white-space:normal !important; }}
       .loc-table tr {{ display:block !important; padding:6px 0 !important; border-bottom:1px solid #f0f0f0 !important; }}
-      /* KCNA tone table — 2x2 grid on mobile */
-      .tone-table td {{ display:inline-block !important; width:48% !important; padding:6px 4px !important; box-sizing:border-box !important; }}
+      /* Calendar watch tables — stack on mobile */
       /* ROK Government grid — stack on mobile */
       .gov-grid td {{ display:block !important; width:100% !important; padding:4px 0 !important; }}
       /* Calendar watch — reduce date font */
@@ -968,7 +969,8 @@ def render(digest: dict) -> str:
       .wrapper .footer {{ background:#1a1a1a !important; }}
       .wrapper .story-card {{ background:#2a2a2a !important; }}
       .wrapper .kcna-dark {{ background:#1a2a1a !important; }}
-      .wrapper .kcna-dark div {{ background:transparent !important; }}
+      .wrapper .kcna-dark table {{ background:#1a2a1a !important; }}
+      .wrapper .gov-grid div {{ background:#2a2a2a !important; }}
     }}
   </style>
   <!--[if mso]>
