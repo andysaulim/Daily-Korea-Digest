@@ -632,23 +632,16 @@ def render(digest: dict) -> str:
             url = deal.get("url", "")
             d_tags = deal.get("tags") or []
             bar_color = sector_colors.get(sector, "#1B2A4A")
+            wh_tracker = deal.get("wh_tracker", False)
             value_badge = f'<span style="display:inline-block;padding:1px 6px;border-radius:3px;font-size:11px;font-weight:700;color:#fff;background:#27AE60;margin-left:6px;">{value}</span>' if value else ""
-            # Category tags
-            tags_html = ""
-            if d_tags:
-                tags_html = " ".join(
-                    f'<span style="display:inline-block;padding:2px 6px;border:1px solid #2980B9;border-radius:2px;font-size:9px;font-weight:600;color:#2980B9;text-transform:uppercase;margin-right:4px;">{_esc(t)}</span>'
-                    for t in d_tags[:3]
-                )
-                tags_html = f'<div style="margin-bottom:4px;">{tags_html}</div>'
+            wh_badge = '<span style="display:inline-block;padding:1px 6px;border-radius:3px;font-size:9px;font-weight:600;color:#1B2A4A;background:#E8E8E8;margin-left:6px;text-transform:uppercase;letter-spacing:0.5px;">WH Tracker</span>' if wh_tracker else ""
             # Source / parties attribution line on the right
             meta_right = f'<span style="font-size:11px;color:#888;">{parties}</span>' if parties else ""
             deals_html += f"""
             <div style="margin-bottom:14px;padding:12px 0;border-top:1px solid #E8E8E8;">
-              {tags_html}
               <div style="font-size:11px;color:#888;margin-bottom:2px;">{meta_right} {('&middot; ' + src) if src else ''}</div>
               <div style="font-size:15px;font-weight:700;color:#1B2A4A;line-height:1.3;margin-bottom:4px;">
-                {_link_or_text(headline, url, style="color:#1B4A6A;text-decoration:none;")}{value_badge}
+                {_link_or_text(headline, url, style="color:#1B4A6A;text-decoration:none;")}{value_badge}{wh_badge}
               </div>
               <div style="font-size:13px;line-height:1.5;color:#444;">{detail}</div>
               {"<div style='margin-top:6px;'>" + _link_or_text(_esc(src) + " ↗", url, style="font-size:11px;font-family:monospace;color:#888;text-decoration:none;") + "</div>" if src and url and url != "#" and url.startswith("http") else ""}
@@ -656,7 +649,7 @@ def render(digest: dict) -> str:
 
         sections.append(f"""
         <div {_SEC}>
-          <h2 {_H2("#1B2A4A")}>US-Korea Trade &amp; Investment <span style="font-size:10px;font-weight:400;color:#888;text-transform:none;letter-spacing:0;">deal tracker</span></h2>
+          <h2 {_H2("#1B2A4A")}>US-Korea Trade &amp; Investment</h2>
           {header_html}
           {deals_html}
         </div>
