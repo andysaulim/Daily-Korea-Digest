@@ -81,6 +81,8 @@ _H2 = lambda color: f'style="margin:0 0 8px 0;font-size:12px;color:{color};text-
 def _estimate_word_count(digest: dict) -> int:
     """Rough word count across all text fields for 'X min read' estimate."""
     words = 0
+    for mi in (digest.get("morning_memo") or []):
+        words += len(str(mi).split())
     for key in ("editor_note", "re_line"):
         words += len(str(digest.get(key, "")).split())
     for section_key in ("top_stories", "overnight_items", "also_today", "business_economy",
@@ -180,8 +182,24 @@ def render(digest: dict) -> str:
         </table>
         """)
 
-    # ── 3. Morning Memo ────────────────────────────────────────────────────
-    if editor_note:
+    # ── 3. Morning Memo (top 3 at a glance) ─────────────────────────────────
+    memo_items = digest.get("morning_memo") or []
+    if memo_items:
+        memo_html = ""
+        for mi in memo_items[:3]:
+            memo_text = _esc(mi) if isinstance(mi, str) else _esc(mi.get("text", ""))
+            memo_html += f"""
+            <div style="margin-bottom:8px;padding-left:12px;border-left:3px solid #1B2A4A;">
+              <div style="font-size:14px;line-height:1.5;color:#333;font-family:Georgia,serif;">{memo_text}</div>
+            </div>"""
+        sections.append(f"""
+        <div style="padding:14px 32px;border-bottom:2px solid #1B2A4A;" class="sec">
+          <h2 {_H2("#1B2A4A")}>Morning Memo</h2>
+          {memo_html}
+        </div>
+        """)
+    elif editor_note:
+        # Fallback: single paragraph if morning_memo array not provided
         sections.append(f"""
         <div style="padding:14px 32px;border-bottom:2px solid #1B2A4A;" class="sec">
           <h2 {_H2("#1B2A4A")}>Morning Memo</h2>
@@ -191,32 +209,7 @@ def render(digest: dict) -> str:
         </div>
         """)
 
-    # ── 4. What to Watch Today ─────────────────────────────────────────────
-    watch_today = digest.get("watch_today") or []
-    if watch_today:
-        urgency_colors = {"critical": "#C0392B", "high": "#E67E22", "monitor": "#7F8C8D"}
-        watch_html = ""
-        for item in watch_today:
-            headline = _esc(item.get("headline", ""))
-            detail = _esc(item.get("detail", ""))
-            time_str = _esc(item.get("time", ""))
-            urgency = item.get("urgency", "monitor")
-            u_color = urgency_colors.get(urgency, "#7F8C8D")
-            time_badge = f'<span style="display:inline-block;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:600;color:#fff;background:{u_color};margin-left:6px;text-transform:uppercase;">{_esc(urgency)}</span>' if urgency else ""
-            time_line = f'<span style="font-size:11px;color:#888;margin-left:8px;">{time_str}</span>' if time_str else ""
-            watch_html += f"""
-            <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid {u_color};">
-              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">{headline}{time_badge}{time_line}</div>
-              <div style="font-size:12px;line-height:1.4;color:#555;">{detail}</div>
-            </div>"""
-        sections.append(f"""
-        <div {_SEC}>
-          <h2 {_H2("#E67E22")}>What to Watch Today</h2>
-          {watch_html}
-        </div>
-        """)
-
-    # ── 5. Top Stories ────────────────────────────────────────────────────
+    # ── 4. Top Stories ────────────────────────────────────────────────────
     top_stories = digest.get("top_stories") or []
     if top_stories:
         stories_html = ""
@@ -463,7 +456,6 @@ def render(digest: dict) -> str:
           <table width="100%" cellpadding="0" cellspacing="0" border="0" class="loc-table" style="border-top:1px solid #E8E8E8;">
             {loc_rows}
           </table>
-          </div>
         </div>
         """)
 
@@ -655,27 +647,22 @@ def render(digest: dict) -> str:
         </div>
         """)
 
-    # ── 11. The Wire (merged: Overnight + Also Today + Business) ─────────
-    overnight = digest.get("overnight_items") or []
-    combined_also = digest.get("also_today") or []
+    # ── 11. Business & Economy ────────────────────────────────────────────
     biz_econ = digest.get("business_economy") or []
-    wire_items = overnight + combined_also + biz_econ
-    if wire_items:
-        wire_html = ""
+    if biz_econ:
+        biz_html = ""
         biz_sector_colors = {
             "tech": "#8E44AD", "auto": "#1B2A4A", "energy": "#16A085",
             "finance": "#D4AC0D", "manufacturing": "#2980B9",
             "real-estate": "#E67E22", "macro": "#C0392B",
         }
-        for item in wire_items:
+        for item in biz_econ:
             cat = _esc(item.get("category", item.get("sector", "")))
             headline = _esc(item.get("headline", ""))
             body = _esc(item.get("body_text", ""))
             src = _esc(item.get("source", ""))
             url = item.get("url", "")
-            bar_color = _color_bar(item.get("color_bar_class", ""))
-            if not item.get("color_bar_class"):
-                bar_color = biz_sector_colors.get(item.get("sector", ""), "#1B2A4A")
+            bar_color = biz_sector_colors.get(item.get("sector", ""), "#1B2A4A")
             companies = item.get("companies") or []
             company_tags = ""
             if companies:
@@ -684,7 +671,7 @@ def render(digest: dict) -> str:
                     for c in companies[:3]
                 )
                 company_tags = f'<div style="margin-top:3px;">{company_tags}</div>'
-            wire_html += f"""
+            biz_html += f"""
             <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid {bar_color};">
               <div style="font-size:11px;color:#888;text-transform:uppercase;">{cat} &middot; {src}</div>
               <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
@@ -692,6 +679,34 @@ def render(digest: dict) -> str:
               </div>
               <div style="font-size:12px;line-height:1.4;color:#555;">{body}</div>
               {company_tags}
+            </div>"""
+        sections.append(f"""
+        <div {_SEC}>
+          <h2 {_H2("#1B2A4A")}>Business &amp; Economy</h2>
+          {biz_html}
+        </div>
+        """)
+
+    # ── 12. The Wire (Overnight + Also Today — secondary news) ──────────
+    overnight = digest.get("overnight_items") or []
+    combined_also = digest.get("also_today") or []
+    wire_items = overnight + combined_also
+    if wire_items:
+        wire_html = ""
+        for item in wire_items:
+            cat = _esc(item.get("category", ""))
+            headline = _esc(item.get("headline", ""))
+            body = _esc(item.get("body_text", ""))
+            src = _esc(item.get("source", ""))
+            url = item.get("url", "")
+            bar_color = _color_bar(item.get("color_bar_class", ""))
+            wire_html += f"""
+            <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid {bar_color};">
+              <div style="font-size:11px;color:#888;text-transform:uppercase;">{cat} &middot; {src}</div>
+              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
+                {_link_or_text(headline, url)}
+              </div>
+              <div style="font-size:12px;line-height:1.4;color:#555;">{body}</div>
             </div>"""
         sections.append(f"""
         <div {_SEC}>
