@@ -328,11 +328,18 @@ def render(digest: dict) -> str:
             ir_bp_ids = imagery_report.get("bp_location_ids") or []
             source_links_html = ""
             if ir_sources:
-                source_links_html = "<div style='margin-top:8px;'>" + " &middot; ".join(
-                    f'<span style="font-size:11px;font-family:monospace;color:#888;">{_esc(s.get("label", s.get("source", "")))} ↗</span>'
-                    if isinstance(s, dict) else f'<span style="font-size:11px;font-family:monospace;color:#888;">{_esc(str(s))} ↗</span>'
-                    for s in ir_sources
-                ) + "</div>"
+                _src_parts = []
+                for s in ir_sources:
+                    if isinstance(s, dict):
+                        s_label = _esc(s.get("label", s.get("source", "")))
+                        s_url = s.get("url", "")
+                        if s_url and s_url != "#" and s_url.startswith("http"):
+                            _src_parts.append(f'<a href="{s_url}" style="font-size:11px;font-family:monospace;color:#888;text-decoration:none;">{s_label} ↗</a>')
+                        else:
+                            _src_parts.append(f'<span style="font-size:11px;font-family:monospace;color:#888;">{s_label} ↗</span>')
+                    else:
+                        _src_parts.append(f'<span style="font-size:11px;font-family:monospace;color:#888;">{_esc(str(s))} ↗</span>')
+                source_links_html = "<div style='margin-top:8px;'>" + " &middot; ".join(_src_parts) + "</div>"
             bp_ids_html = ""
             if ir_bp_ids:
                 bp_ids_html = "<div style='margin-top:6px;font-size:11px;color:#888;'>→ " + " · ".join(_esc(str(b)) for b in ir_bp_ids) + "</div>"
@@ -582,45 +589,6 @@ def render(digest: dict) -> str:
     calendar_watch = digest.get("calendar_watch") or []
     if rok_gov or calendar_watch:
         # 2x2 grid of ministry cards
-        gov_cards = ""
-        for i, item in enumerate(rok_gov):
-            ministry = _esc(item.get("ministry", ""))
-            ministry_korean = _esc(item.get("ministry_korean", ""))
-            official = _esc(item.get("official", ""))
-            action = _esc(item.get("action", ""))
-            detail = _esc(item.get("detail", ""))
-            source_url = item.get("url", "")
-            source_label = _esc(item.get("source_label", ""))
-            # Korean name + English name header
-            ministry_header = ""
-            if ministry_korean:
-                ministry_header = f'<span style="font-size:11px;color:#888;font-weight:400;">{ministry_korean} · </span>'
-            ministry_header += f'<span style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.3px;">{ministry}</span>'
-            # Source link
-            src_link = ""
-            if source_label or source_url:
-                label = source_label if source_label else ministry.lower().replace(" ", "") + " ↗"
-                if source_url and source_url.startswith("http"):
-                    src_link = f'<div style="margin-top:6px;font-size:11px;color:#888;">→ <a href="{source_url}" style="color:#888;text-decoration:none;">{_esc(label)}</a></div>'
-                else:
-                    src_link = f'<div style="margin-top:6px;font-size:11px;color:#888;">→ {_esc(label)}</div>'
-            gov_cards += f"""
-            <td style="width:50%;padding:8px;vertical-align:top;">
-              <div style="background:#FAFAF5;border-radius:4px;padding:14px;min-height:100px;">
-                <div style="margin-bottom:6px;">{ministry_header}</div>
-                <div style="font-size:14px;font-weight:700;color:#1B2A4A;line-height:1.3;margin-bottom:6px;">{action}</div>
-                <div style="font-size:12px;line-height:1.5;color:#555;">{detail}</div>
-                {src_link}
-              </div>
-            </td>"""
-            # Close row every 2 cards
-            if i % 2 == 1:
-                gov_cards = f"<tr>{gov_cards}</tr>"
-            elif i == len(rok_gov) - 1:
-                gov_cards += '<td style="width:50%;padding:8px;"></td>'
-                gov_cards = f"<tr>{gov_cards}</tr>"
-
-        # Reconstruct as proper table rows
         gov_rows = ""
         for i in range(0, len(rok_gov), 2):
             row_cards = ""
@@ -637,10 +605,11 @@ def render(digest: dict) -> str:
                     ministry_header = f'<span style="font-size:11px;color:#888;">{ministry_korean} · </span>'
                 ministry_header += f'<span style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:0.3px;">{ministry}</span>'
                 src_link = ""
-                if source_label:
-                    src_link = f'<div style="margin-top:6px;font-size:11px;color:#888;">→ {_esc(source_label)} ↗</div>'
-                elif source_url:
-                    src_link = f'<div style="margin-top:6px;font-size:11px;color:#888;">→ {_esc(ministry.lower())} ↗</div>'
+                if source_url and source_url != "#" and source_url.startswith("http"):
+                    s_label = source_label if source_label else ministry.lower()
+                    src_link = f'<div style="margin-top:6px;font-size:11px;color:#888;">→ <a href="{source_url}" style="color:#888;text-decoration:none;">{_esc(s_label)} ↗</a></div>'
+                elif source_label:
+                    src_link = f'<div style="margin-top:6px;font-size:11px;color:#888;">→ {_esc(source_label)}</div>'
                 row_cards += f"""
                 <td style="width:50%;padding:8px;vertical-align:top;">
                   <div style="background:#FAFAF5;border-radius:4px;padding:14px;min-height:100px;">
@@ -954,7 +923,7 @@ def render(digest: dict) -> str:
                 {_link_or_text(headline, url, style="color:#1B4A6A;text-decoration:none;")}{value_badge}
               </div>
               <div style="font-size:13px;line-height:1.5;color:#444;">{detail}</div>
-              {"<div style='margin-top:6px;'><span style='font-size:11px;font-family:monospace;color:#888;'>" + _esc(src) + " ↗</span></div>" if src and url else ""}
+              {"<div style='margin-top:6px;'><a href='" + url + "' style='font-size:11px;font-family:monospace;color:#888;text-decoration:none;'>" + _esc(src) + " ↗</a></div>" if src and url and url != "#" and url.startswith("http") else ""}
             </div>"""
 
         sections.append(f"""
