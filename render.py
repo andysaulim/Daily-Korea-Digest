@@ -64,16 +64,6 @@ def _dot(status: str) -> str:
     return f'<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:{color};vertical-align:middle;"></span>'
 
 
-def _tone_color(tone: str) -> str:
-    t = str(tone).lower()
-    if t in ("hostile", "elevated"):
-        return "#C0392B"
-    elif t in ("warm", "very warm", "conciliatory"):
-        return "#27AE60"
-    elif t == "silent":
-        return "#E67E22"
-    return "#7F8C8D"
-
 
 def _link_or_text(text: str, url: str, style: str = "color:#1B2A4A;text-decoration:none;") -> str:
     """Render as <a> only if url is a real link, otherwise plain text."""
@@ -145,6 +135,10 @@ def render(digest: dict) -> str:
         kospi = markets.get("kospi") or {}
         brent = markets.get("brent") or {}
         krw = markets.get("usd_krw") or {}
+        bok_rate = markets.get("bok_rate") or {}
+        exports = markets.get("monthly_exports") or {}
+        gdp = markets.get("gdp_estimate") or {}
+        # Top row: KOSPI, Brent, USD/KRW
         sections.append(f"""
         <table class="mkt-table" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#1B2A4A;color:#fff;border-bottom:1px solid rgba(255,255,255,0.1);">
           <tr>
@@ -162,6 +156,25 @@ def render(digest: dict) -> str:
               <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;">USD/KRW</div>
               <div style="font-size:18px;font-weight:700;">{_esc(str(krw.get("value", "—")))}</div>
               <div style="font-size:11px;">{_arrow(krw.get("change_pct", 0))}</div>
+            </td>
+          </tr>
+        </table>
+        <table class="mkt-table" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#162340;color:#fff;border-bottom:1px solid rgba(255,255,255,0.08);">
+          <tr>
+            <td width="33%" align="center" style="padding:8px 8px 10px;">
+              <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;opacity:0.5;">BOK Rate</div>
+              <div style="font-size:15px;font-weight:700;">{_esc(str(bok_rate.get("value", "—")))}</div>
+              <div style="font-size:10px;opacity:0.6;">{_esc(str(bok_rate.get("last_change", "")))}</div>
+            </td>
+            <td width="34%" align="center" style="padding:8px 8px 10px;border-left:1px solid rgba(255,255,255,0.1);border-right:1px solid rgba(255,255,255,0.1);">
+              <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;opacity:0.5;">Exports (Monthly)</div>
+              <div style="font-size:15px;font-weight:700;">{_esc(str(exports.get("value", "—")))}</div>
+              <div style="font-size:10px;">{_arrow(exports.get("change_pct", 0))}</div>
+            </td>
+            <td width="33%" align="center" style="padding:8px 8px 10px;">
+              <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;opacity:0.5;">GDP Est. (QoQ)</div>
+              <div style="font-size:15px;font-weight:700;">{_esc(str(gdp.get("value", "—")))}</div>
+              <div style="font-size:10px;opacity:0.6;">{_esc(str(gdp.get("period", "")))}</div>
             </td>
           </tr>
         </table>
@@ -307,27 +320,7 @@ def render(digest: dict) -> str:
         kim_activity = _esc(kcna.get("kim_activity", "")) if kcna.get("kim_activity") else ""
         days_absent = kcna.get("days_since_last_appearance")
 
-        # Inline tone labels (compact row instead of 2x2 grid)
-        country_configs = [
-            ("US", "us_tone"),
-            ("Russia", "russia_tone"),
-            ("China", "china_tone"),
-            ("ROK", "rok_tone"),
-        ]
-        tone_inline_parts = []
-        for country_name, tone_key in country_configs:
-            tone_val = _esc(str(kcna.get(tone_key, "—")))
-            tone_qualifier = _esc(kcna.get(tone_key.replace("_tone", "_qualifier"), "")) if kcna.get(tone_key.replace("_tone", "_qualifier")) else ""
-            label = f"{tone_val} — {tone_qualifier}" if tone_qualifier else tone_val
-            t_color = _tone_color(tone_val)
-            tone_inline_parts.append(
-                f'<span style="color:#888;">{_esc(country_name)}:</span> '
-                f'<span style="color:{t_color};font-weight:600;">{label}</span>'
-            )
-        tone_inline = f"""
-        <div style="margin-bottom:12px;font-size:12px;line-height:1.8;">
-          {"  &middot;  ".join(tone_inline_parts)}
-        </div>"""
+        tone_inline = ""
 
         # Propaganda focus & Kim appearance as inline items
         prop_focus = kcna.get("propaganda_focus") or []
@@ -440,41 +433,36 @@ def render(digest: dict) -> str:
             status = loc.get("status", "normal")
             note = _esc(loc.get("note", ""))
             last_report = _esc(loc.get("last_report", ""))
-            direction = loc.get("direction", "")  # "up", "down", or ""
+            direction = loc.get("direction", "")
             b_color, b_bg, b_label = _badge_styles.get(status, ("#7F8C8D", "#F5F5F5", "Monitor"))
-            # Override label based on status and direction
             if status == "normal":
-                b_label = "Monitor"
+                b_label = "—"
                 b_color = "#888"
-                b_bg = "#F5F5F5"
+                b_bg = "transparent"
             elif direction == "down":
-                b_label = "Active ↓"
+                b_label = "▼"
                 b_color = "#E67E22"
-                b_bg = "#FFF3E0"
+                b_bg = "transparent"
             elif direction == "up":
-                b_label = "Active ▲"
+                b_label = "▲"
+            # Compact: name + status on one line, note only if non-normal
+            note_html = f' <span style="color:#888;">— {note}</span>' if note and status != "normal" else ""
             loc_rows += f"""
-            <tr style="border-bottom:1px solid #F0F0F0;">
-              <td style="padding:8px 0;vertical-align:top;">
-                <div style="font-size:13px;font-weight:600;color:#1B2A4A;">{name}</div>
-                <div style="font-size:11px;line-height:1.4;color:#666;margin-top:2px;">{note}</div>
-              </td>
-              <td style="padding:8px 8px;text-align:center;vertical-align:top;" width="90">
-                <span style="display:inline-block;padding:2px 10px;border-radius:3px;font-size:10px;font-weight:600;color:{b_color};background:{b_bg};white-space:nowrap;">{b_label}</span>
-                <div style="font-size:10px;color:#999;margin-top:2px;">{last_report}</div>
+            <tr>
+              <td style="padding:4px 0;font-size:12px;color:#1B2A4A;vertical-align:top;">{name}{note_html}</td>
+              <td style="padding:4px 8px;text-align:right;vertical-align:top;white-space:nowrap;" width="70">
+                <span style="font-size:11px;font-weight:600;color:{b_color};">{b_label}</span>
+                <span style="font-size:10px;color:#999;margin-left:4px;">{last_report}</span>
               </td>
             </tr>"""
 
-        loc_date = _esc(str(digest.get("digest_date", "")))
         sections.append(f"""
         <div {_SEC}>
-          <h2 {_H2("#1B2A4A")}>Satellite &amp; Location Watch <span style="font-size:10px;font-weight:400;color:#888;text-transform:none;letter-spacing:0;">BP catalogue &middot; {loc_date}</span></h2>
-          <div style="padding-top:4px;">
-            {img_report_html}
-            <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#1B2A4A;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #E8E8E8;">BP Monitored Locations — Current Status</div>
-            <table width="100%" cellpadding="0" cellspacing="0" border="0" class="loc-table">
-              {loc_rows}
-            </table>
+          <h2 {_H2("#1B2A4A")}>Satellite &amp; Location Watch</h2>
+          {img_report_html}
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" class="loc-table" style="border-top:1px solid #E8E8E8;">
+            {loc_rows}
+          </table>
           </div>
         </div>
         """)
@@ -527,50 +515,34 @@ def render(digest: dict) -> str:
               {gov_rows}
             </table>"""
 
-        # Calendar Watch section
+        # Calendar — upcoming events (simple: date + headline + detail)
         cal_html = ""
         if calendar_watch:
             cal_items = ""
-            cal_type_colors = {
-                "watch": "#D4AC0D", "event": "#888", "hearing": "#C0392B",
-                "exercise": "#2980B9", "deadline": "#E67E22", "anniversary": "#8E44AD",
-                "risk": "#C0392B", "prep": "#C0392B",
-            }
             for cal in calendar_watch:
                 cal_month = _esc(cal.get("month", ""))
                 cal_day = _esc(str(cal.get("day", "")))
-                cal_type = _esc(cal.get("type", "event"))
-                cal_type_label = _esc(cal.get("type_label", cal_type.upper()))
                 cal_headline = _esc(cal.get("headline", ""))
                 cal_detail = _esc(cal.get("detail", ""))
-                cal_urgency = cal.get("urgency", "")
-                t_color = cal_type_colors.get(cal_type.lower(), "#888")
-                # Urgency suffix
-                urgency_html = ""
-                if cal_urgency and cal_urgency.lower() in ("critical", "elevated", "high"):
-                    urgency_html = f' · <span style="color:#C0392B;font-weight:600;">{_esc(cal_urgency.upper())}</span>'
                 cal_items += f"""
                 <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-bottom:1px solid #E8E8E8;">
                   <tr>
-                    <td width="60" style="padding:14px 14px 14px 0;text-align:center;vertical-align:top;">
-                      <div style="font-size:10px;text-transform:uppercase;color:#C0392B;font-weight:600;letter-spacing:0.5px;">{cal_month}</div>
-                      <div class="cal-date" style="font-size:28px;font-weight:300;color:#1B2A4A;line-height:1;">{cal_day}</div>
+                    <td width="50" style="padding:10px 10px 10px 0;text-align:center;vertical-align:top;">
+                      <div style="font-size:10px;text-transform:uppercase;color:#888;letter-spacing:0.5px;">{cal_month}</div>
+                      <div class="cal-date" style="font-size:22px;font-weight:300;color:#1B2A4A;line-height:1;">{cal_day}</div>
                     </td>
-                    <td style="padding:14px 0;vertical-align:top;">
-                      <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:{t_color};font-weight:600;margin-bottom:3px;">{cal_type_label}{urgency_html}</div>
-                      <div style="font-size:14px;font-weight:600;color:#1B2A4A;margin-bottom:3px;">{cal_headline}</div>
-                      <div style="font-size:12px;line-height:1.5;color:#555;">{cal_detail}</div>
+                    <td style="padding:10px 0;vertical-align:top;">
+                      <div style="font-size:13px;font-weight:600;color:#1B2A4A;margin-bottom:2px;">{cal_headline}</div>
+                      <div style="font-size:12px;line-height:1.4;color:#555;">{cal_detail}</div>
                     </td>
                   </tr>
                 </table>"""
             cal_html = f"""
             <div style="margin-top:20px;">
-              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-bottom:2px solid #1B2A4A;margin-bottom:4px;">
-                <tr>
-                  <td style="padding:10px 0;"><span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#1B2A4A;">Calendar Watch</span></td>
-                  <td style="padding:10px 0;text-align:right;"><span style="font-size:11px;color:#888;">14 days forward</span></td>
-                </tr>
-              </table>
+              <div style="padding:8px 0;border-bottom:1px solid #1B2A4A;margin-bottom:4px;">
+                <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#1B2A4A;">Upcoming</span>
+                <span style="font-size:11px;color:#888;margin-left:8px;">14 days</span>
+              </div>
               {cal_items}
             </div>"""
 
@@ -636,84 +608,13 @@ def render(digest: dict) -> str:
 
     # ── 10. US-Korea Trade & Investment Deals ───────────────────────────────
     us_korea = digest.get("us_korea_deals") or {}
-    # Support both old (array) and new (object with deals/tariff/package) format
     if isinstance(us_korea, list):
         deal_list = us_korea
-        tariff_snap = None
-        inv_package = None
-        status_tracker = []
     else:
         deal_list = us_korea.get("deals") or []
-        tariff_snap = us_korea.get("tariff_snapshot")
-        inv_package = us_korea.get("investment_package")
-        status_tracker = us_korea.get("status_tracker") or []
 
-    has_content = True  # Always show — investment tracker is persistent
-    if has_content:
+    if deal_list:
         header_html = ""
-
-        # Status tracker table (policy items with status badges)
-        tracker_status_colors = {
-            "active": ("#27AE60", "#E8F8F0"), "passed": ("#27AE60", "#E8F8F0"),
-            "risk": ("#C0392B", "#FBE9E7"), "monitor": ("#555", "#F5F5F5"),
-            "pressure": ("#555", "#F5F5F5"), "stalled": ("#E67E22", "#FDF6E3"),
-            "pending": ("#2980B9", "#EBF5FB"),
-        }
-        if status_tracker:
-            tracker_rows = ""
-            for tr_item in status_tracker:
-                tr_name = _esc(tr_item.get("item", ""))
-                tr_detail = _esc(tr_item.get("detail", ""))
-                tr_status = tr_item.get("status", "monitor").lower()
-                tr_color, tr_bg = tracker_status_colors.get(tr_status, ("#555", "#F5F5F5"))
-                tracker_rows += f"""
-                <tr>
-                  <td style="padding:10px 14px;border-bottom:1px solid #E8E8E8;vertical-align:top;">
-                    <div style="font-size:13px;font-weight:600;color:#1B2A4A;">{tr_name}</div>
-                    <div style="font-size:12px;color:#666;line-height:1.4;margin-top:2px;">{tr_detail}</div>
-                  </td>
-                  <td style="padding:10px 14px;border-bottom:1px solid #E8E8E8;text-align:right;vertical-align:middle;white-space:nowrap;" width="100">
-                    <span style="display:inline-block;padding:3px 10px;border-radius:3px;font-size:11px;font-weight:600;color:{tr_color};border:1.5px solid {tr_color};text-transform:uppercase;letter-spacing:0.5px;">{_esc(tr_status.upper())}</span>
-                  </td>
-                </tr>"""
-            header_html += f"""
-            <div style="margin-bottom:16px;background:#FAFAF5;border-radius:4px;overflow:hidden;">
-              <div style="padding:10px 14px;background:#F0EDE4;">
-                <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#1B2A4A;">Korea Strategic Trade &amp; Investment — Status Tracker</span>
-              </div>
-              <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                {tracker_rows}
-              </table>
-            </div>"""
-
-        # Tariff snapshot bar
-        if tariff_snap and not status_tracker:
-            header_html += f"""
-            <div style="margin-bottom:12px;padding:8px 12px;background:#FDF6E3;border-radius:4px;border-left:3px solid #D4AC0D;">
-              <div style="font-size:10px;text-transform:uppercase;color:#888;letter-spacing:0.5px;">Tariff Snapshot</div>
-              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">{_esc(tariff_snap)}</div>
-            </div>"""
-
-        # $350B investment package tracker — always show
-        inv = inv_package or {}
-        announced = _esc(str(inv.get("announced_to_date", "—")))
-        total = _esc(str(inv.get("total_pledged", "$350B")))
-        pct_raw = inv.get("pct_fulfilled", 0)
-        try:
-            pct = int(str(pct_raw).replace("%", "").strip())
-        except (ValueError, TypeError):
-            pct = 0
-        latest = _esc(inv.get("latest_update", "No new deals today"))
-        bar_width = min(max(pct, 0), 100)
-        header_html += f"""
-        <div style="margin-bottom:12px;padding:8px 12px;background:#F8F9FA;border-radius:4px;border-left:3px solid #16A085;">
-          <div style="font-size:10px;text-transform:uppercase;color:#888;letter-spacing:0.5px;">ROK Investment Commitment</div>
-          <div style="font-size:14px;font-weight:700;color:#1B2A4A;margin-top:2px;">{announced} <span style="font-size:11px;font-weight:400;color:#888;">of {total} pledged</span></div>
-          <div style="margin-top:4px;background:#E0E0E0;border-radius:3px;height:8px;overflow:hidden;">
-            <div style="width:{bar_width}%;background:#16A085;height:100%;border-radius:3px;"></div>
-          </div>
-          <div style="font-size:11px;color:#555;margin-top:4px;">{pct}% fulfilled · {latest}</div>
-        </div>"""
 
         # Individual deals
         deals_html = ""

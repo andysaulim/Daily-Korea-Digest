@@ -343,7 +343,65 @@ def _collect_markets() -> dict | None:
         except Exception as e:
             print(f"    ⚠  Market data error ({key}): {e}")
             result[key] = {"value": "—", "change_pct": 0}
-    return result if any(r["value"] != "—" for r in result.values()) else None
+
+    # ROK economic indicators (BOK rate, monthly exports, GDP estimate)
+    # Sourced from BOK ECOS API / MOTIE / KOSTAT — fallback to static latest known
+    result["bok_rate"] = _fetch_bok_rate()
+    result["monthly_exports"] = _fetch_monthly_exports()
+    result["gdp_estimate"] = _fetch_gdp_estimate()
+
+    return result if any(result.get(k, {}).get("value", "—") != "—"
+                         for k in ("kospi", "brent", "usd_krw")) else None
+
+
+def _fetch_bok_rate() -> dict:
+    """Fetch BOK base rate. Falls back to last known value."""
+    # BOK ECOS open API — base rate series
+    try:
+        url = "https://ecos.bok.or.kr/api/StatisticSearch/json/en/1/1/722Y001/M/202501/202612/0101000/"
+        resp = requests.get(url, timeout=10, headers={"User-Agent": "Mozilla/5.0"})
+        if resp.ok:
+            rows = resp.json().get("StatisticSearch", {}).get("row", [])
+            if rows:
+                val = rows[-1].get("DATA_VALUE", "")
+                return {"value": f"{float(val):.2f}%", "last_change": ""}
+    except Exception:
+        pass
+    # Fallback: last known BOK rate (updated manually if API unavailable)
+    return {"value": "2.75%", "last_change": "Mar 2026"}
+
+
+def _fetch_monthly_exports() -> dict:
+    """Fetch latest monthly export figure from MOTIE/KITA."""
+    try:
+        # KITA trade statistics API
+        url = "https://stat.kita.net/api/oapi/stat/total/export"
+        resp = requests.get(url, timeout=10, headers={"User-Agent": "Mozilla/5.0"})
+        if resp.ok:
+            data = resp.json()
+            if data.get("value"):
+                val = float(data["value"])
+                change = float(data.get("change_pct", 0))
+                return {"value": f"${val:.1f}B", "change_pct": round(change, 1)}
+    except Exception:
+        pass
+    return {"value": "—", "change_pct": 0}
+
+
+def _fetch_gdp_estimate() -> dict:
+    """Fetch latest GDP estimate from BOK."""
+    try:
+        url = "https://ecos.bok.or.kr/api/StatisticSearch/json/en/1/1/200Y002/Q/202401/202604/10111/"
+        resp = requests.get(url, timeout=10, headers={"User-Agent": "Mozilla/5.0"})
+        if resp.ok:
+            rows = resp.json().get("StatisticSearch", {}).get("row", [])
+            if rows:
+                val = rows[-1].get("DATA_VALUE", "")
+                period = rows[-1].get("TIME", "")
+                return {"value": f"{float(val):.1f}%", "period": period}
+    except Exception:
+        pass
+    return {"value": "—", "period": ""}
 
 
 # ─────────────────────────────────────────────────────────────────────────────
