@@ -372,35 +372,89 @@ def _fetch_bok_rate() -> dict:
 
 
 def _fetch_monthly_exports() -> dict:
-    """Fetch latest monthly export figure from MOTIE/KITA."""
+    """Fetch latest monthly export figure from BOK ECOS / MOTIE."""
+    # Source 1: BOK ECOS — trade balance series (monthly exports in $M)
     try:
-        # KITA trade statistics API
-        url = "https://stat.kita.net/api/oapi/stat/total/export"
+        # Series 403Y014 = Trade by period, item 000000 = total exports
+        now = datetime.now(timezone.utc)
+        start = (now - timedelta(days=120)).strftime("%Y%m")
+        end = now.strftime("%Y%m")
+        url = f"https://ecos.bok.or.kr/api/StatisticSearch/json/en/1/5/403Y014/M/{start}/{end}/000000/"
         resp = requests.get(url, timeout=10, headers={"User-Agent": "Mozilla/5.0"})
         if resp.ok:
-            data = resp.json()
-            if data.get("value"):
-                val = float(data["value"])
-                change = float(data.get("change_pct", 0))
-                return {"value": f"${val:.1f}B", "change_pct": round(change, 1)}
+            rows = resp.json().get("StatisticSearch", {}).get("row", [])
+            if len(rows) >= 2:
+                latest = rows[-1]
+                prev = rows[-2]
+                val = float(latest.get("DATA_VALUE", 0))
+                prev_val = float(prev.get("DATA_VALUE", 0))
+                change = ((val - prev_val) / prev_val * 100) if prev_val else 0
+                # BOK reports in millions USD
+                val_b = val / 1000
+                return {"value": f"${val_b:.1f}B", "change_pct": round(change, 1)}
+            elif rows:
+                val = float(rows[-1].get("DATA_VALUE", 0))
+                val_b = val / 1000
+                return {"value": f"${val_b:.1f}B", "change_pct": 0}
+    except Exception as e:
+        print(f"    ⚠  BOK exports API error: {e}")
+
+    # Source 2: Google News scrape for latest MOTIE export announcement
+    try:
+        url = _gnews("South+Korea+monthly+exports+billion+MOTIE")
+        entries = _parse_feed(url)
+        for entry in entries[:5]:
+            text = f"{entry.get('title', '')} {entry.get('summary', entry.get('description', ''))}"
+            # Look for patterns like "$58.4 billion" or "$58.4B"
+            import re as _re
+            match = _re.search(r'\$(\d+(?:\.\d+)?)\s*(?:billion|B)\b', text, _re.IGNORECASE)
+            if match:
+                val = float(match.group(1))
+                return {"value": f"${val:.1f}B", "change_pct": 0}
     except Exception:
         pass
+
     return {"value": "—", "change_pct": 0}
 
 
 def _fetch_gdp_estimate() -> dict:
-    """Fetch latest GDP estimate from BOK."""
+    """Fetch latest GDP growth estimate from BOK."""
+    # Try broader date range to catch latest available quarter
     try:
-        url = "https://ecos.bok.or.kr/api/StatisticSearch/json/en/1/1/200Y002/Q/202401/202604/10111/"
+        now = datetime.now(timezone.utc)
+        start = (now - timedelta(days=730)).strftime("%Y") + "Q1"
+        end = now.strftime("%Y") + "Q4"
+        url = f"https://ecos.bok.or.kr/api/StatisticSearch/json/en/1/20/200Y002/Q/{start}/{end}/10111/"
         resp = requests.get(url, timeout=10, headers={"User-Agent": "Mozilla/5.0"})
         if resp.ok:
             rows = resp.json().get("StatisticSearch", {}).get("row", [])
             if rows:
-                val = rows[-1].get("DATA_VALUE", "")
-                period = rows[-1].get("TIME", "")
+                latest = rows[-1]
+                val = latest.get("DATA_VALUE", "")
+                period = latest.get("TIME", "")
+                # Format period: "2026Q1" -> "Q1 2026"
+                if "Q" in str(period):
+                    parts = str(period).split("Q")
+                    period = f"Q{parts[1]} {parts[0]}"
                 return {"value": f"{float(val):.1f}%", "period": period}
+    except Exception as e:
+        print(f"    ⚠  BOK GDP API error: {e}")
+
+    # Fallback: scrape latest BOK GDP forecast from news
+    try:
+        url = _gnews("Bank+of+Korea+GDP+growth+forecast+2026")
+        entries = _parse_feed(url)
+        for entry in entries[:5]:
+            text = f"{entry.get('title', '')} {entry.get('summary', entry.get('description', ''))}"
+            import re as _re
+            match = _re.search(r'(\d+\.\d+)\s*(?:percent|%|pct)', text, _re.IGNORECASE)
+            if match:
+                val = float(match.group(1))
+                if 0 < val < 10:  # sanity check for GDP growth rate
+                    return {"value": f"{val:.1f}%", "period": "BOK forecast"}
     except Exception:
         pass
+
     return {"value": "—", "period": ""}
 
 

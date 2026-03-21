@@ -62,7 +62,14 @@ def main():
         print("\n  --no-push: skipping database updates")
 
     # ── Step 3: Render HTML ──────────────────────────────────────────────────
+    import os
     from render import render
+
+    # Inject web URL for "Read Online" link (set via env or GitHub Pages)
+    web_base = os.environ.get("WEB_URL", "")
+    if web_base:
+        digest_data["web_url"] = web_base.rstrip("/") + "/latest.html"
+
     html = render(digest_data)
 
     date_slug = datetime.now(timezone.utc).strftime("%Y-%m-%d")
@@ -72,6 +79,12 @@ def main():
 
     # Also write latest.html for convenience
     Path("latest.html").write_text(html, encoding="utf-8")
+
+    # Archive copy for GitHub Pages
+    archive_dir = Path("public")
+    archive_dir.mkdir(exist_ok=True)
+    (archive_dir / "latest.html").write_text(html, encoding="utf-8")
+    (archive_dir / f"digest_{date_slug}.html").write_text(html, encoding="utf-8")
 
     # ── Step 4: Send email ───────────────────────────────────────────────────
     if args.no_send:

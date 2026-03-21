@@ -109,7 +109,16 @@ def render(digest: dict) -> str:
     word_count = _estimate_word_count(digest)
     read_min = max(1, round(word_count / 250))
 
+    web_url = digest.get("web_url", "")
     sections = []
+
+    # ── 0. View in Browser bar ────────────────────────────────────────────
+    if web_url:
+        sections.append(f"""
+        <div style="background:#F0F0F0;padding:6px 32px;text-align:center;font-size:11px;color:#888;" class="sec">
+          Email not rendering? <a href="{_esc(web_url)}" style="color:#2980B9;text-decoration:none;">Read online &#8594;</a>
+        </div>
+        """)
 
     # ── 1. Header ────────────────────────────────────────────────────────
     sections.append(f"""
@@ -240,6 +249,38 @@ def render(digest: dict) -> str:
         <div {_SEC}>
           <h2 {_H2("#1B2A4A")}>Top Stories</h2>
           {stories_html}
+        </div>
+        """)
+
+    # ── 5. What to Watch Today ─────────────────────────────────────────
+    watch_today = digest.get("watch_today") or []
+    if watch_today:
+        watch_html = ""
+        urgency_colors = {"critical": "#C0392B", "high": "#E67E22", "elevated": "#D4AC0D", "normal": "#2980B9"}
+        for item in watch_today:
+            headline = _esc(item.get("headline", ""))
+            detail = _esc(item.get("detail", ""))
+            w_type = _esc(item.get("type", ""))
+            time_str = _esc(item.get("time", ""))
+            urgency = item.get("urgency", "normal")
+            decision = _esc(item.get("decision_point", ""))
+            u_color = urgency_colors.get(urgency, "#2980B9")
+            type_badge = f'<span style="display:inline-block;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:600;color:#fff;background:{u_color};text-transform:uppercase;letter-spacing:0.5px;">{_esc(urgency)}</span>'
+            type_label = f'<span style="font-size:10px;color:#888;margin-left:6px;text-transform:uppercase;">{w_type}</span>'
+            time_html = f'<div style="font-size:11px;color:#888;margin-top:2px;">&#128337; {time_str}</div>' if time_str else ""
+            decision_html = f'<div style="font-size:11px;color:#2980B9;margin-top:4px;"><strong>Decision point:</strong> {decision}</div>' if decision else ""
+            watch_html += f"""
+            <div style="margin-bottom:10px;padding:10px 12px;background:#FFF8E1;border-radius:4px;border-left:4px solid {u_color};">
+              <div style="margin-bottom:4px;">{type_badge}{type_label}</div>
+              <div style="font-size:14px;font-weight:700;color:#1B2A4A;margin-bottom:4px;">{headline}</div>
+              <div style="font-size:12px;line-height:1.5;color:#555;">{detail}</div>
+              {time_html}
+              {decision_html}
+            </div>"""
+        sections.append(f"""
+        <div {_SEC}>
+          <h2 {_H2("#E67E22")}>What to Watch Today</h2>
+          {watch_html}
         </div>
         """)
 
@@ -605,8 +646,52 @@ def render(digest: dict) -> str:
     else:
         deal_list = us_korea.get("deals") or []
 
-    if deal_list:
+    status_tracker = us_korea.get("status_tracker") or [] if isinstance(us_korea, dict) else []
+    investment_pkg = us_korea.get("investment_package") or {} if isinstance(us_korea, dict) else {}
+
+    if deal_list or status_tracker or investment_pkg:
         header_html = ""
+
+        # Investment package progress bar
+        if investment_pkg and investment_pkg.get("total_pledged"):
+            pct = investment_pkg.get("pct_fulfilled", 0)
+            bar_width = max(2, min(pct, 100))
+            header_html += f"""
+            <div style="margin-bottom:16px;padding:12px 14px;background:#F0F7FF;border-radius:4px;border:1px solid #D6E9F8;">
+              <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#1B2A4A;font-weight:600;margin-bottom:6px;">ROK-US Investment Commitment</div>
+              <div style="margin-bottom:4px;">
+                <span style="font-size:22px;font-weight:700;color:#1B2A4A;">{_esc(str(investment_pkg.get("announced_to_date", "")))}</span>
+                <span style="font-size:13px;color:#888;"> of {_esc(str(investment_pkg.get("total_pledged", "")))} pledged</span>
+              </div>
+              <div style="background:#E0E0E0;border-radius:4px;height:8px;overflow:hidden;">
+                <div style="background:#27AE60;width:{bar_width}%;height:100%;border-radius:4px;"></div>
+              </div>
+              <div style="font-size:11px;color:#888;margin-top:4px;">{pct}% fulfilled &middot; {_esc(str(investment_pkg.get("latest_update", "")))}</div>
+            </div>"""
+
+        # Status tracker table (tariffs, MOUs, agreements)
+        if status_tracker:
+            status_colors = {"ACTIVE": "#27AE60", "PASSED": "#2980B9", "RISK": "#C0392B", "MONITOR": "#D4AC0D", "PRESSURE": "#E67E22"}
+            tracker_rows = ""
+            for tr in status_tracker:
+                item_text = _esc(tr.get("item", ""))
+                detail_text = _esc(tr.get("detail", ""))
+                st = tr.get("status", "MONITOR")
+                st_color = status_colors.get(st, "#7F8C8D")
+                status_badge = f'<span style="display:inline-block;padding:1px 6px;border-radius:3px;font-size:9px;font-weight:700;color:#fff;background:{st_color};letter-spacing:0.5px;">{_esc(st)}</span>'
+                tracker_rows += f"""
+                <tr style="border-bottom:1px solid #F0F0F0;">
+                  <td style="padding:6px 8px 6px 0;vertical-align:top;font-size:12px;font-weight:600;color:#1B2A4A;width:30%;">{item_text}</td>
+                  <td style="padding:6px 4px;vertical-align:top;font-size:11px;color:#555;line-height:1.4;">{detail_text}</td>
+                  <td style="padding:6px 0 6px 4px;vertical-align:top;text-align:right;white-space:nowrap;">{status_badge}</td>
+                </tr>"""
+            header_html += f"""
+            <div style="margin-bottom:16px;">
+              <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#888;font-weight:600;margin-bottom:6px;">Policy &amp; Agreement Tracker</div>
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #E8E8E8;">
+                {tracker_rows}
+              </table>
+            </div>"""
 
         # Individual deals
         deals_html = ""
@@ -687,13 +772,39 @@ def render(digest: dict) -> str:
         </div>
         """)
 
-    # ── 12. The Wire (Overnight + Also Today — secondary news) ──────────
+    # ── 12. Overnight Flash (high-priority overnight items) ─────────────
     overnight = digest.get("overnight_items") or []
+    if overnight:
+        _cat_colors = {"NK-Russia": "#C0392B", "ROK Policy": "#1B2A4A", "US-Korea": "#2980B9",
+                       "DPRK": "#8E44AD", "Security": "#E67E22", "Business": "#D4AC0D"}
+        flash_html = ""
+        for item in overnight:
+            cat = _esc(item.get("category", ""))
+            headline = _esc(item.get("headline", ""))
+            body = _esc(item.get("body_text", ""))
+            src = _esc(item.get("source", ""))
+            url = item.get("url", "")
+            bar_color = _cat_colors.get(item.get("category", ""), "#1B2A4A")
+            flash_html += f"""
+            <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid {bar_color};">
+              <div style="font-size:11px;color:#C0392B;text-transform:uppercase;font-weight:600;">{cat} &middot; {src}</div>
+              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
+                {_link_or_text(headline, url)}
+              </div>
+              <div style="font-size:12px;line-height:1.4;color:#555;">{body}</div>
+            </div>"""
+        sections.append(f"""
+        <div {_SEC_BG("#FFF8F0")}>
+          <h2 {_H2("#C0392B")}>&#9889; Overnight Flash</h2>
+          {flash_html}
+        </div>
+        """)
+
+    # ── 13. The Wire (Also Today — secondary news) ────────────────────
     combined_also = digest.get("also_today") or []
-    wire_items = overnight + combined_also
-    if wire_items:
+    if combined_also:
         wire_html = ""
-        for item in wire_items:
+        for item in combined_also:
             cat = _esc(item.get("category", ""))
             headline = _esc(item.get("headline", ""))
             body = _esc(item.get("body_text", ""))
