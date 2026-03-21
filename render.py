@@ -1,6 +1,6 @@
 """
-CSIS Korea Digest — HTML Renderer
-Beyond Parallel × CSIS Korea Chair
+Korea Brief — HTML Renderer
+CSIS Korea Chair
 Takes structured digest JSON from Claude and renders a styled HTML email.
 Uses table-based layout for maximum email client compatibility.
 """
@@ -89,48 +89,48 @@ _H2 = lambda color: f'style="margin:0 0 12px 0;font-size:13px;color:{color};text
 
 
 def render(digest: dict) -> str:
-    date_str = datetime.now(timezone.utc).strftime("%m/%d/%Y")
+    now = datetime.now(timezone.utc)
+    date_str = now.strftime("%A, %d %B %Y")  # Thursday, 20 March 2026
     editor_note = _esc(digest.get("editor_note", ""))
     story_count = digest.get("story_count", 0)
     oped_count = digest.get("oped_count", 0)
     academic_count = digest.get("academic_count", 0)
-    gen_time = datetime.now(timezone.utc).strftime("%H:%M UTC")
+    gen_time = now.strftime("%H:%M UTC")
+    re_line = _esc(digest.get("re_line", ""))
 
     sections = []
 
-    # ── 1. Header with Logo ──────────────────────────────────────────────
+    # ── 1. Header ────────────────────────────────────────────────────────
     logo_url = digest.get("logo_url", "https://raw.githubusercontent.com/andysaulim/Daily-Korea-News/main/assets/csis-korea-chair-logo.png")
     sections.append(f"""
-    <div style="background:#FFFFFF;padding:20px 32px 16px;border-bottom:1px solid #E0E0E0;" class="sec header">
-      <table width="100%" cellpadding="0" cellspacing="0" border="0">
-        <tr>
-          <td style="vertical-align:middle;">
-            <!--[if !mso]><!-->
-            <img src="{logo_url}" alt="" width="420" style="max-width:100%;height:auto;display:block;" />
-            <!--<![endif]-->
-            <!--[if mso]>
-            <table cellpadding="0" cellspacing="0" border="0"><tr>
-              <td style="font-size:26px;font-weight:700;color:#1B2A4A;font-family:Georgia,serif;padding-right:12px;border-right:2px solid #8BAFCB;">CSIS</td>
-              <td style="padding-left:12px;font-size:11px;color:#1B2A4A;font-family:Arial,sans-serif;line-height:1.3;text-transform:uppercase;letter-spacing:0.5px;padding-right:12px;border-right:2px solid #8BAFCB;">Center for Strategic &amp;<br>International Studies</td>
-              <td style="padding-left:12px;font-size:13px;font-weight:700;color:#C0392B;font-family:Arial,sans-serif;text-transform:uppercase;letter-spacing:1px;">Korea<br>Chair</td>
-            </tr></table>
-            <![endif]-->
-            <noscript>
-              <table cellpadding="0" cellspacing="0" border="0"><tr>
-                <td style="font-size:26px;font-weight:700;color:#1B2A4A;font-family:Georgia,serif;padding-right:12px;border-right:2px solid #8BAFCB;">CSIS</td>
-                <td style="padding-left:12px;font-size:11px;color:#1B2A4A;font-family:Arial,sans-serif;line-height:1.3;text-transform:uppercase;letter-spacing:0.5px;padding-right:12px;border-right:2px solid #8BAFCB;">Center for Strategic &amp;<br>International Studies</td>
-                <td style="padding-left:12px;font-size:13px;font-weight:700;color:#C0392B;font-family:Arial,sans-serif;text-transform:uppercase;letter-spacing:1px;">Korea<br>Chair</td>
-              </tr></table>
-            </noscript>
-          </td>
-        </tr>
-      </table>
+    <div style="background:#FFFFFF;padding:14px 32px 10px;" class="sec header">
+      <!--[if !mso]><!-->
+      <img src="{logo_url}" alt="" width="320" style="max-width:80%;height:auto;display:block;" />
+      <!--<![endif]-->
+      <!--[if mso]>
+      <table cellpadding="0" cellspacing="0" border="0"><tr>
+        <td style="font-size:22px;font-weight:700;color:#1B2A4A;font-family:Georgia,serif;padding-right:10px;border-right:2px solid #8BAFCB;">CSIS</td>
+        <td style="padding-left:10px;font-size:10px;color:#1B2A4A;font-family:Arial,sans-serif;line-height:1.3;text-transform:uppercase;letter-spacing:0.5px;">Korea Chair</td>
+      </tr></table>
+      <![endif]-->
+      <noscript>
+        <div style="font-size:16px;font-weight:700;color:#1B2A4A;font-family:Georgia,serif;">CSIS Korea Chair</div>
+      </noscript>
     </div>
-    <div style="background:#1B2A4A;color:#fff;padding:20px 32px;" class="sec">
-      <h1 style="margin:0;font-size:22px;font-weight:700;font-family:Georgia,serif;color:#fff;">
-        CSIS Korea Digest
-      </h1>
-      <div style="margin-top:6px;font-size:13px;opacity:0.8;">{_esc(date_str)}</div>
+    <div style="background:#1B2A4A;color:#fff;padding:20px 32px 16px;" class="sec">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+        <td style="vertical-align:top;">
+          <h1 style="margin:0;font-size:24px;font-weight:700;font-family:Georgia,serif;color:#fff;letter-spacing:0.5px;">
+            Korea Brief
+          </h1>
+          <div style="margin-top:4px;font-size:13px;color:rgba(255,255,255,0.7);">{_esc(date_str)}</div>
+        </td>
+        <td style="vertical-align:top;text-align:right;">
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.4);margin-bottom:2px;">{gen_time}</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.35);">{story_count + oped_count + academic_count} sources</div>
+        </td>
+      </tr></table>
+      {"<div style='margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.15);font-size:13px;color:rgba(255,255,255,0.85);font-family:Georgia,serif;'><strong style=" + '"' + "color:rgba(255,255,255,0.5);" + '"' + ">RE:</strong> " + re_line + "</div>" if re_line else ""}
     </div>
     """)
 
@@ -162,25 +162,16 @@ def render(digest: dict) -> str:
         </table>
         """)
 
-    # ── 3. Metrics bar ─────────────────────────────────────────────────────
-    sections.append(f"""
-    <table class="metrics-bar" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F8F9FA;border-bottom:1px solid #E0E0E0;">
-      <tr>
-        <td width="33%" align="center" style="padding:10px 4px;font-family:Arial,sans-serif;">
-          <div style="font-size:20px;font-weight:700;color:#1B2A4A;">{story_count}</div>
-          <div style="font-size:11px;color:#555;">Stories</div>
-        </td>
-        <td width="34%" align="center" style="padding:10px 4px;font-family:Arial,sans-serif;">
-          <div style="font-size:20px;font-weight:700;color:#1B2A4A;">{oped_count}</div>
-          <div style="font-size:11px;color:#555;">Op-Eds</div>
-        </td>
-        <td width="33%" align="center" style="padding:10px 4px;font-family:Arial,sans-serif;">
-          <div style="font-size:20px;font-weight:700;color:#1B2A4A;">{academic_count}</div>
-          <div style="font-size:11px;color:#555;">Academic</div>
-        </td>
-      </tr>
-    </table>
-    """)
+    # ── 3. Morning Memo ────────────────────────────────────────────────────
+    if editor_note:
+        sections.append(f"""
+        <div style="padding:20px 32px;border-bottom:2px solid #1B2A4A;" class="sec">
+          <h2 {_H2("#1B2A4A")}>Morning Memo</h2>
+          <p style="margin:0;font-size:14px;line-height:1.6;color:#333;font-style:italic;font-family:Georgia,serif;">
+            {editor_note}
+          </p>
+        </div>
+        """)
 
     # ── 4. What to Watch Today ─────────────────────────────────────────────
     watch_today = digest.get("watch_today") or []
@@ -209,63 +200,7 @@ def render(digest: dict) -> str:
         </div>
         """)
 
-    # ── 5. Morning Memo ────────────────────────────────────────────────────
-    if editor_note:
-        sections.append(f"""
-        <div style="padding:20px 32px;border-bottom:2px solid #1B2A4A;" class="sec">
-          <h2 {_H2("#1B2A4A")}>Morning Memo</h2>
-          <p style="margin:0;font-size:14px;line-height:1.6;color:#333;font-style:italic;font-family:Georgia,serif;">
-            {editor_note}
-          </p>
-        </div>
-        """)
-
-    # ── 6. On This Day in Korea ────────────────────────────────────────────
-    on_this_day = digest.get("on_this_day") or []
-    if on_this_day:
-        otd_html = ""
-        for item in on_this_day[:1]:
-            date = _esc(item.get("date", ""))
-            event = _esc(item.get("event", ""))
-            relevance = _esc(item.get("relevance", ""))
-            otd_html += f"""
-            <div style="margin-bottom:6px;">
-              <div style="font-size:12px;"><strong>{date}:</strong> {event}</div>
-              <div style="font-size:11px;color:#2980B9;font-style:italic;">{relevance}</div>
-            </div>"""
-        sections.append(f"""
-        <div style="padding:16px 32px;background:#F0EDE4;border-bottom:1px solid #E0E0E0;" class="sec">
-          <h2 style="margin:0 0 8px 0;font-size:12px;color:#7F8C8D;text-transform:uppercase;letter-spacing:1px;font-family:Arial,sans-serif;">On This Day in Korea</h2>
-          {otd_html}
-        </div>
-        """)
-
-    # ── 7. Overnight Flash ────────────────────────────────────────────────
-    overnight = digest.get("overnight_items") or []
-    if overnight:
-        items_html = ""
-        for item in overnight:
-            cat = _esc(item.get("category", ""))
-            headline = _esc(item.get("headline", ""))
-            body = _esc(item.get("body_text", ""))
-            src = _esc(item.get("source", ""))
-            url = item.get("url", "")
-            items_html += f"""
-            <div style="margin-bottom:12px;padding-left:14px;border-left:3px solid #1B2A4A;">
-              <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.5px;">{cat} &middot; {src}</div>
-              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
-                {_link_or_text(headline, url)}
-              </div>
-              <div style="font-size:12px;line-height:1.4;color:#444;">{body}</div>
-            </div>"""
-        sections.append(f"""
-        <div {_SEC}>
-          <h2 {_H2("#C0392B")}>Overnight Flash</h2>
-          {items_html}
-        </div>
-        """)
-
-    # ── 8. Top Stories ────────────────────────────────────────────────────
+    # ── 5. Top Stories ────────────────────────────────────────────────────
     top_stories = digest.get("top_stories") or []
     if top_stories:
         stories_html = ""
@@ -299,7 +234,7 @@ def render(digest: dict) -> str:
         </div>
         """)
 
-    # ── 9. Key Stat of the Day ───────────────────────────────────────────
+    # ── 6. Key Stat of the Day ───────────────────────────────────────────
     key_stat = digest.get("key_stat") or {}
     if key_stat and key_stat.get("number"):
         sections.append(f"""
@@ -312,99 +247,7 @@ def render(digest: dict) -> str:
         </div>
         """)
 
-    # ── 10. Satellite & Location Watch ───────────────────────────────────
-    locations = digest.get("bp_locations") or []
-    imagery_report = digest.get("imagery_report") or {}
-    if locations or imagery_report:
-        # Featured imagery report (e.g., AEI / 38North analysis)
-        img_report_html = ""
-        if imagery_report:
-            ir_source = _esc(imagery_report.get("source", ""))
-            ir_date = _esc(imagery_report.get("date", ""))
-            ir_label = _esc(imagery_report.get("label", "New imagery reports"))
-            ir_headline = _esc(imagery_report.get("headline", ""))
-            ir_body = _esc(imagery_report.get("body", ""))
-            ir_sources = imagery_report.get("source_links") or []
-            ir_bp_ids = imagery_report.get("bp_location_ids") or []
-            source_links_html = ""
-            if ir_sources:
-                _src_parts = []
-                for s in ir_sources:
-                    if isinstance(s, dict):
-                        s_label = _esc(s.get("label", s.get("source", "")))
-                        s_url = s.get("url", "")
-                        if s_url and s_url != "#" and s_url.startswith("http"):
-                            _src_parts.append(f'<a href="{s_url}" style="font-size:11px;font-family:monospace;color:#888;text-decoration:none;">{s_label} ↗</a>')
-                        else:
-                            _src_parts.append(f'<span style="font-size:11px;font-family:monospace;color:#888;">{s_label} ↗</span>')
-                    else:
-                        _src_parts.append(f'<span style="font-size:11px;font-family:monospace;color:#888;">{_esc(str(s))} ↗</span>')
-                source_links_html = "<div style='margin-top:8px;'>" + " &middot; ".join(_src_parts) + "</div>"
-            bp_ids_html = ""
-            if ir_bp_ids:
-                bp_ids_html = "<div style='margin-top:6px;font-size:11px;color:#888;'>→ " + " · ".join(_esc(str(b)) for b in ir_bp_ids) + "</div>"
-            img_report_html = f"""
-            <div style="margin-bottom:20px;padding:16px;border-left:3px solid #2980B9;">
-              <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:#C0392B;font-weight:600;margin-bottom:6px;">{ir_source} · {ir_date} — {ir_label}</div>
-              <div style="font-size:17px;font-weight:700;color:#1B4A6A;line-height:1.3;margin-bottom:8px;">{ir_headline}</div>
-              <div style="font-size:13px;line-height:1.6;color:#444;">{ir_body}</div>
-              {bp_ids_html}
-              {source_links_html}
-            </div>"""
-
-        # BP Monitored Locations status table
-        loc_rows = ""
-        _badge_styles = {
-            "normal": ("#27AE60", "#E8F8F0", "Normal"),
-            "activity": ("#D4AC0D", "#FDF6E3", "Active"),
-            "elevated": ("#E67E22", "#FFF3E0", "Active ▲"),
-            "alert": ("#C0392B", "#FBE9E7", "Active ▲"),
-        }
-        for loc in locations:
-            name = _esc(loc.get("name", ""))
-            status = loc.get("status", "normal")
-            note = _esc(loc.get("note", ""))
-            last_report = _esc(loc.get("last_report", ""))
-            direction = loc.get("direction", "")  # "up", "down", or ""
-            b_color, b_bg, b_label = _badge_styles.get(status, ("#7F8C8D", "#F5F5F5", "Monitor"))
-            # Override label based on status and direction
-            if status == "normal":
-                b_label = "Monitor"
-                b_color = "#888"
-                b_bg = "#F5F5F5"
-            elif direction == "down":
-                b_label = "Active ↓"
-                b_color = "#E67E22"
-                b_bg = "#FFF3E0"
-            elif direction == "up":
-                b_label = "Active ▲"
-            loc_rows += f"""
-            <tr style="border-bottom:1px solid #F0F0F0;">
-              <td style="padding:10px 0;font-size:13px;font-weight:600;color:#1B2A4A;">{name}</td>
-              <td style="padding:10px 8px;text-align:center;" width="100">
-                <span style="display:inline-block;padding:3px 12px;border-radius:3px;font-size:11px;font-weight:600;color:{b_color};background:{b_bg};white-space:nowrap;">{b_label}</span>
-              </td>
-              <td style="padding:10px 0;text-align:right;font-size:11px;font-family:monospace;color:#999;white-space:nowrap;" width="140">{last_report if last_report else note}</td>
-            </tr>"""
-
-        loc_date = _esc(str(digest.get("digest_date", "")))
-        sections.append(f"""
-        <div style="padding:0;border-bottom:1px solid #E0E0E0;" class="sec">
-          <div style="padding:10px 32px;background:#2C4A2A;display:flex;justify-content:space-between;align-items:center;">
-            <span style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#E8DCC8;font-family:Arial,sans-serif;">Satellite &amp; Location Watch</span>
-            <span style="font-size:11px;color:rgba(255,255,255,0.5);">BP catalogue · {loc_date}</span>
-          </div>
-          <div style="padding:20px 32px;">
-            {img_report_html}
-            <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#1B2A4A;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid #E8E8E8;">BP Monitored Locations — Current Status</div>
-            <table width="100%" cellpadding="0" cellspacing="0" border="0" class="loc-table">
-              {loc_rows}
-            </table>
-          </div>
-        </div>
-        """)
-
-    # ── 11. KCNA Rhetoric Delta ─────────────────────────────────────────────
+    # ── 7. KCNA Rhetoric Delta ──────────────────────────────────────────────
     kcna = digest.get("kcna_delta") or {}
     if kcna:
         bottom_line = _esc(kcna.get("bottom_line", kcna.get("delta_note", "")))
@@ -584,7 +427,99 @@ def render(digest: dict) -> str:
         </div>
         """)
 
-    # ── 12. ROK Government Schedule ──────────────────────────────────────
+    # ── 8. Satellite & Location Watch ────────────────────────────────────
+    locations = digest.get("bp_locations") or []
+    imagery_report = digest.get("imagery_report") or {}
+    if locations or imagery_report:
+        # Featured imagery report (e.g., AEI / 38North analysis)
+        img_report_html = ""
+        if imagery_report:
+            ir_source = _esc(imagery_report.get("source", ""))
+            ir_date = _esc(imagery_report.get("date", ""))
+            ir_label = _esc(imagery_report.get("label", "New imagery reports"))
+            ir_headline = _esc(imagery_report.get("headline", ""))
+            ir_body = _esc(imagery_report.get("body", ""))
+            ir_sources = imagery_report.get("source_links") or []
+            ir_bp_ids = imagery_report.get("bp_location_ids") or []
+            source_links_html = ""
+            if ir_sources:
+                _src_parts = []
+                for s in ir_sources:
+                    if isinstance(s, dict):
+                        s_label = _esc(s.get("label", s.get("source", "")))
+                        s_url = s.get("url", "")
+                        if s_url and s_url != "#" and s_url.startswith("http"):
+                            _src_parts.append(f'<a href="{s_url}" style="font-size:11px;font-family:monospace;color:#888;text-decoration:none;">{s_label} ↗</a>')
+                        else:
+                            _src_parts.append(f'<span style="font-size:11px;font-family:monospace;color:#888;">{s_label} ↗</span>')
+                    else:
+                        _src_parts.append(f'<span style="font-size:11px;font-family:monospace;color:#888;">{_esc(str(s))} ↗</span>')
+                source_links_html = "<div style='margin-top:8px;'>" + " &middot; ".join(_src_parts) + "</div>"
+            bp_ids_html = ""
+            if ir_bp_ids:
+                bp_ids_html = "<div style='margin-top:6px;font-size:11px;color:#888;'>→ " + " · ".join(_esc(str(b)) for b in ir_bp_ids) + "</div>"
+            img_report_html = f"""
+            <div style="margin-bottom:20px;padding:16px;border-left:3px solid #2980B9;">
+              <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:#C0392B;font-weight:600;margin-bottom:6px;">{ir_source} · {ir_date} — {ir_label}</div>
+              <div style="font-size:17px;font-weight:700;color:#1B4A6A;line-height:1.3;margin-bottom:8px;">{ir_headline}</div>
+              <div style="font-size:13px;line-height:1.6;color:#444;">{ir_body}</div>
+              {bp_ids_html}
+              {source_links_html}
+            </div>"""
+
+        # BP Monitored Locations status table
+        loc_rows = ""
+        _badge_styles = {
+            "normal": ("#27AE60", "#E8F8F0", "Normal"),
+            "activity": ("#D4AC0D", "#FDF6E3", "Active"),
+            "elevated": ("#E67E22", "#FFF3E0", "Active ▲"),
+            "alert": ("#C0392B", "#FBE9E7", "Active ▲"),
+        }
+        for loc in locations:
+            name = _esc(loc.get("name", ""))
+            status = loc.get("status", "normal")
+            note = _esc(loc.get("note", ""))
+            last_report = _esc(loc.get("last_report", ""))
+            direction = loc.get("direction", "")  # "up", "down", or ""
+            b_color, b_bg, b_label = _badge_styles.get(status, ("#7F8C8D", "#F5F5F5", "Monitor"))
+            # Override label based on status and direction
+            if status == "normal":
+                b_label = "Monitor"
+                b_color = "#888"
+                b_bg = "#F5F5F5"
+            elif direction == "down":
+                b_label = "Active ↓"
+                b_color = "#E67E22"
+                b_bg = "#FFF3E0"
+            elif direction == "up":
+                b_label = "Active ▲"
+            loc_rows += f"""
+            <tr style="border-bottom:1px solid #F0F0F0;">
+              <td style="padding:10px 0;font-size:13px;font-weight:600;color:#1B2A4A;">{name}</td>
+              <td style="padding:10px 8px;text-align:center;" width="100">
+                <span style="display:inline-block;padding:3px 12px;border-radius:3px;font-size:11px;font-weight:600;color:{b_color};background:{b_bg};white-space:nowrap;">{b_label}</span>
+              </td>
+              <td style="padding:10px 0;text-align:right;font-size:11px;font-family:monospace;color:#999;white-space:nowrap;" width="140">{last_report if last_report else note}</td>
+            </tr>"""
+
+        loc_date = _esc(str(digest.get("digest_date", "")))
+        sections.append(f"""
+        <div style="padding:0;border-bottom:1px solid #E0E0E0;" class="sec">
+          <div style="padding:10px 32px;background:#2C4A2A;display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#E8DCC8;font-family:Arial,sans-serif;">Satellite &amp; Location Watch</span>
+            <span style="font-size:11px;color:rgba(255,255,255,0.5);">BP catalogue · {loc_date}</span>
+          </div>
+          <div style="padding:20px 32px;">
+            {img_report_html}
+            <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#1B2A4A;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid #E8E8E8;">BP Monitored Locations — Current Status</div>
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" class="loc-table">
+              {loc_rows}
+            </table>
+          </div>
+        </div>
+        """)
+
+    # ── 9. ROK Government Schedule ───────────────────────────────────────
     rok_gov = digest.get("rok_government") or []
     calendar_watch = digest.get("calendar_watch") or []
     if rok_gov or calendar_watch:
@@ -687,122 +622,7 @@ def render(digest: dict) -> str:
         </div>
         """)
 
-    # ── 12b. ROK Personnel Changes ─────────────────────────────────────────
-    rok_personnel = digest.get("rok_personnel") or []
-    if rok_personnel:
-        pers_html = ""
-        action_colors = {"appointed": "#27AE60", "nominated": "#2980B9", "resigned": "#E67E22", "dismissed": "#C0392B", "confirmed": "#16A085"}
-        for item in rok_personnel:
-            position = _esc(item.get("position", ""))
-            name = _esc(item.get("name", ""))
-            action = item.get("action", "appointed")
-            detail = _esc(item.get("detail", ""))
-            predecessor = _esc(item.get("predecessor", ""))
-            a_color = action_colors.get(action, "#1B2A4A")
-            action_badge = f'<span style="display:inline-block;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:600;color:#fff;background:{a_color};text-transform:uppercase;margin-left:6px;">{_esc(action)}</span>'
-            pred_line = f'<div style="font-size:11px;color:#888;margin-top:2px;">Replaces: {predecessor}</div>' if predecessor else ""
-            pers_html += f"""
-            <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid {a_color};">
-              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">{name}{action_badge}</div>
-              <div style="font-size:12px;color:#555;">{position}</div>
-              <div style="font-size:12px;line-height:1.4;color:#555;">{detail}</div>
-              {pred_line}
-            </div>"""
-        sections.append(f"""
-        <div {_SEC}>
-          <h2 {_H2("#2C3E50")}>ROK Personnel Changes</h2>
-          {pers_html}
-        </div>
-        """)
-
-    # ── 13. ROK National Assembly ────────────────────────────────────────
-    rok_assembly = digest.get("rok_assembly") or []
-    if rok_assembly:
-        asm_html = ""
-        for item in rok_assembly:
-            committee = _esc(item.get("committee", ""))
-            action = _esc(item.get("action", ""))
-            detail = _esc(item.get("detail", ""))
-            asm_html += f"""
-            <div style="margin-bottom:8px;padding-left:12px;border-left:3px solid #7F8C8D;">
-              <div style="font-size:11px;color:#7F8C8D;font-weight:600;text-transform:uppercase;">{committee}</div>
-              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">{action}</div>
-              <div style="font-size:12px;line-height:1.4;color:#555;">{detail}</div>
-            </div>"""
-        sections.append(f"""
-        <div {_SEC}>
-          <h2 {_H2("#7F8C8D")}>National Assembly</h2>
-          {asm_html}
-        </div>
-        """)
-
-    # ── 14. Also Today (includes Trade/Tech/Energy) ────────────────────────
-    combined_also = digest.get("also_today") or []
-    if combined_also:
-        items_html = ""
-        for item in combined_also:
-            cat = _esc(item.get("category", ""))
-            headline = _esc(item.get("headline", ""))
-            body = _esc(item.get("body_text", ""))
-            src = _esc(item.get("source", ""))
-            url = item.get("url", "")
-            bar_color = _color_bar(item.get("color_bar_class", "cb-navy"))
-            items_html += f"""
-            <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid {bar_color};">
-              <div style="font-size:11px;color:#888;text-transform:uppercase;">{cat} &middot; {src}</div>
-              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
-                {_link_or_text(headline, url)}
-              </div>
-              <div style="font-size:12px;line-height:1.4;color:#555;">{body}</div>
-            </div>"""
-        sections.append(f"""
-        <div {_SEC}>
-          <h2 {_H2("#1B2A4A")}>Also Today</h2>
-          {items_html}
-        </div>
-        """)
-
-    # ── 15. Business & Economy ─────────────────────────────────────────────
-    biz_econ = digest.get("business_economy") or []
-    if biz_econ:
-        sector_colors = {
-            "tech": "#8E44AD", "auto": "#1B2A4A", "energy": "#16A085",
-            "finance": "#D4AC0D", "manufacturing": "#2980B9",
-            "real-estate": "#E67E22", "macro": "#C0392B",
-        }
-        biz_html = ""
-        for item in biz_econ:
-            headline = _esc(item.get("headline", ""))
-            body = _esc(item.get("body_text", ""))
-            src = _esc(item.get("source", ""))
-            url = item.get("url", "")
-            sector = item.get("sector", "macro")
-            companies = item.get("companies") or []
-            bar_color = sector_colors.get(sector, "#1B2A4A")
-            company_tags = ""
-            if companies:
-                company_tags = " ".join(
-                    f'<span style="display:inline-block;padding:1px 5px;border-radius:3px;font-size:9px;background:#E8E8E8;color:#555;margin-right:3px;">{_esc(c)}</span>'
-                    for c in companies[:3]
-                )
-                company_tags = f'<div style="margin-top:3px;">{company_tags}</div>'
-            biz_html += f"""
-            <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid {bar_color};">
-              <div style="font-size:11px;color:#888;text-transform:uppercase;">{_esc(sector)} &middot; {src}</div>
-              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
-                {_link_or_text(headline, url)}
-              </div>
-              <div style="font-size:12px;line-height:1.4;color:#555;">{body}</div>
-              {company_tags}
-            </div>"""
-        sections.append(f"""
-        <div {_SEC}>
-          <h2 {_H2("#27AE60")}>Business &amp; Economy</h2>
-          {biz_html}
-        </div>
-        """)
-
-    # ── 16. US-Korea Trade & Investment Deals ───────────────────────────────
+    # ── 10. US-Korea Trade & Investment Deals ───────────────────────────────
     us_korea = digest.get("us_korea_deals") or {}
     # Support both old (array) and new (object with deals/tariff/package) format
     if isinstance(us_korea, list):
@@ -939,33 +759,98 @@ def render(digest: dict) -> str:
         </div>
         """)
 
-    # ── 16. Op-Eds & Commentary ────────────────────────────────────────────
-    opeds = digest.get("opeds_today") or []
-    if opeds:
+    # ── 11. Overnight Flash ───────────────────────────────────────────────
+    overnight = digest.get("overnight_items") or []
+    if overnight:
         items_html = ""
-        for op in opeds:
-            src = _esc(op.get("source", ""))
-            arg = _esc(op.get("central_argument", ""))
-            summary = _esc(op.get("summary", ""))
-            so_what = _esc(op.get("policy_so_what", ""))
-            url = op.get("url", "")
+        for item in overnight:
+            cat = _esc(item.get("category", ""))
+            headline = _esc(item.get("headline", ""))
+            body = _esc(item.get("body_text", ""))
+            src = _esc(item.get("source", ""))
+            url = item.get("url", "")
             items_html += f"""
-            <div style="margin-bottom:12px;padding-left:12px;border-left:3px solid #D4AC0D;">
-              <div style="font-size:11px;color:#888;">{src}</div>
+            <div style="margin-bottom:12px;padding-left:14px;border-left:3px solid #1B2A4A;">
+              <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.5px;">{cat} &middot; {src}</div>
               <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
-                {_link_or_text(arg, url)}
+                {_link_or_text(headline, url)}
               </div>
-              <div style="font-size:12px;line-height:1.4;color:#555;">{summary}</div>
-              {"<div style='font-size:11px;color:#2980B9;margin-top:3px;'><strong>So what:</strong> " + so_what + "</div>" if so_what else ""}
+              <div style="font-size:12px;line-height:1.4;color:#444;">{body}</div>
             </div>"""
         sections.append(f"""
         <div {_SEC}>
-          <h2 {_H2("#D4AC0D")}>Op-Eds &amp; Commentary</h2>
+          <h2 {_H2("#C0392B")}>Overnight Flash</h2>
           {items_html}
         </div>
         """)
 
-    # ── 16. Statements & Social ────────────────────────────────────────────
+    # ── 12. Also Today ─────────────────────────────────────────────────────
+    combined_also = digest.get("also_today") or []
+    if combined_also:
+        items_html = ""
+        for item in combined_also:
+            cat = _esc(item.get("category", ""))
+            headline = _esc(item.get("headline", ""))
+            body = _esc(item.get("body_text", ""))
+            src = _esc(item.get("source", ""))
+            url = item.get("url", "")
+            bar_color = _color_bar(item.get("color_bar_class", "cb-navy"))
+            items_html += f"""
+            <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid {bar_color};">
+              <div style="font-size:11px;color:#888;text-transform:uppercase;">{cat} &middot; {src}</div>
+              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
+                {_link_or_text(headline, url)}
+              </div>
+              <div style="font-size:12px;line-height:1.4;color:#555;">{body}</div>
+            </div>"""
+        sections.append(f"""
+        <div {_SEC}>
+          <h2 {_H2("#1B2A4A")}>Also Today</h2>
+          {items_html}
+        </div>
+        """)
+
+    # ── 13. Business & Economy ─────────────────────────────────────────────
+    biz_econ = digest.get("business_economy") or []
+    if biz_econ:
+        sector_colors = {
+            "tech": "#8E44AD", "auto": "#1B2A4A", "energy": "#16A085",
+            "finance": "#D4AC0D", "manufacturing": "#2980B9",
+            "real-estate": "#E67E22", "macro": "#C0392B",
+        }
+        biz_html = ""
+        for item in biz_econ:
+            headline = _esc(item.get("headline", ""))
+            body = _esc(item.get("body_text", ""))
+            src = _esc(item.get("source", ""))
+            url = item.get("url", "")
+            sector = item.get("sector", "macro")
+            companies = item.get("companies") or []
+            bar_color = sector_colors.get(sector, "#1B2A4A")
+            company_tags = ""
+            if companies:
+                company_tags = " ".join(
+                    f'<span style="display:inline-block;padding:1px 5px;border-radius:3px;font-size:9px;background:#E8E8E8;color:#555;margin-right:3px;">{_esc(c)}</span>'
+                    for c in companies[:3]
+                )
+                company_tags = f'<div style="margin-top:3px;">{company_tags}</div>'
+            biz_html += f"""
+            <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid {bar_color};">
+              <div style="font-size:11px;color:#888;text-transform:uppercase;">{_esc(sector)} &middot; {src}</div>
+              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
+                {_link_or_text(headline, url)}
+              </div>
+              <div style="font-size:12px;line-height:1.4;color:#555;">{body}</div>
+              {company_tags}
+            </div>"""
+        sections.append(f"""
+        <div {_SEC}>
+          <h2 {_H2("#27AE60")}>Business &amp; Economy</h2>
+          {biz_html}
+        </div>
+        """)
+
+    # ── 14. Statements & Social ────────────────────────────────────────────
     social = digest.get("social_statements") or []
     if social:
         cards_html = ""
@@ -1002,7 +887,82 @@ def render(digest: dict) -> str:
         </div>
         """)
 
-    # ── 17. Academic Monitor ───────────────────────────────────────────────
+    # ── 15. Op-Eds & Commentary ────────────────────────────────────────────
+    opeds = digest.get("opeds_today") or []
+    if opeds:
+        items_html = ""
+        for op in opeds:
+            src = _esc(op.get("source", ""))
+            arg = _esc(op.get("central_argument", ""))
+            summary = _esc(op.get("summary", ""))
+            so_what = _esc(op.get("policy_so_what", ""))
+            url = op.get("url", "")
+            items_html += f"""
+            <div style="margin-bottom:12px;padding-left:12px;border-left:3px solid #D4AC0D;">
+              <div style="font-size:11px;color:#888;">{src}</div>
+              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
+                {_link_or_text(arg, url)}
+              </div>
+              <div style="font-size:12px;line-height:1.4;color:#555;">{summary}</div>
+              {"<div style='font-size:11px;color:#2980B9;margin-top:3px;'><strong>So what:</strong> " + so_what + "</div>" if so_what else ""}
+            </div>"""
+        sections.append(f"""
+        <div {_SEC}>
+          <h2 {_H2("#D4AC0D")}>Op-Eds &amp; Commentary</h2>
+          {items_html}
+        </div>
+        """)
+
+    # ── 16. ROK Personnel Changes ──────────────────────────────────────────
+    rok_personnel = digest.get("rok_personnel") or []
+    if rok_personnel:
+        pers_html = ""
+        action_colors = {"appointed": "#27AE60", "nominated": "#2980B9", "resigned": "#E67E22", "dismissed": "#C0392B", "confirmed": "#16A085"}
+        for item in rok_personnel:
+            position = _esc(item.get("position", ""))
+            name = _esc(item.get("name", ""))
+            action = item.get("action", "appointed")
+            detail = _esc(item.get("detail", ""))
+            predecessor = _esc(item.get("predecessor", ""))
+            a_color = action_colors.get(action, "#1B2A4A")
+            action_badge = f'<span style="display:inline-block;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:600;color:#fff;background:{a_color};text-transform:uppercase;margin-left:6px;">{_esc(action)}</span>'
+            pred_line = f'<div style="font-size:11px;color:#888;margin-top:2px;">Replaces: {predecessor}</div>' if predecessor else ""
+            pers_html += f"""
+            <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid {a_color};">
+              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">{name}{action_badge}</div>
+              <div style="font-size:12px;color:#555;">{position}</div>
+              <div style="font-size:12px;line-height:1.4;color:#555;">{detail}</div>
+              {pred_line}
+            </div>"""
+        sections.append(f"""
+        <div {_SEC}>
+          <h2 {_H2("#2C3E50")}>ROK Personnel Changes</h2>
+          {pers_html}
+        </div>
+        """)
+
+    # ── 17. ROK National Assembly ────────────────────────────────────────
+    rok_assembly = digest.get("rok_assembly") or []
+    if rok_assembly:
+        asm_html = ""
+        for item in rok_assembly:
+            committee = _esc(item.get("committee", ""))
+            action = _esc(item.get("action", ""))
+            detail = _esc(item.get("detail", ""))
+            asm_html += f"""
+            <div style="margin-bottom:8px;padding-left:12px;border-left:3px solid #7F8C8D;">
+              <div style="font-size:11px;color:#7F8C8D;font-weight:600;text-transform:uppercase;">{committee}</div>
+              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">{action}</div>
+              <div style="font-size:12px;line-height:1.4;color:#555;">{detail}</div>
+            </div>"""
+        sections.append(f"""
+        <div {_SEC}>
+          <h2 {_H2("#7F8C8D")}>National Assembly</h2>
+          {asm_html}
+        </div>
+        """)
+
+    # ── 18. Academic Monitor ───────────────────────────────────────────────
     academic = digest.get("academic_today") or []
     if academic:
         items_html = ""
@@ -1027,13 +987,33 @@ def render(digest: dict) -> str:
         </div>
         """)
 
-    # ── 18. Footer ─────────────────────────────────────────────────────────
+    # ── 19. On This Day in Korea ───────────────────────────────────────────
+    on_this_day = digest.get("on_this_day") or []
+    if on_this_day:
+        otd_html = ""
+        for item in on_this_day[:1]:
+            date = _esc(item.get("date", ""))
+            event = _esc(item.get("event", ""))
+            relevance = _esc(item.get("relevance", ""))
+            otd_html += f"""
+            <div style="margin-bottom:6px;">
+              <div style="font-size:12px;"><strong>{date}:</strong> {event}</div>
+              <div style="font-size:11px;color:#2980B9;font-style:italic;">{relevance}</div>
+            </div>"""
+        sections.append(f"""
+        <div style="padding:16px 32px;background:#F0EDE4;border-bottom:1px solid #E0E0E0;" class="sec">
+          <h2 style="margin:0 0 8px 0;font-size:12px;color:#7F8C8D;text-transform:uppercase;letter-spacing:1px;font-family:Arial,sans-serif;">On This Day in Korea</h2>
+          {otd_html}
+        </div>
+        """)
+
+    # ── 20. Footer ─────────────────────────────────────────────────────────
     sections.append(f"""
     <div style="padding:16px 32px;background:#F8F9FA;text-align:center;" class="sec footer">
       <div style="font-size:11px;color:#999;line-height:1.5;">
-        CSIS Korea Digest &middot; CSIS Korea Chair<br>
-        Generated {gen_time} &middot; Read alongside primary sources<br>
-        <span style="color:#bbb;">Produced by CSIS Korea Chair</span>
+        Korea Brief &middot; CSIS Korea Chair<br>
+        {_esc(date_str)} &middot; {gen_time}<br>
+        <span style="color:#bbb;">Read alongside primary sources</span>
       </div>
     </div>
     """)
@@ -1046,7 +1026,7 @@ def render(digest: dict) -> str:
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <title>CSIS Korea Digest &mdash; {_esc(date_str)}</title>
+  <title>Korea Brief &mdash; {_esc(date_str)}</title>
   <style type="text/css">
     /* Reset */
     body, table, td, div, p {{ margin:0; padding:0; }}
@@ -1057,10 +1037,6 @@ def render(digest: dict) -> str:
       .sec, .header, .footer {{ padding:16px 14px !important; }}
       /* Market indicator table — stack on mobile */
       .mkt-table td {{ display:block !important; width:100% !important; padding:8px 14px !important; text-align:left !important; border-left:0 !important; border-right:0 !important; border-bottom:1px solid rgba(255,255,255,0.1) !important; }}
-      /* Metrics bar — stack on mobile */
-      .metrics-bar td {{ display:block !important; width:100% !important; padding:6px 14px !important; text-align:left !important; }}
-      .metrics-bar td div:first-child {{ display:inline !important; margin-right:6px !important; }}
-      .metrics-bar td div:last-child {{ display:inline !important; }}
       /* BP Facility tracker — wrap long names */
       .loc-table td {{ display:block !important; width:100% !important; padding:3px 0 !important; }}
       .loc-table td[style*="white-space"] {{ white-space:normal !important; }}

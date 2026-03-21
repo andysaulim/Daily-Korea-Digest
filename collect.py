@@ -1,5 +1,5 @@
 """
-CSIS Korea Digest — Collector
+Korea Brief — Collector
 Scrapes RSS feeds across four tiers + market data.
 Uses threaded fetching for performance (~15s vs ~60s sequential).
 """

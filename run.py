@@ -1,5 +1,5 @@
 """
-CSIS Korea Digest — Main Runner
+Korea Brief — Main Runner
 CSIS Korea Chair
 Orchestrates: collect → databases → digest → render → push → send
 Usage:
@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 
 
 def main():
-    parser = argparse.ArgumentParser(description="CSIS Korea Digest pipeline")
+    parser = argparse.ArgumentParser(description="Korea Brief pipeline")
     parser.add_argument("--no-send",    action="store_true", help="Render to file only, do not send email")
     parser.add_argument("--from-cache", action="store_true", help="Skip collection, use existing collected.json")
     parser.add_argument("--dry-run",    action="store_true", help="Collect only, don't call Claude")
@@ -24,7 +24,7 @@ def main():
     args = parser.parse_args()
 
     print("=" * 60)
-    print("  CSIS Korea Digest")
+    print("  Korea Brief")
     print("  CSIS Korea Chair")
     print(f"  {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}")
     print("=" * 60)
