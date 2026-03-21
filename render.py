@@ -88,6 +88,23 @@ _SEC_BG = lambda bg: f'style="padding:14px 32px;background:{bg};border-bottom:1p
 _H2 = lambda color: f'style="margin:0 0 8px 0;font-size:12px;color:{color};text-transform:uppercase;letter-spacing:1px;font-family:Arial,sans-serif;"'
 
 
+def _estimate_word_count(digest: dict) -> int:
+    """Rough word count across all text fields for 'X min read' estimate."""
+    words = 0
+    for key in ("editor_note", "re_line"):
+        words += len(str(digest.get(key, "")).split())
+    for section_key in ("top_stories", "overnight_items", "also_today", "business_economy",
+                         "opeds_today", "academic_today", "social_statements"):
+        for item in (digest.get(section_key) or []):
+            for field in ("body", "body_text", "summary", "detail", "quote_text",
+                          "so_what", "pattern_note", "central_argument", "analyst_note"):
+                words += len(str(item.get(field, "")).split())
+    kcna = digest.get("kcna_delta") or {}
+    for field in ("bottom_line", "doctrinal_shift"):
+        words += len(str(kcna.get(field, "")).split())
+    return words
+
+
 def render(digest: dict) -> str:
     now = datetime.now(timezone.utc)
     date_str = now.strftime("%A, %d %B %Y")  # Thursday, 20 March 2026
@@ -97,6 +114,8 @@ def render(digest: dict) -> str:
     academic_count = digest.get("academic_count", 0)
     gen_time = now.strftime("%H:%M UTC")
     re_line = _esc(digest.get("re_line", ""))
+    word_count = _estimate_word_count(digest)
+    read_min = max(1, round(word_count / 250))
 
     sections = []
 
@@ -127,7 +146,7 @@ def render(digest: dict) -> str:
         </td>
         <td style="vertical-align:top;text-align:right;">
           <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.4);margin-bottom:2px;">{gen_time}</div>
-          <div style="font-size:10px;color:rgba(255,255,255,0.35);">{story_count + oped_count + academic_count} sources</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.35);">{story_count + oped_count + academic_count} sources &middot; {read_min} min read</div>
         </td>
       </tr></table>
       {"<div style='margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.15);font-size:13px;color:rgba(255,255,255,0.85);font-family:Georgia,serif;'><strong style=" + '"' + "color:rgba(255,255,255,0.5);" + '"' + ">RE:</strong> " + re_line + "</div>" if re_line else ""}
@@ -304,77 +323,27 @@ def render(digest: dict) -> str:
         kim_activity = _esc(kcna.get("kim_activity", "")) if kcna.get("kim_activity") else ""
         days_absent = kcna.get("days_since_last_appearance")
 
-        # 2x2 Country tone cards
+        # Inline tone labels (compact row instead of 2x2 grid)
         country_configs = [
-            ("United States", "us_tone", "us_tone_description"),
-            ("Russia", "russia_tone", "russia_tone_description"),
-            ("China", "china_tone", "china_tone_description"),
-            ("ROK", "rok_tone", "rok_tone_description"),
+            ("US", "us_tone"),
+            ("Russia", "russia_tone"),
+            ("China", "china_tone"),
+            ("ROK", "rok_tone"),
         ]
-        tone_cards = ""
-        for i, (country_name, tone_key, desc_key) in enumerate(country_configs):
+        tone_inline_parts = []
+        for country_name, tone_key in country_configs:
             tone_val = _esc(str(kcna.get(tone_key, "—")))
-            # Support both simple tone string and structured tone object
-            tone_desc = _esc(kcna.get(desc_key, "")) if kcna.get(desc_key) else ""
-            # Build tone label — combine level and qualifier (e.g., "Elevated — Hostile")
-            tone_label_val = tone_val
             tone_qualifier = _esc(kcna.get(tone_key.replace("_tone", "_qualifier"), "")) if kcna.get(tone_key.replace("_tone", "_qualifier")) else ""
-            if tone_qualifier:
-                tone_label_val = f"{tone_val} — {tone_qualifier}"
+            label = f"{tone_val} — {tone_qualifier}" if tone_qualifier else tone_val
             t_color = _tone_color(tone_val)
-            tone_cards += f"""
-            <td style="width:50%;padding:6px;vertical-align:top;">
-              <div style="background:rgba(255,255,255,0.04);border-radius:4px;padding:14px;">
-                <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:#888;font-weight:600;margin-bottom:6px;">{_esc(country_name)}</div>
-                <div style="font-size:16px;font-weight:700;color:{t_color};margin-bottom:6px;">{tone_label_val}</div>
-                <div style="font-size:12px;line-height:1.5;color:#BBB;">{tone_desc}</div>
-              </div>
-            </td>"""
-            if i % 2 == 1 and i < len(country_configs) - 1:
-                tone_cards += "</tr><tr>"
-
-        tone_grid = f"""
-        <table width="100%" cellpadding="0" cellspacing="0" border="0" class="tone-table" style="margin-bottom:16px;">
-          <tr>{tone_cards}</tr>
-        </table>"""
-
-        # Key phrase frequency table
-        key_phrases = kcna.get("key_phrase_changes") or []
-        phrases_html = ""
-        if key_phrases:
-            phrase_rows = ""
-            for p in key_phrases:
-                if isinstance(p, dict):
-                    phrase = _esc(p.get("phrase", ""))
-                    count = _esc(str(p.get("count_this_week", "")))
-                    prior = p.get("count_prior", None)
-                    delta = _esc(p.get("delta_label", ""))
-                    # Color coding for delta
-                    if delta and ("new" in delta.lower() or "↑" in delta or "from ×0" in delta.lower()):
-                        delta_color = "#27AE60"
-                    elif delta and ("↓" in delta or "decrease" in delta.lower()):
-                        delta_color = "#C0392B"
-                    else:
-                        delta_color = "#888"
-                    count_html = f'<span style="color:#D4AC0D;font-weight:600;">×{count}</span>' if count else ""
-                    delta_html = f'<span style="color:{delta_color};margin-left:6px;">{delta}</span>' if delta else ""
-                    phrase_rows += f"""
-                    <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
-                      <td style="padding:8px 0;font-size:13px;color:#D0D0D0;font-style:italic;font-family:Georgia,serif;">&ldquo;{phrase}&rdquo;</td>
-                      <td style="padding:8px 0;text-align:right;font-size:12px;font-family:monospace;white-space:nowrap;">{count_html} {delta_html}</td>
-                    </tr>"""
-                else:
-                    phrase_rows += f"""
-                    <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
-                      <td style="padding:6px 0;font-size:12px;color:#D0D0D0;font-style:italic;" colspan="2">&ldquo;{_esc(str(p))}&rdquo;</td>
-                    </tr>"""
-            phrases_html = f"""
-            <div style="margin-top:16px;">
-              <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#888;font-weight:600;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,0.1);">Key Phrase Frequency — This Week vs Prior 7 Days</div>
-              <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                {phrase_rows}
-              </table>
-            </div>"""
+            tone_inline_parts.append(
+                f'<span style="color:#888;">{_esc(country_name)}:</span> '
+                f'<span style="color:{t_color};font-weight:600;">{label}</span>'
+            )
+        tone_inline = f"""
+        <div style="margin-bottom:12px;font-size:12px;line-height:1.8;">
+          {"  &middot;  ".join(tone_inline_parts)}
+        </div>"""
 
         # Propaganda focus & Kim appearance as inline items
         prop_focus = kcna.get("propaganda_focus") or []
@@ -416,13 +385,17 @@ def render(digest: dict) -> str:
           <div style="padding:14px 32px;background:#1a2a1a;color:#E0E0E0;">
             {"<div style='margin-bottom:12px;padding:8px 14px;background:#C0392B;color:#fff;border-radius:4px;font-size:12px;font-weight:600;'>&#9888; Complete KCNA silence today</div>" if silence else ""}
             {doctrinal_html}
-            {tone_grid}
+            {tone_inline}
             {"<div style='margin-bottom:8px;font-size:12px;color:#E67E22;font-weight:600;'>&#8644; " + tone_shift + "</div>" if tone_shift else ""}
-            {phrases_html}
+            <div style="margin-bottom:8px;font-size:12px;color:#D0D0D0;">
+              {"&#9679; " + kim_line if kim_line else ""}
+              {"<span style='margin-left:12px;color:#888;'>" + output_vol + "</span>" if output_vol else ""}
+            </div>
             {quotes_html}
             {prop_html}
             {omissions_html}
             {senior_html}
+            {"<div style='margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.1);font-size:13px;line-height:1.6;color:#E0E0E0;font-family:Georgia,serif;'><strong style=" + chr(34) + "color:#E8DCC8;" + chr(34) + ">Bottom line:</strong> " + bottom_line + "</div>" if bottom_line else ""}
           </div>
         </div>
         """)
@@ -507,12 +480,9 @@ def render(digest: dict) -> str:
 
         loc_date = _esc(str(digest.get("digest_date", "")))
         sections.append(f"""
-        <div style="padding:0;border-bottom:1px solid #E0E0E0;" class="sec">
-          <div style="padding:10px 32px;background:#2C4A2A;display:flex;justify-content:space-between;align-items:center;">
-            <span style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#E8DCC8;font-family:Arial,sans-serif;">Satellite &amp; Location Watch</span>
-            <span style="font-size:11px;color:rgba(255,255,255,0.5);">BP catalogue · {loc_date}</span>
-          </div>
-          <div style="padding:14px 32px;">
+        <div {_SEC}>
+          <h2 {_H2("#1B2A4A")}>Satellite &amp; Location Watch <span style="font-size:10px;font-weight:400;color:#888;text-transform:none;letter-spacing:0;">BP catalogue &middot; {loc_date}</span></h2>
+          <div style="padding-top:4px;">
             {img_report_html}
             <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#1B2A4A;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #E8E8E8;">BP Monitored Locations — Current Status</div>
             <table width="100%" cellpadding="0" cellspacing="0" border="0" class="loc-table">
@@ -522,10 +492,12 @@ def render(digest: dict) -> str:
         </div>
         """)
 
-    # ── 9. ROK Government Schedule ───────────────────────────────────────
+    # ── 9. ROK Government (merged: Gov + Personnel + Assembly + Calendar) ─
     rok_gov = digest.get("rok_government") or []
     calendar_watch = digest.get("calendar_watch") or []
-    if rok_gov or calendar_watch:
+    rok_personnel = digest.get("rok_personnel") or []
+    rok_assembly = digest.get("rok_assembly") or []
+    if rok_gov or calendar_watch or rok_personnel or rok_assembly:
         # 2x2 grid of ministry cards
         gov_rows = ""
         for i in range(0, len(rok_gov), 2):
@@ -611,15 +583,61 @@ def render(digest: dict) -> str:
               {cal_items}
             </div>"""
 
+        # Personnel changes (inline in ROK Gov)
+        pers_html = ""
+        if rok_personnel:
+            action_colors = {"appointed": "#27AE60", "nominated": "#2980B9", "resigned": "#E67E22", "dismissed": "#C0392B", "confirmed": "#16A085"}
+            pers_items = ""
+            for item in rok_personnel:
+                position = _esc(item.get("position", ""))
+                name = _esc(item.get("name", ""))
+                action = item.get("action", "appointed")
+                detail = _esc(item.get("detail", ""))
+                predecessor = _esc(item.get("predecessor", ""))
+                a_color = action_colors.get(action, "#1B2A4A")
+                action_badge = f'<span style="display:inline-block;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:600;color:#fff;background:{a_color};text-transform:uppercase;margin-left:6px;">{_esc(action)}</span>'
+                pred_line = f'<div style="font-size:11px;color:#888;margin-top:2px;">Replaces: {predecessor}</div>' if predecessor else ""
+                pers_items += f"""
+                <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid {a_color};">
+                  <div style="font-size:13px;font-weight:600;color:#1B2A4A;">{name}{action_badge}</div>
+                  <div style="font-size:12px;color:#555;">{position}</div>
+                  <div style="font-size:12px;line-height:1.4;color:#555;">{detail}</div>
+                  {pred_line}
+                </div>"""
+            pers_html = f"""
+            <div style="margin-top:16px;">
+              <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#2C3E50;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #E8E8E8;">Personnel Changes</div>
+              {pers_items}
+            </div>"""
+
+        # Assembly activity (inline in ROK Gov)
+        asm_html = ""
+        if rok_assembly:
+            asm_items = ""
+            for item in rok_assembly:
+                committee = _esc(item.get("committee", ""))
+                action = _esc(item.get("action", ""))
+                detail = _esc(item.get("detail", ""))
+                asm_items += f"""
+                <div style="margin-bottom:8px;padding-left:12px;border-left:3px solid #7F8C8D;">
+                  <div style="font-size:11px;color:#7F8C8D;font-weight:600;text-transform:uppercase;">{committee}</div>
+                  <div style="font-size:13px;font-weight:600;color:#1B2A4A;">{action}</div>
+                  <div style="font-size:12px;line-height:1.4;color:#555;">{detail}</div>
+                </div>"""
+            asm_html = f"""
+            <div style="margin-top:16px;">
+              <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#7F8C8D;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #E8E8E8;">National Assembly</div>
+              {asm_items}
+            </div>"""
+
         rok_date = _esc(str(digest.get("digest_date", "")))
         sections.append(f"""
-        <div style="padding:0;border-bottom:1px solid #E0E0E0;" class="sec">
-          <div style="padding:10px 32px;background:#2C4A2A;display:flex;justify-content:space-between;align-items:center;">
-            <span style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#E8DCC8;font-family:Arial,sans-serif;">ROK Government Schedule</span>
-            <span style="font-size:11px;color:rgba(255,255,255,0.5);">President + Ministries · {rok_date}</span>
-          </div>
-          <div style="padding:14px 32px;">
+        <div {_SEC}>
+          <h2 {_H2("#1B2A4A")}>ROK Government <span style="font-size:10px;font-weight:400;color:#888;text-transform:none;letter-spacing:0;">President + Ministries &middot; {rok_date}</span></h2>
+          <div style="padding-top:4px;">
             {gov_grid_html}
+            {pers_html}
+            {asm_html}
             {cal_html}
           </div>
         </div>
@@ -750,86 +768,35 @@ def render(digest: dict) -> str:
             </div>"""
 
         sections.append(f"""
-        <div style="padding:0;border-bottom:1px solid #E0E0E0;" class="sec">
-          <div style="padding:10px 32px;background:#2C4A2A;display:flex;justify-content:space-between;align-items:center;">
-            <span style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#E8DCC8;font-family:Arial,sans-serif;">US-Korea Trade &amp; Investment</span>
-            <span style="font-size:11px;color:rgba(255,255,255,0.5);">Special section · deal tracker</span>
-          </div>
-          <div style="padding:14px 32px;">
-            {header_html}
-            {deals_html}
-          </div>
+        <div {_SEC}>
+          <h2 {_H2("#1B2A4A")}>US-Korea Trade &amp; Investment <span style="font-size:10px;font-weight:400;color:#888;text-transform:none;letter-spacing:0;">deal tracker</span></h2>
+          {header_html}
+          {deals_html}
         </div>
         """)
 
-    # ── 11. Overnight Flash ───────────────────────────────────────────────
+    # ── 11. The Wire (merged: Overnight + Also Today + Business) ─────────
     overnight = digest.get("overnight_items") or []
-    if overnight:
-        items_html = ""
-        for item in overnight:
-            cat = _esc(item.get("category", ""))
-            headline = _esc(item.get("headline", ""))
-            body = _esc(item.get("body_text", ""))
-            src = _esc(item.get("source", ""))
-            url = item.get("url", "")
-            items_html += f"""
-            <div style="margin-bottom:12px;padding-left:14px;border-left:3px solid #1B2A4A;">
-              <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.5px;">{cat} &middot; {src}</div>
-              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
-                {_link_or_text(headline, url)}
-              </div>
-              <div style="font-size:12px;line-height:1.4;color:#444;">{body}</div>
-            </div>"""
-        sections.append(f"""
-        <div {_SEC}>
-          <h2 {_H2("#C0392B")}>Overnight Flash</h2>
-          {items_html}
-        </div>
-        """)
-
-    # ── 12. Also Today ─────────────────────────────────────────────────────
     combined_also = digest.get("also_today") or []
-    if combined_also:
-        items_html = ""
-        for item in combined_also:
-            cat = _esc(item.get("category", ""))
-            headline = _esc(item.get("headline", ""))
-            body = _esc(item.get("body_text", ""))
-            src = _esc(item.get("source", ""))
-            url = item.get("url", "")
-            bar_color = _color_bar(item.get("color_bar_class", "cb-navy"))
-            items_html += f"""
-            <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid {bar_color};">
-              <div style="font-size:11px;color:#888;text-transform:uppercase;">{cat} &middot; {src}</div>
-              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
-                {_link_or_text(headline, url)}
-              </div>
-              <div style="font-size:12px;line-height:1.4;color:#555;">{body}</div>
-            </div>"""
-        sections.append(f"""
-        <div {_SEC}>
-          <h2 {_H2("#1B2A4A")}>Also Today</h2>
-          {items_html}
-        </div>
-        """)
-
-    # ── 13. Business & Economy ─────────────────────────────────────────────
     biz_econ = digest.get("business_economy") or []
-    if biz_econ:
-        sector_colors = {
+    wire_items = overnight + combined_also + biz_econ
+    if wire_items:
+        wire_html = ""
+        biz_sector_colors = {
             "tech": "#8E44AD", "auto": "#1B2A4A", "energy": "#16A085",
             "finance": "#D4AC0D", "manufacturing": "#2980B9",
             "real-estate": "#E67E22", "macro": "#C0392B",
         }
-        biz_html = ""
-        for item in biz_econ:
+        for item in wire_items:
+            cat = _esc(item.get("category", item.get("sector", "")))
             headline = _esc(item.get("headline", ""))
             body = _esc(item.get("body_text", ""))
             src = _esc(item.get("source", ""))
             url = item.get("url", "")
-            sector = item.get("sector", "macro")
+            bar_color = _color_bar(item.get("color_bar_class", ""))
+            if not item.get("color_bar_class"):
+                bar_color = biz_sector_colors.get(item.get("sector", ""), "#1B2A4A")
             companies = item.get("companies") or []
-            bar_color = sector_colors.get(sector, "#1B2A4A")
             company_tags = ""
             if companies:
                 company_tags = " ".join(
@@ -837,9 +804,9 @@ def render(digest: dict) -> str:
                     for c in companies[:3]
                 )
                 company_tags = f'<div style="margin-top:3px;">{company_tags}</div>'
-            biz_html += f"""
+            wire_html += f"""
             <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid {bar_color};">
-              <div style="font-size:11px;color:#888;text-transform:uppercase;">{_esc(sector)} &middot; {src}</div>
+              <div style="font-size:11px;color:#888;text-transform:uppercase;">{cat} &middot; {src}</div>
               <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
                 {_link_or_text(headline, url)}
               </div>
@@ -848,15 +815,18 @@ def render(digest: dict) -> str:
             </div>"""
         sections.append(f"""
         <div {_SEC}>
-          <h2 {_H2("#27AE60")}>Business &amp; Economy</h2>
-          {biz_html}
+          <h2 {_H2("#1B2A4A")}>The Wire</h2>
+          {wire_html}
         </div>
         """)
 
-    # ── 14. Statements & Social ────────────────────────────────────────────
+    # ── 14. Statements & Analysis (merged: Statements + Op-Eds + Academic) ─
     social = digest.get("social_statements") or []
-    if social:
-        cards_html = ""
+    opeds = digest.get("opeds_today") or []
+    academic = digest.get("academic_today") or []
+    if social or opeds or academic:
+        sa_html = ""
+        # Statements
         for s in social:
             initials = _esc(s.get("avatar_initials", "?"))
             who = _esc(s.get("who", ""))
@@ -866,7 +836,7 @@ def render(digest: dict) -> str:
             url = s.get("url", "")
             badge_color = _social_badge(s.get("badge_class", "sb-p"))
             source_link = f'<a href="{url}" style="font-size:10px;color:#2980B9;text-decoration:none;">Source &#8594;</a>' if url and url != "#" and url.startswith("http") else ""
-            cards_html += f"""
+            sa_html += f"""
             <div style="margin-bottom:12px;padding:12px;background:#F8F9FA;border-radius:6px;border-left:3px solid {badge_color};">
               <table cellpadding="0" cellspacing="0" border="0" style="margin-bottom:6px;">
                 <tr>
@@ -883,24 +853,14 @@ def render(digest: dict) -> str:
               {"<p style='margin:0;font-size:11px;color:#2980B9;'><strong>Analyst:</strong> " + note + "</p>" if note else ""}
               {source_link}
             </div>"""
-        sections.append(f"""
-        <div {_SEC}>
-          <h2 {_H2("#1B2A4A")}>Official Statements</h2>
-          {cards_html}
-        </div>
-        """)
-
-    # ── 15. Op-Eds & Commentary ────────────────────────────────────────────
-    opeds = digest.get("opeds_today") or []
-    if opeds:
-        items_html = ""
+        # Op-Eds
         for op in opeds:
             src = _esc(op.get("source", ""))
             arg = _esc(op.get("central_argument", ""))
             summary = _esc(op.get("summary", ""))
             so_what = _esc(op.get("policy_so_what", ""))
             url = op.get("url", "")
-            items_html += f"""
+            sa_html += f"""
             <div style="margin-bottom:12px;padding-left:12px;border-left:3px solid #D4AC0D;">
               <div style="font-size:11px;color:#888;">{src}</div>
               <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
@@ -909,66 +869,7 @@ def render(digest: dict) -> str:
               <div style="font-size:12px;line-height:1.4;color:#555;">{summary}</div>
               {"<div style='font-size:11px;color:#2980B9;margin-top:3px;'><strong>So what:</strong> " + so_what + "</div>" if so_what else ""}
             </div>"""
-        sections.append(f"""
-        <div {_SEC}>
-          <h2 {_H2("#D4AC0D")}>Op-Eds &amp; Commentary</h2>
-          {items_html}
-        </div>
-        """)
-
-    # ── 16. ROK Personnel Changes ──────────────────────────────────────────
-    rok_personnel = digest.get("rok_personnel") or []
-    if rok_personnel:
-        pers_html = ""
-        action_colors = {"appointed": "#27AE60", "nominated": "#2980B9", "resigned": "#E67E22", "dismissed": "#C0392B", "confirmed": "#16A085"}
-        for item in rok_personnel:
-            position = _esc(item.get("position", ""))
-            name = _esc(item.get("name", ""))
-            action = item.get("action", "appointed")
-            detail = _esc(item.get("detail", ""))
-            predecessor = _esc(item.get("predecessor", ""))
-            a_color = action_colors.get(action, "#1B2A4A")
-            action_badge = f'<span style="display:inline-block;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:600;color:#fff;background:{a_color};text-transform:uppercase;margin-left:6px;">{_esc(action)}</span>'
-            pred_line = f'<div style="font-size:11px;color:#888;margin-top:2px;">Replaces: {predecessor}</div>' if predecessor else ""
-            pers_html += f"""
-            <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid {a_color};">
-              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">{name}{action_badge}</div>
-              <div style="font-size:12px;color:#555;">{position}</div>
-              <div style="font-size:12px;line-height:1.4;color:#555;">{detail}</div>
-              {pred_line}
-            </div>"""
-        sections.append(f"""
-        <div {_SEC}>
-          <h2 {_H2("#2C3E50")}>ROK Personnel Changes</h2>
-          {pers_html}
-        </div>
-        """)
-
-    # ── 17. ROK National Assembly ────────────────────────────────────────
-    rok_assembly = digest.get("rok_assembly") or []
-    if rok_assembly:
-        asm_html = ""
-        for item in rok_assembly:
-            committee = _esc(item.get("committee", ""))
-            action = _esc(item.get("action", ""))
-            detail = _esc(item.get("detail", ""))
-            asm_html += f"""
-            <div style="margin-bottom:8px;padding-left:12px;border-left:3px solid #7F8C8D;">
-              <div style="font-size:11px;color:#7F8C8D;font-weight:600;text-transform:uppercase;">{committee}</div>
-              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">{action}</div>
-              <div style="font-size:12px;line-height:1.4;color:#555;">{detail}</div>
-            </div>"""
-        sections.append(f"""
-        <div {_SEC}>
-          <h2 {_H2("#7F8C8D")}>National Assembly</h2>
-          {asm_html}
-        </div>
-        """)
-
-    # ── 18. Academic Monitor ───────────────────────────────────────────────
-    academic = digest.get("academic_today") or []
-    if academic:
-        items_html = ""
+        # Academic
         for a in academic:
             src = _esc(a.get("source", ""))
             tier = _esc(a.get("journal_tier", ""))
@@ -976,7 +877,7 @@ def render(digest: dict) -> str:
             implication = _esc(a.get("policy_implication", ""))
             url = a.get("url", "")
             read_link = f'<a href="{url}" style="font-size:11px;color:#2980B9;">Read &#8594;</a>' if url and url != "#" and url.startswith("http") else ""
-            items_html += f"""
+            sa_html += f"""
             <div style="margin-bottom:12px;padding-left:12px;border-left:3px solid #8E44AD;">
               <div style="font-size:11px;color:#888;">{src} &middot; {tier}</div>
               <div style="font-size:12px;line-height:1.4;color:#555;">{summary}</div>
@@ -985,34 +886,28 @@ def render(digest: dict) -> str:
             </div>"""
         sections.append(f"""
         <div {_SEC}>
-          <h2 {_H2("#8E44AD")}>Academic Monitor</h2>
-          {items_html}
+          <h2 {_H2("#1B2A4A")}>Statements &amp; Analysis</h2>
+          {sa_html}
         </div>
         """)
 
-    # ── 19. On This Day in Korea ───────────────────────────────────────────
+    # ── 15. Footer (with On This Day) ─────────────────────────────────────
     on_this_day = digest.get("on_this_day") or []
+    otd_footer = ""
     if on_this_day:
-        otd_html = ""
-        for item in on_this_day[:1]:
-            date = _esc(item.get("date", ""))
-            event = _esc(item.get("event", ""))
-            relevance = _esc(item.get("relevance", ""))
-            otd_html += f"""
-            <div style="margin-bottom:6px;">
-              <div style="font-size:12px;"><strong>{date}:</strong> {event}</div>
-              <div style="font-size:11px;color:#2980B9;font-style:italic;">{relevance}</div>
-            </div>"""
-        sections.append(f"""
-        <div style="padding:16px 32px;background:#F0EDE4;border-bottom:1px solid #E0E0E0;" class="sec">
-          <h2 style="margin:0 0 8px 0;font-size:12px;color:#7F8C8D;text-transform:uppercase;letter-spacing:1px;font-family:Arial,sans-serif;">On This Day in Korea</h2>
-          {otd_html}
-        </div>
-        """)
-
-    # ── 20. Footer ─────────────────────────────────────────────────────────
+        item = on_this_day[0]
+        otd_date = _esc(item.get("date", ""))
+        otd_event = _esc(item.get("event", ""))
+        otd_rel = _esc(item.get("relevance", ""))
+        otd_footer = f"""
+        <div style="text-align:left;margin-bottom:14px;padding:10px 14px;background:#F0EDE4;border-radius:4px;">
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#7F8C8D;margin-bottom:4px;">On This Day</div>
+          <div style="font-size:12px;color:#333;"><strong>{otd_date}:</strong> {otd_event}</div>
+          <div style="font-size:11px;color:#2980B9;font-style:italic;">{otd_rel}</div>
+        </div>"""
     sections.append(f"""
     <div style="padding:16px 32px;background:#F8F9FA;text-align:center;" class="sec footer">
+      {otd_footer}
       <div style="font-size:11px;color:#999;line-height:1.5;">
         Korea Daily Brief &middot; CSIS Korea Chair<br>
         {_esc(date_str)} &middot; {gen_time}<br>
