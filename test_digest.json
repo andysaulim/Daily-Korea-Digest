@@ -39,40 +39,70 @@
     {"date": "March 26, 2010", "event": "ROKS Cheonan sunk by North Korean torpedo, killing 46 sailors.", "relevance": "Anniversary falls during heightened NLL tensions and ROK Navy live-fire drills near Baengnyeong."}
   ],
   "editor_note": "The convergence of a credible NK–Russia munitions transfer via Rajin and Seoul's political paralysis over the defense minister impeachment is the dominant signal. Pyongyang has historically exploited ROK domestic crises to advance provocative programs. The 72-hour window ahead warrants close monitoring of Sohae and Tonghae.",
+  "imagery_report": {
+    "source": "AEI / 38North",
+    "date": "Mar 18-19",
+    "label": "New imagery reports",
+    "headline": "Yongbyon Enrichment Expansion Observed; AEI Links to 9th Party Congress Warhead Production Order",
+    "body": "New construction at Yongbyon consistent with uranium enrichment capacity expansion. AEI Mar 18 analysis links activity to orders issued at the 9th Party Congress to accelerate nuclear warhead production. Additionally, THAAD radar element at Seongju — radar may remain as interceptors redeploy to Middle East, per Yonhap imagery analysis. 38North formal THAAD assessment expected within 48–72 hours.",
+    "source_links": [{"label": "AEI NK tag", "url": "#"}, {"label": "38North Nuclear", "url": "#"}],
+    "bp_location_ids": ["BP Location IDs: YBGN-ENR (Active/Expanding)", "THAAD-SNGJ (Active/Drawdown)", "Watch levels elevated"]
+  },
   "bp_locations": [
-    {"name": "Yongbyon Nuclear Complex", "status": "normal", "note": "No new activity detected"},
-    {"name": "Sohae Satellite Launch Station", "status": "activity", "note": "Vehicle movement detected near launch pad"},
-    {"name": "Punggye-ri Nuclear Test Site", "status": "normal", "note": "Consistent with maintenance posture"},
-    {"name": "Sinpo South Shipyard", "status": "elevated", "note": "SLBM barge repositioned; possible test prep"},
-    {"name": "Sunan Airfield/Missile Complex", "status": "normal", "note": "Routine traffic"},
-    {"name": "Vostochny/Dunai", "status": "activity", "note": "NK labor teams reported at port construction site"},
-    {"name": "Rason SEZ", "status": "elevated", "note": "Rajin port loading activity consistent with munitions transfers"},
-    {"name": "Tumangang–Khasan", "status": "activity", "note": "Rail traffic elevated; consistent with cargo transfers"},
-    {"name": "Sinuiju–Dandong", "status": "normal", "note": "Standard cross-border trade volume"},
-    {"name": "Yellow Sea NLL/PMZ", "status": "normal", "note": "No unusual naval posture"}
+    {"name": "Yongbyon — Enrichment Facility", "status": "elevated", "note": "New construction consistent with expansion", "last_report": "New imagery · Mar 19", "direction": "up"},
+    {"name": "Yongbyon — 5MWe Reactor", "status": "activity", "note": "Active", "last_report": "Mar 18-19", "direction": ""},
+    {"name": "Sinpo South Shipyard", "status": "normal", "note": "SLBM barge repositioned; possible test prep", "last_report": "14 days ago", "direction": ""},
+    {"name": "Sunan Missile Complex (Pyongyang)", "status": "normal", "note": "Routine traffic", "last_report": "Last report: Mar 18", "direction": ""},
+    {"name": "THAAD Site — Seongju County", "status": "activity", "note": "Radar element may remain as interceptors redeploy", "last_report": "New imagery · Mar 19", "direction": "down"},
+    {"name": "Sohae Satellite Launch Station", "status": "normal", "note": "Vehicle movement detected near launch pad", "last_report": "22 days ago", "direction": ""},
+    {"name": "Punggye-ri Nuclear Test Site", "status": "normal", "note": "Consistent with maintenance posture", "last_report": "31 days ago", "direction": ""}
   ],
   "rok_government": [
-    {"ministry": "Ministry of National Defense", "official": "DM Kim Yong-hyun", "action": "Emergency NSC meeting convened on NK–Russia arms report", "detail": "Defense Minister Kim convened an emergency NSC standing committee session to assess intelligence on NK munitions shipments to Russia via Rajin port. Joint Chiefs placed ROK military on enhanced monitoring posture."},
-    {"ministry": "Ministry of Foreign Affairs", "official": "FM Cho Tae-yul", "action": "ROK–US–Japan trilateral call on extended deterrence", "detail": "FM Cho held a trilateral video call with US Secretary of State and Japan FM to discuss coordinated response options. Joint statement expected by Friday."},
-    {"ministry": "Ministry of Unification", "official": "Minister Kim Young-ho", "action": "Annual inter-Korean relations assessment released", "detail": "MOU published its 2026 assessment characterizing inter-Korean relations as 'structurally frozen' with no near-term pathway to dialogue. Report flags DPRK constitutional changes removing unification language."},
-    {"ministry": "National Intelligence Service", "official": "Director Cho Tae-yong", "action": "NIS briefs National Assembly on DPRK sanctions evasion", "detail": "Closed-door briefing to intelligence committee on new DPRK cryptocurrency laundering networks and ship-to-ship oil transfers in the East China Sea."}
+    {"ministry": "Blue House / President's Office", "ministry_korean": "청와대", "official": "President", "action": "No Public Schedule Posted", "detail": "Mar 18: Emergency capital markets meeting (unannounced). Mar 19: THAAD redeployment confirmation expected to generate formal statement. Today's public schedule not yet posted — check president.go.kr.", "source_label": "president.go.kr"},
+    {"ministry": "Ministry of Foreign Affairs", "ministry_korean": "외교부", "official": "FM Cho Tae-yul", "action": "Hormuz Safety Coordination · Spokesperson Briefing", "detail": "MoFA held emergency joint meeting with related ministries and overseas missions on Hormuz Strait safety for Korean ships and crew. Spokesperson: \"ensuring our ships and crew safety is the top priority.\" Regular briefing expected this morning.", "source_label": "MoFA EN"},
+    {"ministry": "Ministry of National Defense", "ministry_korean": "국방부", "official": "DM Kim Yong-hyun", "action": "Freedom Shield 26 Conclusion Debrief", "detail": "MND holding internal debrief on Freedom Shield 26 conclusion. THAAD redeployment confirmation expected to generate formal MND statement today or tomorrow. Watch for language on L-SAM readiness timeline.", "source_label": "MND"},
+    {"ministry": "MOTIE", "ministry_korean": "산업통상자원부", "official": "Minister", "action": "Energy Stabilization Task Force · Day 1", "detail": "First formal interagency energy task force since 2022. MOTIE coordinating with four major refiners on output increases and maintenance delays. UAE emergency supply agreement (18M barrels) confirmed. Directed to prepare 90-day strategic reserve drawdown protocol.", "source_label": "MOTIE EN"},
+    {"ministry": "Ministry of Land, Infrastructure & Transport", "ministry_korean": "국토교통부", "official": "", "action": "Construction Industry CEO Forum", "detail": "Ministry hosting construction industry CEO forum focused on regulatory reform and overseas project pipeline. Not Korea-security-relevant today — monitoring for any infrastructure or transport policy shifts tied to energy security.", "source_label": ""},
+    {"ministry": "Defense Acquisition Program Administration", "ministry_korean": "방위사업청", "official": "", "action": "L-SAM Program Status — Watch", "detail": "DAPA has not issued public update on L-SAM development timeline following THAAD redeployment news. Strengthening communication with defense SMEs on procurement transparency. L-SAM initial operational capability: 2027.", "source_label": "DAPA EN"}
+  ],
+  "calendar_watch": [
+    {"month": "MAR", "day": 19, "type": "watch", "type_label": "TODAY · WATCH", "headline": "KCNA Response Window — THAAD Redeployment", "detail": "Pyongyang has not yet issued a formal response. NK typically responds within 24–72 hours. Watch KCNA Watch feed through Mar 22."},
+    {"month": "MAR", "day": 20, "type": "event", "type_label": "EVENT", "headline": "US-ROK Combined Working Group (Virtual)", "detail": "Routine bilateral coordination. THAAD and OPCON transfer likely on agenda given this week's developments."},
+    {"month": "MAR", "day": 25, "type": "hearing", "type_label": "SFRC HEARING — PREP REQUIRED", "headline": "Senate Foreign Relations — Asia Subcommittee: US Alliance Posture", "detail": "THAAD redeployment and terminal defense gap likely to be raised. Witness list unpublished. Brief may be warranted — see Congressional section above.", "urgency": "elevated"},
+    {"month": "APR", "day": 2, "type": "event", "type_label": "EVENT", "headline": "Freedom Shield 26 Official Debrief — USFK", "detail": "USFK releases formal assessment. OPCON transfer capability evaluation results expected — or notably absent."},
+    {"month": "APR", "day": 11, "type": "risk", "type_label": "WATCH · ELEVATED RISK", "headline": "NK Party Founding Anniversary", "detail": "Apr 11 (WPK Founding Day) historically associated with elevated provocation risk. Current SRBM test tempo (×3) and KCNA escalatory language raise the risk profile heading into this window.", "urgency": "elevated"}
   ],
   "kcna_delta": {
-    "kim_appearance_today": false,
-    "kim_activity": null,
-    "days_since_last_appearance": 3,
+    "kim_appearance_today": true,
+    "kim_activity": "Mar 18 guided tour of munitions factory",
+    "days_since_last_appearance": 0,
     "senior_officials": [
       {"name": "Choe Son Hui", "role": "Foreign Minister", "activity": "Met with Russian Deputy FM Ryabkov in Pyongyang", "significance": "Highest-level NK-Russia diplomatic contact this month — likely coordinating response to UN sanctions push."},
       {"name": "Kim Yo Jong", "role": "Vice Department Director, WPK", "activity": "No public appearance or statement", "significance": "Silence during a period of active ROK political crisis is atypical — she has historically issued statements exploiting ROK instability."}
     ],
-    "us_tone": "Hostile",
+    "us_tone": "Elevated",
+    "us_qualifier": "Hostile",
+    "us_tone_description": "\"Outrageous international rogues\" (Mar 18). \"Nuclear war deterrent\" ×3 this week vs ×0 prior 7 days.",
+    "russia_tone": "Stable",
+    "russia_qualifier": "Warm",
+    "russia_tone_description": "\"Strategic partnership\" framing from Vladivostok summit continues. No notable shift this week.",
+    "china_tone": "Neutral",
+    "china_qualifier": "Formal",
+    "china_tone_description": "Boilerplate solidarity. Silence on Beijing summit delay notable.",
     "rok_tone": "Elevated",
-    "russia_tone": "Very Warm",
-    "china_tone": "Warm",
-    "tone_shift": "Russia tone shifted from Warm to Very Warm",
+    "rok_qualifier": "Warning",
+    "rok_tone_description": "\"Puppet regime\" reappeared (absent since Oct 2025). THAAD redeployment — NK formal response not yet issued.",
+    "baseline_period": "Mar 13-19",
+    "tone_shift": "US tone shifted from Neutral to Elevated-Hostile",
     "propaganda_focus": ["sacred nuclear deterrent", "anti-US imperialism", "self-reliance economy"],
     "notable_omissions": "No mention of inter-Korean relations for 5th consecutive day",
-    "key_phrase_changes": ["sacred nuclear deterrent force", "eternal comrade-in-arms"],
+    "key_phrase_changes": [
+      {"phrase": "nuclear war deterrent", "count_this_week": 3, "count_prior": 0, "delta_label": "↑ from ×0"},
+      {"phrase": "outrageous international rogues", "count_this_week": 1, "count_prior": 0, "delta_label": "↑ new phrase"},
+      {"phrase": "puppet regime", "count_this_week": 2, "count_prior": 0, "delta_label": "↑ from ×0"},
+      {"phrase": "strategic partnership (Russia)", "count_this_week": 4, "count_prior": 4, "delta_label": "→ stable"},
+      {"phrase": "Kim Jong Un public appearance", "count_this_week": 1, "count_prior": null, "delta_label": "→ normal"}
+    ],
     "doctrinal_shift": "'Sacred nuclear deterrent force' replaces standard 'treasured sword of justice' formulation. This linguistic upgrade historically precedes capability announcements — the 2017 shift to 'state nuclear force' preceded the Hwasong-15 ICBM test by 3 months.",
     "key_quotes": [
       {"quote": "The sacred nuclear deterrent force of the DPRK serves as the absolute guarantee for the sovereignty and security of the state.", "source_article": "Rodong Sinmun Editorial — March 20", "significance": "First use of 'sacred nuclear deterrent force' — elevates nuclear program from military tool to quasi-religious national mandate."},
@@ -133,7 +163,14 @@
     {"category": "Energy", "headline": "ROK–UAE nuclear cooperation agreement signed for Barakah expansion", "body_text": "Korea Hydro & Nuclear Power signed a framework agreement with Emirates Nuclear Energy Corporation for potential construction of Units 5-6 at the Barakah plant.", "source": "Korea Times", "url": "https://www.koreatimes.co.kr/www/nation/2026/03/120_371234.html", "color_bar_class": "cb-tech"}
   ],
   "us_korea_deals": {
-    "tariff_snapshot": "25% on steel/aluminum · 10% baseline · 25% auto tariff (paused through June)",
+    "status_tracker": [
+      {"item": "Tariff rate on ROK exports to US", "detail": "Reduced from 25% to 15% under Jul 2025 bilateral agreement", "status": "ACTIVE"},
+      {"item": "$350B Investment MOU + Special Act", "detail": "National Assembly passed 226-8 on Mar 18. Korea-US Strategic Investment Corporation being established.", "status": "PASSED"},
+      {"item": "Section 301 Investigation (ROK)", "detail": "US opened §301 probe into ROK alongside 15 other partners. Could replace current tariff regime with higher rates.", "status": "RISK"},
+      {"item": "CHIPS Act Waiver — Samsung / SK Hynix", "detail": "Renewal delayed pending broader tech export control review. Decision expected Q2.", "status": "MONITOR"},
+      {"item": "12th Special Measures Agreement (SMA)", "detail": "In force through 2030 at ₩1.52 trillion/year. Trump has separately demanded 5% GDP defense spend.", "status": "PRESSURE"}
+    ],
+    "tariff_snapshot": null,
     "investment_package": {
       "total_pledged": "$350B",
       "announced_to_date": "$87.5B",
@@ -141,8 +178,8 @@
       "latest_update": "Samsung SDI Indiana plant adds $2.3B to cumulative total"
     },
     "deals": [
-      {"headline": "Samsung SDI to build $2.3B EV battery plant in Indiana", "value": "$2.3B", "sector": "manufacturing", "parties": "Samsung SDI → Kokomo, Indiana (2nd US plant)", "detail": "Deepens ROK-US industrial integration in EV supply chain amid decoupling from China.", "source": "Korea Herald", "url": "https://www.koreaherald.com/view.php?ud=20260320000456"},
-      {"headline": "ROK–UAE nuclear cooperation agreement for Barakah expansion", "value": null, "sector": "energy", "parties": "Korea Hydro & Nuclear Power ↔ Emirates Nuclear Energy Corp", "detail": "Framework for potential Units 5-6 at Barakah; strengthens ROK nuclear export portfolio.", "source": "Korea Times", "url": "https://www.koreatimes.co.kr/www/nation/2026/03/120_371234.html"}
+      {"headline": "Venture Global Signs First Korean LNG Deal: 1.5 MTPA for 20 Years with Hanwha Aerospace", "value": null, "sector": "energy", "parties": "Venture Global · US Embassy Seoul", "detail": "Venture Global and Hanwha Aerospace signed a 20-year Sales and Purchase Agreement for 1.5 million tonnes per annum of US LNG beginning 2030. Signed at the Indo-Pacific Energy Ministerial in Tokyo on March 18, attended by US Secretary of the Interior Doug Burgum and ROK Trade Minister Kim Jeonggwan. Hanwha is building an integrated LNG value chain across Aerospace, Ocean, Energy, and Shipping subsidiaries.", "source": "Venture Global press release", "url": "https://example.com/venture-global", "tags": ["ENERGY", "TRADE"]},
+      {"headline": "Seoul Raises Oil Alert; Secures Emergency 18M Barrels from UAE as Hormuz Threatened", "value": null, "sector": "energy", "parties": "ROK Ministry of Energy · UAE", "detail": "ROK Ministry of Energy raised oil resource security alert. Seoul secured 18 million emergency barrels from UAE with priority delivery. Major refiners delaying maintenance to stabilize supply. ROK shipping industry calling for state-backed 200-vessel strategic merchant fleet.", "source": "Korea Herald", "url": "https://example.com/oil-alert", "tags": ["ENERGY SUPPLY"]}
     ]
   },
   "business_economy": [
