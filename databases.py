@@ -1,5 +1,5 @@
 """
-Korea Brief — Database Integration
+Korea Daily Brief — Database Integration
 Fetches NK-Russia timeline and NK provocations databases from GitHub,
 provides historical context for the digest, and pushes new entries back.
 """
@@ -507,7 +507,7 @@ def push_nk_russia_entry(entry: dict) -> bool:
             "media": entry.get("media", ""),
             "thumb": entry.get("thumb", ""),
             "caption": entry.get("caption", ""),
-            "credit": entry.get("credit", "Auto-flagged by Korea Brief"),
+            "credit": entry.get("credit", "Auto-flagged by Korea Daily Brief"),
             "source": entry.get("source", ""),
             "tag": entry.get("tag", "military"),
             "src_type": entry.get("src_type", "press"),
@@ -537,7 +537,7 @@ def push_nk_russia_entry(entry: dict) -> bool:
 
         _put_file_content(
             NKR_REPO, NKR_FILE, new_html, sha,
-            f"Auto-add: {entry.get('headline', 'New event')[:60]} [Korea Brief]"
+            f"Auto-add: {entry.get('headline', 'New event')[:60]} [Korea Daily Brief]"
         )
         print(f"    ✅  NK-Russia timeline: added event #{next_id}")
         return True
@@ -563,7 +563,7 @@ def push_provocation_entry(entry: dict) -> bool:
             "event": entry.get("event", ""),
             "desc": entry.get("desc", ""),
             "sev": entry.get("sev", 3),
-            "source": entry.get("source", "Korea Brief"),
+            "source": entry.get("source", "Korea Daily Brief"),
             "sourceType": entry.get("sourceType", "digest"),
             "url": entry.get("url", ""),
             "leader": "kim-jong-un",
@@ -583,7 +583,7 @@ def push_provocation_entry(entry: dict) -> bool:
 
         _put_file_content(
             PROV_REPO, PROV_FILE, new_html, sha,
-            f"Auto-add: {entry.get('event', 'New provocation')[:60]} [Korea Brief]"
+            f"Auto-add: {entry.get('event', 'New provocation')[:60]} [Korea Daily Brief]"
         )
         print(f"    ✅  Provocations DB: added '{entry.get('event', '')[:50]}'")
         return True

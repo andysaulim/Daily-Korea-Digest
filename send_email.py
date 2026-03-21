@@ -1,5 +1,5 @@
 """
-Korea Brief — Email Sender
+Korea Daily Brief — Email Sender
 Sends the rendered HTML digest via Gmail SMTP (app password).
 """
 import os
@@ -35,9 +35,9 @@ def send(html: str, re_line: Optional[str] = None, subject: Optional[str] = None
             # Truncate RE: line for subject (max ~120 chars total)
             max_re = 100
             re_short = re_line[:max_re] + ("..." if len(re_line) > max_re else "")
-            subject = f"Korea Brief · {date_str} — {re_short}"
+            subject = f"Korea Daily Brief · {date_str} — {re_short}"
         else:
-            subject = f"Korea Brief · {date_str}"
+            subject = f"Korea Daily Brief · {date_str}"
 
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
@@ -45,7 +45,7 @@ def send(html: str, re_line: Optional[str] = None, subject: Optional[str] = None
     msg["To"] = ", ".join(recipients)
 
     plain = (
-        "Korea Brief — CSIS Korea Chair\n"
+        "Korea Daily Brief — CSIS Korea Chair\n"
         "This digest is best viewed in an HTML-capable email client.\n"
         f"Date: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}"
     )

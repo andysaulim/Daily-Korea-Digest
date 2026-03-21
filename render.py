@@ -1,5 +1,5 @@
 """
-Korea Brief — HTML Renderer
+Korea Daily Brief — HTML Renderer
 CSIS Korea Chair
 Takes structured digest JSON from Claude and renders a styled HTML email.
 Uses table-based layout for maximum email client compatibility.
@@ -83,9 +83,9 @@ def _link_or_text(text: str, url: str, style: str = "color:#1B2A4A;text-decorati
 
 
 # ── Section padding helper (responsive via class) ────────────────────────
-_SEC = 'style="padding:20px 32px;border-bottom:1px solid #E0E0E0;" class="sec"'
-_SEC_BG = lambda bg: f'style="padding:20px 32px;background:{bg};border-bottom:1px solid #E0E0E0;" class="sec"'
-_H2 = lambda color: f'style="margin:0 0 12px 0;font-size:13px;color:{color};text-transform:uppercase;letter-spacing:1px;font-family:Arial,sans-serif;"'
+_SEC = 'style="padding:14px 32px;border-bottom:1px solid #E0E0E0;" class="sec"'
+_SEC_BG = lambda bg: f'style="padding:14px 32px;background:{bg};border-bottom:1px solid #E0E0E0;" class="sec"'
+_H2 = lambda color: f'style="margin:0 0 8px 0;font-size:12px;color:{color};text-transform:uppercase;letter-spacing:1px;font-family:Arial,sans-serif;"'
 
 
 def render(digest: dict) -> str:
@@ -105,7 +105,7 @@ def render(digest: dict) -> str:
     sections.append(f"""
     <div style="background:#FFFFFF;padding:14px 32px 10px;" class="sec header">
       <!--[if !mso]><!-->
-      <img src="{logo_url}" alt="" width="320" style="max-width:80%;height:auto;display:block;" />
+      <img src="{logo_url}" alt="" width="420" style="max-width:100%;height:auto;display:block;" />
       <!--<![endif]-->
       <!--[if mso]>
       <table cellpadding="0" cellspacing="0" border="0"><tr>
@@ -117,11 +117,11 @@ def render(digest: dict) -> str:
         <div style="font-size:16px;font-weight:700;color:#1B2A4A;font-family:Georgia,serif;">CSIS Korea Chair</div>
       </noscript>
     </div>
-    <div style="background:#1B2A4A;color:#fff;padding:20px 32px 16px;" class="sec">
+    <div style="background:#1B2A4A;color:#fff;padding:14px 32px 12px;" class="sec">
       <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
         <td style="vertical-align:top;">
           <h1 style="margin:0;font-size:24px;font-weight:700;font-family:Georgia,serif;color:#fff;letter-spacing:0.5px;">
-            Korea Brief
+            Korea Daily Brief
           </h1>
           <div style="margin-top:4px;font-size:13px;color:rgba(255,255,255,0.7);">{_esc(date_str)}</div>
         </td>
@@ -165,7 +165,7 @@ def render(digest: dict) -> str:
     # ── 3. Morning Memo ────────────────────────────────────────────────────
     if editor_note:
         sections.append(f"""
-        <div style="padding:20px 32px;border-bottom:2px solid #1B2A4A;" class="sec">
+        <div style="padding:14px 32px;border-bottom:2px solid #1B2A4A;" class="sec">
           <h2 {_H2("#1B2A4A")}>Morning Memo</h2>
           <p style="margin:0;font-size:14px;line-height:1.6;color:#333;font-style:italic;font-family:Georgia,serif;">
             {editor_note}
@@ -214,7 +214,7 @@ def render(digest: dict) -> str:
             src_line = _esc(story.get("src_line", story.get("source", "")))
             url = story.get("url", "")
             stories_html += f"""
-            <div class="story-card" style="margin-bottom:20px;padding:14px;background:#F8F9FA;border-radius:6px;border-left:4px solid #1B2A4A;">
+            <div class="story-card" style="margin-bottom:12px;padding:10px 12px;background:#F8F9FA;border-radius:4px;border-left:4px solid #1B2A4A;">
               <div style="margin-bottom:6px;">
                 {_signal_badge(sig)}
                 <span style="font-size:11px;color:#888;margin-left:8px;text-transform:uppercase;">{cat}</span>
@@ -238,7 +238,7 @@ def render(digest: dict) -> str:
     key_stat = digest.get("key_stat") or {}
     if key_stat and key_stat.get("number"):
         sections.append(f"""
-        <div style="padding:16px 32px;background:#1B2A4A;color:#fff;border-bottom:1px solid #E0E0E0;text-align:center;" class="sec">
+        <div style="padding:12px 32px;background:#1B2A4A;color:#fff;border-bottom:1px solid #E0E0E0;text-align:center;" class="sec">
           <div style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;opacity:0.6;margin-bottom:2px;">Stat of the Day</div>
           <div class="key-stat-num" style="font-size:32px;font-weight:700;font-family:Georgia,serif;">{_esc(str(key_stat.get("number", "")))}</div>
           <div style="font-size:12px;opacity:0.85;margin-top:2px;">{_esc(key_stat.get("label", ""))}</div>
@@ -413,7 +413,7 @@ def render(digest: dict) -> str:
             </div>
             <span style="font-size:11px;color:rgba(255,255,255,0.4);">{baseline_html}</span>
           </div>
-          <div style="padding:20px 32px;background:#1a2a1a;color:#E0E0E0;">
+          <div style="padding:14px 32px;background:#1a2a1a;color:#E0E0E0;">
             {"<div style='margin-bottom:12px;padding:8px 14px;background:#C0392B;color:#fff;border-radius:4px;font-size:12px;font-weight:600;'>&#9888; Complete KCNA silence today</div>" if silence else ""}
             {doctrinal_html}
             {tone_grid}
@@ -495,11 +495,14 @@ def render(digest: dict) -> str:
                 b_label = "Active ▲"
             loc_rows += f"""
             <tr style="border-bottom:1px solid #F0F0F0;">
-              <td style="padding:10px 0;font-size:13px;font-weight:600;color:#1B2A4A;">{name}</td>
-              <td style="padding:10px 8px;text-align:center;" width="100">
-                <span style="display:inline-block;padding:3px 12px;border-radius:3px;font-size:11px;font-weight:600;color:{b_color};background:{b_bg};white-space:nowrap;">{b_label}</span>
+              <td style="padding:8px 0;vertical-align:top;">
+                <div style="font-size:13px;font-weight:600;color:#1B2A4A;">{name}</div>
+                <div style="font-size:11px;line-height:1.4;color:#666;margin-top:2px;">{note}</div>
               </td>
-              <td style="padding:10px 0;text-align:right;font-size:11px;font-family:monospace;color:#999;white-space:nowrap;" width="140">{last_report if last_report else note}</td>
+              <td style="padding:8px 8px;text-align:center;vertical-align:top;" width="90">
+                <span style="display:inline-block;padding:2px 10px;border-radius:3px;font-size:10px;font-weight:600;color:{b_color};background:{b_bg};white-space:nowrap;">{b_label}</span>
+                <div style="font-size:10px;color:#999;margin-top:2px;">{last_report}</div>
+              </td>
             </tr>"""
 
         loc_date = _esc(str(digest.get("digest_date", "")))
@@ -509,9 +512,9 @@ def render(digest: dict) -> str:
             <span style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#E8DCC8;font-family:Arial,sans-serif;">Satellite &amp; Location Watch</span>
             <span style="font-size:11px;color:rgba(255,255,255,0.5);">BP catalogue · {loc_date}</span>
           </div>
-          <div style="padding:20px 32px;">
+          <div style="padding:14px 32px;">
             {img_report_html}
-            <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#1B2A4A;margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid #E8E8E8;">BP Monitored Locations — Current Status</div>
+            <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#1B2A4A;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #E8E8E8;">BP Monitored Locations — Current Status</div>
             <table width="100%" cellpadding="0" cellspacing="0" border="0" class="loc-table">
               {loc_rows}
             </table>
@@ -615,7 +618,7 @@ def render(digest: dict) -> str:
             <span style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#E8DCC8;font-family:Arial,sans-serif;">ROK Government Schedule</span>
             <span style="font-size:11px;color:rgba(255,255,255,0.5);">President + Ministries · {rok_date}</span>
           </div>
-          <div style="padding:20px 32px;">
+          <div style="padding:14px 32px;">
             {gov_grid_html}
             {cal_html}
           </div>
@@ -752,7 +755,7 @@ def render(digest: dict) -> str:
             <span style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#E8DCC8;font-family:Arial,sans-serif;">US-Korea Trade &amp; Investment</span>
             <span style="font-size:11px;color:rgba(255,255,255,0.5);">Special section · deal tracker</span>
           </div>
-          <div style="padding:20px 32px;">
+          <div style="padding:14px 32px;">
             {header_html}
             {deals_html}
           </div>
@@ -1011,7 +1014,7 @@ def render(digest: dict) -> str:
     sections.append(f"""
     <div style="padding:16px 32px;background:#F8F9FA;text-align:center;" class="sec footer">
       <div style="font-size:11px;color:#999;line-height:1.5;">
-        Korea Brief &middot; CSIS Korea Chair<br>
+        Korea Daily Brief &middot; CSIS Korea Chair<br>
         {_esc(date_str)} &middot; {gen_time}<br>
         <span style="color:#bbb;">Read alongside primary sources</span>
       </div>
@@ -1026,7 +1029,7 @@ def render(digest: dict) -> str:
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <title>Korea Brief &mdash; {_esc(date_str)}</title>
+  <title>Korea Daily Brief &mdash; {_esc(date_str)}</title>
   <style type="text/css">
     /* Reset */
     body, table, td, div, p {{ margin:0; padding:0; }}
