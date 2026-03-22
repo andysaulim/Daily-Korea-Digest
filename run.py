@@ -68,16 +68,35 @@ def validate_digest(digest: dict) -> list[str]:
 
     # ── Check for duplicate URLs across sections ─────────────────────────
     seen_urls = {}
+    dup_count = 0
     for section_key in ("top_stories", "overnight_items", "also_today",
-                         "business_economy", "northeast_asia"):
+                         "business_economy", "northeast_asia", "opeds_today",
+                         "social_statements"):
         for item in (digest.get(section_key) or []):
             url = item.get("url", "")
             if url and url.startswith("http"):
                 if url in seen_urls:
+                    dup_count += 1
+                    if dup_count <= 3:
+                        warnings.append(
+                            f"DUPLICATE: URL appears in both {seen_urls[url]} and {section_key}")
+                else:
+                    seen_urls[url] = section_key
+
+    # ── Check for duplicate headlines (same story, different URLs) ─────
+    seen_headlines = {}
+    for section_key in ("top_stories", "overnight_items", "also_today",
+                         "business_economy", "northeast_asia"):
+        for item in (digest.get(section_key) or []):
+            headline = (item.get("headline", "") or "").lower().strip()
+            if len(headline) > 20:
+                # Normalize: take first 40 chars for fuzzy match
+                h_key = headline[:40]
+                if h_key in seen_headlines:
                     warnings.append(
-                        f"DUPLICATE: URL appears in both {seen_urls[url]} and {section_key}")
+                        f"DUPLICATE HEADLINE: similar story in {seen_headlines[h_key]} and {section_key}: '{headline[:50]}...'")
                     break
-                seen_urls[url] = section_key
+                seen_headlines[h_key] = section_key
 
     # ── Check for "None" strings in critical fields ──────────────────────
     val = digest.get("re_line")
