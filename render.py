@@ -136,33 +136,10 @@ def render(digest: dict) -> str:
     </div>
     """)
 
-    # ── 1b. Table of Contents + Forward CTA ──────────────────────────────
-    toc_items = [
-        ("markets", "Markets", digest.get("market_indicators")),
-        ("memo", "Morning Memo", digest.get("morning_memo")),
-        ("top-stories", "Top Stories", digest.get("top_stories")),
-        ("overnight", "Overnight Flash", digest.get("overnight_items")),
-        ("key-stat", "Key Stat", digest.get("key_stat")),
-        ("kcna", "KCNA Watch", digest.get("kcna_delta")),
-        ("satellite", "Satellite Watch", (digest.get("bp_locations") or digest.get("imagery_report"))),
-        ("rok-gov", "ROK Government", digest.get("rok_government")),
-        ("trade", "Trade &amp; Investment", digest.get("us_korea_deals")),
-        ("business", "Business", digest.get("business_economy")),
-        ("nea", "NE Asia", digest.get("northeast_asia")),
-        ("sentiment", "Sentiment", digest.get("public_sentiment")),
-        ("wire", "The Wire", digest.get("also_today")),
-        ("analysis", "Analysis", (digest.get("social_statements") or digest.get("opeds_today") or digest.get("academic_today"))),
-    ]
-    toc_links = " &middot; ".join(
-        f'<a href="#{anchor}" style="color:#2980B9;text-decoration:none;font-size:11px;">{label}</a>'
-        for anchor, label, data in toc_items if data
-    )
-    if toc_links:
-        sections.append(f"""
-        <div style="padding:10px 32px;background:#F8F9FA;border-bottom:1px solid #E0E0E0;" class="sec">
-          <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:4px;font-family:Arial,sans-serif;">Jump to</div>
-          <div style="line-height:1.8;">{toc_links}</div>
-          <div style="margin-top:8px;font-size:11px;color:#888;font-family:Arial,sans-serif;">
+    # ── 1b. Forward CTA ─────────────────────────────────────────────────
+    sections.append("""
+        <div style="padding:8px 32px;background:#F8F9FA;border-bottom:1px solid #E0E0E0;" class="sec">
+          <div style="font-size:11px;color:#888;font-family:Arial,sans-serif;">
             Know someone who'd find this useful? <a href="mailto:?subject=Korea%20Daily%20Brief&amp;body=Check%20out%20the%20Korea%20Daily%20Brief%20from%20CSIS%20Korea%20Chair." style="color:#2980B9;text-decoration:none;font-weight:600;">Forward to a colleague &rarr;</a>
           </div>
         </div>
