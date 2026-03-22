@@ -31,7 +31,7 @@ jobs:
           GMAIL_APP_PASS: ${{ secrets.GMAIL_APP_PASS }}
           DIGEST_TO: ${{ secrets.DIGEST_TO }}
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
-          WEB_URL: https://andysaulim.github.io/Daily-Korea-News
+          WEB_URL: https://andysaulim.github.io/Daily-Korea-Digest
         run: python run.py
 
       - name: Deploy to GitHub Pages

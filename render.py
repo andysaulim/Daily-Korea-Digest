@@ -646,8 +646,8 @@ def render(digest: dict) -> str:
     else:
         deal_list = us_korea.get("deals") or []
 
-    status_tracker = us_korea.get("status_tracker") or [] if isinstance(us_korea, dict) else []
-    investment_pkg = us_korea.get("investment_package") or {} if isinstance(us_korea, dict) else {}
+    status_tracker = (us_korea.get("status_tracker") or []) if isinstance(us_korea, dict) else []
+    investment_pkg = (us_korea.get("investment_package") or {}) if isinstance(us_korea, dict) else {}
 
     if deal_list or status_tracker or investment_pkg:
         header_html = ""

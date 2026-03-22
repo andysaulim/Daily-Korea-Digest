@@ -85,6 +85,11 @@ def main():
     archive_dir.mkdir(exist_ok=True)
     (archive_dir / "latest.html").write_text(html, encoding="utf-8")
     (archive_dir / f"digest_{date_slug}.html").write_text(html, encoding="utf-8")
+    # Index redirect so Pages root doesn't 404
+    (archive_dir / "index.html").write_text(
+        '<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=latest.html"></head></html>',
+        encoding="utf-8",
+    )
 
     # ── Step 4: Send email ───────────────────────────────────────────────────
     if args.no_send:
