@@ -2,8 +2,10 @@ name: Daily Korea News Digest
 
 on:
   schedule:
-    # 6:00 AM ET = 11:00 AM UTC (EST) / 10:00 AM UTC (EDT)
+    # Primary: 6:00 AM ET = 11:00 AM UTC (EST) / 10:00 AM UTC (EDT)
     - cron: '0 10 * * *'
+    # Fallback: 6:30 AM ET — catches cases where the primary run was skipped
+    - cron: '30 10 * * *'
   workflow_dispatch: # Allow manual trigger
 
 permissions:
@@ -11,8 +13,40 @@ permissions:
   pages: write
 
 jobs:
-  send-digest:
+  # For the fallback cron, skip if the primary already succeeded today
+  check-already-sent:
     runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.check.outputs.should_run }}
+    steps:
+      - id: check
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          if [ "${{ github.event_name }}" != "schedule" ]; then
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Check if there's already a successful run today
+          today=$(date -u +%Y-%m-%d)
+          success_count=$(gh run list --repo ${{ github.repository }} \
+            --workflow "Daily Korea News Digest" \
+            --status success --created "$today" \
+            --json conclusion -q 'length' 2>/dev/null || echo "0")
+          if [ "$success_count" -gt "0" ] && [ "${{ github.event.schedule }}" = "30 10 * * *" ]; then
+            echo "Primary run already succeeded today — skipping fallback"
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  send-digest:
+    needs: check-already-sent
+    if: needs.check-already-sent.outputs.should_run == 'true'
+    runs-on: ubuntu-latest
+    # Retry up to 3 times on transient failures (API timeouts, network, etc.)
+    strategy:
+      max-parallel: 1
     steps:
       - uses: actions/checkout@v4
 
@@ -25,6 +59,7 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Generate and send digest
+        id: send
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
@@ -32,7 +67,22 @@ jobs:
           DIGEST_TO: ${{ secrets.DIGEST_TO }}
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
           WEB_URL: https://andysaulim.github.io/Daily-Korea-Digest
-        run: python run.py
+        # Retry the core pipeline up to 3 times with backoff
+        run: |
+          for attempt in 1 2 3; do
+            echo "=== Attempt $attempt of 3 ==="
+            if python run.py; then
+              echo "success=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            if [ $attempt -lt 3 ]; then
+              sleep_time=$((attempt * 30))
+              echo "⚠️  Attempt $attempt failed — retrying in ${sleep_time}s..."
+              sleep $sleep_time
+            fi
+          done
+          echo "❌  All 3 attempts failed"
+          exit 1
 
       - name: Update README with run stats
         run: python update_readme.py
