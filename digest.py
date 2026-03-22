@@ -141,7 +141,12 @@ Cross-reference these reports with KCNA Tier 4 data to determine kim_appearance_
 PUBLIC SENTIMENT BASELINE (pre-collected polling data)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 {json.dumps(sentiment, indent=1)}
-Use these as baseline values for the public_sentiment field. If today's articles contain newer polling data, update the values. Otherwise carry these forward."""
+Use these as baseline values for the public_sentiment field. If today's articles contain newer polling data from Gallup Korea or Realmeter, update the values. Otherwise carry these forward.
+IMPORTANT VALIDATION: The scraped baseline may contain errors. Cross-check:
+- Presidential approval should be in the 55-70% range (as of late 2025 / early 2026)
+- The known CONFIRMED baseline is: 62% approval, DP 43%, PPP 22%, independents 28% (Gallup Korea, Dec 2025)
+- If the scraped baseline shows presidential approval outside the 50-75% range, or if it looks like a party rating was misidentified as presidential approval, IGNORE the scraped values and use the confirmed baseline above
+- ALL 4 metrics MUST come from the SAME poll (same source, same date) — never mix"""
 
     return f"""Today's date: {date_str}
 Process each tier according to its instructions and return a single JSON object.

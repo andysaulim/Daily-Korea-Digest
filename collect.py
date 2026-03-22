@@ -618,24 +618,39 @@ def _collect_sentiment() -> dict:
     # party ratings in the SAME article.  We search for articles that
     # contain both, then extract all metrics from one article so the
     # source and date are always consistent.
-    _RE_APPROVAL = re.compile(
-        r'(?:approval|support|지지율)[^\d]{0,30}(\d{1,3}(?:\.\d+)?)%|'
-        r'(\d{1,3}(?:\.\d+)?)%\s*(?:approval|support|지지율)',
+    #
+    # IMPORTANT: Presidential approval regex MUST require "대통령" or
+    # "presidential" near the number. The old regex matched generic
+    # "support"/"지지율" which would grab party ratings or unrelated
+    # percentages as presidential approval — the #1 cause of wrong numbers.
+
+    # Presidential approval: MUST have "대통령" or "presidential" nearby.
+    # The [^\d]{0,10} gap between the keyword block and the % capture is
+    # critical — without it, the space before the digit isn't consumed.
+    _RE_PRES_APPROVAL = re.compile(
+        r'(?:대통령\s*(?:직무)?(?:수행)?(?:긍정)?[^\d]{0,20}지지율|'    # 대통령 지지율 XX%
+        r'대통령[^\d]{0,30}(?:긍정|approval))[^\d]{0,10}'              # 대통령...긍정/approval
+        r'(\d{1,3}(?:\.\d+)?)%|'
+        r'(?:presidential\s+approval)[^\d]{0,20}(\d{1,3}(?:\.\d+)?)%|'  # presidential approval XX%
+        r'(\d{1,3}(?:\.\d+)?)%\s*(?:presidential\s+approval)',          # XX% presidential approval
         re.IGNORECASE,
     )
+    # Ruling party: 민주당 / Democratic Party
     _RE_RULING = re.compile(
         r'(?:민주당|Democratic\s*Party)[^\d]{0,30}(\d{1,3}(?:\.\d+)?)%|'
         r'(\d{1,3}(?:\.\d+)?)%\s*(?:민주당|Democratic\s*Party)',
         re.IGNORECASE,
     )
+    # Opposition: 국민의힘 / People Power Party
     _RE_OPP = re.compile(
         r'(?:국민의힘|People\s*Power\s*Party)[^\d]{0,30}(\d{1,3}(?:\.\d+)?)%|'
         r'(\d{1,3}(?:\.\d+)?)%\s*(?:국민의힘|People\s*Power\s*Party)',
         re.IGNORECASE,
     )
+    # Independents: 무당층 / 무당파
     _RE_IND = re.compile(
-        r'(?:무당층|무당파|no\s*party|independent)[^\d]{0,30}(\d{1,3}(?:\.\d+)?)%|'
-        r'(\d{1,3}(?:\.\d+)?)%\s*(?:무당층|무당파|no\s*party|independent)',
+        r'(?:무당층|무당파|no\s*party\s*preference|independents?)[^\d]{0,30}(\d{1,3}(?:\.\d+)?)%|'
+        r'(\d{1,3}(?:\.\d+)?)%\s*(?:무당층|무당파|no\s*party|independents?)',
         re.IGNORECASE,
     )
 
@@ -650,26 +665,41 @@ def _collect_sentiment() -> dict:
     ]
 
     def _sane_pct(match) -> float | None:
-        """Extract percentage from regex match, return None if outside 5-85%."""
-        val = float(match.group(1) or match.group(2))
-        return val if 5 <= val <= 85 else None
+        """Extract percentage from regex match, return None if outside 5-85%.
+        Checks all groups since different alternations capture in different groups."""
+        for i in range(1, match.lastindex + 1 if match.lastindex else 1):
+            g = match.group(i)
+            if g is not None:
+                val = float(g)
+                return val if 5 <= val <= 85 else None
+        return None
+
+    def _is_polling_article(text: str) -> bool:
+        """Check that article is actually about polling, not some other topic
+        that happens to mention a percentage."""
+        poll_signals = ("갤럽", "gallup", "리얼미터", "realmeter", "여론조사",
+                        "poll", "survey", "지지율", "approval rating")
+        return any(s in text.lower() for s in poll_signals)
 
     def _extract_all_from_entry(entry):
-        """Try to extract all metrics from a single article.
-        Resets all fields before extraction so stale data from
-        previous entries never bleeds through."""
+        """Try to extract all 4 metrics from a single article.
+        Only accepts articles that are clearly about polling data.
+        All metrics must come from the same article (same source, same date)."""
         text = f"{entry.get('title', '')} {entry.get('summary', entry.get('description', ''))}"
-        appr_m = _RE_APPROVAL.search(text)
+
+        # Gate: only process articles that are clearly about polling
+        if not _is_polling_article(text):
+            return False
+
+        # Presidential approval: require "대통령" or "presidential" near number
+        appr_m = _RE_PRES_APPROVAL.search(text)
         if not appr_m:
             return False
         appr_val = _sane_pct(appr_m)
         if appr_val is None:
-            return False  # likely margin of error or unrelated number
-        # Reset all fields so previous entry data doesn't bleed through
-        sentiment["presidential_approval"] = None
-        sentiment["party_ruling"] = None
-        sentiment["party_opposition"] = None
-        sentiment["party_independent"] = None
+            return False
+
+        # Determine source
         source = "Gallup Korea" if "gallup" in text.lower() or "갤럽" in text else (
             "Realmeter" if "realmeter" in text.lower() or "리얼미터" in text else "Poll"
         )
@@ -679,6 +709,13 @@ def _collect_sentiment() -> dict:
             if parsed:
                 pub_date = datetime(*parsed[:6], tzinfo=timezone.utc).strftime("%b %d, %Y")
                 break
+
+        # Reset all fields so previous entry data doesn't bleed through
+        sentiment["presidential_approval"] = None
+        sentiment["party_ruling"] = None
+        sentiment["party_opposition"] = None
+        sentiment["party_independent"] = None
+
         sentiment["presidential_approval"] = {
             "value": f"{appr_val:g}%",
             "trend": None,
@@ -714,7 +751,7 @@ def _collect_sentiment() -> dict:
                 }
         return True
 
-    # Pass 1: find an article with approval + at least one party metric
+    # Pass 1: find a single article with presidential approval + at least one party metric
     for query in combined_queries:
         try:
             entries = _parse_feed(_gnews(query))
