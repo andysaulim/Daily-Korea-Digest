@@ -283,21 +283,34 @@ Return ONLY valid JSON. No markdown fences, no preamble."""
 # ─────────────────────────────────────────────────────────────────────────────
 # MAIN DIGEST FUNCTION
 # ─────────────────────────────────────────────────────────────────────────────
+_TEXT_FIELDS = ("body", "body_text", "summary", "detail", "quote_text",
+                "so_what", "pattern_note", "central_argument", "analyst_note")
+
+
 def _count_digest_words(digest: dict) -> int:
     """Count readable words across all text fields."""
     words = 0
     for mi in (digest.get("morning_memo") or []):
-        words += len(str(mi).split())
+        if isinstance(mi, dict):
+            # Count text values from dict, not JSON key names
+            for v in mi.values():
+                if isinstance(v, str):
+                    words += len(v.split())
+        elif isinstance(mi, str):
+            words += len(mi.split())
     for section_key in ("top_stories", "overnight_items", "also_today", "business_economy",
                          "opeds_today", "academic_today", "social_statements",
                          "northeast_asia"):
         for item in (digest.get(section_key) or []):
-            for field in ("body", "body_text", "summary", "detail", "quote_text",
-                          "so_what", "pattern_note", "central_argument", "analyst_note"):
-                words += len(str(item.get(field, "")).split())
+            for field in _TEXT_FIELDS:
+                val = item.get(field, "")
+                if val:
+                    words += len(str(val).split())
     kcna = digest.get("kcna_delta") or {}
     for field in ("bottom_line", "doctrinal_shift"):
-        words += len(str(kcna.get(field, "")).split())
+        val = kcna.get(field, "")
+        if val:
+            words += len(str(val).split())
     return words
 
 

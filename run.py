@@ -14,142 +14,155 @@ import os
 import re
 from pathlib import Path
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
+from digest import _count_digest_words
 
 
 _PRESTIGE_OUTLETS = {"WSJ", "Wall Street Journal", "Washington Post", "WaPo", "NYT",
                       "New York Times", "Bloomberg", "Financial Times", "FT", "Economist", "The Economist"}
+
+_STOP_WORDS = frozenset({"the", "a", "an", "in", "on", "of", "to", "for", "and", "is", "at", "by", "as", "with", "from"})
+
+# All sections that contain items with URLs/headlines
+_ALL_ITEM_SECTIONS = ("top_stories", "overnight_items", "also_today",
+                       "business_economy", "opeds_today", "academic_today",
+                       "social_statements", "northeast_asia")
 
 
 def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
     """Pre-send quality gate. Returns list of warnings (empty = all clear)."""
     warnings = []
 
-    # ── Top stories must have 3-4 items ──────────────────────────────────
+    # ── Section count checks ──────────────────────────────────────────────
     top_stories = digest.get("top_stories") or []
     if len(top_stories) < 3:
-        warnings.append(f"TOP STORIES: only {len(top_stories)} (expected 3-4)")
+        warnings.append(f"TOP STORIES CRITICAL: only {len(top_stories)} (expected 3-4)")
     elif len(top_stories) > 4:
         warnings.append(f"TOP STORIES: {len(top_stories)} items (expected 3-4)")
 
-    # ── Overnight items must have 8-12 items ──────────────────────────────
     overnight = digest.get("overnight_items") or []
     if len(overnight) < 8:
-        warnings.append(f"OVERNIGHT ITEMS: only {len(overnight)} (expected 8-12)")
+        warnings.append(f"OVERNIGHT ITEMS CRITICAL: only {len(overnight)} (expected 8-12)")
+    elif len(overnight) > 12:
+        warnings.append(f"OVERNIGHT ITEMS: {len(overnight)} items (expected 8-12)")
+
+    memo = digest.get("morning_memo") or []
+    if len(memo) < 3:
+        warnings.append(f"MORNING MEMO CRITICAL: only {len(memo)} items (expected 3)")
 
     # ── RE: line must be present and substantive ─────────────────────────
     re_line = digest.get("re_line")
     if not re_line or len(str(re_line).strip()) < 10:
-        warnings.append("RE: LINE: missing or too short")
-
-    # ── Morning memo must have 3 items ───────────────────────────────────
-    memo = digest.get("morning_memo") or []
-    if len(memo) < 3:
-        warnings.append(f"MORNING MEMO: only {len(memo)} items (expected 3)")
+        warnings.append("RE: LINE CRITICAL: missing or too short")
 
     # ── Word count check (hard minimum 1000, target 1200-1400) ──────────
-    from digest import _count_digest_words
     word_count = _count_digest_words(digest)
     if word_count < 1000:
         warnings.append(f"WORD COUNT CRITICAL: ~{word_count} words (HARD MINIMUM 1000 — newsletter is too short)")
     elif word_count < 1200:
         warnings.append(f"WORD COUNT: ~{word_count} words (target 1200-1400 for 5-min read)")
 
-    # ── Check for placeholder URLs ("#", empty, non-http) ────────────────
+    # ── KCNA delta must exist ─────────────────────────────────────────────
+    kcna = digest.get("kcna_delta")
+    if not kcna or not isinstance(kcna, dict):
+        warnings.append("KCNA DELTA CRITICAL: missing kcna_delta section")
+
+    # ── Single pass over all items: URLs, headlines, sources, body checks ─
+    seen_urls = {}
+    seen_headlines = []  # (section, headline_text, keyword_set)
+    source_counts = {}
     bad_urls = 0
-    for section_key in ("top_stories", "overnight_items", "also_today",
-                         "business_economy", "opeds_today", "academic_today",
-                         "social_statements", "northeast_asia"):
+    dup_url_count = 0
+    empty_body_count = 0
+
+    for section_key in _ALL_ITEM_SECTIONS:
         for item in (digest.get(section_key) or []):
             url = item.get("url", "")
+
+            # Bad URL check
             if url and (url == "#" or not url.startswith("http")):
                 bad_urls += 1
-    if bad_urls:
-        warnings.append(f"BAD URLS: {bad_urls} placeholder or invalid URLs found")
 
-    # ── Check for duplicate URLs across sections ─────────────────────────
-    seen_urls = {}
-    dup_count = 0
-    for section_key in ("top_stories", "overnight_items", "also_today",
-                         "business_economy", "northeast_asia", "opeds_today",
-                         "social_statements"):
-        for item in (digest.get(section_key) or []):
-            url = item.get("url", "")
+            # Duplicate URL check
             if url and url.startswith("http"):
                 if url in seen_urls:
-                    dup_count += 1
-                    if dup_count <= 3:
+                    dup_url_count += 1
+                    if dup_url_count <= 3:
                         warnings.append(
                             f"DUPLICATE: URL appears in both {seen_urls[url]} and {section_key}")
                 else:
                     seen_urls[url] = section_key
 
-    # ── Check for duplicate headlines (same story, different URLs) ─────
-    _STOP_WORDS = {"the", "a", "an", "in", "on", "of", "to", "for", "and", "is", "at", "by", "as", "with", "from"}
-    seen_headlines = []  # list of (section, headline, keywords)
-    for section_key in ("top_stories", "overnight_items", "also_today",
-                         "business_economy", "northeast_asia"):
-        for item in (digest.get(section_key) or []):
+            # Empty body check — items should have substantive content
+            body = (item.get("body") or item.get("body_text") or
+                    item.get("summary") or item.get("detail") or "").strip()
+            if not body or len(body) < 20:
+                empty_body_count += 1
+
+            # Source diversity (top_stories + overnight + also_today)
+            if section_key in ("top_stories", "overnight_items", "also_today"):
+                src = (item.get("source", "") or "").strip()
+                if src:
+                    source_counts[src] = source_counts.get(src, 0) + 1
+
+            # Duplicate headline check
             headline = (item.get("headline", "") or "").lower().strip()
             if len(headline) > 20:
                 words = {w for w in re.split(r'\W+', headline) if len(w) > 2 and w not in _STOP_WORDS}
-                # Check against all previously seen headlines for word overlap
                 for prev_section, prev_headline, prev_words in seen_headlines:
                     if not words or not prev_words:
                         continue
                     overlap = words & prev_words
-                    # If >50% of content words overlap AND at least 2 shared words
                     min_len = min(len(words), len(prev_words))
                     if min_len > 1 and len(overlap) >= 2 and len(overlap) / min_len >= 0.5:
                         warnings.append(
-                            f"DUPLICATE HEADLINE: similar story in {prev_section} and {section_key}: '{headline[:60]}...' vs '{prev_headline[:60]}...'")
+                            f"DUPLICATE HEADLINE: similar story in {prev_section} and {section_key}: "
+                            f"'{headline[:60]}...' vs '{prev_headline[:60]}...'")
                         break
                 seen_headlines.append((section_key, headline, words))
 
-    # ── Source diversity check ────────────────────────────────────────────
-    source_counts = {}
-    for section_key in ("top_stories", "overnight_items"):
-        for item in (digest.get(section_key) or []):
-            src = (item.get("source", "") or "").strip()
-            if src:
-                source_counts[src] = source_counts.get(src, 0) + 1
+    if bad_urls:
+        warnings.append(f"BAD URLS: {bad_urls} placeholder or invalid URLs found")
+    if empty_body_count:
+        warnings.append(f"EMPTY BODIES: {empty_body_count} items have no substantive body text")
+
+    # Source diversity
     for src, count in source_counts.items():
         if count > 3:
             warnings.append(
-                f"SOURCE DIVERSITY: '{src}' appears {count} times in top_stories + overnight_items — diversify sources")
+                f"SOURCE DIVERSITY: '{src}' appears {count} times across top sections — diversify sources")
 
     # ── Check for "None" strings in critical fields ──────────────────────
-    val = digest.get("re_line")
-    if str(val).strip() == "None":
-        warnings.append('NONE STRING: "re_line" field contains literal "None"')
+    for field in ("re_line", "digest_date"):
+        val = digest.get(field)
+        if str(val).strip() == "None":
+            warnings.append(f'NONE STRING: "{field}" field contains literal "None"')
 
     # ── Digest date matches today ────────────────────────────────────────
     digest_date = digest.get("digest_date", "")
-    from zoneinfo import ZoneInfo
     today_str = datetime.now(ZoneInfo("America/New_York")).strftime("%A, %B %-d, %Y")
     if digest_date and digest_date != today_str:
         warnings.append(f"DATE MISMATCH: digest says '{digest_date}', today is '{today_str}'")
 
     # ── Public sentiment must have all 4 metrics ─────────────────────────
     sentiment = digest.get("public_sentiment") or {}
-    for key in ("presidential_approval", "party_ruling", "party_opposition", "party_independent"):
-        data = sentiment.get(key) or {}
-        if not data.get("value"):
-            warnings.append(f"SENTIMENT: {key} has no value")
+    missing_sentiment = [k for k in ("presidential_approval", "party_ruling",
+                                      "party_opposition", "party_independent")
+                         if not (sentiment.get(k) or {}).get("value")]
+    if missing_sentiment:
+        warnings.append(f"SENTIMENT: missing values for {', '.join(missing_sentiment)}")
 
     # ── Prestige outlet cross-reference ───────────────────────────────
     if payload:
-        # Collect prestige sources from input tier1
         prestige_in_input = set()
         for a in (payload.get("tier1") or []):
             src = (a.get("source") or "").strip()
             if any(p.lower() in src.lower() for p in _PRESTIGE_OUTLETS):
                 prestige_in_input.add(src)
-        # Collect sources used in digest output
         digest_sources = set()
         for section_key in ("top_stories", "overnight_items", "also_today"):
             for item in (digest.get(section_key) or []):
                 digest_sources.add((item.get("source") or "").strip())
-        # Check for prestige outlets in input but missing from digest
         for src in prestige_in_input:
             if not any(src.lower() in ds.lower() or ds.lower() in src.lower() for ds in digest_sources):
                 warnings.append(
