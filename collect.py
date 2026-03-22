@@ -80,8 +80,22 @@ TIER1_FEEDS = {
     "ROK MOTIE":          _gnews("Korea+site:motie.go.kr"),
     "ROK MND":            _gnews("site:mnd.go.kr"),
     "Japan MOFA":         _gnews("Korea+site:mofa.go.jp"),
+    # ── US Economic agencies ────────────────────────────────────────────
+    "Dept of Commerce":   _gnews("Korea+site:commerce.gov"),
+    "Dept of Treasury":   _gnews("Korea+site:treasury.gov"),
+    "OFAC":               _gnews("Korea+OR+DPRK+site:ofac.treasury.gov"),
+    "BIS":                _gnews("Korea+OR+DPRK+site:bis.doc.gov"),
+    # ── US Congress ─────────────────────────────────────────────────────
+    "Senate Foreign Relations": _gnews("Korea+site:foreign.senate.gov"),
+    "Senate Armed Services":    _gnews("Korea+site:armed-services.senate.gov"),
+    "House Foreign Affairs":    _gnews("Korea+site:foreignaffairs.house.gov"),
+    # ── US Military ─────────────────────────────────────────────────────
+    "INDOPACOM":          _gnews("Korea+site:pacom.mil"),
     # ── International organizations ─────────────────────────────────────
     "IAEA":               _gnews("Korea+OR+DPRK+site:iaea.org"),
+    "UN Security Council": _gnews("Korea+OR+DPRK+site:un.org/securitycouncil"),
+    # ── Cyber/enforcement ───────────────────────────────────────────────
+    "CISA":               _gnews("Korea+OR+DPRK+OR+Lazarus+site:cisa.gov"),
     # ── Reaction layer (China/Russia) ─────────────────────────────────────
     "Global Times Korea": _gnews("Korea+site:globaltimes.cn"),
     "Xinhua Korea":       _gnews("Korea+site:xinhuanet.com"),
@@ -120,8 +134,32 @@ TIER2_FEEDS = {
     "USIP":              (_gnews("Korea+site:usip.org"), "B"),
 }
 
-# Tier 3: Academic journals (checked weekly, not daily — disabled for speed)
-TIER3_FEEDS = {}
+# Tier 3: Use Google Scholar RSS and site-specific searches to reduce noise
+TIER3_FEEDS = {
+    # A+ tier — top IR/security journals
+    "Int'l Security":         (_gnews("%22International+Security%22+%22Korea%22+OR+%22DPRK%22+OR+%22Pyongyang%22"), "A+"),
+    "Int'l Organization":     (_gnews("%22International+Organization%22+%22Korea%22+OR+%22DPRK%22"), "A+"),
+    "World Politics":         (_gnews("%22World+Politics%22+%22Korea%22+OR+%22DPRK%22+OR+%22Korean+Peninsula%22"), "A+"),
+    "American Pol. Sci. Review": (_gnews("%22American+Political+Science+Review%22+%22Korea%22+OR+%22DPRK%22"), "A+"),
+    # A tier — strong IR/area studies journals
+    "J. Conflict Resolution": (_gnews("%22Journal+of+Conflict+Resolution%22+%22Korea%22+OR+%22DPRK%22"), "A"),
+    "J. Peace Research":      (_gnews("%22Journal+of+Peace+Research%22+%22Korea%22+OR+%22DPRK%22"), "A"),
+    "Security Studies":       (_gnews("%22Security+Studies%22+%22Korea%22+OR+%22DPRK%22+OR+%22North+Korea%22"), "A"),
+    "Int'l Studies Quarterly": (_gnews("%22International+Studies+Quarterly%22+%22Korea%22+OR+%22DPRK%22"), "A"),
+    "J. Strategic Studies":   (_gnews("%22Journal+of+Strategic+Studies%22+%22Korea%22+OR+%22DPRK%22"), "A"),
+    "Asian Survey":           (_gnews("%22Asian+Survey%22+%22Korea%22+OR+%22DPRK%22+OR+%22Korean+Peninsula%22"), "A"),
+    "Pacific Review":         (_gnews("%22Pacific+Review%22+%22Korea%22+OR+%22DPRK%22"), "A"),
+    "Foreign Affairs":        (_gnews("%22Foreign+Affairs%22+%22Korea%22+OR+%22DPRK%22+OR+%22North+Korea%22"), "A"),
+    "Survival":               (_gnews("%22Survival%22+IISS+%22Korea%22+OR+%22DPRK%22"), "A"),
+    # B tier — specialized Korea/Asia journals
+    "Korean J. Def. Analysis": (_gnews("%22Korean+Journal+of+Defense+Analysis%22"), "B"),
+    "North Korean Review":    (_gnews("%22North+Korean+Review%22"), "B"),
+    "Asian Security":         (_gnews("%22Asian+Security%22+%22Korea%22+OR+%22DPRK%22"), "B"),
+    "Pacific Affairs":        (_gnews("%22Pacific+Affairs%22+%22Korea%22+OR+%22DPRK%22"), "B"),
+    "Korean Studies":         (_gnews("%22Korean+Studies%22+journal+%22North+Korea%22+OR+%22DPRK%22+OR+%22Korean+Peninsula%22"), "B"),
+    "Nonproliferation Rev.":  (_gnews("%22Nonproliferation+Review%22+%22Korea%22+OR+%22DPRK%22"), "B"),
+    "Washington Quarterly":   (_gnews("%22Washington+Quarterly%22+%22Korea%22+OR+%22DPRK%22"), "B"),
+}
 
 TIER4_FEEDS = {
     "KCNA Watch":        "https://kcnawatch.org/newstream/feed/",
