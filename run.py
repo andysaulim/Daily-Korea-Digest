@@ -139,6 +139,10 @@ def main():
     digest_data = generate_digest(payload, db_context=db_context)
     Path("digest.json").write_text(json.dumps(digest_data, ensure_ascii=False, indent=2))
 
+    # ── Step 2+: Update Kim Jong Un appearance tracker ───────────────────────
+    from kim_tracker import update_from_digest
+    update_from_digest(digest_data)
+
     # ── Step 2a: Pre-send validation gate ─────────────────────────────────────
     validation_warnings = validate_digest(digest_data)
     if validation_warnings:

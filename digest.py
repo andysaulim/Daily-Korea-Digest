@@ -107,6 +107,26 @@ IMPORTANT: Use this data for on_this_day, calendar_watch, and pattern_note field
 For timeline_candidates: flag any NK-Russia stories that should be added to the CSIS NK-Russia cooperation timeline (268+ verified events since 2022).
 For ESCALATION + DPRK stories: these may be added to the CSIS NK provocations database (540+ events since 1958). Ensure headline and description are suitable for database entry."""
 
+    # Kim Jong Un appearance tracker (scraped articles + persistent history)
+    kim_block = ""
+    kim_articles = payload.get("kim_tracker_articles", [])
+    if kim_articles:
+        kim_block += f"""
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+KIM JONG UN APPEARANCE REPORTS (scraped from multiple sources, last 72h)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{tier_json(kim_articles, max_items=20)}
+Cross-reference these reports with KCNA Tier 4 data to determine kim_appearance_today and days_since_last_appearance."""
+
+    # Persistent Kim tracker history
+    from kim_tracker import build_context_block as kim_context
+    kim_history = kim_context()
+    if kim_history:
+        kim_block += f"""
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{kim_history}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"""
+
     # Sentiment baseline from collector
     sentiment_block = ""
     sentiment = payload.get("sentiment_baseline")
@@ -123,6 +143,7 @@ Process each tier according to its instructions and return a single JSON object.
 CRITICAL — SOURCE URLs: Every article, op-ed, academic paper, deal, and statement MUST include the original source URL from the input data. Use the exact URL provided in the feed data. Never use "#" or placeholder URLs. If no URL is available for an item, omit the url field entirely rather than using a placeholder.
 {market_block}
 {sentiment_block}
+{kim_block}
 {db_block}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 TIER 1: NEWS ARTICLES (last 24h)
@@ -159,9 +180,9 @@ TIER 4: KCNA / RODONG SINMUN (last 24h)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 {tier_json(payload.get("tier4", []), max_items=30)}
 Return a SINGLE kcna_delta object:
-- kim_appearance_today: boolean
+- kim_appearance_today: boolean — cross-reference KCNA articles AND the KIM JONG UN APPEARANCE REPORTS section above (scraped from NK Leadership Watch, Daily NK, KCNA Watch, and general news). If ANY credible source reports a Kim appearance in the last 24h, set to true.
 - kim_activity: if appeared, 1 sentence on what he did (inspection, meeting, guidance, etc.), else null
-- days_since_last_appearance: integer
+- days_since_last_appearance: integer — use the CONFIRMED KIM JONG UN APPEARANCES tracker data above as ground truth. Only override if today's articles confirm a more recent appearance than the tracker shows.
 - senior_officials: array of notable non-Kim appearances/activities (e.g. Choe Son Hui, Kim Yo Jong, Ri Pyong Chol). Each: name, role (title), activity (1 sentence), significance (1 sentence on why this matters). Max 3.
 - (tone quadrants removed — do NOT include us_tone, rok_tone, russia_tone, china_tone or related qualifier/description fields)
 - baseline_period: string describing the comparison baseline (e.g. "Mar 13-19")

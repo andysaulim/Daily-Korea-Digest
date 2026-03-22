@@ -163,6 +163,15 @@ TIER4_FEEDS = {
     "KCNA (Yonhap)":     _gnews("KCNA+Yonhap"),
 }
 
+# ── Kim Jong Un appearance tracking feeds ──────────────────────────────────
+KIM_TRACKER_FEEDS = {
+    "KJU Appearance":     _gnews("%22Kim+Jong+Un%22+appearance+OR+appeared+OR+attended+OR+inspected+OR+observed"),
+    "KJU Activity":       _gnews("%22Kim+Jong+Un%22+guidance+OR+visit+OR+presided+OR+oversaw"),
+    "NK Leadership Watch": _gnews("%22Kim+Jong+Un%22+site:nkleadershipwatch.org"),
+    "Daily NK KJU":       _gnews("%22Kim+Jong+Un%22+site:dailynk.com"),
+    "KCNA KJU":           _gnews("%22Kim+Jong+Un%22+site:kcnawatch.org"),
+}
+
 KOREA_KEYWORDS = re.compile(
     r"korea|dprk|pyongyang|seoul|rok\b|kim jong|yoon suk|korean peninsula"
     r"|denucleariz|kaesong|yongbyon|hwasong|punggye|38th parallel"
@@ -359,6 +368,19 @@ def _collect_tier4() -> list:
             if not _is_recent(entry, hours=24):
                 continue
             article = _entry_to_article(entry, source, lang="KO")
+            articles.append(article)
+    return _dedup(articles)
+
+
+def _collect_kim_tracker() -> list:
+    """Collect recent Kim Jong Un appearance/activity reports from multiple sources."""
+    articles = []
+    results = _fetch_feeds_parallel(KIM_TRACKER_FEEDS)
+    for source, (entries, _) in results.items():
+        for entry in entries:
+            if not _is_recent(entry, hours=72):  # wider window for appearance tracking
+                continue
+            article = _entry_to_article(entry, source, lang="EN")
             articles.append(article)
     return _dedup(articles)
 
@@ -793,6 +815,10 @@ def collect() -> dict:
     tier4 = _collect_tier4()
     print(f"     {len(tier4)} items")
 
+    print("  ── Kim Jong Un appearance tracker")
+    kim_articles = _collect_kim_tracker()
+    print(f"     {len(kim_articles)} articles (72h window)")
+
     print("  ── Market data")
     markets = _collect_markets()
     print(f"     {'OK' if markets else 'unavailable'}")
@@ -810,6 +836,7 @@ def collect() -> dict:
         "tier2": tier2,
         "tier3": tier3,
         "tier4": tier4,
+        "kim_tracker_articles": kim_articles,
         "market_indicators": markets,
         "sentiment_baseline": sentiment,
     }
