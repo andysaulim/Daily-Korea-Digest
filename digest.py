@@ -337,26 +337,33 @@ def generate_digest(payload: dict, db_context: str = "") -> dict:
     total_articles = sum(len(v) for k, v in payload.items() if isinstance(v, list))
     print(f"\n🤖  Generating digest ({total_articles} articles → Claude)...")
 
-    MAX_ATTEMPTS = 3
+    MAX_ATTEMPTS = 4
     digest = None
+    best_digest = None
+    best_word_count = 0
 
     for attempt in range(MAX_ATTEMPTS):
         try:
             if attempt == 0:
                 digest = _call_claude(client, user_prompt)
             else:
-                # Re-prompt with the previous output + expansion instructions
+                # Re-prompt with the previous output + specific expansion instructions
+                word_deficit = max(0, 1000 - _count_digest_words(digest))
                 expansion_prompt = (
                     f"Your previous digest output failed content minimums:\n"
                     + "\n".join(f"  • {f}" for f in content_failures)
-                    + "\n\nHere is your previous output:\n"
+                    + f"\n\nYou are ~{word_deficit} words short of the 1000-word minimum.\n"
+                    + "\nHere is your previous output:\n"
                     + json.dumps(digest, ensure_ascii=False)[:8000]
                     + "\n\nRevise and return a COMPLETE updated digest JSON that fixes ALL failures above. "
                     "Specifically:\n"
-                    "- WORD COUNT: Each top_stories body must be 60-80 words (2-3 sentences). Each overnight_items body_text must be 50-70 words. "
-                    "Each business_economy/northeast_asia/also_today item must be 40-60 words. Reach the target by adding MORE items, not inflating bodies.\n"
+                    "- WORD COUNT: The digest MUST reach at least 1000 words across all text fields. "
+                    "Each top_stories body must be 60-80 words (2-3 dense sentences). "
+                    "Each overnight_items body_text must be 50-70 words. "
+                    "Each business_economy/northeast_asia/also_today item must be 40-60 words. "
+                    "Add MORE items from the available articles to reach 1000+ words — do not inflate existing bodies with filler.\n"
                     "- TOP STORIES: Include at least 3 stories. Pull from the available articles.\n"
-                    "- OVERNIGHT ITEMS: Include at least 8 items.\n"
+                    "- OVERNIGHT ITEMS: Include at least 8 items. Add more items from available articles.\n"
                     "- MORNING MEMO: Include exactly 3 items.\n"
                     "Return ONLY valid JSON."
                 )
@@ -384,9 +391,14 @@ def generate_digest(payload: dict, db_context: str = "") -> dict:
             if payload.get("market_indicators") and not digest.get("market_indicators"):
                 digest["market_indicators"] = payload["market_indicators"]
 
+            # Track the best result across attempts
+            word_count = _count_digest_words(digest)
+            if word_count > best_word_count:
+                best_digest = json.loads(json.dumps(digest))  # deep copy
+                best_word_count = word_count
+
             # Check content minimums
             content_failures = _check_content_minimums(digest)
-            word_count = _count_digest_words(digest)
             top_count = len(digest.get("top_stories") or [])
             overnight_count = len(digest.get("overnight_items") or [])
 
@@ -397,7 +409,15 @@ def generate_digest(payload: dict, db_context: str = "") -> dict:
                 continue
 
             if content_failures:
-                print(f"  ⚠  Final attempt still below minimums (~{word_count} words) — proceeding with best result")
+                # Use the best result across all attempts
+                if best_word_count > word_count:
+                    print(f"  ⚠  Final attempt (~{word_count} words) — using best attempt (~{best_word_count} words)")
+                    digest = best_digest
+                    word_count = best_word_count
+                    top_count = len(digest.get("top_stories") or [])
+                    overnight_count = len(digest.get("overnight_items") or [])
+                else:
+                    print(f"  ⚠  All {MAX_ATTEMPTS} attempts below minimums (~{word_count} words) — proceeding with best result")
             else:
                 print(f"  ✅  Digest generated: ~{word_count} words, {top_count} top stories, "
                       f"{overnight_count} overnight items")

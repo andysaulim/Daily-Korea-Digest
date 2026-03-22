@@ -46,13 +46,11 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
     if len(memo) < 3:
         warnings.append(f"MORNING MEMO: only {len(memo)} items (expected 3)")
 
-    # ── Word count check (hard minimum 800, target 1200-1400) ───────────
+    # ── Word count check (hard minimum 1000, target 1200-1400) ──────────
     from digest import _count_digest_words
     word_count = _count_digest_words(digest)
-    if word_count < 800:
-        warnings.append(f"WORD COUNT CRITICAL: ~{word_count} words (HARD MINIMUM 800 — newsletter is too short)")
-    elif word_count < 1000:
-        warnings.append(f"WORD COUNT LOW: ~{word_count} words (below 1000 target, sending anyway)")
+    if word_count < 1000:
+        warnings.append(f"WORD COUNT CRITICAL: ~{word_count} words (HARD MINIMUM 1000 — newsletter is too short)")
     elif word_count < 1200:
         warnings.append(f"WORD COUNT: ~{word_count} words (target 1200-1400 for 5-min read)")
 
