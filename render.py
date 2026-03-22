@@ -225,7 +225,6 @@ def render(digest: dict) -> str:
         stories_html = ""
         for story in top_stories:
             cat = _esc(story.get("category_tag", story.get("category", "")))
-            sig = story.get("signal_type", "")
             headline = _esc(story.get("headline", ""))
             body = _esc(story.get("body", ""))
             so_what = _esc(story.get("so_what", ""))
@@ -235,8 +234,7 @@ def render(digest: dict) -> str:
             stories_html += f"""
             <div class="story-card" style="margin-bottom:12px;padding:10px 12px;background:#F8F9FA;border-radius:4px;border-left:4px solid #1B2A4A;">
               <div style="margin-bottom:6px;">
-                {_signal_badge(sig)}
-                <span style="font-size:11px;color:#888;margin-left:8px;text-transform:uppercase;">{cat}</span>
+                <span style="font-size:11px;color:#888;text-transform:uppercase;">{cat}</span>
               </div>
               <h3 style="margin:0 0 6px 0;font-size:15px;color:#1B2A4A;font-family:Georgia,serif;">
                 {_link_or_text(headline, url)}
