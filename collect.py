@@ -262,6 +262,18 @@ def _is_recent(entry, hours: int = 48) -> bool:
     return True
 
 
+_ENTERTAINMENT_FILTER = re.compile(
+    r"\bk-?pop\b|\bbts\b|\bblackpink\b|\bnewjeans\b|\baespa\b|\bstray\s*kids\b"
+    r"|\btwice\b|\b(?:k-?)?drama\b|\bidol\b|\bkcon\b|\bhybe\b|\bjyp\b|\bsm\s*ent",
+    re.IGNORECASE,
+)
+
+
+def _is_entertainment(entry) -> bool:
+    text = f"{entry.get('title', '')} {entry.get('summary', entry.get('description', ''))}"
+    return bool(_ENTERTAINMENT_FILTER.search(text))
+
+
 def _is_korea_related(entry) -> bool:
     text = f"{entry.get('title', '')} {entry.get('summary', entry.get('description', ''))}"
     return bool(KOREA_KEYWORDS.search(text))
@@ -332,6 +344,8 @@ def _collect_tier1() -> list:
             if not _is_recent(entry, hours=24):
                 continue
             if not _is_korea_related(entry):
+                continue
+            if _is_entertainment(entry):
                 continue
             article = _entry_to_article(entry, source, lang=lang)
             article = _flag_journalist(article)

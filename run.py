@@ -11,6 +11,7 @@ Usage:
 import json
 import argparse
 import os
+import re
 from pathlib import Path
 from datetime import datetime, timezone
 
@@ -89,19 +90,26 @@ def validate_digest(digest: dict) -> list[str]:
                     seen_urls[url] = section_key
 
     # ── Check for duplicate headlines (same story, different URLs) ─────
-    seen_headlines = {}
+    _STOP_WORDS = {"the", "a", "an", "in", "on", "of", "to", "for", "and", "is", "at", "by", "as", "with", "from"}
+    seen_headlines = []  # list of (section, headline, keywords)
     for section_key in ("top_stories", "overnight_items", "also_today",
                          "business_economy", "northeast_asia"):
         for item in (digest.get(section_key) or []):
             headline = (item.get("headline", "") or "").lower().strip()
             if len(headline) > 20:
-                # Normalize: take first 40 chars for fuzzy match
-                h_key = headline[:40]
-                if h_key in seen_headlines:
-                    warnings.append(
-                        f"DUPLICATE HEADLINE: similar story in {seen_headlines[h_key]} and {section_key}: '{headline[:50]}...'")
-                    break
-                seen_headlines[h_key] = section_key
+                words = {w for w in re.split(r'\W+', headline) if len(w) > 2 and w not in _STOP_WORDS}
+                # Check against all previously seen headlines for word overlap
+                for prev_section, prev_headline, prev_words in seen_headlines:
+                    if not words or not prev_words:
+                        continue
+                    overlap = words & prev_words
+                    # If >50% of content words overlap, flag as duplicate
+                    min_len = min(len(words), len(prev_words))
+                    if min_len > 0 and len(overlap) / min_len >= 0.5:
+                        warnings.append(
+                            f"DUPLICATE HEADLINE: similar story in {prev_section} and {section_key}: '{headline[:60]}...' vs '{prev_headline[:60]}...'")
+                        break
+                seen_headlines.append((section_key, headline, words))
 
     # ── Check for "None" strings in critical fields ──────────────────────
     val = digest.get("re_line")
