@@ -67,7 +67,7 @@ collect.py          digest.py           render.py          send_email.py
 | Morning Memo | Top 3 stories at a glance (one sentence each) |
 | Top Stories | 3-4 biggest hard news stories with "So what" and historical pattern notes |
 | Overnight Flash | 8-12 secondary items across all categories |
-| US-Korea Deals | Tariff tracker (25% rate), $350B investment package status, trade policy actions |
+| US-Korea Deals | Tariff tracker (sector-level: Section 232 steel/auto/semicon, Section 122 surcharge), $350B investment package, trade policy actions |
 | Business & Economy | Conglomerate moves, M&A, macro indicators |
 | Northeast Asia | Japan-Korea, China-Korea, Russia-Korea, trilateral developments |
 | KCNA Rhetoric Delta | Propaganda analysis: phrase frequency, tone shifts, doctrinal changes, Kim appearances |
