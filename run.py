@@ -16,7 +16,11 @@ from pathlib import Path
 from datetime import datetime, timezone
 
 
-def validate_digest(digest: dict) -> list[str]:
+_PRESTIGE_OUTLETS = {"WSJ", "Wall Street Journal", "Washington Post", "WaPo", "NYT",
+                      "New York Times", "Bloomberg", "Financial Times", "FT", "Economist", "The Economist"}
+
+
+def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
     """Pre-send quality gate. Returns list of warnings (empty = all clear)."""
     warnings = []
 
@@ -142,6 +146,25 @@ def validate_digest(digest: dict) -> list[str]:
         if not data.get("value"):
             warnings.append(f"SENTIMENT: {key} has no value")
 
+    # ── Prestige outlet cross-reference ───────────────────────────────
+    if payload:
+        # Collect prestige sources from input tier1
+        prestige_in_input = set()
+        for a in (payload.get("tier1") or []):
+            src = (a.get("source") or "").strip()
+            if any(p.lower() in src.lower() for p in _PRESTIGE_OUTLETS):
+                prestige_in_input.add(src)
+        # Collect sources used in digest output
+        digest_sources = set()
+        for section_key in ("top_stories", "overnight_items", "also_today"):
+            for item in (digest.get(section_key) or []):
+                digest_sources.add((item.get("source") or "").strip())
+        # Check for prestige outlets in input but missing from digest
+        for src in prestige_in_input:
+            if not any(src.lower() in ds.lower() or ds.lower() in src.lower() for ds in digest_sources):
+                warnings.append(
+                    f"PRESTIGE OUTLET DROPPED: '{src}' had Korea articles in input but none appeared in digest")
+
     return warnings
 
 
@@ -191,7 +214,7 @@ def main():
     update_from_digest(digest_data)
 
     # ── Step 2a: Pre-send validation gate ─────────────────────────────────────
-    validation_warnings = validate_digest(digest_data)
+    validation_warnings = validate_digest(digest_data, payload=payload)
     critical_warnings = [w for w in validation_warnings if "CRITICAL" in w]
     if validation_warnings:
         print("\n⚠️  PRE-SEND VALIDATION WARNINGS:")
