@@ -4,6 +4,6 @@ collected.json
 digest.json
 digest_*.html
 latest.html
-test_digest.json
-test_preview.html
-test_full.html
+test_*.json
+test_*.html
+public/

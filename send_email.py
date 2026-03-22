@@ -1,9 +1,10 @@
 """
-CSIS Korea Digest — Email Sender
+Korea Daily Brief — Email Sender
 Sends the rendered HTML digest via Gmail SMTP (app password).
 """
 import os
 import smtplib
+import time
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from datetime import datetime, timezone
@@ -20,8 +21,10 @@ def send(html: str, re_line: Optional[str] = None, subject: Optional[str] = None
       GMAIL_APP_PASS  — 16-char Gmail App Password
       DIGEST_TO       — comma-separated recipient list
     """
-    gmail_user = os.environ["GMAIL_USER"]
-    gmail_pass = os.environ["GMAIL_APP_PASS"]
+    gmail_user = os.environ.get("GMAIL_USER")
+    gmail_pass = os.environ.get("GMAIL_APP_PASS")
+    if not gmail_user or not gmail_pass:
+        raise RuntimeError("Missing GMAIL_USER or GMAIL_APP_PASS environment variables")
     to_str = os.environ.get("DIGEST_TO", gmail_user)
 
     if recipients is None:
@@ -33,9 +36,9 @@ def send(html: str, re_line: Optional[str] = None, subject: Optional[str] = None
             # Truncate RE: line for subject (max ~120 chars total)
             max_re = 100
             re_short = re_line[:max_re] + ("..." if len(re_line) > max_re else "")
-            subject = f"CSIS Korea Digest · {date_str} — {re_short}"
+            subject = f"Korea Daily Brief · {date_str} — {re_short}"
         else:
-            subject = f"CSIS Korea Digest · {date_str}"
+            subject = f"Korea Daily Brief · {date_str}"
 
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
@@ -43,7 +46,7 @@ def send(html: str, re_line: Optional[str] = None, subject: Optional[str] = None
     msg["To"] = ", ".join(recipients)
 
     plain = (
-        "CSIS Korea Digest — CSIS Korea Chair\n"
+        "Korea Daily Brief — CSIS Korea Chair\n"
         "This digest is best viewed in an HTML-capable email client.\n"
         f"Date: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}"
     )
@@ -51,10 +54,26 @@ def send(html: str, re_line: Optional[str] = None, subject: Optional[str] = None
     msg.attach(MIMEText(html, "html"))
 
     print(f"\n📨  Sending digest to: {', '.join(recipients)}")
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-        server.login(gmail_user, gmail_pass)
-        server.sendmail(gmail_user, recipients, msg.as_string())
-    print(f"  ✅  Sent: {subject}")
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=30) as server:
+                server.login(gmail_user, gmail_pass)
+                server.sendmail(gmail_user, recipients, msg.as_string())
+            print(f"  ✅  Sent: {subject}")
+            return
+        except smtplib.SMTPAuthenticationError as e:
+            print(f"  ✗  Gmail auth failed: {e}")
+            print("     Check GMAIL_USER and GMAIL_APP_PASS (use a 16-char App Password)")
+            raise
+        except (smtplib.SMTPException, OSError) as e:
+            if attempt < max_retries - 1:
+                wait = (attempt + 1) * 5
+                print(f"  ⚠  SMTP error (retry {attempt + 1}/{max_retries} in {wait}s): {e}")
+                time.sleep(wait)
+            else:
+                print(f"  ✗  SMTP failed after {max_retries} attempts: {e}")
+                raise
 
 
 if __name__ == "__main__":

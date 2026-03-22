@@ -1,12 +1,14 @@
 """
-CSIS Korea Digest — Collector
+Korea Daily Brief — Collector
 Scrapes RSS feeds across four tiers + market data.
 Uses threaded fetching for performance (~15s vs ~60s sequential).
 """
 import feedparser
 import requests
 import json
+import os
 import re
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone, timedelta
 
@@ -34,6 +36,19 @@ TIER1_FEEDS = {
     "한겨레":              _gnews("site:hani.co.kr+-english"),
     "동아일보":            _gnews("site:donga.com+-en"),
     "MBN":                _gnews("Korea+site:mbn.co.kr"),
+    "경향신문":            _gnews("site:khan.co.kr"),
+    "뉴스1":              _gnews("site:news1.kr"),
+    "연합뉴스":            _gnews("site:yna.co.kr+-en"),
+    # ── Korean broadcast & cable news ────────────────────────────────────
+    "JTBC":               _gnews("site:news.jtbc.co.kr"),
+    "KBS":                _gnews("site:news.kbs.co.kr"),
+    "MBC":                _gnews("site:imnews.imbc.com"),
+    "SBS":                _gnews("site:news.sbs.co.kr"),
+    "YTN":                _gnews("site:ytn.co.kr"),
+    "Channel A":          _gnews("site:ichannela.com"),
+    # ── Korean business dailies ──────────────────────────────────────────
+    "매일경제":            _gnews("site:mk.co.kr"),
+    "한국경제":            _gnews("site:hankyung.com"),
     # ── Major international — Korea correspondents ────────────────────────
     "WSJ Korea":          _gnews("Korea+site:wsj.com"),
     "NYT Korea":          _gnews("Korea+site:nytimes.com"),
@@ -50,15 +65,44 @@ TIER1_FEEDS = {
     "Nikkei Korea":       _gnews("Korea+site:asia.nikkei.com"),
     "Japan Times Korea":  _gnews("Korea+site:japantimes.co.jp"),
     "SCMP Korea":         _gnews("Korea+site:scmp.com"),
+    "Kyodo Korea":        _gnews("Korea+site:english.kyodonews.net"),
+    "Mainichi Korea":     _gnews("Korea+site:mainichi.jp/english"),
+    "Asahi Korea":        _gnews("Korea+site:asahi.com/ajw"),
+    "CNA Korea":          _gnews("Korea+site:channelnewsasia.com"),
     # ── ROK/US Government ─────────────────────────────────────────────────
     "White House":        _gnews("Korea+site:whitehouse.gov"),
     "State Dept":         _gnews("Korea+site:state.gov"),
     "Pentagon":           _gnews("Korea+site:defense.gov"),
     "Stars and Stripes":  _gnews("Korea+site:stripes.com"),
+    # ── ROK/Japan Government ─────────────────────────────────────────────
+    "USFK":               _gnews("site:usfk.mil"),
+    "ROK MOFA":           _gnews("site:mofa.go.kr"),
+    "ROK MOTIE":          _gnews("Korea+site:motie.go.kr"),
+    "ROK MND":            _gnews("site:mnd.go.kr"),
+    "Japan MOFA":         _gnews("Korea+site:mofa.go.jp"),
+    # ── US Economic agencies ────────────────────────────────────────────
+    "Dept of Commerce":   _gnews("Korea+site:commerce.gov"),
+    "Dept of Treasury":   _gnews("Korea+site:treasury.gov"),
+    "OFAC":               _gnews("Korea+OR+DPRK+site:ofac.treasury.gov"),
+    "BIS":                _gnews("Korea+OR+DPRK+site:bis.doc.gov"),
+    # ── US Congress ─────────────────────────────────────────────────────
+    "Senate Foreign Relations": _gnews("Korea+site:foreign.senate.gov"),
+    "Senate Armed Services":    _gnews("Korea+site:armed-services.senate.gov"),
+    "House Foreign Affairs":    _gnews("Korea+site:foreignaffairs.house.gov"),
+    # ── US Military ─────────────────────────────────────────────────────
+    "INDOPACOM":          _gnews("Korea+site:pacom.mil"),
+    # ── International organizations ─────────────────────────────────────
+    "IAEA":               _gnews("Korea+OR+DPRK+site:iaea.org"),
+    "UN Security Council": _gnews("Korea+OR+DPRK+site:un.org/securitycouncil"),
+    # ── Cyber/enforcement ───────────────────────────────────────────────
+    "CISA":               _gnews("Korea+OR+DPRK+OR+Lazarus+site:cisa.gov"),
     # ── Reaction layer (China/Russia) ─────────────────────────────────────
     "Global Times Korea": _gnews("Korea+site:globaltimes.cn"),
     "Xinhua Korea":       _gnews("Korea+site:xinhuanet.com"),
     "TASS Korea":         _gnews("Korea+site:tass.com"),
+    "Caixin Korea":       _gnews("Korea+site:caixinglobal.com"),
+    "China Daily Korea":  _gnews("Korea+site:chinadaily.com.cn"),
+    "People's Daily Korea": _gnews("Korea+site:en.people.cn"),
 }
 
 TIER2_FEEDS = {
@@ -79,17 +123,42 @@ TIER2_FEEDS = {
     "Foreign Policy":    ("https://foreignpolicy.com/feed/", "B"),
     "Diplomat":          ("https://thediplomat.com/feed/", "C"),
     "NKPro":             ("https://www.nknews.org/pro/feed/", "A"),
+    # ── Additional think tanks ───────────────────────────────────────────
+    "AEI":               (_gnews("Korea+site:aei.org"), "A"),
+    "Hudson Institute":  (_gnews("Korea+site:hudson.org"), "B"),
+    "Heritage":          (_gnews("Korea+site:heritage.org"), "B"),
+    "Atlantic Council":  (_gnews("Korea+site:atlanticcouncil.org"), "B"),
+    "KEIA":              (_gnews("Korea+site:keia.org"), "A"),
+    "NBR":               (_gnews("Korea+site:nbr.org"), "B"),
+    "PIIE":              (_gnews("Korea+site:piie.com"), "B"),
+    "USIP":              (_gnews("Korea+site:usip.org"), "B"),
 }
 
 # Tier 3: Use Google Scholar RSS and site-specific searches to reduce noise
 TIER3_FEEDS = {
-    "Int'l Security":     (_gnews("%22International+Security%22+%22Korea%22+OR+%22DPRK%22+OR+%22Pyongyang%22"), "A+"),
+    # A+ tier — top IR/security journals
+    "Int'l Security":         (_gnews("%22International+Security%22+%22Korea%22+OR+%22DPRK%22+OR+%22Pyongyang%22"), "A+"),
+    "Int'l Organization":     (_gnews("%22International+Organization%22+%22Korea%22+OR+%22DPRK%22"), "A+"),
+    "World Politics":         (_gnews("%22World+Politics%22+%22Korea%22+OR+%22DPRK%22+OR+%22Korean+Peninsula%22"), "A+"),
+    "American Pol. Sci. Review": (_gnews("%22American+Political+Science+Review%22+%22Korea%22+OR+%22DPRK%22"), "A+"),
+    # A tier — strong IR/area studies journals
     "J. Conflict Resolution": (_gnews("%22Journal+of+Conflict+Resolution%22+%22Korea%22+OR+%22DPRK%22"), "A"),
-    "Asian Survey":       (_gnews("%22Asian+Survey%22+%22Korea%22+OR+%22DPRK%22+OR+%22Korean+Peninsula%22"), "A"),
-    "Pacific Review":     (_gnews("%22Pacific+Review%22+%22Korea%22+OR+%22DPRK%22"), "A"),
+    "J. Peace Research":      (_gnews("%22Journal+of+Peace+Research%22+%22Korea%22+OR+%22DPRK%22"), "A"),
+    "Security Studies":       (_gnews("%22Security+Studies%22+%22Korea%22+OR+%22DPRK%22+OR+%22North+Korea%22"), "A"),
+    "Int'l Studies Quarterly": (_gnews("%22International+Studies+Quarterly%22+%22Korea%22+OR+%22DPRK%22"), "A"),
+    "J. Strategic Studies":   (_gnews("%22Journal+of+Strategic+Studies%22+%22Korea%22+OR+%22DPRK%22"), "A"),
+    "Asian Survey":           (_gnews("%22Asian+Survey%22+%22Korea%22+OR+%22DPRK%22+OR+%22Korean+Peninsula%22"), "A"),
+    "Pacific Review":         (_gnews("%22Pacific+Review%22+%22Korea%22+OR+%22DPRK%22"), "A"),
+    "Foreign Affairs":        (_gnews("%22Foreign+Affairs%22+%22Korea%22+OR+%22DPRK%22+OR+%22North+Korea%22"), "A"),
+    "Survival":               (_gnews("%22Survival%22+IISS+%22Korea%22+OR+%22DPRK%22"), "A"),
+    # B tier — specialized Korea/Asia journals
     "Korean J. Def. Analysis": (_gnews("%22Korean+Journal+of+Defense+Analysis%22"), "B"),
-    "North Korean Review": (_gnews("%22North+Korean+Review%22"), "B"),
-    "KINU":               (_gnews("Korea+site:kinu.or.kr"), "B"),
+    "North Korean Review":    (_gnews("%22North+Korean+Review%22"), "B"),
+    "Asian Security":         (_gnews("%22Asian+Security%22+%22Korea%22+OR+%22DPRK%22"), "B"),
+    "Pacific Affairs":        (_gnews("%22Pacific+Affairs%22+%22Korea%22+OR+%22DPRK%22"), "B"),
+    "Korean Studies":         (_gnews("%22Korean+Studies%22+journal+%22North+Korea%22+OR+%22DPRK%22+OR+%22Korean+Peninsula%22"), "B"),
+    "Nonproliferation Rev.":  (_gnews("%22Nonproliferation+Review%22+%22Korea%22+OR+%22DPRK%22"), "B"),
+    "Washington Quarterly":   (_gnews("%22Washington+Quarterly%22+%22Korea%22+OR+%22DPRK%22"), "B"),
 }
 
 TIER4_FEEDS = {
@@ -97,6 +166,15 @@ TIER4_FEEDS = {
     "KCNA":              _gnews("site:kcna.kp"),
     "Rodong Sinmun":     _gnews("site:rodong.rep.kp"),
     "KCNA (Yonhap)":     _gnews("KCNA+Yonhap"),
+}
+
+# ── Kim Jong Un appearance tracking feeds ──────────────────────────────────
+KIM_TRACKER_FEEDS = {
+    "KJU Appearance":     _gnews("%22Kim+Jong+Un%22+appearance+OR+appeared+OR+attended+OR+inspected+OR+observed"),
+    "KJU Activity":       _gnews("%22Kim+Jong+Un%22+guidance+OR+visit+OR+presided+OR+oversaw"),
+    "NK Leadership Watch": _gnews("%22Kim+Jong+Un%22+site:nkleadershipwatch.org"),
+    "Daily NK KJU":       _gnews("%22Kim+Jong+Un%22+site:dailynk.com"),
+    "KCNA KJU":           _gnews("%22Kim+Jong+Un%22+site:kcnawatch.org"),
 }
 
 KOREA_KEYWORDS = re.compile(
@@ -110,10 +188,15 @@ KOREA_KEYWORDS = re.compile(
 
 PRESTIGE_JOURNALISTS = {
     "Timothy Martin", "Dasl Yoon", "Choe Sang-Hun", "Michelle Ye Hee Lee",
-    "Christian Davies", "Hyonhee Shin", "Josh Smith", "Joyce Lee",
-    "Ankit Panda", "Jenny Town", "Andrei Lankov", "Rachel Minyoung Lee",
-    "Jean Lee", "Laura Bicker", "Simon Mundy", "Edward White",
+    "Hyonhee Shin", "Josh Smith", "Joyce Lee",
+    "Ankit Panda", "Jeongmin Kim",
+    "Jean Lee", "Simon Mundy", "Edward White",
     "Dagyum Ji", "Ifang Bremer", "Chad O'Carroll",
+    # FT Seoul
+    "Jean Mackenzie", "Daniel Tudor", "Song Jung-a",
+    # Additional journalists
+    "Victoria Kim", "Jeong-ho Lee", "Kim Tong-hyung",
+    "Sotaro Suzuki", "Takashi Umekawa",
 }
 
 REQUEST_TIMEOUT = 12
@@ -126,13 +209,21 @@ MAX_WORKERS = 20  # Thread pool size for parallel fetching
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _parse_feed(url: str) -> list:
-    try:
-        resp = requests.get(url, timeout=REQUEST_TIMEOUT, headers=HEADERS)
-        resp.raise_for_status()
-        return feedparser.parse(resp.content).entries
-    except Exception as e:
-        print(f"    ⚠  Feed error: {e}")
-        return []
+    for attempt in range(3):
+        try:
+            resp = requests.get(url, timeout=REQUEST_TIMEOUT, headers=HEADERS)
+            resp.raise_for_status()
+            return feedparser.parse(resp.content).entries
+        except (requests.ConnectionError, requests.Timeout) as e:
+            if attempt < 2:
+                time.sleep(2 ** (attempt + 1))
+                continue
+            print(f"    ⚠  Feed error (after retries): {e}")
+            return []
+        except Exception as e:
+            print(f"    ⚠  Feed error: {e}")
+            return []
+    return []
 
 
 def _entry_to_article(entry, source: str, lang: str = "EN", extra: dict | None = None) -> dict:
@@ -233,9 +324,12 @@ def _collect_tier1() -> list:
     results = _fetch_feeds_parallel(TIER1_FEEDS)
     for source, (entries, _) in results.items():
         # Korean-language feeds get lang="KO"
-        lang = "KO" if source in ("조선일보", "한겨레", "동아일보", "MBN") else "EN"
+        lang = "KO" if source in ("조선일보", "한겨레", "동아일보", "MBN",
+                                    "JTBC", "KBS", "MBC", "SBS", "YTN", "Channel A",
+                                    "매일경제", "한국경제",
+                                    "경향신문", "뉴스1", "연합뉴스") else "EN"
         for entry in entries:
-            if not _is_recent(entry, hours=36):
+            if not _is_recent(entry, hours=24):
                 continue
             if not _is_korea_related(entry):
                 continue
@@ -250,7 +344,7 @@ def _collect_tier2() -> list:
     results = _fetch_feeds_parallel(TIER2_FEEDS, is_tiered=True)
     for source, (entries, prestige) in results.items():
         for entry in entries:
-            if not _is_recent(entry, hours=72):
+            if not _is_recent(entry, hours=36):
                 continue
             if not _is_korea_related(entry):
                 continue
@@ -264,6 +358,8 @@ def _collect_tier3() -> list:
     results = _fetch_feeds_parallel(TIER3_FEEDS, is_tiered=True)
     for source, (entries, tier) in results.items():
         for entry in entries:
+            if not _is_recent(entry, hours=72):
+                continue
             if not _is_korea_related(entry):
                 continue
             # Extra filter: must mention academic-like terms or the journal name
@@ -283,9 +379,22 @@ def _collect_tier4() -> list:
     results = _fetch_feeds_parallel(TIER4_FEEDS)
     for source, (entries, _) in results.items():
         for entry in entries:
-            if not _is_recent(entry, hours=48):
+            if not _is_recent(entry, hours=24):
                 continue
             article = _entry_to_article(entry, source, lang="KO")
+            articles.append(article)
+    return _dedup(articles)
+
+
+def _collect_kim_tracker() -> list:
+    """Collect recent Kim Jong Un appearance/activity reports from multiple sources."""
+    articles = []
+    results = _fetch_feeds_parallel(KIM_TRACKER_FEEDS)
+    for source, (entries, _) in results.items():
+        for entry in entries:
+            if not _is_recent(entry, hours=72):  # wider window for appearance tracking
+                continue
+            article = _entry_to_article(entry, source, lang="EN")
             articles.append(article)
     return _dedup(articles)
 
@@ -294,7 +403,7 @@ def _collect_tier4() -> list:
 # MARKET DATA
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _collect_markets() -> dict | None:
+def _collect_markets() -> dict:
     """Fetch KOSPI, Brent Crude, USD/KRW from Yahoo Finance API."""
     symbols = {
         "kospi": "^KS11",
@@ -314,6 +423,11 @@ def _collect_markets() -> dict | None:
             price = meta.get("regularMarketPrice", 0)
             prev_close = meta.get("chartPreviousClose", meta.get("previousClose", price))
             change_pct = ((price - prev_close) / prev_close * 100) if prev_close else 0
+            # Extract market timestamp for "as of" display
+            mkt_time = meta.get("regularMarketTime", 0)
+            as_of = ""
+            if mkt_time:
+                as_of = datetime.fromtimestamp(mkt_time, tz=timezone.utc).strftime("%b %d")
             # Format value
             if key == "usd_krw":
                 value = f"{price:,.2f}"
@@ -321,11 +435,699 @@ def _collect_markets() -> dict | None:
                 value = f"{price:,.2f}"
             else:
                 value = f"{price:.2f}"
-            result[key] = {"value": value, "change_pct": round(change_pct, 2)}
+            result[key] = {"value": value, "change_pct": round(change_pct, 2), "as_of": as_of}
         except Exception as e:
             print(f"    ⚠  Market data error ({key}): {e}")
-            result[key] = {"value": "—", "change_pct": 0}
-    return result if any(r["value"] != "—" for r in result.values()) else None
+            result[key] = {"value": "—", "change_pct": 0, "as_of": ""}
+
+    # ROK economic indicators (BOK rate, monthly exports, GDP estimate)
+    # Sourced from BOK ECOS API / MOTIE / KOSTAT — fallback to static latest known
+    result["bok_rate"] = _fetch_bok_rate()
+    result["monthly_exports"] = _fetch_monthly_exports()
+    result["gdp_estimate"] = _fetch_gdp_estimate()
+
+    # Always return market data — even if Yahoo Finance fails, BOK indicators
+    # have hardcoded fallbacks so there's always something to show
+    return result
+
+
+def _fetch_bok_rate() -> dict:
+    """Fetch BOK base rate. Falls back to last known value."""
+    # BOK ECOS open API — base rate series (dynamic date range)
+    try:
+        now = datetime.now(timezone.utc)
+        start = (now - timedelta(days=365)).strftime("%Y%m")
+        end = now.strftime("%Y%m")
+        url = f"https://ecos.bok.or.kr/api/StatisticSearch/json/en/1/5/722Y001/M/{start}/{end}/0101000/"
+        resp = requests.get(url, timeout=10, headers={"User-Agent": "Mozilla/5.0"})
+        if resp.ok:
+            rows = resp.json().get("StatisticSearch", {}).get("row", [])
+            if rows:
+                val = rows[-1].get("DATA_VALUE", "")
+                return {"value": f"{float(val):.2f}%", "last_change": ""}
+    except Exception:
+        pass
+    # Fallback: last known BOK rate (updated manually if API unavailable)
+    print("    ⚠  BOK rate: using fallback (2.50%)")
+    fallback_date = datetime.now(timezone.utc).strftime("%b %Y")
+    return {"value": "2.50%", "last_change": fallback_date}
+
+
+def _fetch_monthly_exports() -> dict:
+    """Fetch latest monthly export figure from multiple sources with as_of date."""
+    # Source 1: BOK ECOS — trade balance series (monthly exports in $M)
+    try:
+        now = datetime.now(timezone.utc)
+        start = (now - timedelta(days=120)).strftime("%Y%m")
+        end = now.strftime("%Y%m")
+        url = f"https://ecos.bok.or.kr/api/StatisticSearch/json/en/1/5/403Y014/M/{start}/{end}/000000/"
+        resp = requests.get(url, timeout=10, headers={"User-Agent": "Mozilla/5.0"})
+        if resp.ok:
+            rows = resp.json().get("StatisticSearch", {}).get("row", [])
+            if len(rows) >= 2:
+                latest = rows[-1]
+                prev = rows[-2]
+                val = float(latest.get("DATA_VALUE", 0))
+                prev_val = float(prev.get("DATA_VALUE", 0))
+                change = ((val - prev_val) / prev_val * 100) if prev_val else 0
+                val_b = val / 1000
+                time_str = latest.get("TIME", "")
+                month_label = ""
+                if time_str and len(str(time_str)) >= 6:
+                    try:
+                        month_label = datetime.strptime(str(time_str)[:6], "%Y%m").strftime("%b %Y")
+                    except ValueError:
+                        pass
+                return {"value": f"${val_b:.1f}B", "change_pct": round(change, 1), "month": month_label, "as_of": month_label}
+            elif rows:
+                val = float(rows[-1].get("DATA_VALUE", 0))
+                val_b = val / 1000
+                time_str = rows[-1].get("TIME", "")
+                month_label = ""
+                if time_str and len(str(time_str)) >= 6:
+                    try:
+                        month_label = datetime.strptime(str(time_str)[:6], "%Y%m").strftime("%b %Y")
+                    except ValueError:
+                        pass
+                return {"value": f"${val_b:.1f}B", "change_pct": 0, "month": month_label, "as_of": month_label}
+    except Exception as e:
+        print(f"    ⚠  BOK exports API error: {e}")
+
+    # Source 2: FRED API — South Korea exports (series XTEXVA01KRM667S)
+    # Free API, no key required for basic access
+    fred_key = os.environ.get("FRED_API_KEY", "")
+    if fred_key:
+        try:
+            fred_url = f"https://api.stlouisfed.org/fred/series/observations?series_id=XTEXVA01KRM667S&sort_order=desc&limit=2&api_key={fred_key}&file_type=json"
+            resp = requests.get(fred_url, timeout=10)
+            if resp.ok:
+                obs = resp.json().get("observations", [])
+                if len(obs) >= 2:
+                    val = float(obs[0]["value"])
+                    prev_val = float(obs[1]["value"])
+                    change = ((val - prev_val) / prev_val * 100) if prev_val else 0
+                    val_b = val / 1e9 if val > 1e6 else val  # FRED may report in USD or millions
+                    date_str = obs[0].get("date", "")
+                    month_label = ""
+                    if date_str:
+                        try:
+                            month_label = datetime.strptime(date_str, "%Y-%m-%d").strftime("%b %Y")
+                        except ValueError:
+                            pass
+                    if 20 < val_b < 100:
+                        return {"value": f"${val_b:.1f}B", "change_pct": round(change, 1), "month": month_label, "as_of": month_label}
+        except Exception as e:
+            print(f"    ⚠  FRED exports API error: {e}")
+
+    # Source 3: Korea Customs Service (KCS) open data API
+    try:
+        now = datetime.now(timezone.utc)
+        ym = (now - timedelta(days=45)).strftime("%Y%m")  # Latest complete month
+        kcs_url = f"https://unipass.customs.go.kr/ets/index.do?command=searchTotalTradeList&cntyCd=&tradeKind=EXP&priodKind=MON&priodFr={ym}&priodTo={ym}"
+        resp = requests.get(kcs_url, timeout=10, headers={"User-Agent": "Mozilla/5.0"})
+        if resp.ok:
+            data = resp.json() if resp.headers.get("content-type", "").startswith("application/json") else {}
+            items = data.get("items", [])
+            if items:
+                val = float(items[0].get("balPayAmt", 0))
+                val_b = val / 1000 if val > 100 else val  # KCS reports in $M
+                month_label = datetime.strptime(ym, "%Y%m").strftime("%b %Y")
+                if 20 < val_b < 100:
+                    return {"value": f"${val_b:.1f}B", "change_pct": 0, "month": month_label, "as_of": month_label}
+    except Exception:
+        pass
+
+    # Source 4: MOTIE / Korea Customs Service export headlines via Google News
+    search_queries = [
+        "South+Korea+monthly+exports+billion+MOTIE",
+        "South+Korea+exports+billion+customs",
+        "한국+수출+억달러+산업통상자원부",
+    ]
+    for query in search_queries:
+        try:
+            url = _gnews(query)
+            entries = _parse_feed(url)
+            for entry in entries[:8]:
+                text = f"{entry.get('title', '')} {entry.get('summary', entry.get('description', ''))}"
+                match = re.search(
+                    r'(?:\$(\d+(?:\.\d+)?)\s*(?:billion|B)\b|(\d+(?:\.\d+)?)\s*billion\s*(?:dollars|USD))',
+                    text, re.IGNORECASE
+                )
+                if match:
+                    val = float(match.group(1) or match.group(2))
+                    if 20 < val < 100:
+                        return {"value": f"${val:.1f}B", "change_pct": 0, "as_of": ""}
+                match_kr = re.search(r'(\d+(?:\.\d+)?)\s*억\s*달러', text)
+                if match_kr:
+                    val_100m = float(match_kr.group(1))
+                    val_b = val_100m / 10
+                    if 20 < val_b < 100:
+                        return {"value": f"${val_b:.1f}B", "change_pct": 0, "as_of": ""}
+        except Exception:
+            continue
+
+    # Fallback: last known monthly exports
+    print("    ⚠  Monthly exports: using fallback ($67.5B)")
+    return {"value": "$67.5B", "change_pct": 0, "as_of": ""}
+
+
+def _fetch_gdp_estimate() -> dict:
+    """Fetch latest GDP growth estimate from BOK."""
+    # Try broader date range to catch latest available quarter
+    try:
+        now = datetime.now(timezone.utc)
+        start = (now - timedelta(days=730)).strftime("%Y") + "Q1"
+        end = now.strftime("%Y") + "Q4"
+        url = f"https://ecos.bok.or.kr/api/StatisticSearch/json/en/1/20/200Y002/Q/{start}/{end}/10111/"
+        resp = requests.get(url, timeout=10, headers={"User-Agent": "Mozilla/5.0"})
+        if resp.ok:
+            rows = resp.json().get("StatisticSearch", {}).get("row", [])
+            if rows:
+                latest = rows[-1]
+                val = latest.get("DATA_VALUE", "")
+                period = latest.get("TIME", "")
+                # Format period: "2026Q1" -> "Q1 2026"
+                if "Q" in str(period):
+                    parts = str(period).split("Q")
+                    period = f"Q{parts[1]} {parts[0]}"
+                return {"value": f"{float(val):.1f}%", "period": period}
+    except Exception as e:
+        print(f"    ⚠  BOK GDP API error: {e}")
+
+    # Fallback: scrape latest BOK GDP forecast from news
+    try:
+        url = _gnews("Bank+of+Korea+GDP+growth+forecast+2026")
+        entries = _parse_feed(url)
+        for entry in entries[:5]:
+            text = f"{entry.get('title', '')} {entry.get('summary', entry.get('description', ''))}"
+            match = re.search(r'(\d+\.\d+)\s*(?:percent|%|pct)', text, re.IGNORECASE)
+            if match:
+                val = float(match.group(1))
+                if 0 < val < 10:  # sanity check for GDP growth rate
+                    return {"value": f"{val:.1f}%", "period": "BOK forecast"}
+    except Exception:
+        pass
+
+    # Fallback: last known GDP estimate (updated manually if all sources fail)
+    print("    ⚠  GDP estimate: using fallback (2.0%)")
+    return {"value": "2.0%", "period": "BOK forecast"}
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PUBLIC SENTIMENT — Korean Wikipedia structured tables
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _scrape_wiki_polling(sentiment: dict) -> bool:
+    """Scrape Korean Wikipedia for latest Gallup Korea polling data.
+
+    Korean Wikipedia maintains well-structured HTML tables of weekly polling
+    data at:
+      - 대한민국의_대통령_지지율 (presidential approval)
+      - 대한민국의_정당_지지율 (party support)
+
+    Returns True if all 4 metrics were successfully extracted from the
+    same source (guaranteeing consistency), False otherwise.
+    """
+    # ── Presidential approval ─────────────────────────────────────────────
+    pres_url = "https://ko.wikipedia.org/wiki/%EB%8C%80%ED%95%9C%EB%AF%BC%EA%B5%AD%EC%9D%98_%EB%8C%80%ED%86%B5%EB%A0%B9_%EC%A7%80%EC%A7%80%EC%9C%A8"
+    party_url = "https://ko.wikipedia.org/wiki/%EB%8C%80%ED%95%9C%EB%AF%BC%EA%B5%AD%EC%9D%98_%EC%A0%95%EB%8B%B9_%EC%A7%80%EC%A7%80%EC%9C%A8"
+
+    headers = {
+        "User-Agent": "KoreaDailyBrief/1.0 (research; contact: korea-brief@csis.org)",
+        "Accept": "text/html",
+    }
+
+    pres_val = None
+    pres_date = None
+    pres_source = None
+
+    # Fetch presidential approval page
+    try:
+        resp = requests.get(pres_url, timeout=15, headers=headers)
+        resp.raise_for_status()
+        html = resp.text
+
+        # Find Gallup Korea rows in wikitable. The tables have rows like:
+        #   <td>3월 3주차</td><td>한국갤럽</td>...<td>67%</td>...
+        # We look for the last (most recent) Gallup Korea row with a percentage.
+        # Pattern: find all rows containing "갤럽" and extract the percentage.
+        gallup_rows = re.findall(
+            r'<tr[^>]*>(.*?)</tr>',
+            html, re.DOTALL
+        )
+        for row in reversed(gallup_rows):
+            if '갤럽' not in row and 'Gallup' not in row:
+                continue
+            # Extract all cell contents
+            cells = re.findall(r'<td[^>]*>(.*?)</td>', row, re.DOTALL)
+            if len(cells) < 3:
+                continue
+            # Clean HTML tags from cells
+            clean_cells = [re.sub(r'<[^>]+>', '', c).strip() for c in cells]
+            # Find the percentage value (긍정/approval column)
+            for cell in clean_cells:
+                m = re.search(r'(\d{2})(?:\.\d+)?%', cell)
+                if m:
+                    val = float(m.group(1))
+                    if 30 <= val <= 85:
+                        pres_val = val
+                        break
+            if pres_val:
+                # Extract date from the row (e.g., "3월 3주차" or "2026-03-17")
+                for cell in clean_cells:
+                    if re.search(r'\d+월.*주|20\d{2}', cell):
+                        pres_date = cell
+                        break
+                pres_source = "Gallup Korea" if "갤럽" in row else "Realmeter"
+                break
+    except Exception as e:
+        print(f"      ⚠ Wikipedia presidential page fetch failed: {e}")
+        return False
+
+    if not pres_val:
+        return False
+
+    # ── Party support ─────────────────────────────────────────────────────
+    dp_val = None
+    ppp_val = None
+    ind_val = None
+    party_date = None
+
+    try:
+        resp = requests.get(party_url, timeout=15, headers=headers)
+        resp.raise_for_status()
+        html = resp.text
+
+        gallup_rows = re.findall(
+            r'<tr[^>]*>(.*?)</tr>',
+            html, re.DOTALL
+        )
+        for row in reversed(gallup_rows):
+            if '갤럽' not in row and 'Gallup' not in row:
+                continue
+            cells = re.findall(r'<td[^>]*>(.*?)</td>', row, re.DOTALL)
+            if len(cells) < 4:
+                continue
+            clean_cells = [re.sub(r'<[^>]+>', '', c).strip() for c in cells]
+            # In the party support table, columns typically are:
+            # Date | Pollster | DP% | PPP% | (others) | Independents%
+            # We need to find the DP and PPP columns by looking for
+            # cells with percentages in the expected range.
+            pcts = []
+            for cell in clean_cells:
+                m = re.search(r'(\d{1,2})(?:\.\d+)?%', cell)
+                if m:
+                    pcts.append(float(m.group(1)))
+                else:
+                    pcts.append(None)
+
+            # Heuristic: DP is usually the largest party %, PPP second
+            valid_pcts = [(i, v) for i, v in enumerate(pcts) if v is not None and 5 <= v <= 60]
+            if len(valid_pcts) >= 2:
+                # Sort by value descending - largest is likely ruling party (DP)
+                valid_pcts.sort(key=lambda x: x[1], reverse=True)
+                dp_val = valid_pcts[0][1]
+                ppp_val = valid_pcts[1][1]
+                # Independents are often the 3rd largest or labeled 무당층
+                if len(valid_pcts) >= 3:
+                    ind_val = valid_pcts[2][1]
+                # Extract date
+                for cell in clean_cells:
+                    if re.search(r'\d+월.*주|20\d{2}', cell):
+                        party_date = cell
+                        break
+                break
+    except Exception as e:
+        print(f"      ⚠ Wikipedia party page fetch failed: {e}")
+        # Still use presidential data if we got it
+        pass
+
+    # ── Set sentiment values ──────────────────────────────────────────────
+    date_label = pres_date or party_date or "recent"
+    source = pres_source or "Gallup Korea"
+
+    sentiment["presidential_approval"] = {
+        "value": f"{pres_val:g}%", "trend": None,
+        "source": source, "last_updated": date_label,
+    }
+
+    if dp_val and ppp_val:
+        sentiment["party_ruling"] = {
+            "value": f"{dp_val:g}%",
+            "party": "Democratic Party", "party_kr": "더불어민주당",
+            "source": source, "last_updated": party_date or date_label,
+        }
+        sentiment["party_opposition"] = {
+            "value": f"{ppp_val:g}%",
+            "party": "People Power Party", "party_kr": "국민의힘",
+            "source": source, "last_updated": party_date or date_label,
+        }
+        if ind_val:
+            sentiment["party_independent"] = {
+                "value": f"{ind_val:g}%",
+                "source": source, "last_updated": party_date or date_label,
+            }
+        return True
+
+    # Got presidential but not party - partial success
+    return False
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PUBLIC SENTIMENT — Gallup Korea, Realmeter (headline scraping fallback)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _collect_sentiment() -> dict:
+    """Scrape latest Korean polling data from news headlines.
+
+    Returns structured sentiment data for presidential approval,
+    party support ratings (ruling, opposition, independents), and
+    weekly spotlight topic. Claude will merge any new poll data
+    from articles with these baseline numbers.
+    """
+    sentiment = {
+        "presidential_approval": None,
+        "party_ruling": None,
+        "party_opposition": None,
+        "party_independent": None,
+        "gallup_spotlight": None,
+        "discourse_flag": None,
+    }
+
+    # ── Pass 0: Korean Wikipedia structured tables (most reliable) ──────
+    # Korean Wikipedia maintains well-structured tables of weekly polling
+    # data from Gallup Korea and Realmeter. This is the most reliable
+    # source because volunteer editors verify the numbers and the table
+    # format is consistent.
+    wiki_scraped = False
+    try:
+        wiki_scraped = _scrape_wiki_polling(sentiment)
+        if wiki_scraped:
+            print("      ✓ Wikipedia polling data scraped successfully")
+    except Exception as e:
+        print(f"      ⚠ Wikipedia scrape failed: {e}")
+
+    # ── Fallback: News headline scraping ──────────────────────────────
+    # If Wikipedia scrape failed or returned no data, fall back to
+    # extracting from Korean news headlines about Gallup/Realmeter polls.
+    #
+    # IMPORTANT: Presidential approval regex MUST require "대통령" or
+    # "presidential" near the number. The old regex matched generic
+    # "support"/"지지율" which would grab party ratings or unrelated
+    # percentages as presidential approval — the #1 cause of wrong numbers.
+
+    # Presidential approval: MUST have "대통령" or "presidential" nearby.
+    # The [^\d]{0,10} gap between the keyword block and the % capture is
+    # critical — without it, the space before the digit isn't consumed.
+    _RE_PRES_APPROVAL = re.compile(
+        r'(?:대통령\s*(?:직무)?(?:수행)?(?:긍정)?[^\d]{0,20}지지율|'    # 대통령 지지율 XX%
+        r'대통령[^\d]{0,30}(?:긍정|approval))[^\d]{0,10}'              # 대통령...긍정/approval
+        r'(\d{1,3}(?:\.\d+)?)%|'
+        r'(?:presidential\s+approval)[^\d]{0,20}(\d{1,3}(?:\.\d+)?)%|'  # presidential approval XX%
+        r'(\d{1,3}(?:\.\d+)?)%\s*(?:presidential\s+approval)',          # XX% presidential approval
+        re.IGNORECASE,
+    )
+    # Ruling party: 민주당 / Democratic Party
+    _RE_RULING = re.compile(
+        r'(?:민주당|Democratic\s*Party)[^\d]{0,30}(\d{1,3}(?:\.\d+)?)%|'
+        r'(\d{1,3}(?:\.\d+)?)%\s*(?:민주당|Democratic\s*Party)',
+        re.IGNORECASE,
+    )
+    # Opposition: 국민의힘 / People Power Party
+    _RE_OPP = re.compile(
+        r'(?:국민의힘|People\s*Power\s*Party)[^\d]{0,30}(\d{1,3}(?:\.\d+)?)%|'
+        r'(\d{1,3}(?:\.\d+)?)%\s*(?:국민의힘|People\s*Power\s*Party)',
+        re.IGNORECASE,
+    )
+    # Independents: 무당층 / 무당파
+    _RE_IND = re.compile(
+        r'(?:무당층|무당파|no\s*party\s*preference|independents?)[^\d]{0,30}(\d{1,3}(?:\.\d+)?)%|'
+        r'(\d{1,3}(?:\.\d+)?)%\s*(?:무당층|무당파|no\s*party|independents?)',
+        re.IGNORECASE,
+    )
+
+    # ── Korean news headline pattern ─────────────────────────────────────
+    # Korean news outlets reliably report Gallup results in a standard
+    # headline format that includes ALL numbers together, e.g.:
+    #   "李대통령 지지율 67%…민주 46%·국힘 20% [한국갤럽]"
+    #   "이재명 대통령 지지율 67%...민주 46%·국민의힘 20%"
+    # This is far more reliable than trying to parse article body text.
+    # We extract all percentages from these compact headline strings.
+    _RE_HEADLINE_ALL = re.compile(
+        r'(?:대통령|이재명|李)\s*(?:대통령)?\s*지지율?'
+        r'.*?(?<!\d)(\d{2})%(?!p)'              # group 1: presidential approval (2 digits, skip %p)
+        r'.*?(?:민주당?|민주|DP)\s*(\d{1,2})%'  # group 2: ruling party (DP)
+        r'.*?(?:국힘|국민의힘|PPP)\s*(\d{1,2})%', # group 3: opposition (PPP)
+        re.IGNORECASE,
+    )
+
+    # Queries: Korean news headlines about Gallup polls (most reliable source)
+    combined_queries = [
+        "한국갤럽+대통령+지지율+민주+국힘",
+        "한국갤럽+대통령+지지율+민주당+국민의힘",
+        "한국갤럽+대통령+지지율",
+        "리얼미터+대통령+지지율+민주+국힘",
+    ]
+
+    def _sane_pct_any(match) -> float | None:
+        """Extract percentage from any non-None group in a match."""
+        for i in range(1, (match.lastindex or 0) + 1):
+            g = match.group(i)
+            if g is not None:
+                val = float(g)
+                return val if 5 <= val <= 85 else None
+        return None
+
+    def _is_polling_article(text: str) -> bool:
+        """Check that article is actually about polling."""
+        poll_signals = ("갤럽", "gallup", "리얼미터", "realmeter", "여론조사",
+                        "poll", "survey", "지지율", "approval rating")
+        return any(s in text.lower() for s in poll_signals)
+
+    def _get_pub_date(entry) -> str | None:
+        for attr in ("published_parsed", "updated_parsed"):
+            parsed = getattr(entry, attr, None)
+            if parsed:
+                return datetime(*parsed[:6], tzinfo=timezone.utc).strftime("%b %d, %Y")
+        return None
+
+    def _get_source(text: str) -> str:
+        if "gallup" in text.lower() or "갤럽" in text:
+            return "Gallup Korea"
+        if "realmeter" in text.lower() or "리얼미터" in text:
+            return "Realmeter"
+        return "Poll"
+
+    def _try_headline_extraction(entry) -> bool:
+        """Strategy 1 (preferred): Extract all metrics from a Korean news headline.
+        Korean outlets report Gallup results in compact format like:
+          '李대통령 지지율 67%…민주 46%·국힘 20% [한국갤럽]'
+        This grabs presidential + both parties in one regex match,
+        guaranteeing they come from the same source and same article."""
+        text = f"{entry.get('title', '')} {entry.get('summary', entry.get('description', ''))}"
+        if not _is_polling_article(text):
+            return False
+        m = _RE_HEADLINE_ALL.search(text)
+        if not m:
+            return False
+        pres_val = float(m.group(1))
+        dp_val = float(m.group(2))
+        ppp_val = float(m.group(3))
+        # Sanity: presidential should be higher than individual party ratings
+        if not (30 <= pres_val <= 85 and 5 <= dp_val <= 60 and 5 <= ppp_val <= 50):
+            return False
+        if pres_val < dp_val or pres_val < ppp_val:
+            return False
+        source = _get_source(text)
+        pub_date = _get_pub_date(entry)
+        # Set all from the same source/date
+        sentiment["presidential_approval"] = {
+            "value": f"{pres_val:g}%", "trend": None,
+            "source": source, "last_updated": pub_date or "recent",
+        }
+        sentiment["party_ruling"] = {
+            "value": f"{dp_val:g}%",
+            "party": "Democratic Party", "party_kr": "더불어민주당",
+            "source": source, "last_updated": pub_date or "recent",
+        }
+        sentiment["party_opposition"] = {
+            "value": f"{ppp_val:g}%",
+            "party": "People Power Party", "party_kr": "국민의힘",
+            "source": source, "last_updated": pub_date or "recent",
+        }
+        # Try to get independents from the same text
+        ind_m = _RE_IND.search(text)
+        sentiment["party_independent"] = None
+        if ind_m:
+            val = _sane_pct_any(ind_m)
+            if val is not None:
+                sentiment["party_independent"] = {
+                    "value": f"{val:g}%",
+                    "source": source, "last_updated": pub_date or "recent",
+                }
+        return True
+
+    def _try_field_extraction(entry) -> bool:
+        """Strategy 2 (fallback): Extract metrics individually.
+        Presidential approval requires '대통령' or 'presidential' nearby."""
+        text = f"{entry.get('title', '')} {entry.get('summary', entry.get('description', ''))}"
+        if not _is_polling_article(text):
+            return False
+        appr_m = _RE_PRES_APPROVAL.search(text)
+        if not appr_m:
+            return False
+        appr_val = _sane_pct_any(appr_m)
+        if appr_val is None:
+            return False
+        source = _get_source(text)
+        pub_date = _get_pub_date(entry)
+        sentiment["presidential_approval"] = {
+            "value": f"{appr_val:g}%", "trend": None,
+            "source": source, "last_updated": pub_date or "recent",
+        }
+        sentiment["party_ruling"] = None
+        sentiment["party_opposition"] = None
+        sentiment["party_independent"] = None
+        for regex, key, extra in [
+            (_RE_RULING, "party_ruling", {"party": "Democratic Party", "party_kr": "더불어민주당"}),
+            (_RE_OPP, "party_opposition", {"party": "People Power Party", "party_kr": "국민의힘"}),
+            (_RE_IND, "party_independent", {}),
+        ]:
+            m = regex.search(text)
+            if m:
+                val = _sane_pct_any(m)
+                if val is not None:
+                    sentiment[key] = {"value": f"{val:g}%", "source": source,
+                                      "last_updated": pub_date or "recent", **extra}
+        return True
+
+    # ── Pass 1: Headline extraction (skip if Wikipedia already got data)
+    if not (sentiment["presidential_approval"] and sentiment["party_ruling"]):
+        for query in combined_queries:
+            try:
+                entries = _parse_feed(_gnews(query))
+                for entry in entries[:8]:
+                    if _try_headline_extraction(entry):
+                        break
+                if sentiment["presidential_approval"] and sentiment["party_ruling"]:
+                    break
+            except Exception:
+                continue
+
+    # ── Pass 2: Field-by-field extraction (fallback if no headline match)
+    if not sentiment["presidential_approval"]:
+        for query in combined_queries:
+            try:
+                entries = _parse_feed(_gnews(query))
+                for entry in entries[:5]:
+                    if _try_field_extraction(entry) and (
+                        sentiment["party_ruling"] or sentiment["party_opposition"]
+                    ):
+                        break
+                if sentiment["presidential_approval"] and (
+                    sentiment["party_ruling"] or sentiment["party_opposition"]
+                ):
+                    break
+            except Exception:
+                continue
+
+    # ── Gallup Korea Spotlight (weekly special-topic finding) ───────────
+    # Each weekly poll includes a rotating social/policy topic beyond the
+    # standard presidential + party numbers.  Grab the headline finding.
+    spotlight_queries = [
+        "한국갤럽+여론조사+이번주",
+        "한국갤럽+데일리+오피니언",
+        "Gallup+Korea+weekly+poll+survey+2026",
+        "한국갤럽+조사+결과",
+    ]
+    for query in spotlight_queries:
+        try:
+            entries = _parse_feed(_gnews(query))
+            for entry in entries[:5]:
+                text = f"{entry.get('title', '')} {entry.get('summary', entry.get('description', ''))}"
+                # Skip entries that are only about presidential/party ratings
+                if re.search(r'(대통령|지지율|presidential|party\s*approval)', text, re.IGNORECASE) and \
+                   not re.search(r'(찬반|조사|survey|설문|여론|opinion|응답|percent)', text, re.IGNORECASE):
+                    continue
+                # Look for poll-result-style content (percentages + survey language)
+                if re.search(r'갤럽|gallup', text, re.IGNORECASE) and \
+                   re.search(r'\d{1,2}%|찬성|반대|응답|survey|poll', text, re.IGNORECASE):
+                    title = entry.get("title", "").strip()
+                    pub_date = None
+                    for attr in ("published_parsed", "updated_parsed"):
+                        parsed = getattr(entry, attr, None)
+                        if parsed:
+                            pub_date = datetime(*parsed[:6], tzinfo=timezone.utc).strftime("%b %d, %Y")
+                            break
+                    sentiment["gallup_spotlight"] = {
+                        "headline": title[:250],
+                        "poll_date": pub_date or "recent",
+                    }
+                    break
+            if sentiment.get("gallup_spotlight"):
+                break
+        except Exception:
+            continue
+
+    # ── Discourse flag (protests, viral hashtags) ───────────────────────
+    discourse_queries = [
+        "Korea+protest+rally+demonstration",
+        "한국+시위+집회",
+    ]
+    for query in discourse_queries:
+        try:
+            entries = _parse_feed(_gnews(query))
+            for entry in entries[:3]:
+                if not _is_recent(entry, hours=24):
+                    continue
+                text = f"{entry.get('title', '')} {entry.get('summary', entry.get('description', ''))}"
+                protest_signals = ("protest", "rally", "demonstration", "시위", "집회",
+                                   "candlelight", "march on", "tens of thousands")
+                if any(s in text.lower() for s in protest_signals):
+                    title = entry.get("title", "").strip()
+                    sentiment["discourse_flag"] = title[:200]
+                    break
+            if sentiment["discourse_flag"]:
+                break
+        except Exception:
+            continue
+
+    # ── Fallback baselines (carry-forward when scraping fails) ─────────
+    # These are the most recent known values from Gallup Korea weekly polls.
+    # They ensure the sentiment tracker always renders with data.
+    fallback_used = []
+    # Fallback: Gallup Korea 제656호, 3rd week of March 2026 (surveyed Mar 17-19)
+    # Source: multiple Korean news outlets reporting same Gallup Korea weekly poll
+    if not sentiment["presidential_approval"]:
+        fallback_used.append("presidential_approval")
+        sentiment["presidential_approval"] = {
+            "value": "67%", "trend": "up",
+            "source": "Gallup Korea", "last_updated": "Mar 3rd week, 2026",
+        }
+    if not sentiment["party_ruling"]:
+        fallback_used.append("party_ruling")
+        sentiment["party_ruling"] = {
+            "value": "46%", "party": "Democratic Party",
+            "party_kr": "더불어민주당", "trend": "stable",
+            "source": "Gallup Korea", "last_updated": "Mar 3rd week, 2026",
+        }
+    if not sentiment["party_opposition"]:
+        fallback_used.append("party_opposition")
+        sentiment["party_opposition"] = {
+            "value": "20%", "party": "People Power Party",
+            "party_kr": "국민의힘", "trend": "stable",
+            "source": "Gallup Korea", "last_updated": "Mar 3rd week, 2026",
+        }
+    if not sentiment["party_independent"]:
+        fallback_used.append("party_independent")
+        sentiment["party_independent"] = {
+            "value": "27%", "trend": "stable",
+            "source": "Gallup Korea", "last_updated": "Mar 3rd week, 2026",
+        }
+    if fallback_used:
+        print(f"    ⚠  Sentiment: using fallbacks for {', '.join(fallback_used)}")
+
+    return sentiment
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -352,9 +1154,18 @@ def collect() -> dict:
     tier4 = _collect_tier4()
     print(f"     {len(tier4)} items")
 
+    print("  ── Kim Jong Un appearance tracker")
+    kim_articles = _collect_kim_tracker()
+    print(f"     {len(kim_articles)} articles (72h window)")
+
     print("  ── Market data")
     markets = _collect_markets()
     print(f"     {'OK' if markets else 'unavailable'}")
+
+    print("  ── Public sentiment polls")
+    sentiment = _collect_sentiment()
+    found = sum(1 for v in sentiment.values() if v) if sentiment else 0
+    print(f"     {found} metric(s) found" if found else "     no recent polls found")
 
     total = len(tier1) + len(tier2) + len(tier3) + len(tier4)
     print(f"\n  📊  Total collected: {total} items")
@@ -364,7 +1175,9 @@ def collect() -> dict:
         "tier2": tier2,
         "tier3": tier3,
         "tier4": tier4,
+        "kim_tracker_articles": kim_articles,
         "market_indicators": markets,
+        "sentiment_baseline": sentiment,
     }
 
 

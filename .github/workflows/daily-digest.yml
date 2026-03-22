@@ -2,10 +2,13 @@ name: Daily Korea News Digest
 
 on:
   schedule:
-    # 5:00 AM ET = 10:00 AM UTC (EST) / 9:00 AM UTC (EDT)
-    # Using 9 AM UTC to cover EDT (summer time)
-    - cron: '0 9 * * *'
+    # 6:00 AM ET = 11:00 AM UTC (EST) / 10:00 AM UTC (EDT)
+    - cron: '0 10 * * *'
   workflow_dispatch: # Allow manual trigger
+
+permissions:
+  contents: write
+  pages: write
 
 jobs:
   send-digest:
@@ -28,4 +31,12 @@ jobs:
           GMAIL_APP_PASS: ${{ secrets.GMAIL_APP_PASS }}
           DIGEST_TO: ${{ secrets.DIGEST_TO }}
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+          WEB_URL: https://andysaulim.github.io/Daily-Korea-Digest
         run: python run.py
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          personal_token: ${{ secrets.GH_PAT }}
+          publish_dir: ./public
+          keep_files: true
