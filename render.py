@@ -681,8 +681,59 @@ def render(digest: dict) -> str:
     trade_policy = (us_korea.get("trade_policy") or []) if isinstance(us_korea, dict) else []
     investment_pkg = (us_korea.get("investment_package") or {}) if isinstance(us_korea, dict) else {}
 
-    if deal_list or trade_policy or investment_pkg:
+    tariff_tracker = (us_korea.get("tariff_tracker") or {}) if isinstance(us_korea, dict) else {}
+
+    if deal_list or trade_policy or investment_pkg or tariff_tracker:
         header_html = ""
+
+        # Tariff dashboard card
+        if tariff_tracker and tariff_tracker.get("headline_rate"):
+            h_rate = _esc(str(tariff_tracker.get("headline_rate", "")))
+            h_status = tariff_tracker.get("headline_status", "ACTIVE")
+            h_note = _esc(str(tariff_tracker.get("headline_note", "")))
+            s122 = tariff_tracker.get("section_122_surcharge")
+            last_change = _esc(str(tariff_tracker.get("last_change", "")))
+            next_trigger = _esc(str(tariff_tracker.get("next_trigger", ""))) if tariff_tracker.get("next_trigger") else ""
+
+            _tariff_status_colors = {"ACTIVE": "#C0392B", "PAUSED": "#D4AC0D", "NEGOTIATING": "#2980B9", "ESCALATION": "#8E44AD", "REDUCED": "#27AE60"}
+            h_color = _tariff_status_colors.get(h_status, "#C0392B")
+            h_badge = f'<span style="display:inline-block;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:700;color:#fff;background:{h_color};letter-spacing:0.5px;vertical-align:middle;margin-left:8px;">{_esc(h_status)}</span>'
+
+            # Sector rate rows
+            sector_rows = ""
+            for sr in (tariff_tracker.get("sector_rates") or []):
+                sr_sector = _esc(sr.get("sector", ""))
+                sr_rate = _esc(str(sr.get("rate", "")))
+                sr_auth = _esc(sr.get("authority", ""))
+                sr_st = sr.get("status", "ACTIVE")
+                sr_color = _tariff_status_colors.get(sr_st, "#C0392B")
+                sr_note = _esc(sr.get("note", ""))
+                sector_rows += f"""
+                <tr style="border-bottom:1px solid #F0E0E0;">
+                  <td style="padding:4px 6px 4px 0;font-size:11px;font-weight:600;color:#1B2A4A;">{sr_sector}</td>
+                  <td style="padding:4px 6px;font-size:13px;font-weight:700;color:{sr_color};text-align:center;white-space:nowrap;">{sr_rate}</td>
+                  <td style="padding:4px 6px;font-size:9px;color:#888;text-transform:uppercase;white-space:nowrap;">{sr_auth}</td>
+                  <td style="padding:4px 0 4px 6px;font-size:10px;color:#666;">{sr_note}</td>
+                </tr>"""
+
+            s122_line = f'<div style="margin-top:6px;font-size:11px;color:#E67E22;font-weight:600;">+ Section 122 global surcharge: {_esc(str(s122))}</div>' if s122 else ""
+            next_line = f'<div style="margin-top:4px;font-size:10px;color:#2980B9;">Next trigger: {next_trigger}</div>' if next_trigger else ""
+
+            header_html += f"""
+            <div style="margin-bottom:16px;padding:12px 14px;background:#FFF5F5;border-radius:4px;border:1px solid #F0D0D0;">
+              <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#C0392B;font-weight:600;margin-bottom:6px;">US Tariff Rate on South Korea</div>
+              <div style="margin-bottom:6px;">
+                <span style="font-size:28px;font-weight:700;color:#C0392B;">{h_rate}</span>
+                {h_badge}
+              </div>
+              <div style="font-size:11px;color:#555;line-height:1.4;margin-bottom:8px;">{h_note}</div>
+              {s122_line}
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:8px;border-top:1px solid #F0E0E0;">
+                {sector_rows}
+              </table>
+              <div style="margin-top:8px;font-size:10px;color:#999;">{last_change}</div>
+              {next_line}
+            </div>"""
 
         # Investment package progress bar + deal breakdown
         if investment_pkg and investment_pkg.get("total_pledged"):
