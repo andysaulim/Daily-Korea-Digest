@@ -654,20 +654,32 @@ def _collect_sentiment() -> dict:
         re.IGNORECASE,
     )
 
-    # Queries ordered to prefer Gallup Korea (publishes all metrics together)
+    # ── Korean news headline pattern ─────────────────────────────────────
+    # Korean news outlets reliably report Gallup results in a standard
+    # headline format that includes ALL numbers together, e.g.:
+    #   "李대통령 지지율 67%…민주 46%·국힘 20% [한국갤럽]"
+    #   "이재명 대통령 지지율 67%...민주 46%·국민의힘 20%"
+    # This is far more reliable than trying to parse article body text.
+    # We extract all percentages from these compact headline strings.
+    _RE_HEADLINE_ALL = re.compile(
+        r'(?:대통령|이재명|李)\s*(?:대통령)?\s*지지율?'
+        r'.*?(?<!\d)(\d{2})%(?!p)'              # group 1: presidential approval (2 digits, skip %p)
+        r'.*?(?:민주당?|민주|DP)\s*(\d{1,2})%'  # group 2: ruling party (DP)
+        r'.*?(?:국힘|국민의힘|PPP)\s*(\d{1,2})%', # group 3: opposition (PPP)
+        re.IGNORECASE,
+    )
+
+    # Queries: Korean news headlines about Gallup polls (most reliable source)
     combined_queries = [
+        "한국갤럽+대통령+지지율+민주+국힘",
         "한국갤럽+대통령+지지율+민주당+국민의힘",
         "한국갤럽+대통령+지지율",
-        "Gallup+Korea+presidential+approval+party",
-        "Gallup+Korea+presidential+approval+rating",
-        "리얼미터+대통령+지지율+민주당",
-        "리얼미터+대통령+지지율",
+        "리얼미터+대통령+지지율+민주+국힘",
     ]
 
-    def _sane_pct(match) -> float | None:
-        """Extract percentage from regex match, return None if outside 5-85%.
-        Checks all groups since different alternations capture in different groups."""
-        for i in range(1, match.lastindex + 1 if match.lastindex else 1):
+    def _sane_pct_any(match) -> float | None:
+        """Extract percentage from any non-None group in a match."""
+        for i in range(1, (match.lastindex or 0) + 1):
             g = match.group(i)
             if g is not None:
                 val = float(g)
@@ -675,75 +687,67 @@ def _collect_sentiment() -> dict:
         return None
 
     def _is_polling_article(text: str) -> bool:
-        """Check that article is actually about polling, not some other topic
-        that happens to mention a percentage."""
+        """Check that article is actually about polling."""
         poll_signals = ("갤럽", "gallup", "리얼미터", "realmeter", "여론조사",
                         "poll", "survey", "지지율", "approval rating")
         return any(s in text.lower() for s in poll_signals)
 
-    def _extract_all_from_entry(entry):
-        """Try to extract all 4 metrics from a single article.
-        Only accepts articles that are clearly about polling data.
-        All metrics must come from the same article (same source, same date)."""
-        text = f"{entry.get('title', '')} {entry.get('summary', entry.get('description', ''))}"
-
-        # Gate: only process articles that are clearly about polling
-        if not _is_polling_article(text):
-            return False
-
-        # Presidential approval: require "대통령" or "presidential" near number
-        appr_m = _RE_PRES_APPROVAL.search(text)
-        if not appr_m:
-            return False
-        appr_val = _sane_pct(appr_m)
-        if appr_val is None:
-            return False
-
-        # Determine source
-        source = "Gallup Korea" if "gallup" in text.lower() or "갤럽" in text else (
-            "Realmeter" if "realmeter" in text.lower() or "리얼미터" in text else "Poll"
-        )
-        pub_date = None
+    def _get_pub_date(entry) -> str | None:
         for attr in ("published_parsed", "updated_parsed"):
             parsed = getattr(entry, attr, None)
             if parsed:
-                pub_date = datetime(*parsed[:6], tzinfo=timezone.utc).strftime("%b %d, %Y")
-                break
+                return datetime(*parsed[:6], tzinfo=timezone.utc).strftime("%b %d, %Y")
+        return None
 
-        # Reset all fields so previous entry data doesn't bleed through
-        sentiment["presidential_approval"] = None
-        sentiment["party_ruling"] = None
-        sentiment["party_opposition"] = None
-        sentiment["party_independent"] = None
+    def _get_source(text: str) -> str:
+        if "gallup" in text.lower() or "갤럽" in text:
+            return "Gallup Korea"
+        if "realmeter" in text.lower() or "리얼미터" in text:
+            return "Realmeter"
+        return "Poll"
 
+    def _try_headline_extraction(entry) -> bool:
+        """Strategy 1 (preferred): Extract all metrics from a Korean news headline.
+        Korean outlets report Gallup results in compact format like:
+          '李대통령 지지율 67%…민주 46%·국힘 20% [한국갤럽]'
+        This grabs presidential + both parties in one regex match,
+        guaranteeing they come from the same source and same article."""
+        text = f"{entry.get('title', '')} {entry.get('summary', entry.get('description', ''))}"
+        if not _is_polling_article(text):
+            return False
+        m = _RE_HEADLINE_ALL.search(text)
+        if not m:
+            return False
+        pres_val = float(m.group(1))
+        dp_val = float(m.group(2))
+        ppp_val = float(m.group(3))
+        # Sanity: presidential should be higher than individual party ratings
+        if not (30 <= pres_val <= 85 and 5 <= dp_val <= 60 and 5 <= ppp_val <= 50):
+            return False
+        if pres_val < dp_val or pres_val < ppp_val:
+            return False
+        source = _get_source(text)
+        pub_date = _get_pub_date(entry)
+        # Set all from the same source/date
         sentiment["presidential_approval"] = {
-            "value": f"{appr_val:g}%",
-            "trend": None,
-            "source": source,
-            "last_updated": pub_date or "recent",
+            "value": f"{pres_val:g}%", "trend": None,
+            "source": source, "last_updated": pub_date or "recent",
         }
-        # Extract party ratings from the SAME article text
-        ruling_m = _RE_RULING.search(text)
-        if ruling_m:
-            val = _sane_pct(ruling_m)
-            if val is not None:
-                sentiment["party_ruling"] = {
-                    "value": f"{val:g}%",
-                    "party": "Democratic Party", "party_kr": "더불어민주당",
-                    "source": source, "last_updated": pub_date or "recent",
-                }
-        opp_m = _RE_OPP.search(text)
-        if opp_m:
-            val = _sane_pct(opp_m)
-            if val is not None:
-                sentiment["party_opposition"] = {
-                    "value": f"{val:g}%",
-                    "party": "People Power Party", "party_kr": "국민의힘",
-                    "source": source, "last_updated": pub_date or "recent",
-                }
+        sentiment["party_ruling"] = {
+            "value": f"{dp_val:g}%",
+            "party": "Democratic Party", "party_kr": "더불어민주당",
+            "source": source, "last_updated": pub_date or "recent",
+        }
+        sentiment["party_opposition"] = {
+            "value": f"{ppp_val:g}%",
+            "party": "People Power Party", "party_kr": "국민의힘",
+            "source": source, "last_updated": pub_date or "recent",
+        }
+        # Try to get independents from the same text
         ind_m = _RE_IND.search(text)
+        sentiment["party_independent"] = None
         if ind_m:
-            val = _sane_pct(ind_m)
+            val = _sane_pct_any(ind_m)
             if val is not None:
                 sentiment["party_independent"] = {
                     "value": f"{val:g}%",
@@ -751,31 +755,65 @@ def _collect_sentiment() -> dict:
                 }
         return True
 
-    # Pass 1: find a single article with presidential approval + at least one party metric
+    def _try_field_extraction(entry) -> bool:
+        """Strategy 2 (fallback): Extract metrics individually.
+        Presidential approval requires '대통령' or 'presidential' nearby."""
+        text = f"{entry.get('title', '')} {entry.get('summary', entry.get('description', ''))}"
+        if not _is_polling_article(text):
+            return False
+        appr_m = _RE_PRES_APPROVAL.search(text)
+        if not appr_m:
+            return False
+        appr_val = _sane_pct_any(appr_m)
+        if appr_val is None:
+            return False
+        source = _get_source(text)
+        pub_date = _get_pub_date(entry)
+        sentiment["presidential_approval"] = {
+            "value": f"{appr_val:g}%", "trend": None,
+            "source": source, "last_updated": pub_date or "recent",
+        }
+        sentiment["party_ruling"] = None
+        sentiment["party_opposition"] = None
+        sentiment["party_independent"] = None
+        for regex, key, extra in [
+            (_RE_RULING, "party_ruling", {"party": "Democratic Party", "party_kr": "더불어민주당"}),
+            (_RE_OPP, "party_opposition", {"party": "People Power Party", "party_kr": "국민의힘"}),
+            (_RE_IND, "party_independent", {}),
+        ]:
+            m = regex.search(text)
+            if m:
+                val = _sane_pct_any(m)
+                if val is not None:
+                    sentiment[key] = {"value": f"{val:g}%", "source": source,
+                                      "last_updated": pub_date or "recent", **extra}
+        return True
+
+    # ── Pass 1: Headline extraction (most reliable — gets all numbers at once)
     for query in combined_queries:
         try:
             entries = _parse_feed(_gnews(query))
-            for entry in entries[:5]:
-                if _extract_all_from_entry(entry) and (
-                    sentiment["party_ruling"] or sentiment["party_opposition"]
-                ):
-                    break  # Found a single article with all data
-            if sentiment["presidential_approval"] and (
-                sentiment["party_ruling"] or sentiment["party_opposition"]
-            ):
+            for entry in entries[:8]:
+                if _try_headline_extraction(entry):
+                    break
+            if sentiment["presidential_approval"] and sentiment["party_ruling"]:
                 break
         except Exception:
             continue
 
-    # Pass 2: if pass 1 got nothing at all, try approval-only articles
+    # ── Pass 2: Field-by-field extraction (fallback if no headline match)
     if not sentiment["presidential_approval"]:
-        for query in combined_queries[:4]:
+        for query in combined_queries:
             try:
                 entries = _parse_feed(_gnews(query))
                 for entry in entries[:5]:
-                    if _extract_all_from_entry(entry):
+                    if _try_field_extraction(entry) and (
+                        sentiment["party_ruling"] or sentiment["party_opposition"]
+                    ):
                         break
-                if sentiment["presidential_approval"]:
+                if sentiment["presidential_approval"] and (
+                    sentiment["party_ruling"] or sentiment["party_opposition"]
+                ):
                     break
             except Exception:
                 continue
@@ -845,31 +883,33 @@ def _collect_sentiment() -> dict:
     # These are the most recent known values from Gallup Korea weekly polls.
     # They ensure the sentiment tracker always renders with data.
     fallback_used = []
+    # Fallback: Gallup Korea 제656호, 3rd week of March 2026 (surveyed Mar 17-19)
+    # Source: multiple Korean news outlets reporting same Gallup Korea weekly poll
     if not sentiment["presidential_approval"]:
         fallback_used.append("presidential_approval")
         sentiment["presidential_approval"] = {
-            "value": "62%", "trend": "stable",
-            "source": "Gallup Korea", "last_updated": "Dec 2025",
+            "value": "67%", "trend": "up",
+            "source": "Gallup Korea", "last_updated": "Mar 3rd week, 2026",
         }
     if not sentiment["party_ruling"]:
         fallback_used.append("party_ruling")
         sentiment["party_ruling"] = {
-            "value": "43%", "party": "Democratic Party",
+            "value": "46%", "party": "Democratic Party",
             "party_kr": "더불어민주당", "trend": "stable",
-            "source": "Gallup Korea", "last_updated": "Dec 2025",
+            "source": "Gallup Korea", "last_updated": "Mar 3rd week, 2026",
         }
     if not sentiment["party_opposition"]:
         fallback_used.append("party_opposition")
         sentiment["party_opposition"] = {
-            "value": "22%", "party": "People Power Party",
+            "value": "20%", "party": "People Power Party",
             "party_kr": "국민의힘", "trend": "stable",
-            "source": "Gallup Korea", "last_updated": "Dec 2025",
+            "source": "Gallup Korea", "last_updated": "Mar 3rd week, 2026",
         }
     if not sentiment["party_independent"]:
         fallback_used.append("party_independent")
         sentiment["party_independent"] = {
-            "value": "28%", "trend": "stable",
-            "source": "Gallup Korea", "last_updated": "Dec 2025",
+            "value": "27%", "trend": "stable",
+            "source": "Gallup Korea", "last_updated": "Mar 3rd week, 2026",
         }
     if fallback_used:
         print(f"    ⚠  Sentiment: using fallbacks for {', '.join(fallback_used)}")
