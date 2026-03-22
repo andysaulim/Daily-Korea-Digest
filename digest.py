@@ -322,7 +322,7 @@ def _check_content_minimums(digest: dict) -> list[str]:
 def _call_claude(client, user_prompt: str, max_tokens: int = 16000) -> dict:
     """Single Claude API call. Returns parsed digest dict."""
     response = client.messages.create(
-        model="claude-sonnet-4-20250514",
+        model="claude-haiku-4-5-20251001",
         max_tokens=max_tokens,
         system=SYSTEM_PROMPT,
         messages=[{"role": "user", "content": user_prompt}]
@@ -389,7 +389,7 @@ def generate_digest(payload: dict, db_context: str = "") -> dict:
                     {"role": "user", "content": expansion_prompt}
                 ]
                 response = client.messages.create(
-                    model="claude-sonnet-4-20250514",
+                    model="claude-haiku-4-5-20251001",
                     max_tokens=16000,
                     system=SYSTEM_PROMPT,
                     messages=messages
