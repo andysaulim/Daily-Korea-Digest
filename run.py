@@ -176,6 +176,9 @@ def main():
     # ── Step 2b: Push flagged entries to databases ────────────────────────────
     if not args.no_push:
         push_summary = process_digest_entries(digest_data)
+        if push_summary.get("nk_russia_added") or push_summary.get("provocations_added"):
+            print(f"    NK-Russia: {push_summary.get('nk_russia_added', 0)} added, "
+                  f"Provocations: {push_summary.get('provocations_added', 0)} added")
     else:
         print("\n  --no-push: skipping database updates")
 
