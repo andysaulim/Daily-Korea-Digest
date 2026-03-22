@@ -172,6 +172,7 @@ def main():
 
     # ── Step 2a: Pre-send validation gate ─────────────────────────────────────
     validation_warnings = validate_digest(digest_data)
+    critical_warnings = [w for w in validation_warnings if "CRITICAL" in w]
     if validation_warnings:
         print("\n⚠️  PRE-SEND VALIDATION WARNINGS:")
         for w in validation_warnings:
@@ -179,6 +180,9 @@ def main():
         print()
     else:
         print("\n✅  Validation passed — all checks OK")
+    if critical_warnings:
+        print("🚫  CRITICAL validation failures — newsletter will NOT be sent.")
+        print("    Fix the issues above or re-run. HTML still rendered for review.")
 
     # ── Step 2b: Push flagged entries to databases ────────────────────────────
     if not args.no_push:
@@ -219,7 +223,9 @@ def main():
     )
 
     # ── Step 4: Send email ───────────────────────────────────────────────────
-    if args.no_send:
+    if critical_warnings:
+        print("\n🚫  Skipping email due to critical validation failures. Review latest.html.")
+    elif args.no_send:
         print("\n  --no-send: skipping email. Open latest.html to review.")
     else:
         if not os.environ.get("DIGEST_TO"):

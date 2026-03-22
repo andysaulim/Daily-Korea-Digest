@@ -269,8 +269,64 @@ Return ONLY valid JSON. No markdown fences, no preamble."""
 # ─────────────────────────────────────────────────────────────────────────────
 # MAIN DIGEST FUNCTION
 # ─────────────────────────────────────────────────────────────────────────────
+def _count_digest_words(digest: dict) -> int:
+    """Count readable words across all text fields."""
+    words = 0
+    for mi in (digest.get("morning_memo") or []):
+        words += len(str(mi).split())
+    for section_key in ("top_stories", "overnight_items", "also_today", "business_economy",
+                         "opeds_today", "academic_today", "social_statements",
+                         "northeast_asia"):
+        for item in (digest.get(section_key) or []):
+            for field in ("body", "body_text", "summary", "detail", "quote_text",
+                          "so_what", "pattern_note", "central_argument", "analyst_note"):
+                words += len(str(item.get(field, "")).split())
+    kcna = digest.get("kcna_delta") or {}
+    for field in ("bottom_line", "doctrinal_shift"):
+        words += len(str(kcna.get(field, "")).split())
+    return words
+
+
+def _check_content_minimums(digest: dict) -> list[str]:
+    """Check hard content minimums. Returns list of failures (empty = pass)."""
+    failures = []
+    word_count = _count_digest_words(digest)
+    if word_count < 1000:
+        failures.append(f"WORD COUNT: {word_count} words (hard minimum 1000)")
+    top = len(digest.get("top_stories") or [])
+    if top < 3:
+        failures.append(f"TOP STORIES: {top} (minimum 3)")
+    overnight = len(digest.get("overnight_items") or [])
+    if overnight < 8:
+        failures.append(f"OVERNIGHT ITEMS: {overnight} (minimum 8)")
+    memo = len(digest.get("morning_memo") or [])
+    if memo < 3:
+        failures.append(f"MORNING MEMO: {memo} (minimum 3)")
+    return failures
+
+
+def _call_claude(client, user_prompt: str, max_tokens: int = 16000) -> dict:
+    """Single Claude API call. Returns parsed digest dict."""
+    response = client.messages.create(
+        model="claude-sonnet-4-20250514",
+        max_tokens=max_tokens,
+        system=SYSTEM_PROMPT,
+        messages=[{"role": "user", "content": user_prompt}]
+    )
+    if response.stop_reason == "max_tokens":
+        print(f"  ⚠  Response truncated (hit {response.usage.output_tokens} tokens)")
+    if not response.content:
+        raise ValueError("Empty response from Claude API")
+    raw_text = response.content[0].text.strip()
+    if raw_text.startswith("```"):
+        raw_text = raw_text.split("\n", 1)[1]
+        if raw_text.endswith("```"):
+            raw_text = raw_text.rsplit("```", 1)[0]
+    return json.loads(raw_text)
+
+
 def generate_digest(payload: dict, db_context: str = "") -> dict:
-    """Call Claude and return structured digest JSON. Retries once on failure."""
+    """Call Claude and return structured digest JSON. Retries on failure and enforces content minimums."""
     api_key = os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
         raise RuntimeError("Missing ANTHROPIC_API_KEY environment variable. Set it before running.")
@@ -281,56 +337,89 @@ def generate_digest(payload: dict, db_context: str = "") -> dict:
     total_articles = sum(len(v) for k, v in payload.items() if isinstance(v, list))
     print(f"\n🤖  Generating digest ({total_articles} articles → Claude)...")
 
-    for attempt in range(2):
-        try:
-            response = client.messages.create(
-                model="claude-sonnet-4-20250514",
-                max_tokens=16000,
-                system=SYSTEM_PROMPT,
-                messages=[{"role": "user", "content": user_prompt}]
-            )
-            # Check for truncated response
-            if response.stop_reason == "max_tokens":
-                print(f"  ⚠  Response truncated (hit {response.usage.output_tokens} tokens)")
-                if attempt == 0:
-                    print("  Retrying with higher token limit...")
-                    time.sleep(2)
-                    continue
-                else:
-                    print("  ✗  Response truncated on both attempts — output may be incomplete")
+    MAX_ATTEMPTS = 3
+    digest = None
 
-            if not response.content:
-                raise ValueError("Empty response from Claude API")
-            raw_text = response.content[0].text.strip()
-            # Strip markdown fences if Claude adds them
-            if raw_text.startswith("```"):
-                raw_text = raw_text.split("\n", 1)[1]
-                if raw_text.endswith("```"):
-                    raw_text = raw_text.rsplit("```", 1)[0]
-            digest = json.loads(raw_text)
+    for attempt in range(MAX_ATTEMPTS):
+        try:
+            if attempt == 0:
+                digest = _call_claude(client, user_prompt)
+            else:
+                # Re-prompt with the previous output + expansion instructions
+                expansion_prompt = (
+                    f"Your previous digest output failed content minimums:\n"
+                    + "\n".join(f"  • {f}" for f in content_failures)
+                    + "\n\nHere is your previous output:\n"
+                    + json.dumps(digest, ensure_ascii=False)[:8000]
+                    + "\n\nRevise and return a COMPLETE updated digest JSON that fixes ALL failures above. "
+                    "Specifically:\n"
+                    "- WORD COUNT: Each top_stories body must be 80-100 words. Each overnight_items body_text must be 50-70 words. "
+                    "Each business_economy/northeast_asia/also_today item must be 40-60 words. Expand with factual context, specific numbers, historical precedents.\n"
+                    "- TOP STORIES: Include at least 3 stories. Pull from the available articles.\n"
+                    "- OVERNIGHT ITEMS: Include at least 8 items.\n"
+                    "- MORNING MEMO: Include exactly 3 items.\n"
+                    "Return ONLY valid JSON."
+                )
+                messages = [
+                    {"role": "user", "content": user_prompt},
+                    {"role": "assistant", "content": json.dumps(digest, ensure_ascii=False)[:4000]},
+                    {"role": "user", "content": expansion_prompt}
+                ]
+                response = client.messages.create(
+                    model="claude-sonnet-4-20250514",
+                    max_tokens=16000,
+                    system=SYSTEM_PROMPT,
+                    messages=messages
+                )
+                if not response.content:
+                    raise ValueError("Empty response from Claude API")
+                raw_text = response.content[0].text.strip()
+                if raw_text.startswith("```"):
+                    raw_text = raw_text.split("\n", 1)[1]
+                    if raw_text.endswith("```"):
+                        raw_text = raw_text.rsplit("```", 1)[0]
+                digest = json.loads(raw_text)
 
             # Ensure market data from collector is preserved
             if payload.get("market_indicators") and not digest.get("market_indicators"):
                 digest["market_indicators"] = payload["market_indicators"]
 
-            print(f"  ✅  Digest generated: {len(digest.get('top_stories') or [])} top stories")
+            # Check content minimums
+            content_failures = _check_content_minimums(digest)
+            word_count = _count_digest_words(digest)
+            top_count = len(digest.get("top_stories") or [])
+            overnight_count = len(digest.get("overnight_items") or [])
+
+            if content_failures and attempt < MAX_ATTEMPTS - 1:
+                print(f"  ⚠  Attempt {attempt + 1}: content too thin (~{word_count} words, "
+                      f"{top_count} top stories, {overnight_count} overnight) — retrying with expansion prompt")
+                time.sleep(2)
+                continue
+
+            if content_failures:
+                print(f"  ⚠  Final attempt still below minimums (~{word_count} words) — proceeding with best result")
+            else:
+                print(f"  ✅  Digest generated: ~{word_count} words, {top_count} top stories, "
+                      f"{overnight_count} overnight items")
             return digest
 
         except (anthropic.APIError, anthropic.APIConnectionError) as e:
-            if attempt == 0:
-                print(f"  ⚠  API error (retrying in 5s): {e}")
-                time.sleep(5)
+            if attempt < MAX_ATTEMPTS - 1:
+                wait = 5 * (attempt + 1)
+                print(f"  ⚠  API error (retrying in {wait}s): {e}")
+                time.sleep(wait)
             else:
                 print(f"  ✗  API error (giving up): {e}")
                 raise
         except json.JSONDecodeError as e:
-            if attempt == 0:
+            if attempt < MAX_ATTEMPTS - 1:
                 print(f"  ⚠  JSON parse error (retrying): {e}")
                 time.sleep(2)
             else:
                 print(f"  ✗  JSON parse error: {e}")
-                print(f"  Raw response (first 500 chars):\n{raw_text[:500]}")
                 raise
+
+    return digest  # fallback (shouldn't reach here)
 
 
 if __name__ == "__main__":
