@@ -1,6 +1,6 @@
 # Korea Daily Brief
 
-Automated daily intelligence briefing on the Korean Peninsula for the CSIS Korea Chair. Collects from 140+ sources, generates an analyst-grade digest via Claude, and delivers a styled HTML email at 6:00 AM ET.
+Automated daily intelligence briefing on the Korean Peninsula for CSIS Korea Chair. Collects from 140+ sources, generates an analyst-grade digest via Claude, and delivers a styled HTML email at 6:00 AM ET.
 
 **Live archive:** [andysaulim.github.io/Daily-Korea-Digest](https://andysaulim.github.io/Daily-Korea-Digest)
 
@@ -176,4 +176,8 @@ All other imports use the Python standard library.
 
 ---
 
-*CSIS Korea Chair -- By Andy Lim*
+*CSIS Korea Chair*
+
+---
+
+<p align="center"><sub>Prepared by Andy Lim</sub></p>
