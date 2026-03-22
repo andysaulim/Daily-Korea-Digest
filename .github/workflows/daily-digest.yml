@@ -44,9 +44,6 @@ jobs:
     needs: check-already-sent
     if: needs.check-already-sent.outputs.should_run == 'true'
     runs-on: ubuntu-latest
-    # Retry up to 3 times on transient failures (API timeouts, network, etc.)
-    strategy:
-      max-parallel: 1
     steps:
       - uses: actions/checkout@v4
 
@@ -84,10 +81,15 @@ jobs:
           echo "❌  All 3 attempts failed"
           exit 1
 
+      # Post-email steps use continue-on-error so a Pages/README failure
+      # doesn't mark the workflow as "failed" and trigger a duplicate
+      # email from the fallback cron.
       - name: Update README with run stats
+        continue-on-error: true
         run: python update_readme.py
 
       - name: Deploy to GitHub Pages
+        continue-on-error: true
         uses: peaceiris/actions-gh-pages@v4
         with:
           personal_token: ${{ secrets.GH_PAT }}
@@ -95,8 +97,11 @@ jobs:
           keep_files: true
 
       - name: Commit updated README
+        continue-on-error: true
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add README.md
-          git diff --cached --quiet || git commit -m "Update README stats [skip ci]" && git push
+          if ! git diff --cached --quiet; then
+            git commit -m "Update README stats [skip ci]" && git push
+          fi

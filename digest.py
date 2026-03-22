@@ -341,10 +341,12 @@ def generate_digest(payload: dict, db_context: str = "") -> dict:
     digest = None
     best_digest = None
     best_word_count = 0
+    content_failures = []
 
     for attempt in range(MAX_ATTEMPTS):
         try:
-            if attempt == 0:
+            if attempt == 0 or digest is None:
+                # First attempt, or previous attempt failed to produce any output
                 digest = _call_claude(client, user_prompt)
             else:
                 # Re-prompt with the previous output + specific expansion instructions
