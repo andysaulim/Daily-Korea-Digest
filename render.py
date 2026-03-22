@@ -228,7 +228,7 @@ def render(digest: dict) -> str:
     if memo_items:
         memo_html = ""
         for mi in memo_items[:3]:
-            memo_text = _esc(mi) if isinstance(mi, str) else _esc(mi.get("text", ""))
+            memo_text = _esc(mi) if isinstance(mi, str) else _esc(mi.get("text", "") if isinstance(mi, dict) else str(mi or ""))
             memo_html += f"""
             <div style="margin-bottom:8px;padding-left:12px;border-left:3px solid #1B2A4A;">
               <div style="font-size:14px;line-height:1.5;color:#333;font-family:Georgia,serif;">{memo_text}</div>
@@ -302,7 +302,7 @@ def render(digest: dict) -> str:
 
     # ── 6. Key Stat of the Day ───────────────────────────────────────────
     key_stat = digest.get("key_stat") or {}
-    if key_stat and key_stat.get("number"):
+    if key_stat and key_stat.get("number") is not None and key_stat.get("number") != "":
         sections.append(f"""
         <a name="key-stat"></a>
         <div style="padding:12px 32px;background:#1B2A4A;color:#fff;border-bottom:1px solid #E0E0E0;text-align:center;" class="sec">
@@ -316,7 +316,7 @@ def render(digest: dict) -> str:
 
     # ── 7. KCNA Rhetoric Delta ──────────────────────────────────────────────
     kcna = digest.get("kcna_delta") or {}
-    if kcna:
+    if kcna and any(kcna.values()):
         bottom_line = _esc(kcna.get("bottom_line", ""))
         watch = kcna.get("watch_flag", False)
         silence = kcna.get("silence_today", False)
@@ -336,7 +336,7 @@ def render(digest: dict) -> str:
             q = key_quotes[0]
             qt = _esc(q.get("quote", ""))
             src_art = _esc(q.get("source_article", ""))
-            quotes_html = f"""<div style='margin-top:8px;padding:6px 12px;background:rgba(255,255,255,0.05);border-radius:4px;border-left:2px solid #555;'>
+            quotes_html = f"""<div class="kcna-quote" style='margin-top:8px;padding:6px 12px;background:rgba(255,255,255,0.05);border-radius:4px;border-left:2px solid #555;'>
               <div style='font-size:12px;color:#D0D0D0;font-style:italic;line-height:1.4;'>&ldquo;{qt}&rdquo;</div>
               <div style='font-size:10px;color:#888;margin-top:2px;'>{src_art}</div>
             </div>"""
@@ -361,8 +361,6 @@ def render(digest: dict) -> str:
         kim_today = "Yes" if kcna.get("kim_appearance_today") else "No"
         kim_activity = _esc(kcna.get("kim_activity", "")) if kcna.get("kim_activity") else ""
         days_absent = kcna.get("days_since_last_appearance")
-
-        tone_inline = ""
 
         # Propaganda focus & Kim appearance as inline items
         prop_focus = kcna.get("propaganda_focus") or []
@@ -840,7 +838,7 @@ def render(digest: dict) -> str:
             # Source / parties attribution line on the right
             meta_right = f'<span style="font-size:11px;color:#888;">{parties}</span>' if parties else ""
             deals_html += f"""
-            <div style="margin-bottom:14px;padding:12px 0;border-top:1px solid #E8E8E8;">
+            <div class="deal-card" style="margin-bottom:14px;padding:12px 0;border-top:1px solid #E8E8E8;">
               <div style="font-size:11px;color:#888;margin-bottom:2px;">{meta_right} {('&middot; ' + src) if src else ''}</div>
               <div style="font-size:15px;font-weight:700;color:#1B2A4A;line-height:1.3;margin-bottom:4px;">
                 {_link_or_text(headline, url, style="color:#1B4A6A;text-decoration:none;")}{value_badge}{wh_badge}
@@ -952,7 +950,7 @@ def render(digest: dict) -> str:
 
     # ── 12c. Public Sentiment Tracker ──────────────────────────────────
     sentiment = digest.get("public_sentiment") or {}
-    if sentiment:
+    if sentiment and any(sentiment.values()):
         def _sentiment_cell(label, data, width="25%"):
             if not data or not data.get("value"):
                 return f"""
@@ -1185,7 +1183,7 @@ def render(digest: dict) -> str:
     /* Mobile responsive */
     @media only screen and (max-width: 620px) {{
       .wrapper {{ width:100% !important; }}
-      .sec, .header, .footer {{ padding:16px 14px !important; }}
+      .sec, .footer {{ padding:16px 14px !important; }}
       /* Market indicator table — stack on mobile */
       .mkt-table td {{ display:block !important; width:100% !important; padding:8px 14px !important; text-align:left !important; border-left:0 !important; border-right:0 !important; border-bottom:1px solid rgba(255,255,255,0.1) !important; }}
       /* BP Facility tracker — stack on mobile */
