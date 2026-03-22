@@ -551,6 +551,7 @@ def _collect_sentiment() -> dict:
         "party_ruling": None,
         "party_opposition": None,
         "consumer_confidence": None,
+        "gallup_spotlight": None,
         "discourse_flag": None,
     }
 
@@ -687,6 +688,44 @@ def _collect_sentiment() -> dict:
                     }
                     break
             if sentiment["consumer_confidence"]:
+                break
+        except Exception:
+            continue
+
+    # ── Gallup Korea Spotlight (weekly special-topic finding) ───────────
+    # Each weekly poll includes a rotating social/policy topic beyond the
+    # standard presidential + party numbers.  Grab the headline finding.
+    spotlight_queries = [
+        "한국갤럽+여론조사+이번주",
+        "한국갤럽+데일리+오피니언",
+        "Gallup+Korea+weekly+poll+survey+2026",
+        "한국갤럽+조사+결과",
+    ]
+    for query in spotlight_queries:
+        try:
+            entries = _parse_feed(_gnews(query))
+            for entry in entries[:5]:
+                text = f"{entry.get('title', '')} {entry.get('summary', entry.get('description', ''))}"
+                # Skip entries that are only about presidential/party ratings
+                if re.search(r'(대통령|지지율|presidential|party\s*approval)', text, re.IGNORECASE) and \
+                   not re.search(r'(찬반|조사|survey|설문|여론|opinion|응답|percent)', text, re.IGNORECASE):
+                    continue
+                # Look for poll-result-style content (percentages + survey language)
+                if re.search(r'갤럽|gallup', text, re.IGNORECASE) and \
+                   re.search(r'\d{1,2}%|찬성|반대|응답|survey|poll', text, re.IGNORECASE):
+                    title = entry.get("title", "").strip()
+                    pub_date = None
+                    for attr in ("published_parsed", "updated_parsed"):
+                        parsed = getattr(entry, attr, None)
+                        if parsed:
+                            pub_date = datetime(*parsed[:6], tzinfo=timezone.utc).strftime("%b %d, %Y")
+                            break
+                    sentiment["gallup_spotlight"] = {
+                        "headline": title[:250],
+                        "poll_date": pub_date or "recent",
+                    }
+                    break
+            if sentiment.get("gallup_spotlight"):
                 break
         except Exception:
             continue

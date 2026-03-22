@@ -925,6 +925,19 @@ def render(digest: dict) -> str:
               <strong style="color:#E67E22;">Discourse:</strong> {_esc(discourse)}
             </div>"""
 
+        gallup_finding = sentiment.get("gallup_spotlight")
+        spotlight_html = ""
+        if gallup_finding:
+            topic = _esc(str(gallup_finding.get("topic", "")))
+            finding = _esc(str(gallup_finding.get("finding", "")))
+            poll_date = _esc(str(gallup_finding.get("poll_date", "")))
+            spotlight_html = f"""
+            <div style="margin-top:10px;padding:8px 12px;background:#EBF5FB;border-radius:4px;border-left:3px solid #2980B9;font-size:11px;color:#444;line-height:1.5;">
+              <strong style="color:#2980B9;">Gallup Korea Spotlight</strong>
+              <span style="font-size:9px;opacity:0.5;margin-left:6px;">{poll_date}</span><br>
+              <span style="font-weight:600;">{topic}:</span> {finding}
+            </div>"""
+
         sections.append(f"""
         <div style="padding:10px 32px;background:#F8F9FA;border-bottom:1px solid #E0E0E0;" class="sec">
           <h2 {_H2("#2C3E50")}>Public Sentiment Tracker</h2>
@@ -936,6 +949,7 @@ def render(digest: dict) -> str:
               {_sentiment_cell("Consumer Confidence", cci)}
             </tr>
           </table>
+          {spotlight_html}
           {discourse_html}
         </div>
         """)
