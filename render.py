@@ -913,9 +913,9 @@ def render(digest: dict) -> str:
             </td>"""
 
         approval = sentiment.get("presidential_approval") or {}
-        fav_us = sentiment.get("favorability_us") or {}
-        fav_china = sentiment.get("favorability_china") or {}
-        fav_japan = sentiment.get("favorability_japan") or {}
+        party_ruling = sentiment.get("party_ruling") or {}
+        party_opp = sentiment.get("party_opposition") or {}
+        cci = sentiment.get("consumer_confidence") or {}
         discourse = sentiment.get("discourse_flag")
 
         discourse_html = ""
@@ -931,9 +931,9 @@ def render(digest: dict) -> str:
           <table width="100%" cellpadding="0" cellspacing="0" border="0">
             <tr>
               {_sentiment_cell("Presidential Approval", approval)}
-              {_sentiment_cell("Favorability: US", fav_us)}
-              {_sentiment_cell("Favorability: China", fav_china)}
-              {_sentiment_cell("Favorability: Japan", fav_japan)}
+              {_sentiment_cell("Ruling Party (DP)", party_ruling)}
+              {_sentiment_cell("Opposition (PPP)", party_opp)}
+              {_sentiment_cell("Consumer Confidence", cci)}
             </tr>
           </table>
           {discourse_html}

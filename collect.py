@@ -535,21 +535,22 @@ def _fetch_gdp_estimate() -> dict:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# PUBLIC SENTIMENT — Gallup Korea, Realmeter, Asan Institute
+# PUBLIC SENTIMENT — Gallup Korea, Realmeter, Bank of Korea
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _collect_sentiment() -> dict:
     """Scrape latest Korean polling data from news headlines.
 
-    Returns structured sentiment data for presidential approval and
-    favorability ratings. Claude will merge any new poll data from
-    articles with these baseline numbers.
+    Returns structured sentiment data for presidential approval,
+    party support ratings (ruling & opposition), and BOK consumer
+    confidence. Claude will merge any new poll data from articles
+    with these baseline numbers.
     """
     sentiment = {
         "presidential_approval": None,
-        "favorability_us": None,
-        "favorability_china": None,
-        "favorability_japan": None,
+        "party_ruling": None,
+        "party_opposition": None,
+        "consumer_confidence": None,
         "discourse_flag": None,
     }
 
@@ -596,51 +597,99 @@ def _collect_sentiment() -> dict:
         except Exception:
             continue
 
-    # ── Favorability ratings (Asan Institute, Pew, Chicago Council) ─────
-    fav_queries = {
-        "favorability_us": [
-            "Asan+Institute+Korean+favorability+United+States",
-            "Korea+public+opinion+favorable+US+poll",
-        ],
-        "favorability_china": [
-            "Korea+public+opinion+favorable+China+poll",
-            "한국+중국+호감도+여론조사",
-        ],
-        "favorability_japan": [
-            "Korea+public+opinion+favorable+Japan+poll",
-            "한국+일본+호감도+여론조사",
-        ],
-    }
-    for fav_key, queries in fav_queries.items():
-        for query in queries:
-            try:
-                entries = _parse_feed(_gnews(query))
-                for entry in entries[:3]:
-                    text = f"{entry.get('title', '')} {entry.get('summary', entry.get('description', ''))}"
-                    match = re.search(r'(\d{1,2})(?:\.\d)?%\s*(?:favorable|favorab|호감)', text, re.IGNORECASE)
-                    if not match:
-                        match = re.search(r'(?:favorable|favorab|호감)[^\d]{0,20}(\d{1,2})(?:\.\d)?%', text, re.IGNORECASE)
-                    if match:
-                        val = match.group(1)
-                        source = "Asan Institute" if "asan" in text.lower() else (
-                            "Pew" if "pew" in text.lower() else "Poll"
-                        )
-                        pub_date = None
-                        for attr in ("published_parsed", "updated_parsed"):
-                            parsed = getattr(entry, attr, None)
-                            if parsed:
-                                pub_date = datetime(*parsed[:6], tzinfo=timezone.utc).strftime("%b %d, %Y")
-                                break
-                        sentiment[fav_key] = {
+    # ── Party support ratings (Gallup Korea weekly, Realmeter daily) ────
+    party_queries = [
+        "한국갤럽+정당+지지율",
+        "Gallup+Korea+party+approval+rating",
+        "리얼미터+정당+지지율",
+        "한국갤럽+더불어민주당+국민의힘+지지율",
+    ]
+    for query in party_queries:
+        try:
+            entries = _parse_feed(_gnews(query))
+            for entry in entries[:5]:
+                text = f"{entry.get('title', '')} {entry.get('summary', entry.get('description', ''))}"
+                # Match ruling party (Democratic Party / 민주당)
+                ruling_match = re.search(
+                    r'(?:민주당|Democratic\s*Party)[^\d]{0,30}(\d{1,2})(?:\.\d)?%|'
+                    r'(\d{1,2})(?:\.\d)?%\s*(?:민주당|Democratic\s*Party)',
+                    text, re.IGNORECASE
+                )
+                # Match opposition (People Power Party / 국민의힘)
+                opp_match = re.search(
+                    r'(?:국민의힘|People\s*Power\s*Party)[^\d]{0,30}(\d{1,2})(?:\.\d)?%|'
+                    r'(\d{1,2})(?:\.\d)?%\s*(?:국민의힘|People\s*Power\s*Party)',
+                    text, re.IGNORECASE
+                )
+                if ruling_match or opp_match:
+                    source = "Gallup Korea" if "gallup" in text.lower() or "갤럽" in text else (
+                        "Realmeter" if "realmeter" in text.lower() or "리얼미터" in text else "Poll"
+                    )
+                    pub_date = None
+                    for attr in ("published_parsed", "updated_parsed"):
+                        parsed = getattr(entry, attr, None)
+                        if parsed:
+                            pub_date = datetime(*parsed[:6], tzinfo=timezone.utc).strftime("%b %d, %Y")
+                            break
+                    if ruling_match:
+                        val = ruling_match.group(1) or ruling_match.group(2)
+                        sentiment["party_ruling"] = {
                             "value": f"{val}%",
+                            "party": "Democratic Party",
+                            "party_kr": "더불어민주당",
                             "source": source,
                             "last_updated": pub_date or "recent",
                         }
-                        break
-                if sentiment[fav_key]:
+                    if opp_match:
+                        val = opp_match.group(1) or opp_match.group(2)
+                        sentiment["party_opposition"] = {
+                            "value": f"{val}%",
+                            "party": "People Power Party",
+                            "party_kr": "국민의힘",
+                            "source": source,
+                            "last_updated": pub_date or "recent",
+                        }
                     break
-            except Exception:
-                continue
+            if sentiment["party_ruling"] and sentiment["party_opposition"]:
+                break
+        except Exception:
+            continue
+
+    # ── Consumer Confidence Index (BOK / Korea Consumer Sentiment) ────
+    cci_queries = [
+        "한국은행+소비자심리지수",
+        "Bank+of+Korea+consumer+sentiment+index",
+        "BOK+consumer+confidence+Korea",
+        "소비자심리지수+CSI",
+    ]
+    for query in cci_queries:
+        try:
+            entries = _parse_feed(_gnews(query))
+            for entry in entries[:5]:
+                text = f"{entry.get('title', '')} {entry.get('summary', entry.get('description', ''))}"
+                match = re.search(
+                    r'(?:소비자심리지수|consumer\s*(?:sentiment|confidence)\s*index|CSI)[^\d]{0,30}(\d{2,3})(?:\.\d)?|'
+                    r'(\d{2,3})(?:\.\d)?\s*(?:소비자심리지수|CSI)',
+                    text, re.IGNORECASE
+                )
+                if match:
+                    val = match.group(1) or match.group(2)
+                    pub_date = None
+                    for attr in ("published_parsed", "updated_parsed"):
+                        parsed = getattr(entry, attr, None)
+                        if parsed:
+                            pub_date = datetime(*parsed[:6], tzinfo=timezone.utc).strftime("%b %d, %Y")
+                            break
+                    sentiment["consumer_confidence"] = {
+                        "value": val,
+                        "source": "Bank of Korea",
+                        "last_updated": pub_date or "recent",
+                    }
+                    break
+            if sentiment["consumer_confidence"]:
+                break
+        except Exception:
+            continue
 
     # ── Discourse flag (protests, viral hashtags) ───────────────────────
     discourse_queries = [
