@@ -921,7 +921,7 @@ def render(digest: dict) -> str:
         discourse_html = ""
         if discourse:
             discourse_html = f"""
-            <div style="margin-top:8px;padding:6px 10px;background:#FFF3E0;border-radius:4px;border-left:3px solid #E67E22;font-size:11px;color:#555;">
+            <div class="sentiment-discourse" style="margin-top:8px;padding:6px 10px;background:#FFF3E0;border-radius:4px;border-left:3px solid #E67E22;font-size:11px;color:#555;">
               <strong style="color:#E67E22;">Discourse:</strong> {_esc(discourse)}
             </div>"""
 
@@ -932,7 +932,7 @@ def render(digest: dict) -> str:
             finding = _esc(str(gallup_finding.get("finding", "")))
             poll_date = _esc(str(gallup_finding.get("poll_date", "")))
             spotlight_html = f"""
-            <div style="margin-top:10px;padding:8px 12px;background:#EBF5FB;border-radius:4px;border-left:3px solid #2980B9;font-size:11px;color:#444;line-height:1.5;">
+            <div class="sentiment-spotlight" style="margin-top:10px;padding:8px 12px;background:#EBF5FB;border-radius:4px;border-left:3px solid #2980B9;font-size:11px;color:#444;line-height:1.5;">
               <strong style="color:#2980B9;">Gallup Korea Spotlight</strong>
               <span style="font-size:9px;opacity:0.5;margin-left:6px;">{poll_date}</span><br>
               <span style="font-weight:600;">{topic}:</span> {finding}
@@ -941,12 +941,12 @@ def render(digest: dict) -> str:
         sections.append(f"""
         <div style="padding:10px 32px;background:#F8F9FA;border-bottom:1px solid #E0E0E0;" class="sec">
           <h2 {_H2("#2C3E50")}>Public Sentiment Tracker</h2>
-          <table width="100%" cellpadding="0" cellspacing="0" border="0">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" class="sentiment-table">
             <tr>
               {_sentiment_cell("Presidential Approval", approval)}
-              {_sentiment_cell("Ruling Party (DP)", party_ruling)}
-              {_sentiment_cell("Opposition (PPP)", party_opp)}
-              {_sentiment_cell("Independents", party_ind)}
+              {_sentiment_cell(f"Ruling ({party_ruling.get('party_kr', 'DP')})" if party_ruling.get("party_kr") else "Ruling Party", party_ruling)}
+              {_sentiment_cell(f"Opposition ({party_opp.get('party_kr', 'PPP')})" if party_opp.get("party_kr") else "Opposition", party_opp)}
+              {_sentiment_cell("Independents (무당층)", party_ind)}
             </tr>
           </table>
           {spotlight_html}
@@ -1109,6 +1109,9 @@ def render(digest: dict) -> str:
       .deal-card {{ padding:10px !important; }}
       /* Deal breakdown table — full width on mobile */
       .deal-breakdown td {{ padding:3px 4px !important; font-size:10px !important; }}
+      /* Sentiment tracker — 2x2 grid on mobile */
+      .sentiment-table tr {{ display:flex !important; flex-wrap:wrap !important; }}
+      .sentiment-table td {{ display:block !important; width:50% !important; box-sizing:border-box !important; padding:10px 6px !important; text-align:center !important; }}
       /* Typography */
       h1 {{ font-size:19px !important; }}
       h2 {{ font-size:12px !important; }}
@@ -1134,6 +1137,8 @@ def render(digest: dict) -> str:
       .wrapper .kcna-dark {{ background:#1a2a1a !important; }}
       .wrapper .kcna-dark table {{ background:#1a2a1a !important; }}
       .wrapper .gov-grid div {{ background:#2a2a2a !important; }}
+      .wrapper .sentiment-spotlight {{ background:#1a2a3a !important; border-left-color:#2980B9 !important; color:#CCC !important; }}
+      .wrapper .sentiment-discourse {{ background:#3a2a1a !important; border-left-color:#E67E22 !important; color:#CCC !important; }}
     }}
   </style>
   <!--[if mso]>

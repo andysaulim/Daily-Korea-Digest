@@ -569,8 +569,8 @@ def _collect_sentiment() -> dict:
                 text = f"{entry.get('title', '')} {entry.get('summary', entry.get('description', ''))}"
                 # English: "approval rating of 23%", "23% approval"
                 match = re.search(
-                    r'(?:approval|support|지지율)[^\d]{0,30}(\d{1,2})(?:\.\d)?%|'
-                    r'(\d{1,2})(?:\.\d)?%\s*(?:approval|support|지지율)',
+                    r'(?:approval|support|지지율)[^\d]{0,30}(\d{1,3}(?:\.\d+)?)%|'
+                    r'(\d{1,3}(?:\.\d+)?)%\s*(?:approval|support|지지율)',
                     text, re.IGNORECASE
                 )
                 if match:
@@ -612,20 +612,20 @@ def _collect_sentiment() -> dict:
                 text = f"{entry.get('title', '')} {entry.get('summary', entry.get('description', ''))}"
                 # Match ruling party (Democratic Party / 민주당)
                 ruling_match = re.search(
-                    r'(?:민주당|Democratic\s*Party)[^\d]{0,30}(\d{1,2})(?:\.\d)?%|'
-                    r'(\d{1,2})(?:\.\d)?%\s*(?:민주당|Democratic\s*Party)',
+                    r'(?:민주당|Democratic\s*Party)[^\d]{0,30}(\d{1,3}(?:\.\d+)?)%|'
+                    r'(\d{1,3}(?:\.\d+)?)%\s*(?:민주당|Democratic\s*Party)',
                     text, re.IGNORECASE
                 )
                 # Match opposition (People Power Party / 국민의힘)
                 opp_match = re.search(
-                    r'(?:국민의힘|People\s*Power\s*Party)[^\d]{0,30}(\d{1,2})(?:\.\d)?%|'
-                    r'(\d{1,2})(?:\.\d)?%\s*(?:국민의힘|People\s*Power\s*Party)',
+                    r'(?:국민의힘|People\s*Power\s*Party)[^\d]{0,30}(\d{1,3}(?:\.\d+)?)%|'
+                    r'(\d{1,3}(?:\.\d+)?)%\s*(?:국민의힘|People\s*Power\s*Party)',
                     text, re.IGNORECASE
                 )
                 # Match independents (무당층 / no party preference)
                 ind_match = re.search(
-                    r'(?:무당층|무당파|no\s*party|independent)[^\d]{0,30}(\d{1,2})(?:\.\d)?%|'
-                    r'(\d{1,2})(?:\.\d)?%\s*(?:무당층|무당파|no\s*party|independent)',
+                    r'(?:무당층|무당파|no\s*party|independent)[^\d]{0,30}(\d{1,3}(?:\.\d+)?)%|'
+                    r'(\d{1,3}(?:\.\d+)?)%\s*(?:무당층|무당파|no\s*party|independent)',
                     text, re.IGNORECASE
                 )
                 if ruling_match or opp_match:
