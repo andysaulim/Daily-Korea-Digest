@@ -237,7 +237,10 @@ Return ONLY valid JSON. No markdown fences, no preamble."""
 # ─────────────────────────────────────────────────────────────────────────────
 def generate_digest(payload: dict, db_context: str = "") -> dict:
     """Call Claude and return structured digest JSON. Retries once on failure."""
-    client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    if not api_key:
+        raise RuntimeError("Missing ANTHROPIC_API_KEY environment variable. Set it before running.")
+    client = anthropic.Anthropic(api_key=api_key)
     date_str = datetime.now(timezone.utc).strftime("%A, %d %B %Y")
     user_prompt = build_user_prompt(payload, date_str, db_context=db_context)
     total_articles = sum(len(v) for k, v in payload.items() if isinstance(v, list))
@@ -251,6 +254,18 @@ def generate_digest(payload: dict, db_context: str = "") -> dict:
                 system=SYSTEM_PROMPT,
                 messages=[{"role": "user", "content": user_prompt}]
             )
+            # Check for truncated response
+            if response.stop_reason == "max_tokens":
+                print(f"  ⚠  Response truncated (hit {response.usage.output_tokens} tokens)")
+                if attempt == 0:
+                    print("  Retrying with higher token limit...")
+                    time.sleep(2)
+                    continue
+                else:
+                    print("  ✗  Response truncated on both attempts — output may be incomplete")
+
+            if not response.content:
+                raise ValueError("Empty response from Claude API")
             raw_text = response.content[0].text.strip()
             # Strip markdown fences if Claude adds them
             if raw_text.startswith("```"):

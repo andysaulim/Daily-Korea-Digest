@@ -411,9 +411,12 @@ def _collect_markets() -> dict | None:
 
 def _fetch_bok_rate() -> dict:
     """Fetch BOK base rate. Falls back to last known value."""
-    # BOK ECOS open API — base rate series
+    # BOK ECOS open API — base rate series (dynamic date range)
     try:
-        url = "https://ecos.bok.or.kr/api/StatisticSearch/json/en/1/1/722Y001/M/202501/202612/0101000/"
+        now = datetime.now(timezone.utc)
+        start = (now - timedelta(days=365)).strftime("%Y%m")
+        end = now.strftime("%Y%m")
+        url = f"https://ecos.bok.or.kr/api/StatisticSearch/json/en/1/5/722Y001/M/{start}/{end}/0101000/"
         resp = requests.get(url, timeout=10, headers={"User-Agent": "Mozilla/5.0"})
         if resp.ok:
             rows = resp.json().get("StatisticSearch", {}).get("row", [])
@@ -423,6 +426,7 @@ def _fetch_bok_rate() -> dict:
     except Exception:
         pass
     # Fallback: last known BOK rate (updated manually if API unavailable)
+    print("    ⚠  BOK rate: using fallback (2.75%)")
     fallback_date = datetime.now(timezone.utc).strftime("%b %Y")
     return {"value": "2.75%", "last_change": fallback_date}
 
@@ -485,14 +489,8 @@ def _fetch_monthly_exports() -> dict:
         except Exception:
             continue
 
-    # Source 3: Trade balance from Yahoo Finance (South Korea Trade Balance)
-    try:
-        url = "https://query1.finance.yahoo.com/v8/finance/chart/KRW=X?range=1mo&interval=1d"
-        # This doesn't give exports directly, so skip if above failed
-    except Exception:
-        pass
-
     # Fallback: last known monthly exports (updated manually if all sources fail)
+    print("    ⚠  Monthly exports: using fallback ($57.8B)")
     return {"value": "$57.8B", "change_pct": 0}
 
 
@@ -534,6 +532,7 @@ def _fetch_gdp_estimate() -> dict:
         pass
 
     # Fallback: last known GDP estimate (updated manually if all sources fail)
+    print("    ⚠  GDP estimate: using fallback (1.5%)")
     return {"value": "1.5%", "period": "BOK forecast"}
 
 
@@ -736,28 +735,35 @@ def _collect_sentiment() -> dict:
     # ── Fallback baselines (carry-forward when scraping fails) ─────────
     # These are the most recent known values from Gallup Korea weekly polls.
     # They ensure the sentiment tracker always renders with data.
+    fallback_used = []
     if not sentiment["presidential_approval"]:
+        fallback_used.append("presidential_approval")
         sentiment["presidential_approval"] = {
             "value": "65%", "trend": "stable",
             "source": "Gallup Korea", "last_updated": "Mar 1st week, 2026",
         }
     if not sentiment["party_ruling"]:
+        fallback_used.append("party_ruling")
         sentiment["party_ruling"] = {
             "value": "46%", "party": "Democratic Party",
             "party_kr": "더불어민주당", "trend": "stable",
             "source": "Gallup Korea", "last_updated": "Mar 1st week, 2026",
         }
     if not sentiment["party_opposition"]:
+        fallback_used.append("party_opposition")
         sentiment["party_opposition"] = {
             "value": "21%", "party": "People Power Party",
             "party_kr": "국민의힘", "trend": "stable",
             "source": "Gallup Korea", "last_updated": "Mar 1st week, 2026",
         }
     if not sentiment["party_independent"]:
+        fallback_used.append("party_independent")
         sentiment["party_independent"] = {
             "value": "26%", "trend": "stable",
             "source": "Gallup Korea", "last_updated": "Mar 1st week, 2026",
         }
+    if fallback_used:
+        print(f"    ⚠  Sentiment: using fallbacks for {', '.join(fallback_used)}")
 
     return sentiment
 
