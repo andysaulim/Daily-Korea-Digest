@@ -408,6 +408,7 @@ def render(digest: dict) -> str:
           </table>
           <div style="padding:14px 32px;background:#1a2a1a;color:#E0E0E0;">
             {"<div style='margin-bottom:12px;padding:8px 14px;background:#C0392B;color:#fff;border-radius:4px;font-size:12px;font-weight:600;'>&#9888; Complete KCNA silence today</div>" if silence else ""}
+            {"<div style='margin-bottom:12px;padding:8px 14px;background:#C0392B;color:#fff;border-radius:4px;font-size:12px;font-weight:600;'>&#9888; WATCH FLAG — Escalation-level rhetoric or unusual activity detected</div>" if watch and not silence else ""}
             {doctrinal_html}
             <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:10px;">
               <tr>
@@ -1125,14 +1126,14 @@ def render(digest: dict) -> str:
         otd_event = _esc(item.get("event", ""))
         otd_rel = _esc(item.get("relevance", ""))
         otd_footer = f"""
-        <div style="text-align:left;margin-bottom:14px;padding:10px 14px;background:#F0EDE4;border-radius:4px;">
-          <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#7F8C8D;margin-bottom:4px;">On This Day</div>
-          <div style="font-size:12px;color:#333;"><strong>{otd_date}:</strong> {otd_event}</div>
-          <div style="font-size:11px;color:#2980B9;font-style:italic;">{otd_rel}</div>
+        <div style="text-align:left;margin-bottom:14px;padding:10px 14px;background:rgba(255,255,255,0.08);border-radius:4px;">
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.5);margin-bottom:4px;">On This Day</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.85);"><strong>{otd_date}:</strong> {otd_event}</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.7);font-style:italic;">{otd_rel}</div>
         </div>"""
     sections.append(f"""
     <div style="padding:16px 32px;background:#1B2A4A;text-align:center;" class="sec footer">
-      {otd_footer.replace("color:#333;", "color:rgba(255,255,255,0.85);").replace("color:#7F8C8D;", "color:rgba(255,255,255,0.5);").replace("color:#2980B9;", "color:rgba(255,255,255,0.7);").replace("background:#F0EDE4;", "background:rgba(255,255,255,0.08);") if otd_footer else ""}
+      {otd_footer}
       <div style="font-size:11px;color:rgba(255,255,255,0.6);line-height:1.5;">
         Korea Daily Brief &middot; Prepared by CSIS Korea Chair<br>
         {_esc(date_str)} &middot; {gen_time}<br>
@@ -1201,7 +1202,7 @@ def render(digest: dict) -> str:
       .wrapper h1, .wrapper h2, .wrapper h3 {{ color:#E0E0E0 !important; }}
       .wrapper p, .wrapper div {{ color:#CCC !important; }}
       .wrapper a {{ color:#5DADE2 !important; }}
-      .wrapper .footer {{ background:#1a1a1a !important; }}
+      .wrapper .footer {{ background:#0F1A2E !important; }}
       .wrapper .story-card {{ background:#2a2a2a !important; }}
       .wrapper .kcna-dark {{ background:#1a2a1a !important; }}
       .wrapper .kcna-dark table {{ background:#1a2a1a !important; }}
