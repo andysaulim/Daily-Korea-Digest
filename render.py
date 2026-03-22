@@ -61,11 +61,6 @@ def _arrow(val) -> str:
     return '<span style="color:#7F8C8D;">— flat</span>'
 
 
-def _dot(status: str) -> str:
-    colors = {"normal": "#27AE60", "activity": "#D4AC0D", "elevated": "#E67E22", "alert": "#C0392B"}
-    color = colors.get(status, "#7F8C8D")
-    return f'<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:{color};vertical-align:middle;"></span>'
-
 
 
 def _link_or_text(text: str, url: str, style: str = "color:#1B2A4A;text-decoration:none;") -> str:
@@ -293,7 +288,7 @@ def render(digest: dict) -> str:
     # ── 7. KCNA Rhetoric Delta ──────────────────────────────────────────────
     kcna = digest.get("kcna_delta") or {}
     if kcna:
-        bottom_line = _esc(kcna.get("bottom_line", kcna.get("delta_note", "")))
+        bottom_line = _esc(kcna.get("bottom_line", ""))
         watch = kcna.get("watch_flag", False)
         silence = kcna.get("silence_today", False)
         tone_shift = _esc(kcna.get("tone_shift", "")) if kcna.get("tone_shift") else ""
