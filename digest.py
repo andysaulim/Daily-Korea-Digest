@@ -199,7 +199,7 @@ Return a SINGLE kcna_delta object:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 DIGEST SYNTHESIS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-TARGET LENGTH — HARD MINIMUM 800 WORDS: The newsletter MUST contain at least 800 words of readable text (excluding HTML/metadata). Aim for 950-1050 words (target ~1000). Write substantive body text for each story — 3-4 full sentences, not one-liners. Each top_stories item should have 60-80 words of body text. Each overnight_items/also_today/business_economy item should have 40-60 words. If your draft is under 800 words, expand story bodies with additional context, implications, or background before returning.
+TARGET LENGTH — HARD MINIMUM 800 WORDS: The newsletter MUST contain at least 800 words of readable text (excluding HTML/metadata). Aim for 1,000-1,200 words (target ~1,100). Write substantive body text for each story — 3-4 full sentences, not one-liners. Each top_stories item should have 60-80 words of body text. Each overnight_items/also_today/business_economy item should have 40-60 words. If your draft is under 800 words, expand story bodies with additional context, implications, or background before returning.
 Return a digest object with:
 - digest_date: "{date_str}"
 - re_line: one-line RE: summary (max 120 chars, key themes separated by ·)
