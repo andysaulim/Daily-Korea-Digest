@@ -325,7 +325,8 @@ def _collect_tier1() -> list:
         # Korean-language feeds get lang="KO"
         lang = "KO" if source in ("조선일보", "한겨레", "동아일보", "MBN",
                                     "JTBC", "KBS", "MBC", "SBS", "YTN", "Channel A",
-                                    "매일경제", "한국경제") else "EN"
+                                    "매일경제", "한국경제",
+                                    "경향신문", "뉴스1", "연합뉴스") else "EN"
         for entry in entries:
             if not _is_recent(entry, hours=24):
                 continue
@@ -436,7 +437,7 @@ def _collect_markets() -> dict | None:
             result[key] = {"value": value, "change_pct": round(change_pct, 2), "as_of": as_of}
         except Exception as e:
             print(f"    ⚠  Market data error ({key}): {e}")
-            result[key] = {"value": "—", "change_pct": 0}
+            result[key] = {"value": "—", "change_pct": 0, "as_of": ""}
 
     # ROK economic indicators (BOK rate, monthly exports, GDP estimate)
     # Sourced from BOK ECOS API / MOTIE / KOSTAT — fallback to static latest known
@@ -639,7 +640,9 @@ def _collect_sentiment() -> dict:
         return val if 5 <= val <= 85 else None
 
     def _extract_all_from_entry(entry):
-        """Try to extract all metrics from a single article."""
+        """Try to extract all metrics from a single article.
+        Resets all fields before extraction so stale data from
+        previous entries never bleeds through."""
         text = f"{entry.get('title', '')} {entry.get('summary', entry.get('description', ''))}"
         appr_m = _RE_APPROVAL.search(text)
         if not appr_m:
@@ -647,6 +650,11 @@ def _collect_sentiment() -> dict:
         appr_val = _sane_pct(appr_m)
         if appr_val is None:
             return False  # likely margin of error or unrelated number
+        # Reset all fields so previous entry data doesn't bleed through
+        sentiment["presidential_approval"] = None
+        sentiment["party_ruling"] = None
+        sentiment["party_opposition"] = None
+        sentiment["party_independent"] = None
         source = "Gallup Korea" if "gallup" in text.lower() or "갤럽" in text else (
             "Realmeter" if "realmeter" in text.lower() or "리얼미터" in text else "Poll"
         )

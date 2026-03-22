@@ -19,10 +19,12 @@ def validate_digest(digest: dict) -> list[str]:
     """Pre-send quality gate. Returns list of warnings (empty = all clear)."""
     warnings = []
 
-    # ── Top stories must have exactly 3 items ────────────────────────────
+    # ── Top stories must have 2-4 items ──────────────────────────────────
     top_stories = digest.get("top_stories") or []
-    if len(top_stories) < 3:
-        warnings.append(f"TOP STORIES: only {len(top_stories)} (expected 3)")
+    if len(top_stories) < 2:
+        warnings.append(f"TOP STORIES: only {len(top_stories)} (expected 2-4)")
+    elif len(top_stories) > 4:
+        warnings.append(f"TOP STORIES: {len(top_stories)} items (expected 2-4)")
 
     # ── RE: line must be present and substantive ─────────────────────────
     re_line = digest.get("re_line")

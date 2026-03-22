@@ -71,7 +71,7 @@ def _dot(status: str) -> str:
 def _link_or_text(text: str, url: str, style: str = "color:#1B2A4A;text-decoration:none;") -> str:
     """Render as <a> only if url is a real link, otherwise plain text."""
     if url and url != "#" and url.startswith("http"):
-        return f'<a href="{url}" style="{style}">{text}</a>'
+        return f'<a href="{_esc(url)}" style="{style}">{text}</a>'
     return text
 
 
@@ -471,7 +471,7 @@ def render(digest: dict) -> str:
                         s_label = _esc(s.get("label", s.get("source", "")))
                         s_url = s.get("url", "")
                         if s_url and s_url != "#" and s_url.startswith("http"):
-                            _src_parts.append(f'<a href="{s_url}" style="font-size:11px;font-family:monospace;color:#888;text-decoration:none;">{s_label} ↗</a>')
+                            _src_parts.append(f'<a href="{_esc(s_url)}" style="font-size:11px;font-family:monospace;color:#888;text-decoration:none;">{s_label} ↗</a>')
                         else:
                             _src_parts.append(f'<span style="font-size:11px;font-family:monospace;color:#888;">{s_label} ↗</span>')
                     else:
@@ -560,7 +560,7 @@ def render(digest: dict) -> str:
                 src_link = ""
                 if source_url and source_url != "#" and source_url.startswith("http"):
                     s_label = source_label if source_label else ministry.lower()
-                    src_link = f'<div style="margin-top:6px;font-size:11px;color:#888;">→ <a href="{source_url}" style="color:#888;text-decoration:none;">{_esc(s_label)} ↗</a></div>'
+                    src_link = f'<div style="margin-top:6px;font-size:11px;color:#888;">→ <a href="{_esc(source_url)}" style="color:#888;text-decoration:none;">{_esc(s_label)} ↗</a></div>'
                 elif source_label:
                     src_link = f'<div style="margin-top:6px;font-size:11px;color:#888;">→ {_esc(source_label)}</div>'
                 row_cards += f"""
@@ -1073,7 +1073,7 @@ def render(digest: dict) -> str:
             note = _esc(s.get("analyst_note", ""))
             url = s.get("url", "")
             badge_color = _social_badge(s.get("badge_class", "sb-p"))
-            source_link = f'<a href="{url}" style="font-size:10px;color:#2980B9;text-decoration:none;">Source &#8594;</a>' if url and url != "#" and url.startswith("http") else ""
+            source_link = f'<a href="{_esc(url)}" style="font-size:10px;color:#2980B9;text-decoration:none;">Source &#8594;</a>' if url and url != "#" and url.startswith("http") else ""
             sa_html += f"""
             <div style="margin-bottom:12px;padding:12px;background:#F8F9FA;border-radius:6px;border-left:3px solid {badge_color};">
               <table cellpadding="0" cellspacing="0" border="0" style="margin-bottom:6px;">
@@ -1114,7 +1114,7 @@ def render(digest: dict) -> str:
             summary = _esc(a.get("summary", ""))
             implication = _esc(a.get("policy_implication", ""))
             url = a.get("url", "")
-            read_link = f'<a href="{url}" style="font-size:11px;color:#2980B9;">Read &#8594;</a>' if url and url != "#" and url.startswith("http") else ""
+            read_link = f'<a href="{_esc(url)}" style="font-size:11px;color:#2980B9;">Read &#8594;</a>' if url and url != "#" and url.startswith("http") else ""
             sa_html += f"""
             <div style="margin-bottom:12px;padding-left:12px;border-left:3px solid #8E44AD;">
               <div style="font-size:11px;color:#888;">{src} &middot; {tier}</div>
