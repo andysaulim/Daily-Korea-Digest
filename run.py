@@ -49,10 +49,11 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
     # ── Word count check (hard minimum 1000, target 1200-1400) ──────────
     word_count = 0
     for section_key in ("top_stories", "overnight_items", "also_today",
-                         "business_economy", "social_statements", "northeast_asia"):
+                         "business_economy", "opeds_today", "academic_today",
+                         "social_statements", "northeast_asia"):
         for item in (digest.get(section_key) or []):
             for field in ("body", "body_text", "summary", "detail", "quote_text",
-                          "so_what", "pattern_note"):
+                          "so_what", "pattern_note", "central_argument", "analyst_note"):
                 word_count += len(str(item.get(field, "")).split())
     for mi in (digest.get("morning_memo") or []):
         word_count += len(str(mi).split())
