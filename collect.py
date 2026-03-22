@@ -422,7 +422,8 @@ def _fetch_bok_rate() -> dict:
     except Exception:
         pass
     # Fallback: last known BOK rate (updated manually if API unavailable)
-    return {"value": "2.75%", "last_change": "Mar 2026"}
+    fallback_date = datetime.now(timezone.utc).strftime("%b %Y")
+    return {"value": "2.75%", "last_change": fallback_date}
 
 
 def _fetch_monthly_exports() -> dict:
@@ -460,8 +461,7 @@ def _fetch_monthly_exports() -> dict:
         for entry in entries[:5]:
             text = f"{entry.get('title', '')} {entry.get('summary', entry.get('description', ''))}"
             # Look for patterns like "$58.4 billion" or "$58.4B"
-            import re as _re
-            match = _re.search(r'\$(\d+(?:\.\d+)?)\s*(?:billion|B)\b', text, _re.IGNORECASE)
+            match = re.search(r'\$(\d+(?:\.\d+)?)\s*(?:billion|B)\b', text, re.IGNORECASE)
             if match:
                 val = float(match.group(1))
                 return {"value": f"${val:.1f}B", "change_pct": 0}
@@ -500,8 +500,7 @@ def _fetch_gdp_estimate() -> dict:
         entries = _parse_feed(url)
         for entry in entries[:5]:
             text = f"{entry.get('title', '')} {entry.get('summary', entry.get('description', ''))}"
-            import re as _re
-            match = _re.search(r'(\d+\.\d+)\s*(?:percent|%|pct)', text, _re.IGNORECASE)
+            match = re.search(r'(\d+\.\d+)\s*(?:percent|%|pct)', text, re.IGNORECASE)
             if match:
                 val = float(match.group(1))
                 if 0 < val < 10:  # sanity check for GDP growth rate

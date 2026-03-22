@@ -588,11 +588,11 @@ def render(digest: dict) -> str:
                 cal_headline = _esc(cal.get("headline", ""))
                 cal_detail = _esc(cal.get("detail", ""))
                 cal_items += f"""
-                <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-bottom:1px solid #E8E8E8;">
+                <table class="cal-table" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-bottom:1px solid #E8E8E8;">
                   <tr>
                     <td width="50" style="padding:10px 10px 10px 0;text-align:center;vertical-align:top;">
                       <div style="font-size:10px;text-transform:uppercase;color:#888;letter-spacing:0.5px;">{cal_month}</div>
-                      <div class="cal-date" style="font-size:22px;font-weight:300;color:#1B2A4A;line-height:1;">{cal_day}</div>
+                      <div class="cal-date" style="font-size:18px;font-weight:300;color:#1B2A4A;line-height:1;">{cal_day}</div>
                     </td>
                     <td style="padding:10px 0;vertical-align:top;">
                       <div style="font-size:13px;font-weight:600;color:#1B2A4A;margin-bottom:2px;">{cal_headline}</div>
@@ -1058,11 +1058,14 @@ def render(digest: dict) -> str:
       .loc-table td {{ display:block !important; width:100% !important; padding:3px 0 !important; }}
       .loc-table td[style*="white-space"] {{ white-space:normal !important; }}
       .loc-table tr {{ display:block !important; padding:6px 0 !important; border-bottom:1px solid #f0f0f0 !important; }}
-      /* Calendar watch tables — stack on mobile */
+      /* Calendar watch tables — stack date beside text on narrow screens */
+      .cal-table td[width="50"] {{ width:40px !important; padding:8px 6px 8px 0 !important; }}
       /* ROK Government grid — stack on mobile */
       .gov-grid td {{ display:block !important; width:100% !important; padding:4px 0 !important; }}
       /* Calendar watch — reduce date font */
-      .cal-date {{ font-size:22px !important; }}
+      .cal-date {{ font-size:18px !important; }}
+      /* Deal / business cards — tighter on mobile */
+      .deal-card {{ padding:10px !important; }}
       /* Typography */
       h1 {{ font-size:19px !important; }}
       h2 {{ font-size:12px !important; }}
