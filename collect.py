@@ -402,7 +402,7 @@ def _collect_kim_tracker() -> list:
 # MARKET DATA
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _collect_markets() -> dict | None:
+def _collect_markets() -> dict:
     """Fetch KOSPI, Brent Crude, USD/KRW from Yahoo Finance API."""
     symbols = {
         "kospi": "^KS11",
@@ -467,9 +467,9 @@ def _fetch_bok_rate() -> dict:
     except Exception:
         pass
     # Fallback: last known BOK rate (updated manually if API unavailable)
-    print("    ⚠  BOK rate: using fallback (2.75%)")
+    print("    ⚠  BOK rate: using fallback (2.50%)")
     fallback_date = datetime.now(timezone.utc).strftime("%b %Y")
-    return {"value": "2.75%", "last_change": fallback_date}
+    return {"value": "2.50%", "last_change": fallback_date}
 
 
 def _fetch_monthly_exports() -> dict:
@@ -531,8 +531,8 @@ def _fetch_monthly_exports() -> dict:
             continue
 
     # Fallback: last known monthly exports (updated manually if all sources fail)
-    print("    ⚠  Monthly exports: using fallback ($57.8B)")
-    return {"value": "$57.8B", "change_pct": 0}
+    print("    ⚠  Monthly exports: using fallback ($67.5B)")
+    return {"value": "$67.5B", "change_pct": 0}
 
 
 def _fetch_gdp_estimate() -> dict:
@@ -573,8 +573,8 @@ def _fetch_gdp_estimate() -> dict:
         pass
 
     # Fallback: last known GDP estimate (updated manually if all sources fail)
-    print("    ⚠  GDP estimate: using fallback (1.5%)")
-    return {"value": "1.5%", "period": "BOK forecast"}
+    print("    ⚠  GDP estimate: using fallback (2.0%)")
+    return {"value": "2.0%", "period": "BOK forecast"}
 
 
 # ─────────────────────────────────────────────────────────────────────────────

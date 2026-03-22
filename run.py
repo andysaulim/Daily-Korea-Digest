@@ -80,10 +80,9 @@ def validate_digest(digest: dict) -> list[str]:
                 seen_urls[url] = section_key
 
     # ── Check for "None" strings in critical fields ──────────────────────
-    for field in ("re_line", "editor_note"):
-        val = digest.get(field)
-        if str(val).strip() == "None":
-            warnings.append(f'NONE STRING: "{field}" field contains literal "None"')
+    val = digest.get("re_line")
+    if str(val).strip() == "None":
+        warnings.append('NONE STRING: "re_line" field contains literal "None"')
 
     # ── Digest date matches today ────────────────────────────────────────
     digest_date = digest.get("digest_date", "")

@@ -87,8 +87,7 @@ def _estimate_word_count(digest: dict) -> int:
     words = 0
     for mi in (digest.get("morning_memo") or []):
         words += len(str(mi).split())
-    for key in ("editor_note", "re_line"):
-        words += len(str(digest.get(key, "")).split())
+    words += len(str(digest.get("re_line", "")).split())
     for section_key in ("top_stories", "overnight_items", "also_today", "business_economy",
                          "opeds_today", "academic_today", "social_statements",
                          "northeast_asia"):
@@ -105,7 +104,6 @@ def _estimate_word_count(digest: dict) -> int:
 def render(digest: dict) -> str:
     now = datetime.now(timezone.utc)
     date_str = now.strftime("%A, %d %B %Y")  # Thursday, 20 March 2026
-    editor_note = _esc(digest.get("editor_note", ""))
     story_count = digest.get("story_count", 0)
     oped_count = digest.get("oped_count", 0)
     academic_count = digest.get("academic_count", 0)
@@ -215,16 +213,6 @@ def render(digest: dict) -> str:
           {memo_html}
         </div>
         """)
-    elif editor_note:
-        # Fallback: single paragraph if morning_memo array not provided
-        sections.append(f"""
-        <div style="padding:14px 32px;border-bottom:2px solid #1B2A4A;" class="sec">
-          <span {_PILL("#1B2A4A")}>Morning Memo</span>
-          <p style="margin:0;font-size:14px;line-height:1.6;color:#333;font-style:italic;font-family:Georgia,serif;">
-            {editor_note}
-          </p>
-        </div>
-        """)
 
     # ── 4. Top Stories ────────────────────────────────────────────────────
     top_stories = digest.get("top_stories") or []
@@ -287,37 +275,7 @@ def render(digest: dict) -> str:
         </div>
         """)
 
-    # ── 5. What to Watch Today ─────────────────────────────────────────
-    watch_today = digest.get("watch_today") or []
-    if watch_today:
-        watch_html = ""
-        urgency_colors = {"critical": "#C0392B", "high": "#E67E22", "elevated": "#D4AC0D", "normal": "#2980B9"}
-        for item in watch_today:
-            headline = _esc(item.get("headline", ""))
-            detail = _esc(item.get("detail", ""))
-            w_type = _esc(item.get("type", ""))
-            time_str = _esc(item.get("time", ""))
-            urgency = item.get("urgency", "normal")
-            decision = _esc(item.get("decision_point", ""))
-            u_color = urgency_colors.get(urgency, "#2980B9")
-            type_badge = f'<span style="display:inline-block;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:600;color:#fff;background:{u_color};text-transform:uppercase;letter-spacing:0.5px;">{_esc(urgency)}</span>'
-            type_label = f'<span style="font-size:10px;color:#888;margin-left:6px;text-transform:uppercase;">{w_type}</span>'
-            time_html = f'<div style="font-size:11px;color:#888;margin-top:2px;">&#128337; {time_str}</div>' if time_str else ""
-            decision_html = f'<div style="font-size:11px;color:#2980B9;margin-top:4px;"><strong>Decision point:</strong> {decision}</div>' if decision else ""
-            watch_html += f"""
-            <div style="margin-bottom:10px;padding:10px 12px;background:#FFF8E1;border-radius:4px;border-left:4px solid {u_color};">
-              <div style="margin-bottom:4px;">{type_badge}{type_label}</div>
-              <div style="font-size:14px;font-weight:700;color:#1B2A4A;margin-bottom:4px;">{headline}</div>
-              <div style="font-size:12px;line-height:1.5;color:#555;">{detail}</div>
-              {time_html}
-              {decision_html}
-            </div>"""
-        sections.append(f"""
-        <div {_SEC}>
-          <span {_PILL("#E67E22")}>What to Watch Today</span>
-          {watch_html}
-        </div>
-        """)
+    # (watch_today section removed — field was never in digest prompt schema)
 
     # ── 6. Key Stat of the Day ───────────────────────────────────────────
     key_stat = digest.get("key_stat") or {}
@@ -407,16 +365,8 @@ def render(digest: dict) -> str:
             if days_absent:
                 kim_line += f" ({days_absent} days since last)"
 
-        # KCNA Watch link
         kcna_baseline = _esc(kcna.get("baseline_period", ""))
-        kcna_watch_url = kcna.get("kcna_watch_url", "")
-        baseline_html = ""
-        if kcna_baseline:
-            baseline_html = f"7-day baseline · {kcna_baseline}"
-        if kcna_watch_url:
-            baseline_html += f" · KCNA Watch ↗"
-        elif not baseline_html:
-            baseline_html = "7-day baseline · KCNA Watch ↗"
+        baseline_html = f"7-day baseline · {kcna_baseline}" if kcna_baseline else ""
 
         sections.append(f"""
         <div style="padding:0;border-bottom:1px solid #333;" class="sec kcna-dark">
