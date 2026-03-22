@@ -111,6 +111,18 @@ def validate_digest(digest: dict) -> list[str]:
                         break
                 seen_headlines.append((section_key, headline, words))
 
+    # ── Source diversity check ────────────────────────────────────────────
+    source_counts = {}
+    for section_key in ("top_stories", "overnight_items"):
+        for item in (digest.get(section_key) or []):
+            src = (item.get("source", "") or "").strip()
+            if src:
+                source_counts[src] = source_counts.get(src, 0) + 1
+    for src, count in source_counts.items():
+        if count > 3:
+            warnings.append(
+                f"SOURCE DIVERSITY: '{src}' appears {count} times in top_stories + overnight_items — diversify sources")
+
     # ── Check for "None" strings in critical fields ──────────────────────
     val = digest.get("re_line")
     if str(val).strip() == "None":
