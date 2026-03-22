@@ -107,10 +107,22 @@ IMPORTANT: Use this data for on_this_day, calendar_watch, and pattern_note field
 For timeline_candidates: flag any NK-Russia stories that should be added to the CSIS NK-Russia cooperation timeline (268+ verified events since 2022).
 For ESCALATION + DPRK stories: these may be added to the CSIS NK provocations database (540+ events since 1958). Ensure headline and description are suitable for database entry."""
 
+    # Sentiment baseline from collector
+    sentiment_block = ""
+    sentiment = payload.get("sentiment_baseline")
+    if sentiment and any(v for v in sentiment.values()):
+        sentiment_block = f"""
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PUBLIC SENTIMENT BASELINE (pre-collected polling data)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{json.dumps(sentiment, indent=1)}
+Use these as baseline values for the public_sentiment field. If today's articles contain newer polling data, update the values. Otherwise carry these forward."""
+
     return f"""Today's date: {date_str}
 Process each tier according to its instructions and return a single JSON object.
 CRITICAL — SOURCE URLs: Every article, op-ed, academic paper, deal, and statement MUST include the original source URL from the input data. Use the exact URL provided in the feed data. Never use "#" or placeholder URLs. If no URL is available for an item, omit the url field entirely rather than using a placeholder.
 {market_block}
+{sentiment_block}
 {db_block}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 TIER 1: NEWS ARTICLES (last 24h)

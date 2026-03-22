@@ -427,10 +427,10 @@ def _fetch_bok_rate() -> dict:
 
 
 def _fetch_monthly_exports() -> dict:
-    """Fetch latest monthly export figure from BOK ECOS / MOTIE."""
+    """Fetch latest monthly export figure from multiple sources."""
     # Source 1: BOK ECOS — trade balance series (monthly exports in $M)
+    # Requires API key registered at ecos.bok.or.kr — may return empty without one
     try:
-        # Series 403Y014 = Trade by period, item 000000 = total exports
         now = datetime.now(timezone.utc)
         start = (now - timedelta(days=120)).strftime("%Y%m")
         end = now.strftime("%Y%m")
@@ -444,7 +444,6 @@ def _fetch_monthly_exports() -> dict:
                 val = float(latest.get("DATA_VALUE", 0))
                 prev_val = float(prev.get("DATA_VALUE", 0))
                 change = ((val - prev_val) / prev_val * 100) if prev_val else 0
-                # BOK reports in millions USD
                 val_b = val / 1000
                 return {"value": f"${val_b:.1f}B", "change_pct": round(change, 1)}
             elif rows:
@@ -454,17 +453,41 @@ def _fetch_monthly_exports() -> dict:
     except Exception as e:
         print(f"    ⚠  BOK exports API error: {e}")
 
-    # Source 2: Google News scrape for latest MOTIE export announcement
+    # Source 2: MOTIE / Korea Customs Service export headlines via Google News
+    search_queries = [
+        "South+Korea+monthly+exports+billion+MOTIE",
+        "South+Korea+exports+billion+customs",
+        "한국+수출+억달러+산업통상자원부",
+    ]
+    for query in search_queries:
+        try:
+            url = _gnews(query)
+            entries = _parse_feed(url)
+            for entry in entries[:8]:
+                text = f"{entry.get('title', '')} {entry.get('summary', entry.get('description', ''))}"
+                # Match "$58.4 billion", "$58.4B", "58.4 billion dollars"
+                match = re.search(
+                    r'(?:\$(\d+(?:\.\d+)?)\s*(?:billion|B)\b|(\d+(?:\.\d+)?)\s*billion\s*(?:dollars|USD))',
+                    text, re.IGNORECASE
+                )
+                if match:
+                    val = float(match.group(1) or match.group(2))
+                    if 20 < val < 100:  # sanity: ROK monthly exports are $50-70B range
+                        return {"value": f"${val:.1f}B", "change_pct": 0}
+                # Korean-language pattern: "XXX억달러" or "XXX억 달러"
+                match_kr = re.search(r'(\d+(?:\.\d+)?)\s*억\s*달러', text)
+                if match_kr:
+                    val_100m = float(match_kr.group(1))
+                    val_b = val_100m / 10  # 억 = 100M, so /10 = billions
+                    if 20 < val_b < 100:
+                        return {"value": f"${val_b:.1f}B", "change_pct": 0}
+        except Exception:
+            continue
+
+    # Source 3: Trade balance from Yahoo Finance (South Korea Trade Balance)
     try:
-        url = _gnews("South+Korea+monthly+exports+billion+MOTIE")
-        entries = _parse_feed(url)
-        for entry in entries[:5]:
-            text = f"{entry.get('title', '')} {entry.get('summary', entry.get('description', ''))}"
-            # Look for patterns like "$58.4 billion" or "$58.4B"
-            match = re.search(r'\$(\d+(?:\.\d+)?)\s*(?:billion|B)\b', text, re.IGNORECASE)
-            if match:
-                val = float(match.group(1))
-                return {"value": f"${val:.1f}B", "change_pct": 0}
+        url = "https://query1.finance.yahoo.com/v8/finance/chart/KRW=X?range=1mo&interval=1d"
+        # This doesn't give exports directly, so skip if above failed
     except Exception:
         pass
 
@@ -512,6 +535,141 @@ def _fetch_gdp_estimate() -> dict:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# PUBLIC SENTIMENT — Gallup Korea, Realmeter, Asan Institute
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _collect_sentiment() -> dict:
+    """Scrape latest Korean polling data from news headlines.
+
+    Returns structured sentiment data for presidential approval and
+    favorability ratings. Claude will merge any new poll data from
+    articles with these baseline numbers.
+    """
+    sentiment = {
+        "presidential_approval": None,
+        "favorability_us": None,
+        "favorability_china": None,
+        "favorability_japan": None,
+        "discourse_flag": None,
+    }
+
+    # ── Presidential Approval (Gallup Korea weekly, Realmeter daily) ────
+    approval_queries = [
+        "Gallup+Korea+presidential+approval+rating",
+        "한국갤럽+대통령+지지율",
+        "리얼미터+대통령+지지율",
+        "Realmeter+presidential+approval+Korea",
+    ]
+    for query in approval_queries:
+        try:
+            entries = _parse_feed(_gnews(query))
+            for entry in entries[:5]:
+                text = f"{entry.get('title', '')} {entry.get('summary', entry.get('description', ''))}"
+                # English: "approval rating of 23%", "23% approval"
+                match = re.search(
+                    r'(?:approval|support|지지율)[^\d]{0,30}(\d{1,2})(?:\.\d)?%|'
+                    r'(\d{1,2})(?:\.\d)?%\s*(?:approval|support|지지율)',
+                    text, re.IGNORECASE
+                )
+                if match:
+                    val = match.group(1) or match.group(2)
+                    # Determine source
+                    source = "Gallup Korea" if "gallup" in text.lower() or "갤럽" in text else (
+                        "Realmeter" if "realmeter" in text.lower() or "리얼미터" in text else "Poll"
+                    )
+                    # Extract date from entry
+                    pub_date = None
+                    for attr in ("published_parsed", "updated_parsed"):
+                        parsed = getattr(entry, attr, None)
+                        if parsed:
+                            pub_date = datetime(*parsed[:6], tzinfo=timezone.utc).strftime("%b %d, %Y")
+                            break
+                    sentiment["presidential_approval"] = {
+                        "value": f"{val}%",
+                        "trend": None,  # Claude will infer from context
+                        "source": source,
+                        "last_updated": pub_date or "recent",
+                    }
+                    break
+            if sentiment["presidential_approval"]:
+                break
+        except Exception:
+            continue
+
+    # ── Favorability ratings (Asan Institute, Pew, Chicago Council) ─────
+    fav_queries = {
+        "favorability_us": [
+            "Asan+Institute+Korean+favorability+United+States",
+            "Korea+public+opinion+favorable+US+poll",
+        ],
+        "favorability_china": [
+            "Korea+public+opinion+favorable+China+poll",
+            "한국+중국+호감도+여론조사",
+        ],
+        "favorability_japan": [
+            "Korea+public+opinion+favorable+Japan+poll",
+            "한국+일본+호감도+여론조사",
+        ],
+    }
+    for fav_key, queries in fav_queries.items():
+        for query in queries:
+            try:
+                entries = _parse_feed(_gnews(query))
+                for entry in entries[:3]:
+                    text = f"{entry.get('title', '')} {entry.get('summary', entry.get('description', ''))}"
+                    match = re.search(r'(\d{1,2})(?:\.\d)?%\s*(?:favorable|favorab|호감)', text, re.IGNORECASE)
+                    if not match:
+                        match = re.search(r'(?:favorable|favorab|호감)[^\d]{0,20}(\d{1,2})(?:\.\d)?%', text, re.IGNORECASE)
+                    if match:
+                        val = match.group(1)
+                        source = "Asan Institute" if "asan" in text.lower() else (
+                            "Pew" if "pew" in text.lower() else "Poll"
+                        )
+                        pub_date = None
+                        for attr in ("published_parsed", "updated_parsed"):
+                            parsed = getattr(entry, attr, None)
+                            if parsed:
+                                pub_date = datetime(*parsed[:6], tzinfo=timezone.utc).strftime("%b %d, %Y")
+                                break
+                        sentiment[fav_key] = {
+                            "value": f"{val}%",
+                            "source": source,
+                            "last_updated": pub_date or "recent",
+                        }
+                        break
+                if sentiment[fav_key]:
+                    break
+            except Exception:
+                continue
+
+    # ── Discourse flag (protests, viral hashtags) ───────────────────────
+    discourse_queries = [
+        "Korea+protest+rally+demonstration",
+        "한국+시위+집회",
+    ]
+    for query in discourse_queries:
+        try:
+            entries = _parse_feed(_gnews(query))
+            for entry in entries[:3]:
+                if not _is_recent(entry, hours=24):
+                    continue
+                text = f"{entry.get('title', '')} {entry.get('summary', entry.get('description', ''))}"
+                protest_signals = ("protest", "rally", "demonstration", "시위", "집회",
+                                   "candlelight", "march on", "tens of thousands")
+                if any(s in text.lower() for s in protest_signals):
+                    title = entry.get("title", "").strip()
+                    sentiment["discourse_flag"] = title[:200]
+                    break
+            if sentiment["discourse_flag"]:
+                break
+        except Exception:
+            continue
+
+    has_data = any(v for v in sentiment.values())
+    return sentiment if has_data else {}
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # PUBLIC API
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -539,6 +697,11 @@ def collect() -> dict:
     markets = _collect_markets()
     print(f"     {'OK' if markets else 'unavailable'}")
 
+    print("  ── Public sentiment polls")
+    sentiment = _collect_sentiment()
+    found = sum(1 for v in sentiment.values() if v) if sentiment else 0
+    print(f"     {found} metric(s) found" if found else "     no recent polls found")
+
     total = len(tier1) + len(tier2) + len(tier3) + len(tier4)
     print(f"\n  📊  Total collected: {total} items")
 
@@ -548,6 +711,7 @@ def collect() -> dict:
         "tier3": tier3,
         "tier4": tier4,
         "market_indicators": markets,
+        "sentiment_baseline": sentiment,
     }
 
 
