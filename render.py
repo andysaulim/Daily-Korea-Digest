@@ -99,9 +99,6 @@ def _estimate_word_count(digest: dict) -> int:
 def render(digest: dict) -> str:
     now = datetime.now(timezone.utc)
     date_str = now.strftime("%A, %d %B %Y")  # Thursday, 20 March 2026
-    story_count = digest.get("story_count", 0)
-    oped_count = digest.get("oped_count", 0)
-    academic_count = digest.get("academic_count", 0)
     gen_time = now.strftime("%H:%M UTC")
     re_line = _esc(digest.get("re_line", ""))
     word_count = _estimate_word_count(digest)
