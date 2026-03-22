@@ -266,11 +266,15 @@ def fetch_nk_provocations() -> list:
 
 
 def fetch_all() -> dict:
-    """Fetch both databases. Returns dict with both datasets."""
+    """Fetch both databases in parallel. Returns dict with both datasets."""
+    from concurrent.futures import ThreadPoolExecutor
     print("  ── Databases")
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        nkr_f = pool.submit(fetch_nk_russia_timeline)
+        prov_f = pool.submit(fetch_nk_provocations)
     return {
-        "nk_russia_timeline": fetch_nk_russia_timeline(),
-        "nk_provocations": fetch_nk_provocations(),
+        "nk_russia_timeline": nkr_f.result(),
+        "nk_provocations": prov_f.result(),
     }
 
 

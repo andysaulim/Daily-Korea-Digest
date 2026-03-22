@@ -424,8 +424,7 @@ def _collect_markets() -> dict:
         "brent": "BZ=F",
         "usd_krw": "KRW=X",
     }
-    result = {}
-    for key, symbol in symbols.items():
+    def _fetch_symbol(key, symbol):
         try:
             url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?range=2d&interval=1d"
             resp = requests.get(url, timeout=10, headers={
@@ -437,28 +436,34 @@ def _collect_markets() -> dict:
             price = meta.get("regularMarketPrice", 0)
             prev_close = meta.get("chartPreviousClose", meta.get("previousClose", price))
             change_pct = ((price - prev_close) / prev_close * 100) if prev_close else 0
-            # Extract market timestamp for "as of" display
             mkt_time = meta.get("regularMarketTime", 0)
             as_of = ""
             if mkt_time:
                 as_of = datetime.fromtimestamp(mkt_time, tz=timezone.utc).strftime("%b %d")
-            # Format value
             if key == "usd_krw":
                 value = f"{price:,.2f}"
             elif key == "kospi":
                 value = f"{price:,.2f}"
             else:
                 value = f"{price:.2f}"
-            result[key] = {"value": value, "change_pct": round(change_pct, 2), "as_of": as_of}
+            return key, {"value": value, "change_pct": round(change_pct, 2), "as_of": as_of}
         except (requests.RequestException, KeyError, ValueError, TypeError) as e:
             print(f"    ⚠  Market data error ({key}): {e}")
-            result[key] = {"value": "—", "change_pct": 0, "as_of": ""}
+            return key, {"value": "—", "change_pct": 0, "as_of": ""}
 
-    # ROK economic indicators (BOK rate, monthly exports, GDP estimate)
-    # Sourced from BOK ECOS API / MOTIE / KOSTAT — fallback to static latest known
-    result["bok_rate"] = _fetch_bok_rate()
-    result["monthly_exports"] = _fetch_monthly_exports()
-    result["gdp_estimate"] = _fetch_gdp_estimate()
+    result = {}
+    with ThreadPoolExecutor(max_workers=3) as mkt_pool:
+        for k, v in mkt_pool.map(lambda kv: _fetch_symbol(*kv), symbols.items()):
+            result[k] = v
+
+    # ROK economic indicators — fetch in parallel
+    with ThreadPoolExecutor(max_workers=3) as econ_pool:
+        bok_f = econ_pool.submit(_fetch_bok_rate)
+        exp_f = econ_pool.submit(_fetch_monthly_exports)
+        gdp_f = econ_pool.submit(_fetch_gdp_estimate)
+    result["bok_rate"] = bok_f.result()
+    result["monthly_exports"] = exp_f.result()
+    result["gdp_estimate"] = gdp_f.result()
 
     # Always return market data — even if Yahoo Finance fails, BOK indicators
     # have hardcoded fallbacks so there's always something to show
@@ -1155,35 +1160,44 @@ def collect() -> dict:
     """Run all tier collectors + market data and return combined payload."""
     print("\n📡  Collecting Korea news from 100+ sources (parallel)...")
 
-    print("  ── Tier 1: News articles")
-    tier1 = _collect_tier1()
-    print(f"     {len(tier1)} articles")
+    # Run all collectors concurrently — each already uses internal thread pools
+    # for their own feeds, but the collectors themselves were running sequentially.
+    collectors = {
+        "tier1":       ("Tier 1: News articles",        _collect_tier1),
+        "tier2":       ("Tier 2: Op-eds & commentary",   _collect_tier2),
+        "tier3":       ("Tier 3: Academic journals",      _collect_tier3),
+        "tier4":       ("Tier 4: KCNA / Rodong Sinmun",  _collect_tier4),
+        "kim_tracker": ("Kim Jong Un appearance tracker", _collect_kim_tracker),
+        "markets":     ("Market data",                    _collect_markets),
+        "sentiment":   ("Public sentiment polls",         _collect_sentiment),
+    }
 
-    print("  ── Tier 2: Op-eds & commentary")
-    tier2 = _collect_tier2()
-    print(f"     {len(tier2)} pieces")
+    results = {}
+    with ThreadPoolExecutor(max_workers=7) as pool:
+        futures = {pool.submit(fn): key for key, (_label, fn) in collectors.items()}
+        for future in as_completed(futures):
+            key = futures[future]
+            label = collectors[key][0]
+            try:
+                results[key] = future.result()
+                data = results[key]
+                if key == "markets":
+                    print(f"  ── {label}: {'OK' if data else 'unavailable'}")
+                elif key == "sentiment":
+                    found = sum(1 for v in data.values() if v) if data else 0
+                    print(f"  ── {label}: {found} metric(s) found" if found else f"  ── {label}: no recent polls found")
+                elif key == "kim_tracker":
+                    print(f"  ── {label}: {len(data)} articles (72h window)")
+                else:
+                    print(f"  ── {label}: {len(data)} items")
+            except Exception as e:
+                print(f"  ── {label}: ⚠ FAILED ({e})")
+                results[key] = [] if key not in ("markets", "sentiment") else {}
 
-    print("  ── Tier 3: Academic journals")
-    tier3 = _collect_tier3()
-    print(f"     {len(tier3)} papers")
-
-    print("  ── Tier 4: KCNA / Rodong Sinmun")
-    tier4 = _collect_tier4()
-    print(f"     {len(tier4)} items")
-
-    print("  ── Kim Jong Un appearance tracker")
-    kim_articles = _collect_kim_tracker()
-    print(f"     {len(kim_articles)} articles (72h window)")
-
-    print("  ── Market data")
-    markets = _collect_markets()
-    print(f"     {'OK' if markets else 'unavailable'}")
-
-    print("  ── Public sentiment polls")
-    sentiment = _collect_sentiment()
-    found = sum(1 for v in sentiment.values() if v) if sentiment else 0
-    print(f"     {found} metric(s) found" if found else "     no recent polls found")
-
+    tier1 = results["tier1"]
+    tier2 = results["tier2"]
+    tier3 = results["tier3"]
+    tier4 = results["tier4"]
     total = len(tier1) + len(tier2) + len(tier3) + len(tier4)
     print(f"\n  📊  Total collected: {total} items")
 
@@ -1192,9 +1206,9 @@ def collect() -> dict:
         "tier2": tier2,
         "tier3": tier3,
         "tier4": tier4,
-        "kim_tracker_articles": kim_articles,
-        "market_indicators": markets,
-        "sentiment_baseline": sentiment,
+        "kim_tracker_articles": results["kim_tracker"],
+        "market_indicators": results["markets"],
+        "sentiment_baseline": results["sentiment"],
     }
 
 
