@@ -79,6 +79,7 @@ def _link_or_text(text: str, url: str, style: str = "color:#1B2A4A;text-decorati
 _SEC = 'style="padding:14px 32px;border-bottom:1px solid #E0E0E0;" class="sec"'
 _SEC_BG = lambda bg: f'style="padding:14px 32px;background:{bg};border-bottom:1px solid #E0E0E0;" class="sec"'
 _H2 = lambda color: f'style="margin:0 0 8px 0;font-size:12px;color:{color};text-transform:uppercase;letter-spacing:1px;font-family:Arial,sans-serif;"'
+_PILL = lambda bg: f'style="display:inline-block;background:{bg};color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;padding:4px 12px;border-radius:12px;font-family:Arial,sans-serif;margin-bottom:8px;"'
 
 
 def _estimate_word_count(digest: dict) -> int:
@@ -207,7 +208,7 @@ def render(digest: dict) -> str:
             </div>"""
         sections.append(f"""
         <div style="padding:14px 32px;border-bottom:2px solid #1B2A4A;" class="sec">
-          <h2 {_H2("#1B2A4A")}>Morning Memo</h2>
+          <span {_PILL("#1B2A4A")}>Morning Memo</span>
           {memo_html}
         </div>
         """)
@@ -215,7 +216,7 @@ def render(digest: dict) -> str:
         # Fallback: single paragraph if morning_memo array not provided
         sections.append(f"""
         <div style="padding:14px 32px;border-bottom:2px solid #1B2A4A;" class="sec">
-          <h2 {_H2("#1B2A4A")}>Morning Memo</h2>
+          <span {_PILL("#1B2A4A")}>Morning Memo</span>
           <p style="margin:0;font-size:14px;line-height:1.6;color:#333;font-style:italic;font-family:Georgia,serif;">
             {editor_note}
           </p>
@@ -249,7 +250,7 @@ def render(digest: dict) -> str:
             </div>"""
         sections.append(f"""
         <div {_SEC}>
-          <h2 {_H2("#1B2A4A")}>Top Stories</h2>
+          <span {_PILL("#2980B9")}>Top Stories</span>
           {stories_html}
         </div>
         """)
@@ -278,7 +279,7 @@ def render(digest: dict) -> str:
             </div>"""
         sections.append(f"""
         <div {_SEC_BG("#FFF8F0")}>
-          <h2 {_H2("#C0392B")}>&#9889; Overnight Flash</h2>
+          <span {_PILL("#C0392B")}>&#9889; Overnight Flash</span>
           {flash_html}
         </div>
         """)
@@ -310,7 +311,7 @@ def render(digest: dict) -> str:
             </div>"""
         sections.append(f"""
         <div {_SEC}>
-          <h2 {_H2("#E67E22")}>What to Watch Today</h2>
+          <span {_PILL("#E67E22")}>What to Watch Today</span>
           {watch_html}
         </div>
         """)
@@ -510,8 +511,8 @@ def render(digest: dict) -> str:
                 b_bg = "transparent"
             elif direction == "up":
                 b_label = "▲"
-            # Compact: name + status on one line, note only if non-normal
-            note_html = f' <span style="color:#888;">— {note}</span>' if note and status != "normal" else ""
+            # Compact: name + status on one line, always show note if available
+            note_html = f' <span style="color:#888;">— {note}</span>' if note else ""
             loc_rows += f"""
             <tr>
               <td style="padding:4px 0;font-size:12px;color:#1B2A4A;vertical-align:top;">{name}{note_html}</td>
@@ -523,7 +524,7 @@ def render(digest: dict) -> str:
 
         sections.append(f"""
         <div {_SEC}>
-          <h2 {_H2("#1B2A4A")}>Satellite &amp; Location Watch</h2>
+          <span {_PILL("#2C3E50")}>Satellite &amp; Location Watch</span>
           {img_report_html}
           <table width="100%" cellpadding="0" cellspacing="0" border="0" class="loc-table" style="border-top:1px solid #E8E8E8;">
             {loc_rows}
@@ -660,7 +661,7 @@ def render(digest: dict) -> str:
         rok_date = _esc(str(digest.get("digest_date", "")))
         sections.append(f"""
         <div {_SEC}>
-          <h2 {_H2("#1B2A4A")}>ROK Government <span style="font-size:10px;font-weight:400;color:#888;text-transform:none;letter-spacing:0;">President + Ministries &middot; {rok_date}</span></h2>
+          <span {_PILL("#1B6A4A")}>ROK Government</span> <span style="font-size:10px;color:#888;font-family:Arial,sans-serif;">President + Ministries &middot; {rok_date}</span>
           <div style="padding-top:4px;">
             {gov_grid_html}
             {pers_html}
@@ -784,7 +785,7 @@ def render(digest: dict) -> str:
 
         sections.append(f"""
         <div {_SEC}>
-          <h2 {_H2("#1B2A4A")}>US-Korea Trade &amp; Investment</h2>
+          <span {_PILL("#2980B9")}>US-Korea Trade &amp; Investment</span>
           {header_html}
           {deals_html}
         </div>
@@ -825,7 +826,7 @@ def render(digest: dict) -> str:
             </div>"""
         sections.append(f"""
         <div {_SEC}>
-          <h2 {_H2("#1B2A4A")}>Business &amp; Economy</h2>
+          <span {_PILL("#D4AC0D")}>Business &amp; Economy</span>
           {biz_html}
         </div>
         """)
@@ -878,7 +879,7 @@ def render(digest: dict) -> str:
             </div>"""
         sections.append(f"""
         <div {_SEC}>
-          <h2 {_H2("#2C3E50")}>Northeast Asia Watch</h2>
+          <span {_PILL("#2C3E50")}>Northeast Asia Watch</span>
           {nea_html}
         </div>
         """)
@@ -941,7 +942,7 @@ def render(digest: dict) -> str:
 
         sections.append(f"""
         <div style="padding:10px 32px;background:#F8F9FA;border-bottom:1px solid #E0E0E0;" class="sec">
-          <h2 {_H2("#2C3E50")}>Public Sentiment Tracker</h2>
+          <span {_PILL("#8E44AD")}>Public Sentiment Tracker</span>
           <table width="100%" cellpadding="0" cellspacing="0" border="0" class="sentiment-table">
             <tr>
               {_sentiment_cell("Presidential Approval", approval)}
@@ -976,7 +977,7 @@ def render(digest: dict) -> str:
             </div>"""
         sections.append(f"""
         <div {_SEC}>
-          <h2 {_H2("#1B2A4A")}>The Wire</h2>
+          <span {_PILL("#7F8C8D")}>The Wire</span>
           {wire_html}
         </div>
         """)
@@ -1047,7 +1048,7 @@ def render(digest: dict) -> str:
             </div>"""
         sections.append(f"""
         <div {_SEC}>
-          <h2 {_H2("#1B2A4A")}>Statements &amp; Analysis</h2>
+          <span {_PILL("#1B2A4A")}>Statements &amp; Analysis</span>
           {sa_html}
         </div>
         """)

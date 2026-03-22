@@ -73,6 +73,7 @@ TIER1_FEEDS = {
     "USFK":               _gnews("site:usfk.mil"),
     "ROK MOFA":           _gnews("site:mofa.go.kr"),
     "ROK MOTIE":          _gnews("Korea+site:motie.go.kr"),
+    "ROK MND":            _gnews("site:mnd.go.kr"),
     "Japan MOFA":         _gnews("Korea+site:mofa.go.jp"),
     # ── US Economic agencies ────────────────────────────────────────────
     "Dept of Commerce":   _gnews("Korea+site:commerce.gov"),
