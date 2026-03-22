@@ -47,8 +47,10 @@ def validate_digest(digest: dict) -> list[str]:
     kcna = digest.get("kcna_delta") or {}
     for field in ("bottom_line", "doctrinal_shift"):
         word_count += len(str(kcna.get(field, "")).split())
-    if word_count < 400:
-        warnings.append(f"WORD COUNT: ~{word_count} words (target 800, minimum 400)")
+    if word_count < 700:
+        warnings.append(f"WORD COUNT CRITICAL: ~{word_count} words (hard minimum 800)")
+    elif word_count < 800:
+        warnings.append(f"WORD COUNT: ~{word_count} words (hard minimum 800)")
 
     # ── Check for placeholder URLs ("#", empty, non-http) ────────────────
     bad_urls = 0
