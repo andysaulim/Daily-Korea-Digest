@@ -123,7 +123,7 @@ def render(digest: dict) -> str:
           <h1 style="margin:0;font-size:24px;font-weight:700;font-family:Georgia,serif;color:#fff;letter-spacing:0.5px;">
             Korea Daily Brief
           </h1>
-          <div style="margin-top:4px;font-size:11px;color:rgba(255,255,255,0.5);font-family:Arial,sans-serif;">Prepared by CSIS Korea Chair</div>
+          <div style="margin-top:4px;font-size:11px;color:rgba(255,255,255,0.5);font-family:Arial,sans-serif;">By Andy Lim &middot; CSIS Korea Chair</div>
           <div style="margin-top:6px;font-size:18px;font-weight:700;color:rgba(255,255,255,0.95);letter-spacing:0.5px;font-family:Georgia,serif;">{_esc(date_str)}</div>
         </td>
         <td style="vertical-align:top;text-align:right;">
@@ -134,6 +134,38 @@ def render(digest: dict) -> str:
       {"<div style='margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.15);font-size:13px;color:rgba(255,255,255,0.85);font-family:Georgia,serif;'><strong style=" + '"' + "color:rgba(255,255,255,0.5);" + '"' + ">RE:</strong> " + re_line + "</div>" if re_line else ""}
     </div>
     """)
+
+    # ── 1b. Table of Contents + Forward CTA ──────────────────────────────
+    toc_items = [
+        ("markets", "Markets", digest.get("market_indicators")),
+        ("memo", "Morning Memo", digest.get("morning_memo")),
+        ("top-stories", "Top Stories", digest.get("top_stories")),
+        ("overnight", "Overnight Flash", digest.get("overnight_items")),
+        ("key-stat", "Key Stat", digest.get("key_stat")),
+        ("kcna", "KCNA Watch", digest.get("kcna_delta")),
+        ("satellite", "Satellite Watch", (digest.get("bp_locations") or digest.get("imagery_report"))),
+        ("rok-gov", "ROK Government", digest.get("rok_government")),
+        ("trade", "Trade &amp; Investment", digest.get("us_korea_deals")),
+        ("business", "Business", digest.get("business_economy")),
+        ("nea", "NE Asia", digest.get("northeast_asia")),
+        ("sentiment", "Sentiment", digest.get("public_sentiment")),
+        ("wire", "The Wire", digest.get("also_today")),
+        ("analysis", "Analysis", (digest.get("social_statements") or digest.get("opeds_today") or digest.get("academic_today"))),
+    ]
+    toc_links = " &middot; ".join(
+        f'<a href="#{anchor}" style="color:#2980B9;text-decoration:none;font-size:11px;">{label}</a>'
+        for anchor, label, data in toc_items if data
+    )
+    if toc_links:
+        sections.append(f"""
+        <div style="padding:10px 32px;background:#F8F9FA;border-bottom:1px solid #E0E0E0;" class="sec">
+          <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:4px;font-family:Arial,sans-serif;">Jump to</div>
+          <div style="line-height:1.8;">{toc_links}</div>
+          <div style="margin-top:8px;font-size:11px;color:#888;font-family:Arial,sans-serif;">
+            Know someone who'd find this useful? <a href="mailto:?subject=Korea%20Daily%20Brief&amp;body=Check%20out%20the%20Korea%20Daily%20Brief%20from%20CSIS%20Korea%20Chair." style="color:#2980B9;text-decoration:none;font-weight:600;">Forward to a colleague &rarr;</a>
+          </div>
+        </div>
+        """)
 
     # ── 2. Market Indicators ───────────────────────────────────────────────
     markets = digest.get("market_indicators") or {}
@@ -146,6 +178,7 @@ def render(digest: dict) -> str:
         gdp = markets.get("gdp_estimate") or {}
         # Top row: KOSPI, Brent, USD/KRW
         sections.append(f"""
+        <a name="markets"></a>
         <table class="mkt-table" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#1B2A4A;color:#fff;border-bottom:1px solid rgba(255,255,255,0.1);">
           <tr>
             <td width="33%" align="center" style="padding:10px 8px 12px;">
@@ -202,7 +235,7 @@ def render(digest: dict) -> str:
             </div>"""
         sections.append(f"""
         <div style="padding:14px 32px;border-bottom:2px solid #1B2A4A;" class="sec">
-          <span {_PILL("#1B2A4A")}>Morning Memo</span>
+          <a name="memo"></a><span {_PILL("#1B2A4A")}>Morning Memo</span>
           {memo_html}
         </div>
         """)
@@ -231,7 +264,7 @@ def render(digest: dict) -> str:
             </div>"""
         sections.append(f"""
         <div {_SEC}>
-          <span {_PILL("#2980B9")}>Top Stories</span>
+          <a name="top-stories"></a><span {_PILL("#2980B9")}>Top Stories</span>
           {stories_html}
         </div>
         """)
@@ -260,7 +293,7 @@ def render(digest: dict) -> str:
             </div>"""
         sections.append(f"""
         <div {_SEC_BG("#FFF8F0")}>
-          <span {_PILL("#C0392B")}>&#9889; Overnight Flash</span>
+          <a name="overnight"></a><span {_PILL("#C0392B")}>&#9889; Overnight Flash</span>
           {flash_html}
         </div>
         """)
@@ -271,6 +304,7 @@ def render(digest: dict) -> str:
     key_stat = digest.get("key_stat") or {}
     if key_stat and key_stat.get("number"):
         sections.append(f"""
+        <a name="key-stat"></a>
         <div style="padding:12px 32px;background:#1B2A4A;color:#fff;border-bottom:1px solid #E0E0E0;text-align:center;" class="sec">
           <div style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;opacity:0.6;margin-bottom:2px;">Stat of the Day</div>
           <div class="key-stat-num" style="font-size:32px;font-weight:700;font-family:Georgia,serif;">{_esc(str(key_stat.get("number", "")))}</div>
@@ -383,6 +417,7 @@ def render(digest: dict) -> str:
             </div>"""
 
         sections.append(f"""
+        <a name="kcna"></a>
         <div style="padding:0;border-bottom:1px solid #333;" class="sec kcna-dark">
           <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#1a2a1a;">
             <tr>
@@ -504,7 +539,7 @@ def render(digest: dict) -> str:
 
         sections.append(f"""
         <div {_SEC}>
-          <span {_PILL("#2C3E50")}>Satellite &amp; Location Watch</span>
+          <a name="satellite"></a><span {_PILL("#2C3E50")}>Satellite &amp; Location Watch</span>
           {img_report_html}
           <table width="100%" cellpadding="0" cellspacing="0" border="0" class="loc-grid">
             {loc_cards}
@@ -641,7 +676,7 @@ def render(digest: dict) -> str:
         rok_date = _esc(str(digest.get("digest_date", "")))
         sections.append(f"""
         <div {_SEC}>
-          <span {_PILL("#1B6A4A")}>ROK Government</span> <span style="font-size:10px;color:#888;font-family:Arial,sans-serif;">President + Ministries &middot; {rok_date}</span>
+          <a name="rok-gov"></a><span {_PILL("#1B6A4A")}>ROK Government</span> <span style="font-size:10px;color:#888;font-family:Arial,sans-serif;">President + Ministries &middot; {rok_date}</span>
           <div style="padding-top:4px;">
             {gov_grid_html}
             {pers_html}
@@ -816,7 +851,7 @@ def render(digest: dict) -> str:
 
         sections.append(f"""
         <div style="padding:14px 32px;background:#F0F4F8;border-top:3px solid #1B2A4A;border-bottom:1px solid #E0E0E0;" class="sec">
-          <span {_PILL("#1B2A4A")}>US-Korea Trade &amp; Investment</span>
+          <a name="trade"></a><span {_PILL("#1B2A4A")}>US-Korea Trade &amp; Investment</span>
           {header_html}
           {deals_html}
         </div>
@@ -857,7 +892,7 @@ def render(digest: dict) -> str:
             </div>"""
         sections.append(f"""
         <div {_SEC}>
-          <span {_PILL("#D4AC0D")}>Business &amp; Economy</span>
+          <a name="business"></a><span {_PILL("#D4AC0D")}>Business &amp; Economy</span>
           {biz_html}
         </div>
         """)
@@ -910,7 +945,7 @@ def render(digest: dict) -> str:
             </div>"""
         sections.append(f"""
         <div {_SEC}>
-          <span {_PILL("#2C3E50")}>Northeast Asia Watch</span>
+          <a name="nea"></a><span {_PILL("#2C3E50")}>Northeast Asia Watch</span>
           {nea_html}
         </div>
         """)
@@ -994,7 +1029,7 @@ def render(digest: dict) -> str:
 
         sections.append(f"""
         <div style="padding:10px 32px;background:#F8F9FA;border-bottom:1px solid #E0E0E0;" class="sec">
-          <span {_PILL("#8E44AD")}>Public Sentiment Tracker</span>
+          <a name="sentiment"></a><span {_PILL("#8E44AD")}>Public Sentiment Tracker</span>
           <table width="100%" cellpadding="0" cellspacing="0" border="0" class="sentiment-table">
             <tr>
               {_sentiment_cell("Presidential Approval", approval)}
@@ -1030,7 +1065,7 @@ def render(digest: dict) -> str:
             </div>"""
         sections.append(f"""
         <div {_SEC}>
-          <span {_PILL("#7F8C8D")}>The Wire</span>
+          <a name="wire"></a><span {_PILL("#7F8C8D")}>The Wire</span>
           {wire_html}
         </div>
         """)
@@ -1101,7 +1136,7 @@ def render(digest: dict) -> str:
             </div>"""
         sections.append(f"""
         <div {_SEC}>
-          <span {_PILL("#1B2A4A")}>Statements &amp; Analysis</span>
+          <a name="analysis"></a><span {_PILL("#1B2A4A")}>Statements &amp; Analysis</span>
           {sa_html}
         </div>
         """)
@@ -1124,7 +1159,7 @@ def render(digest: dict) -> str:
     <div style="padding:16px 32px;background:#1B2A4A;text-align:center;" class="sec footer">
       {otd_footer}
       <div style="font-size:11px;color:rgba(255,255,255,0.6);line-height:1.5;">
-        Korea Daily Brief &middot; Prepared by CSIS Korea Chair<br>
+        Korea Daily Brief &middot; By Andy Lim &middot; CSIS Korea Chair<br>
         {_esc(date_str)} &middot; {gen_time}<br>
         <span style="color:rgba(255,255,255,0.4);">Read alongside primary sources</span>
       </div>
