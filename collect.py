@@ -77,6 +77,19 @@ TIER1_FEEDS = {
     # ── US Economic agencies ────────────────────────────────────────────
     "Dept of Commerce":   _gnews("Korea+site:commerce.gov"),
     "Dept of Treasury":   _gnews("Korea+site:treasury.gov"),
+    "OFAC":               _gnews("Korea+OR+DPRK+site:ofac.treasury.gov"),
+    "BIS":                _gnews("Korea+OR+DPRK+site:bis.doc.gov"),
+    # ── US Congress ─────────────────────────────────────────────────────
+    "Senate Foreign Relations": _gnews("Korea+site:foreign.senate.gov"),
+    "Senate Armed Services":    _gnews("Korea+site:armed-services.senate.gov"),
+    "House Foreign Affairs":    _gnews("Korea+site:foreignaffairs.house.gov"),
+    # ── US Military ─────────────────────────────────────────────────────
+    "INDOPACOM":          _gnews("Korea+site:pacom.mil"),
+    # ── International organizations ─────────────────────────────────────
+    "IAEA":               _gnews("Korea+OR+DPRK+site:iaea.org"),
+    "UN Security Council": _gnews("Korea+OR+DPRK+site:un.org/securitycouncil"),
+    # ── Cyber/enforcement ───────────────────────────────────────────────
+    "CISA":               _gnews("Korea+OR+DPRK+OR+Lazarus+site:cisa.gov"),
     # ── Reaction layer (China/Russia) ─────────────────────────────────────
     "Global Times Korea": _gnews("Korea+site:globaltimes.cn"),
     "Xinhua Korea":       _gnews("Korea+site:xinhuanet.com"),
@@ -164,8 +177,11 @@ PRESTIGE_JOURNALISTS = {
     "Ankit Panda", "Jeongmin Kim",
     "Jean Lee", "Simon Mundy", "Edward White",
     "Dagyum Ji", "Ifang Bremer", "Chad O'Carroll",
+    # FT Seoul
+    "Jean Mackenzie", "Daniel Tudor", "Song Jung-a",
     # Additional journalists
-    "Jeong-ho Lee", "Kim Tong-hyung", "Sotaro Suzuki", "Takashi Umekawa",
+    "Victoria Kim", "Jeong-ho Lee", "Kim Tong-hyung",
+    "Sotaro Suzuki", "Takashi Umekawa",
 }
 
 REQUEST_TIMEOUT = 12
