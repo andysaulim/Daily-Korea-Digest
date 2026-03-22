@@ -915,7 +915,7 @@ def render(digest: dict) -> str:
         approval = sentiment.get("presidential_approval") or {}
         party_ruling = sentiment.get("party_ruling") or {}
         party_opp = sentiment.get("party_opposition") or {}
-        cci = sentiment.get("consumer_confidence") or {}
+        party_ind = sentiment.get("party_independent") or {}
         discourse = sentiment.get("discourse_flag")
 
         discourse_html = ""
@@ -946,7 +946,7 @@ def render(digest: dict) -> str:
               {_sentiment_cell("Presidential Approval", approval)}
               {_sentiment_cell("Ruling Party (DP)", party_ruling)}
               {_sentiment_cell("Opposition (PPP)", party_opp)}
-              {_sentiment_cell("Consumer Confidence", cci)}
+              {_sentiment_cell("Independents", party_ind)}
             </tr>
           </table>
           {spotlight_html}

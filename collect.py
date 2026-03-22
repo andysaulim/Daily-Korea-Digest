@@ -535,22 +535,22 @@ def _fetch_gdp_estimate() -> dict:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# PUBLIC SENTIMENT — Gallup Korea, Realmeter, Bank of Korea
+# PUBLIC SENTIMENT — Gallup Korea, Realmeter
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _collect_sentiment() -> dict:
     """Scrape latest Korean polling data from news headlines.
 
     Returns structured sentiment data for presidential approval,
-    party support ratings (ruling & opposition), and BOK consumer
-    confidence. Claude will merge any new poll data from articles
-    with these baseline numbers.
+    party support ratings (ruling, opposition, independents), and
+    weekly spotlight topic. Claude will merge any new poll data
+    from articles with these baseline numbers.
     """
     sentiment = {
         "presidential_approval": None,
         "party_ruling": None,
         "party_opposition": None,
-        "consumer_confidence": None,
+        "party_independent": None,
         "gallup_spotlight": None,
         "discourse_flag": None,
     }
@@ -622,6 +622,12 @@ def _collect_sentiment() -> dict:
                     r'(\d{1,2})(?:\.\d)?%\s*(?:국민의힘|People\s*Power\s*Party)',
                     text, re.IGNORECASE
                 )
+                # Match independents (무당층 / no party preference)
+                ind_match = re.search(
+                    r'(?:무당층|무당파|no\s*party|independent)[^\d]{0,30}(\d{1,2})(?:\.\d)?%|'
+                    r'(\d{1,2})(?:\.\d)?%\s*(?:무당층|무당파|no\s*party|independent)',
+                    text, re.IGNORECASE
+                )
                 if ruling_match or opp_match:
                     source = "Gallup Korea" if "gallup" in text.lower() or "갤럽" in text else (
                         "Realmeter" if "realmeter" in text.lower() or "리얼미터" in text else "Poll"
@@ -650,44 +656,15 @@ def _collect_sentiment() -> dict:
                             "source": source,
                             "last_updated": pub_date or "recent",
                         }
+                    if ind_match:
+                        val = ind_match.group(1) or ind_match.group(2)
+                        sentiment["party_independent"] = {
+                            "value": f"{val}%",
+                            "source": source,
+                            "last_updated": pub_date or "recent",
+                        }
                     break
             if sentiment["party_ruling"] and sentiment["party_opposition"]:
-                break
-        except Exception:
-            continue
-
-    # ── Consumer Confidence Index (BOK / Korea Consumer Sentiment) ────
-    cci_queries = [
-        "한국은행+소비자심리지수",
-        "Bank+of+Korea+consumer+sentiment+index",
-        "BOK+consumer+confidence+Korea",
-        "소비자심리지수+CSI",
-    ]
-    for query in cci_queries:
-        try:
-            entries = _parse_feed(_gnews(query))
-            for entry in entries[:5]:
-                text = f"{entry.get('title', '')} {entry.get('summary', entry.get('description', ''))}"
-                match = re.search(
-                    r'(?:소비자심리지수|consumer\s*(?:sentiment|confidence)\s*index|CSI)[^\d]{0,30}(\d{2,3})(?:\.\d)?|'
-                    r'(\d{2,3})(?:\.\d)?\s*(?:소비자심리지수|CSI)',
-                    text, re.IGNORECASE
-                )
-                if match:
-                    val = match.group(1) or match.group(2)
-                    pub_date = None
-                    for attr in ("published_parsed", "updated_parsed"):
-                        parsed = getattr(entry, attr, None)
-                        if parsed:
-                            pub_date = datetime(*parsed[:6], tzinfo=timezone.utc).strftime("%b %d, %Y")
-                            break
-                    sentiment["consumer_confidence"] = {
-                        "value": val,
-                        "source": "Bank of Korea",
-                        "last_updated": pub_date or "recent",
-                    }
-                    break
-            if sentiment["consumer_confidence"]:
                 break
         except Exception:
             continue
