@@ -580,119 +580,114 @@ def _collect_sentiment() -> dict:
         "discourse_flag": None,
     }
 
-    # ── Presidential Approval (Gallup Korea weekly, Realmeter daily) ────
-    approval_queries = [
-        "Gallup+Korea+presidential+approval+rating",
+    # ── All-in-one Gallup Korea scrape ──────────────────────────────────
+    # Gallup Korea weekly polls always report presidential approval AND
+    # party ratings in the SAME article.  We search for articles that
+    # contain both, then extract all metrics from one article so the
+    # source and date are always consistent.
+    _RE_APPROVAL = re.compile(
+        r'(?:approval|support|지지율)[^\d]{0,30}(\d{1,3}(?:\.\d+)?)%|'
+        r'(\d{1,3}(?:\.\d+)?)%\s*(?:approval|support|지지율)',
+        re.IGNORECASE,
+    )
+    _RE_RULING = re.compile(
+        r'(?:민주당|Democratic\s*Party)[^\d]{0,30}(\d{1,3}(?:\.\d+)?)%|'
+        r'(\d{1,3}(?:\.\d+)?)%\s*(?:민주당|Democratic\s*Party)',
+        re.IGNORECASE,
+    )
+    _RE_OPP = re.compile(
+        r'(?:국민의힘|People\s*Power\s*Party)[^\d]{0,30}(\d{1,3}(?:\.\d+)?)%|'
+        r'(\d{1,3}(?:\.\d+)?)%\s*(?:국민의힘|People\s*Power\s*Party)',
+        re.IGNORECASE,
+    )
+    _RE_IND = re.compile(
+        r'(?:무당층|무당파|no\s*party|independent)[^\d]{0,30}(\d{1,3}(?:\.\d+)?)%|'
+        r'(\d{1,3}(?:\.\d+)?)%\s*(?:무당층|무당파|no\s*party|independent)',
+        re.IGNORECASE,
+    )
+
+    # Queries ordered to prefer Gallup Korea (publishes all metrics together)
+    combined_queries = [
+        "한국갤럽+대통령+지지율+민주당+국민의힘",
         "한국갤럽+대통령+지지율",
+        "Gallup+Korea+presidential+approval+party",
+        "Gallup+Korea+presidential+approval+rating",
+        "리얼미터+대통령+지지율+민주당",
         "리얼미터+대통령+지지율",
-        "Realmeter+presidential+approval+Korea",
     ]
-    for query in approval_queries:
+
+    def _extract_all_from_entry(entry):
+        """Try to extract all metrics from a single article."""
+        text = f"{entry.get('title', '')} {entry.get('summary', entry.get('description', ''))}"
+        appr_m = _RE_APPROVAL.search(text)
+        if not appr_m:
+            return False
+        source = "Gallup Korea" if "gallup" in text.lower() or "갤럽" in text else (
+            "Realmeter" if "realmeter" in text.lower() or "리얼미터" in text else "Poll"
+        )
+        pub_date = None
+        for attr in ("published_parsed", "updated_parsed"):
+            parsed = getattr(entry, attr, None)
+            if parsed:
+                pub_date = datetime(*parsed[:6], tzinfo=timezone.utc).strftime("%b %d, %Y")
+                break
+        sentiment["presidential_approval"] = {
+            "value": f"{appr_m.group(1) or appr_m.group(2)}%",
+            "trend": None,
+            "source": source,
+            "last_updated": pub_date or "recent",
+        }
+        # Extract party ratings from the SAME article text
+        ruling_m = _RE_RULING.search(text)
+        if ruling_m:
+            sentiment["party_ruling"] = {
+                "value": f"{ruling_m.group(1) or ruling_m.group(2)}%",
+                "party": "Democratic Party", "party_kr": "더불어민주당",
+                "source": source, "last_updated": pub_date or "recent",
+            }
+        opp_m = _RE_OPP.search(text)
+        if opp_m:
+            sentiment["party_opposition"] = {
+                "value": f"{opp_m.group(1) or opp_m.group(2)}%",
+                "party": "People Power Party", "party_kr": "국민의힘",
+                "source": source, "last_updated": pub_date or "recent",
+            }
+        ind_m = _RE_IND.search(text)
+        if ind_m:
+            sentiment["party_independent"] = {
+                "value": f"{ind_m.group(1) or ind_m.group(2)}%",
+                "source": source, "last_updated": pub_date or "recent",
+            }
+        return True
+
+    # Pass 1: find an article with approval + at least one party metric
+    for query in combined_queries:
         try:
             entries = _parse_feed(_gnews(query))
             for entry in entries[:5]:
-                text = f"{entry.get('title', '')} {entry.get('summary', entry.get('description', ''))}"
-                # English: "approval rating of 23%", "23% approval"
-                match = re.search(
-                    r'(?:approval|support|지지율)[^\d]{0,30}(\d{1,3}(?:\.\d+)?)%|'
-                    r'(\d{1,3}(?:\.\d+)?)%\s*(?:approval|support|지지율)',
-                    text, re.IGNORECASE
-                )
-                if match:
-                    val = match.group(1) or match.group(2)
-                    # Determine source
-                    source = "Gallup Korea" if "gallup" in text.lower() or "갤럽" in text else (
-                        "Realmeter" if "realmeter" in text.lower() or "리얼미터" in text else "Poll"
-                    )
-                    # Extract date from entry
-                    pub_date = None
-                    for attr in ("published_parsed", "updated_parsed"):
-                        parsed = getattr(entry, attr, None)
-                        if parsed:
-                            pub_date = datetime(*parsed[:6], tzinfo=timezone.utc).strftime("%b %d, %Y")
-                            break
-                    sentiment["presidential_approval"] = {
-                        "value": f"{val}%",
-                        "trend": None,  # Claude will infer from context
-                        "source": source,
-                        "last_updated": pub_date or "recent",
-                    }
-                    break
-            if sentiment["presidential_approval"]:
+                if _extract_all_from_entry(entry) and (
+                    sentiment["party_ruling"] or sentiment["party_opposition"]
+                ):
+                    break  # Found a single article with all data
+            if sentiment["presidential_approval"] and (
+                sentiment["party_ruling"] or sentiment["party_opposition"]
+            ):
                 break
         except Exception:
             continue
 
-    # ── Party support ratings (Gallup Korea weekly, Realmeter daily) ────
-    party_queries = [
-        "한국갤럽+정당+지지율",
-        "Gallup+Korea+party+approval+rating",
-        "리얼미터+정당+지지율",
-        "한국갤럽+더불어민주당+국민의힘+지지율",
-    ]
-    for query in party_queries:
-        try:
-            entries = _parse_feed(_gnews(query))
-            for entry in entries[:5]:
-                text = f"{entry.get('title', '')} {entry.get('summary', entry.get('description', ''))}"
-                # Match ruling party (Democratic Party / 민주당)
-                ruling_match = re.search(
-                    r'(?:민주당|Democratic\s*Party)[^\d]{0,30}(\d{1,3}(?:\.\d+)?)%|'
-                    r'(\d{1,3}(?:\.\d+)?)%\s*(?:민주당|Democratic\s*Party)',
-                    text, re.IGNORECASE
-                )
-                # Match opposition (People Power Party / 국민의힘)
-                opp_match = re.search(
-                    r'(?:국민의힘|People\s*Power\s*Party)[^\d]{0,30}(\d{1,3}(?:\.\d+)?)%|'
-                    r'(\d{1,3}(?:\.\d+)?)%\s*(?:국민의힘|People\s*Power\s*Party)',
-                    text, re.IGNORECASE
-                )
-                # Match independents (무당층 / no party preference)
-                ind_match = re.search(
-                    r'(?:무당층|무당파|no\s*party|independent)[^\d]{0,30}(\d{1,3}(?:\.\d+)?)%|'
-                    r'(\d{1,3}(?:\.\d+)?)%\s*(?:무당층|무당파|no\s*party|independent)',
-                    text, re.IGNORECASE
-                )
-                if ruling_match or opp_match:
-                    source = "Gallup Korea" if "gallup" in text.lower() or "갤럽" in text else (
-                        "Realmeter" if "realmeter" in text.lower() or "리얼미터" in text else "Poll"
-                    )
-                    pub_date = None
-                    for attr in ("published_parsed", "updated_parsed"):
-                        parsed = getattr(entry, attr, None)
-                        if parsed:
-                            pub_date = datetime(*parsed[:6], tzinfo=timezone.utc).strftime("%b %d, %Y")
-                            break
-                    if ruling_match:
-                        val = ruling_match.group(1) or ruling_match.group(2)
-                        sentiment["party_ruling"] = {
-                            "value": f"{val}%",
-                            "party": "Democratic Party",
-                            "party_kr": "더불어민주당",
-                            "source": source,
-                            "last_updated": pub_date or "recent",
-                        }
-                    if opp_match:
-                        val = opp_match.group(1) or opp_match.group(2)
-                        sentiment["party_opposition"] = {
-                            "value": f"{val}%",
-                            "party": "People Power Party",
-                            "party_kr": "국민의힘",
-                            "source": source,
-                            "last_updated": pub_date or "recent",
-                        }
-                    if ind_match:
-                        val = ind_match.group(1) or ind_match.group(2)
-                        sentiment["party_independent"] = {
-                            "value": f"{val}%",
-                            "source": source,
-                            "last_updated": pub_date or "recent",
-                        }
+    # Pass 2: if pass 1 got nothing at all, try approval-only articles
+    if not sentiment["presidential_approval"]:
+        for query in combined_queries[:4]:
+            try:
+                entries = _parse_feed(_gnews(query))
+                for entry in entries[:5]:
+                    if _extract_all_from_entry(entry):
+                        break
+                if sentiment["presidential_approval"]:
                     break
-            if sentiment["party_ruling"] and sentiment["party_opposition"]:
-                break
-        except Exception:
-            continue
+            except Exception:
+                continue
 
     # ── Gallup Korea Spotlight (weekly special-topic finding) ───────────
     # Each weekly poll includes a rotating social/policy topic beyond the
