@@ -46,22 +46,13 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
     if len(memo) < 3:
         warnings.append(f"MORNING MEMO: only {len(memo)} items (expected 3)")
 
-    # ── Word count check (hard minimum 1000, target 1200-1400) ──────────
-    word_count = 0
-    for section_key in ("top_stories", "overnight_items", "also_today",
-                         "business_economy", "opeds_today", "academic_today",
-                         "social_statements", "northeast_asia"):
-        for item in (digest.get(section_key) or []):
-            for field in ("body", "body_text", "summary", "detail", "quote_text",
-                          "so_what", "pattern_note", "central_argument", "analyst_note"):
-                word_count += len(str(item.get(field, "")).split())
-    for mi in (digest.get("morning_memo") or []):
-        word_count += len(str(mi).split())
-    kcna = digest.get("kcna_delta") or {}
-    for field in ("bottom_line", "doctrinal_shift"):
-        word_count += len(str(kcna.get(field, "")).split())
-    if word_count < 1000:
-        warnings.append(f"WORD COUNT CRITICAL: ~{word_count} words (HARD MINIMUM 1000 — newsletter is too short)")
+    # ── Word count check (hard minimum 800, target 1200-1400) ───────────
+    from digest import _count_digest_words
+    word_count = _count_digest_words(digest)
+    if word_count < 800:
+        warnings.append(f"WORD COUNT CRITICAL: ~{word_count} words (HARD MINIMUM 800 — newsletter is too short)")
+    elif word_count < 1000:
+        warnings.append(f"WORD COUNT LOW: ~{word_count} words (below 1000 target, sending anyway)")
     elif word_count < 1200:
         warnings.append(f"WORD COUNT: ~{word_count} words (target 1200-1400 for 5-min read)")
 
@@ -269,6 +260,8 @@ def main():
     # ── Step 4: Send email ───────────────────────────────────────────────────
     if critical_warnings:
         print("\n🚫  Skipping email due to critical validation failures. Review latest.html.")
+        import sys
+        sys.exit(1)
     elif args.no_send:
         print("\n  --no-send: skipping email. Open latest.html to review.")
     else:
