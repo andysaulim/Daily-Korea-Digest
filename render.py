@@ -790,7 +790,7 @@ def render(digest: dict) -> str:
             header_html += f"""
             <div style="margin-bottom:16px;">
               <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#888;font-weight:600;margin-bottom:6px;">US Trade Policy Tracker</div>
-              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #E8E8E8;">
+              <table class="trade-policy" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #E8E8E8;">
                 {tracker_rows}
               </table>
             </div>"""
@@ -1194,6 +1194,17 @@ def render(digest: dict) -> str:
       p, div {{ word-wrap:break-word !important; overflow-wrap:break-word !important; }}
       /* Quote cards in KCNA */
       .kcna-quote {{ padding:6px 10px !important; }}
+      /* KCNA inner cells — reduce padding on mobile */
+      .kcna-dark td {{ padding:10px 14px !important; }}
+      .kcna-dark > div {{ padding:16px 14px !important; }}
+      /* Scale up tiny fonts for mobile readability */
+      .mkt-table div {{ font-size:11px !important; }}
+      .mkt-table div[style*="font-size:18px"], .mkt-table div[style*="font-size:15px"] {{ font-size:16px !important; }}
+      /* Tariff headline rate — slightly smaller on mobile */
+      .tariff-sector td {{ font-size:11px !important; }}
+      /* Trade policy tracker — stack on narrow screens */
+      .trade-policy td {{ display:block !important; width:100% !important; padding:4px 8px !important; }}
+      .trade-policy tr {{ display:block !important; border-bottom:1px solid #E8E8E8 !important; padding:6px 0 !important; }}
     }}
     /* Dark mode support */
     @media (prefers-color-scheme: dark) {{
