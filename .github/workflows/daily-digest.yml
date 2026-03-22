@@ -13,13 +13,12 @@ permissions:
   pages: write
 
 jobs:
-  # For the fallback cron, skip if the primary already succeeded today
-  check-already-sent:
+  send-digest:
     runs-on: ubuntu-latest
-    outputs:
-      should_run: ${{ steps.check.outputs.should_run }}
     steps:
-      - id: check
+      # Guard: for fallback cron, skip if primary already succeeded today
+      - name: Check if already sent today
+        id: guard
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
@@ -27,7 +26,6 @@ jobs:
             echo "should_run=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          # Check if there's already a successful run today
           today=$(date -u +%Y-%m-%d)
           success_count=$(gh run list --repo ${{ github.repository }} \
             --workflow "Daily Korea News Digest" \
@@ -40,22 +38,22 @@ jobs:
             echo "should_run=true" >> "$GITHUB_OUTPUT"
           fi
 
-  send-digest:
-    needs: check-already-sent
-    if: needs.check-already-sent.outputs.should_run == 'true'
-    runs-on: ubuntu-latest
-    steps:
       - uses: actions/checkout@v4
+        if: steps.guard.outputs.should_run == 'true'
 
       - name: Set up Python
+        if: steps.guard.outputs.should_run == 'true'
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+          cache: 'pip'
 
       - name: Install dependencies
+        if: steps.guard.outputs.should_run == 'true'
         run: pip install -r requirements.txt
 
       - name: Generate and send digest
+        if: steps.guard.outputs.should_run == 'true'
         id: send
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -73,7 +71,7 @@ jobs:
               exit 0
             fi
             if [ $attempt -lt 3 ]; then
-              sleep_time=$((attempt * 30))
+              sleep_time=$((attempt * 15))
               echo "⚠️  Attempt $attempt failed — retrying in ${sleep_time}s..."
               sleep $sleep_time
             fi
@@ -85,10 +83,12 @@ jobs:
       # doesn't mark the workflow as "failed" and trigger a duplicate
       # email from the fallback cron.
       - name: Update README with run stats
+        if: steps.guard.outputs.should_run == 'true'
         continue-on-error: true
         run: python update_readme.py
 
       - name: Deploy to GitHub Pages
+        if: steps.guard.outputs.should_run == 'true'
         continue-on-error: true
         uses: peaceiris/actions-gh-pages@v4
         with:
@@ -97,6 +97,7 @@ jobs:
           keep_files: true
 
       - name: Commit updated README
+        if: steps.guard.outputs.should_run == 'true'
         continue-on-error: true
         run: |
           git config user.name "github-actions[bot]"
