@@ -72,7 +72,11 @@ TIER1_FEEDS = {
     # ── ROK/Japan Government ─────────────────────────────────────────────
     "USFK":               _gnews("site:usfk.mil"),
     "ROK MOFA":           _gnews("site:mofa.go.kr"),
+    "ROK MOTIE":          _gnews("Korea+site:motie.go.kr"),
     "Japan MOFA":         _gnews("Korea+site:mofa.go.jp"),
+    # ── US Economic agencies ────────────────────────────────────────────
+    "Dept of Commerce":   _gnews("Korea+site:commerce.gov"),
+    "Dept of Treasury":   _gnews("Korea+site:treasury.gov"),
     # ── Reaction layer (China/Russia) ─────────────────────────────────────
     "Global Times Korea": _gnews("Korea+site:globaltimes.cn"),
     "Xinhua Korea":       _gnews("Korea+site:xinhuanet.com"),
@@ -156,9 +160,9 @@ KOREA_KEYWORDS = re.compile(
 
 PRESTIGE_JOURNALISTS = {
     "Timothy Martin", "Dasl Yoon", "Choe Sang-Hun", "Michelle Ye Hee Lee",
-    "Christian Davies", "Hyonhee Shin", "Josh Smith", "Joyce Lee",
-    "Ankit Panda", "Jenny Town", "Andrei Lankov", "Rachel Minyoung Lee",
-    "Jean Lee", "Laura Bicker", "Simon Mundy", "Edward White",
+    "Hyonhee Shin", "Josh Smith", "Joyce Lee",
+    "Ankit Panda", "Jeongmin Kim",
+    "Jean Lee", "Simon Mundy", "Edward White",
     "Dagyum Ji", "Ifang Bremer", "Chad O'Carroll",
     # Additional journalists
     "Jeong-ho Lee", "Kim Tong-hyung", "Sotaro Suzuki", "Takashi Umekawa",
