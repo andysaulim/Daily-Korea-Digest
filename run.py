@@ -1,18 +1,100 @@
 """
 Korea Daily Brief — Main Runner
 CSIS Korea Chair
-Orchestrates: collect → databases → digest → render → push → send
+Orchestrates: collect → databases → digest → validate → render → push → send
 Usage:
   python run.py              # Full pipeline (collect + digest + render + send)
   python run.py --no-send    # Render to file only, no email
   python run.py --from-cache # Skip collection, use existing collected.json
   python run.py --no-push    # Skip pushing new entries to databases
 """
-import sys
 import json
 import argparse
+import os
 from pathlib import Path
 from datetime import datetime, timezone
+
+
+def validate_digest(digest: dict) -> list[str]:
+    """Pre-send quality gate. Returns list of warnings (empty = all clear)."""
+    warnings = []
+
+    # ── Top stories must have exactly 3 items ────────────────────────────
+    top_stories = digest.get("top_stories") or []
+    if len(top_stories) < 3:
+        warnings.append(f"TOP STORIES: only {len(top_stories)} (expected 3)")
+
+    # ── RE: line must be present and substantive ─────────────────────────
+    re_line = digest.get("re_line")
+    if not re_line or len(str(re_line).strip()) < 10:
+        warnings.append("RE: LINE: missing or too short")
+
+    # ── Morning memo must have 3 items ───────────────────────────────────
+    memo = digest.get("morning_memo") or []
+    if len(memo) < 3:
+        warnings.append(f"MORNING MEMO: only {len(memo)} items (expected 3)")
+
+    # ── Word count check (~800 words target) ─────────────────────────────
+    word_count = 0
+    for section_key in ("top_stories", "overnight_items", "also_today",
+                         "business_economy", "social_statements", "northeast_asia"):
+        for item in (digest.get(section_key) or []):
+            for field in ("body", "body_text", "summary", "detail", "quote_text",
+                          "so_what", "pattern_note"):
+                word_count += len(str(item.get(field, "")).split())
+    for mi in (digest.get("morning_memo") or []):
+        word_count += len(str(mi).split())
+    kcna = digest.get("kcna_delta") or {}
+    for field in ("bottom_line", "doctrinal_shift"):
+        word_count += len(str(kcna.get(field, "")).split())
+    if word_count < 400:
+        warnings.append(f"WORD COUNT: ~{word_count} words (target 800, minimum 400)")
+
+    # ── Check for placeholder URLs ("#", empty, non-http) ────────────────
+    bad_urls = 0
+    for section_key in ("top_stories", "overnight_items", "also_today",
+                         "business_economy", "opeds_today", "academic_today",
+                         "social_statements", "northeast_asia"):
+        for item in (digest.get(section_key) or []):
+            url = item.get("url", "")
+            if url and (url == "#" or not url.startswith("http")):
+                bad_urls += 1
+    if bad_urls:
+        warnings.append(f"BAD URLS: {bad_urls} placeholder or invalid URLs found")
+
+    # ── Check for duplicate URLs across sections ─────────────────────────
+    seen_urls = {}
+    for section_key in ("top_stories", "overnight_items", "also_today",
+                         "business_economy", "northeast_asia"):
+        for item in (digest.get(section_key) or []):
+            url = item.get("url", "")
+            if url and url.startswith("http"):
+                if url in seen_urls:
+                    warnings.append(
+                        f"DUPLICATE: URL appears in both {seen_urls[url]} and {section_key}")
+                    break
+                seen_urls[url] = section_key
+
+    # ── Check for "None" strings in critical fields ──────────────────────
+    for field in ("re_line", "editor_note"):
+        val = digest.get(field)
+        if str(val).strip() == "None":
+            warnings.append(f'NONE STRING: "{field}" field contains literal "None"')
+
+    # ── Digest date matches today ────────────────────────────────────────
+    digest_date = digest.get("digest_date", "")
+    today_str = datetime.now(timezone.utc).strftime("%A, %d %B %Y")
+    if digest_date and digest_date != today_str:
+        warnings.append(f"DATE MISMATCH: digest says '{digest_date}', today is '{today_str}'")
+
+    # ── Public sentiment must have all 4 metrics ─────────────────────────
+    sentiment = digest.get("public_sentiment") or {}
+    for key in ("presidential_approval", "party_ruling", "party_opposition", "party_independent"):
+        data = sentiment.get(key) or {}
+        if not data.get("value"):
+            warnings.append(f"SENTIMENT: {key} has no value")
+
+    return warnings
 
 
 def main():
@@ -55,6 +137,16 @@ def main():
     digest_data = generate_digest(payload, db_context=db_context)
     Path("digest.json").write_text(json.dumps(digest_data, ensure_ascii=False, indent=2))
 
+    # ── Step 2a: Pre-send validation gate ─────────────────────────────────────
+    validation_warnings = validate_digest(digest_data)
+    if validation_warnings:
+        print("\n⚠️  PRE-SEND VALIDATION WARNINGS:")
+        for w in validation_warnings:
+            print(f"    • {w}")
+        print()
+    else:
+        print("\n✅  Validation passed — all checks OK")
+
     # ── Step 2b: Push flagged entries to databases ────────────────────────────
     if not args.no_push:
         push_summary = process_digest_entries(digest_data)
@@ -62,7 +154,6 @@ def main():
         print("\n  --no-push: skipping database updates")
 
     # ── Step 3: Render HTML ──────────────────────────────────────────────────
-    import os
     from render import render
 
     # Inject web URL for "Read Online" link (set via env or GitHub Pages)
@@ -95,6 +186,8 @@ def main():
     if args.no_send:
         print("\n  --no-send: skipping email. Open latest.html to review.")
     else:
+        if not os.environ.get("DIGEST_TO"):
+            print("\n⚠️  DIGEST_TO not set — email will only go to sender's own address")
         from send_email import send
         re_line = digest_data.get("re_line")
         send(html, re_line=re_line)

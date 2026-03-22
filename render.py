@@ -7,11 +7,14 @@ Uses table-based layout for maximum email client compatibility.
 from datetime import datetime, timezone
 
 
-def _esc(text: str) -> str:
-    if not text:
+def _esc(text) -> str:
+    if text is None or text == "":
+        return ""
+    text = str(text)
+    if text == "None":
         return ""
     return (
-        str(text)
+        text
         .replace("&", "&amp;")
         .replace("<", "&lt;")
         .replace(">", "&gt;")
