@@ -676,16 +676,40 @@ def render(digest: dict) -> str:
     else:
         deal_list = us_korea.get("deals") or []
 
-    status_tracker = (us_korea.get("status_tracker") or []) if isinstance(us_korea, dict) else []
+    trade_policy = (us_korea.get("trade_policy") or []) if isinstance(us_korea, dict) else []
     investment_pkg = (us_korea.get("investment_package") or {}) if isinstance(us_korea, dict) else {}
 
-    if deal_list or status_tracker or investment_pkg:
+    if deal_list or trade_policy or investment_pkg:
         header_html = ""
 
-        # Investment package progress bar
+        # Investment package progress bar + deal breakdown
         if investment_pkg and investment_pkg.get("total_pledged"):
             pct = investment_pkg.get("pct_fulfilled", 0)
             bar_width = max(2, min(pct, 100))
+
+            # Build deal breakdown list
+            known_deals = investment_pkg.get("known_deals") or []
+            deals_breakdown = ""
+            if known_deals:
+                deal_rows = ""
+                for kd in known_deals:
+                    co = _esc(kd.get("company", ""))
+                    val = _esc(kd.get("value", ""))
+                    sect = _esc(kd.get("sector", ""))
+                    deal_rows += f"""
+                    <tr style="border-bottom:1px solid #E8EDF3;">
+                      <td style="padding:4px 6px 4px 0;font-size:11px;font-weight:600;color:#1B2A4A;">{co}</td>
+                      <td style="padding:4px 6px;font-size:11px;font-weight:700;color:#27AE60;text-align:right;white-space:nowrap;">{val}</td>
+                      <td style="padding:4px 0 4px 6px;font-size:10px;color:#888;">{sect}</td>
+                    </tr>"""
+                deals_breakdown = f"""
+                <div style="margin-top:10px;">
+                  <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#888;font-weight:600;margin-bottom:4px;">Deal Breakdown</div>
+                  <table width="100%" cellpadding="0" cellspacing="0" border="0" class="deal-breakdown">
+                    {deal_rows}
+                  </table>
+                </div>"""
+
             header_html += f"""
             <div style="margin-bottom:16px;padding:12px 14px;background:#F0F7FF;border-radius:4px;border:1px solid #D6E9F8;">
               <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#1B2A4A;font-weight:600;margin-bottom:6px;">ROK-US Investment Commitment</div>
@@ -697,27 +721,30 @@ def render(digest: dict) -> str:
                 <div style="background:#27AE60;width:{bar_width}%;height:100%;border-radius:4px;"></div>
               </div>
               <div style="font-size:11px;color:#888;margin-top:4px;">{pct}% fulfilled &middot; {_esc(str(investment_pkg.get("latest_update", "")))}</div>
+              {deals_breakdown}
             </div>"""
 
-        # Status tracker table (tariffs, MOUs, agreements)
-        if status_tracker:
-            status_colors = {"ACTIVE": "#27AE60", "PASSED": "#2980B9", "RISK": "#C0392B", "MONITOR": "#D4AC0D", "PRESSURE": "#E67E22"}
+        # US Trade Policy Tracker (Section 301, USTR, Commerce Dept)
+        if trade_policy:
+            status_colors = {"ACTIVE": "#C0392B", "PENDING": "#D4AC0D", "RISK": "#E67E22", "ESCALATION": "#8E44AD", "RESOLVED": "#27AE60", "MONITOR": "#2980B9"}
             tracker_rows = ""
-            for tr in status_tracker:
+            for tr in trade_policy:
                 item_text = _esc(tr.get("item", ""))
                 detail_text = _esc(tr.get("detail", ""))
+                agency = _esc(tr.get("agency", ""))
                 st = tr.get("status", "MONITOR")
                 st_color = status_colors.get(st, "#7F8C8D")
                 status_badge = f'<span style="display:inline-block;padding:1px 6px;border-radius:3px;font-size:9px;font-weight:700;color:#fff;background:{st_color};letter-spacing:0.5px;">{_esc(st)}</span>'
+                agency_tag = f'<span style="font-size:9px;color:#888;font-weight:400;"> · {agency}</span>' if agency else ""
                 tracker_rows += f"""
                 <tr style="border-bottom:1px solid #F0F0F0;">
-                  <td style="padding:6px 8px 6px 0;vertical-align:top;font-size:12px;font-weight:600;color:#1B2A4A;width:30%;">{item_text}</td>
+                  <td style="padding:6px 8px 6px 0;vertical-align:top;font-size:12px;font-weight:600;color:#1B2A4A;width:30%;">{item_text}{agency_tag}</td>
                   <td style="padding:6px 4px;vertical-align:top;font-size:11px;color:#555;line-height:1.4;">{detail_text}</td>
                   <td style="padding:6px 0 6px 4px;vertical-align:top;text-align:right;white-space:nowrap;">{status_badge}</td>
                 </tr>"""
             header_html += f"""
             <div style="margin-bottom:16px;">
-              <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#888;font-weight:600;margin-bottom:6px;">Policy &amp; Agreement Tracker</div>
+              <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#888;font-weight:600;margin-bottom:6px;">US Trade Policy Tracker</div>
               <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #E8E8E8;">
                 {tracker_rows}
               </table>
@@ -1066,6 +1093,8 @@ def render(digest: dict) -> str:
       .cal-date {{ font-size:18px !important; }}
       /* Deal / business cards — tighter on mobile */
       .deal-card {{ padding:10px !important; }}
+      /* Deal breakdown table — full width on mobile */
+      .deal-breakdown td {{ padding:3px 4px !important; font-size:10px !important; }}
       /* Typography */
       h1 {{ font-size:19px !important; }}
       h2 {{ font-size:12px !important; }}
