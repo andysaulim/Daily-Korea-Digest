@@ -7,6 +7,7 @@ import feedparser
 import requests
 import json
 import re
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone, timedelta
 
@@ -34,6 +35,9 @@ TIER1_FEEDS = {
     "한겨레":              _gnews("site:hani.co.kr+-english"),
     "동아일보":            _gnews("site:donga.com+-en"),
     "MBN":                _gnews("Korea+site:mbn.co.kr"),
+    "경향신문":            _gnews("site:khan.co.kr"),
+    "뉴스1":              _gnews("site:news1.kr"),
+    "연합뉴스":            _gnews("site:yna.co.kr+-en"),
     # ── Korean broadcast & cable news ────────────────────────────────────
     "JTBC":               _gnews("site:news.jtbc.co.kr"),
     "KBS":                _gnews("site:news.kbs.co.kr"),
@@ -204,13 +208,21 @@ MAX_WORKERS = 20  # Thread pool size for parallel fetching
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _parse_feed(url: str) -> list:
-    try:
-        resp = requests.get(url, timeout=REQUEST_TIMEOUT, headers=HEADERS)
-        resp.raise_for_status()
-        return feedparser.parse(resp.content).entries
-    except Exception as e:
-        print(f"    ⚠  Feed error: {e}")
-        return []
+    for attempt in range(3):
+        try:
+            resp = requests.get(url, timeout=REQUEST_TIMEOUT, headers=HEADERS)
+            resp.raise_for_status()
+            return feedparser.parse(resp.content).entries
+        except (requests.ConnectionError, requests.Timeout) as e:
+            if attempt < 2:
+                time.sleep(2 ** (attempt + 1))
+                continue
+            print(f"    ⚠  Feed error (after retries): {e}")
+            return []
+        except Exception as e:
+            print(f"    ⚠  Feed error: {e}")
+            return []
+    return []
 
 
 def _entry_to_article(entry, source: str, lang: str = "EN", extra: dict | None = None) -> dict:
@@ -409,6 +421,11 @@ def _collect_markets() -> dict | None:
             price = meta.get("regularMarketPrice", 0)
             prev_close = meta.get("chartPreviousClose", meta.get("previousClose", price))
             change_pct = ((price - prev_close) / prev_close * 100) if prev_close else 0
+            # Extract market timestamp for "as of" display
+            mkt_time = meta.get("regularMarketTime", 0)
+            as_of = ""
+            if mkt_time:
+                as_of = datetime.fromtimestamp(mkt_time, tz=timezone.utc).strftime("%b %d")
             # Format value
             if key == "usd_krw":
                 value = f"{price:,.2f}"
@@ -416,7 +433,7 @@ def _collect_markets() -> dict | None:
                 value = f"{price:,.2f}"
             else:
                 value = f"{price:.2f}"
-            result[key] = {"value": value, "change_pct": round(change_pct, 2)}
+            result[key] = {"value": value, "change_pct": round(change_pct, 2), "as_of": as_of}
         except Exception as e:
             print(f"    ⚠  Market data error ({key}): {e}")
             result[key] = {"value": "—", "change_pct": 0}
@@ -616,12 +633,20 @@ def _collect_sentiment() -> dict:
         "리얼미터+대통령+지지율",
     ]
 
+    def _sane_pct(match) -> float | None:
+        """Extract percentage from regex match, return None if outside 5-85%."""
+        val = float(match.group(1) or match.group(2))
+        return val if 5 <= val <= 85 else None
+
     def _extract_all_from_entry(entry):
         """Try to extract all metrics from a single article."""
         text = f"{entry.get('title', '')} {entry.get('summary', entry.get('description', ''))}"
         appr_m = _RE_APPROVAL.search(text)
         if not appr_m:
             return False
+        appr_val = _sane_pct(appr_m)
+        if appr_val is None:
+            return False  # likely margin of error or unrelated number
         source = "Gallup Korea" if "gallup" in text.lower() or "갤럽" in text else (
             "Realmeter" if "realmeter" in text.lower() or "리얼미터" in text else "Poll"
         )
@@ -632,7 +657,7 @@ def _collect_sentiment() -> dict:
                 pub_date = datetime(*parsed[:6], tzinfo=timezone.utc).strftime("%b %d, %Y")
                 break
         sentiment["presidential_approval"] = {
-            "value": f"{appr_m.group(1) or appr_m.group(2)}%",
+            "value": f"{appr_val:g}%",
             "trend": None,
             "source": source,
             "last_updated": pub_date or "recent",
@@ -640,24 +665,30 @@ def _collect_sentiment() -> dict:
         # Extract party ratings from the SAME article text
         ruling_m = _RE_RULING.search(text)
         if ruling_m:
-            sentiment["party_ruling"] = {
-                "value": f"{ruling_m.group(1) or ruling_m.group(2)}%",
-                "party": "Democratic Party", "party_kr": "더불어민주당",
-                "source": source, "last_updated": pub_date or "recent",
-            }
+            val = _sane_pct(ruling_m)
+            if val is not None:
+                sentiment["party_ruling"] = {
+                    "value": f"{val:g}%",
+                    "party": "Democratic Party", "party_kr": "더불어민주당",
+                    "source": source, "last_updated": pub_date or "recent",
+                }
         opp_m = _RE_OPP.search(text)
         if opp_m:
-            sentiment["party_opposition"] = {
-                "value": f"{opp_m.group(1) or opp_m.group(2)}%",
-                "party": "People Power Party", "party_kr": "국민의힘",
-                "source": source, "last_updated": pub_date or "recent",
-            }
+            val = _sane_pct(opp_m)
+            if val is not None:
+                sentiment["party_opposition"] = {
+                    "value": f"{val:g}%",
+                    "party": "People Power Party", "party_kr": "국민의힘",
+                    "source": source, "last_updated": pub_date or "recent",
+                }
         ind_m = _RE_IND.search(text)
         if ind_m:
-            sentiment["party_independent"] = {
-                "value": f"{ind_m.group(1) or ind_m.group(2)}%",
-                "source": source, "last_updated": pub_date or "recent",
-            }
+            val = _sane_pct(ind_m)
+            if val is not None:
+                sentiment["party_independent"] = {
+                    "value": f"{val:g}%",
+                    "source": source, "last_updated": pub_date or "recent",
+                }
         return True
 
     # Pass 1: find an article with approval + at least one party metric

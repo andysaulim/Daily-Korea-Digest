@@ -162,16 +162,19 @@ def render(digest: dict) -> str:
               <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;">KOSPI</div>
               <div style="font-size:18px;font-weight:700;">{_esc(str(kospi.get("value", "—")))}</div>
               <div style="font-size:11px;">{_arrow(kospi.get("change_pct", 0))}</div>
+              {"<div style='font-size:8px;opacity:0.4;margin-top:2px;'>as of " + _esc(kospi.get("as_of", "")) + "</div>" if kospi.get("as_of") else ""}
             </td>
             <td width="34%" align="center" style="padding:10px 8px 12px;border-left:1px solid rgba(255,255,255,0.15);border-right:1px solid rgba(255,255,255,0.15);">
               <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;">Brent Crude</div>
               <div style="font-size:18px;font-weight:700;">${_esc(str(brent.get("value", "—")))}</div>
               <div style="font-size:11px;">{_arrow(brent.get("change_pct", 0))}</div>
+              {"<div style='font-size:8px;opacity:0.4;margin-top:2px;'>as of " + _esc(brent.get("as_of", "")) + "</div>" if brent.get("as_of") else ""}
             </td>
             <td width="33%" align="center" style="padding:10px 8px 12px;">
               <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;">USD/KRW</div>
               <div style="font-size:18px;font-weight:700;">{_esc(str(krw.get("value", "—")))}</div>
               <div style="font-size:11px;">{_arrow(krw.get("change_pct", 0))}</div>
+              {"<div style='font-size:8px;opacity:0.4;margin-top:2px;'>as of " + _esc(krw.get("as_of", "")) + "</div>" if krw.get("as_of") else ""}
             </td>
           </tr>
         </table>
@@ -991,6 +994,27 @@ def render(digest: dict) -> str:
               <span style="font-weight:600;">{topic}:</span> {finding}
             </div>"""
 
+        # Check if polling data is stale (>7 days old)
+        stale_html = ""
+        poll_updated = (approval.get("last_updated") or "")
+        if poll_updated and poll_updated != "recent":
+            try:
+                # Try common date formats from the collector
+                poll_dt = None
+                for fmt in ("%b %d, %Y", "%b %d %Y"):
+                    try:
+                        poll_dt = datetime.strptime(poll_updated, fmt).replace(tzinfo=timezone.utc)
+                        break
+                    except ValueError:
+                        continue
+                if poll_dt and (now - poll_dt).days > 7:
+                    stale_html = f"""
+            <div style="margin-top:8px;font-size:9px;color:#999;text-align:center;">
+              Data from {_esc(poll_updated)} — newer polling may be available
+            </div>"""
+            except Exception:
+                pass
+
         sections.append(f"""
         <div style="padding:10px 32px;background:#F8F9FA;border-bottom:1px solid #E0E0E0;" class="sec">
           <span {_PILL("#8E44AD")}>Public Sentiment Tracker</span>
@@ -1002,6 +1026,7 @@ def render(digest: dict) -> str:
               {_sentiment_cell("Independents (무당층)", party_ind)}
             </tr>
           </table>
+          {stale_html}
           {spotlight_html}
           {discourse_html}
         </div>
@@ -1125,6 +1150,11 @@ def render(digest: dict) -> str:
         Korea Daily Brief &middot; CSIS Korea Chair<br>
         {_esc(date_str)} &middot; {gen_time}<br>
         <span style="color:#bbb;">Read alongside primary sources</span>
+      </div>
+      <div style="font-size:9px;color:#bbb;margin-top:12px;line-height:1.5;">
+        <a href="mailto:korea-brief-unsubscribe@csis.org?subject=Unsubscribe" style="color:#999;text-decoration:underline;">Unsubscribe</a>
+        &middot; <a href="mailto:korea-brief@csis.org?subject=Feedback" style="color:#999;text-decoration:underline;">Send feedback</a><br>
+        CSIS &middot; 1616 Rhode Island Ave NW &middot; Washington, DC 20036
       </div>
     </div>
     """)
