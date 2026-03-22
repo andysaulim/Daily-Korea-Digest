@@ -86,7 +86,8 @@ def _estimate_word_count(digest: dict) -> int:
     for key in ("editor_note", "re_line"):
         words += len(str(digest.get(key, "")).split())
     for section_key in ("top_stories", "overnight_items", "also_today", "business_economy",
-                         "opeds_today", "academic_today", "social_statements"):
+                         "opeds_today", "academic_today", "social_statements",
+                         "japan_korea", "china_korea"):
         for item in (digest.get(section_key) or []):
             for field in ("body", "body_text", "summary", "detail", "quote_text",
                           "so_what", "pattern_note", "central_argument", "analyst_note"):
@@ -249,6 +250,35 @@ def render(digest: dict) -> str:
         <div {_SEC}>
           <h2 {_H2("#1B2A4A")}>Top Stories</h2>
           {stories_html}
+        </div>
+        """)
+
+    # ── 4b. Overnight Flash (high-priority overnight items) ────────────
+    overnight = digest.get("overnight_items") or []
+    if overnight:
+        _cat_colors_flash = {"NK-Russia": "#C0392B", "ROK Policy": "#1B2A4A", "US-Korea": "#2980B9",
+                       "DPRK": "#8E44AD", "Security": "#E67E22", "Business": "#D4AC0D",
+                       "Japan-Korea": "#1B6A4A", "China-Korea": "#8B0000", "Trilateral": "#2E4057"}
+        flash_html = ""
+        for item in overnight:
+            cat = _esc(item.get("category", ""))
+            headline = _esc(item.get("headline", ""))
+            body = _esc(item.get("body_text", ""))
+            src = _esc(item.get("source", ""))
+            url = item.get("url", "")
+            bar_color = _cat_colors_flash.get(item.get("category", ""), "#1B2A4A")
+            flash_html += f"""
+            <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid {bar_color};">
+              <div style="font-size:11px;color:#C0392B;text-transform:uppercase;font-weight:600;">{cat} &middot; {src}</div>
+              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
+                {_link_or_text(headline, url)}
+              </div>
+              <div style="font-size:12px;line-height:1.4;color:#555;">{body}</div>
+            </div>"""
+        sections.append(f"""
+        <div {_SEC_BG("#FFF8F0")}>
+          <h2 {_H2("#C0392B")}>&#9889; Overnight Flash</h2>
+          {flash_html}
         </div>
         """)
 
@@ -772,31 +802,135 @@ def render(digest: dict) -> str:
         </div>
         """)
 
-    # ── 12. Overnight Flash (high-priority overnight items) ─────────────
-    overnight = digest.get("overnight_items") or []
-    if overnight:
-        _cat_colors = {"NK-Russia": "#C0392B", "ROK Policy": "#1B2A4A", "US-Korea": "#2980B9",
-                       "DPRK": "#8E44AD", "Security": "#E67E22", "Business": "#D4AC0D"}
-        flash_html = ""
-        for item in overnight:
+    # ── (Overnight Flash moved to position 4b — after Top Stories) ──────
+
+    # ── 12. Japan-Korea & Trilateral ────────────────────────────────────
+    japan_korea = digest.get("japan_korea") or []
+    if japan_korea:
+        jk_cat_colors = {
+            "history-dispute": "#C0392B", "trilateral": "#2E4057", "gsomia": "#8E44AD",
+            "trade-friction": "#D4AC0D", "diplomatic": "#2980B9", "defense-cooperation": "#1B2A4A",
+            "territorial": "#E67E22",
+        }
+        jk_html = ""
+        for item in japan_korea:
             cat = _esc(item.get("category", ""))
             headline = _esc(item.get("headline", ""))
             body = _esc(item.get("body_text", ""))
             src = _esc(item.get("source", ""))
             url = item.get("url", "")
-            bar_color = _cat_colors.get(item.get("category", ""), "#1B2A4A")
-            flash_html += f"""
+            sig = item.get("signal_type", "")
+            bar_color = jk_cat_colors.get(item.get("category", ""), "#1B6A4A")
+            jk_html += f"""
             <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid {bar_color};">
-              <div style="font-size:11px;color:#C0392B;text-transform:uppercase;font-weight:600;">{cat} &middot; {src}</div>
+              <div style="font-size:11px;color:#888;text-transform:uppercase;">
+                {cat} &middot; {src}
+                {"&nbsp;" + _signal_badge(sig) if sig else ""}
+              </div>
               <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
                 {_link_or_text(headline, url)}
               </div>
               <div style="font-size:12px;line-height:1.4;color:#555;">{body}</div>
             </div>"""
         sections.append(f"""
-        <div {_SEC_BG("#FFF8F0")}>
-          <h2 {_H2("#C0392B")}>&#9889; Overnight Flash</h2>
-          {flash_html}
+        <div {_SEC}>
+          <h2 {_H2("#1B6A4A")}>Japan-Korea &amp; Trilateral</h2>
+          {jk_html}
+        </div>
+        """)
+
+    # ── 12b. China-Korea Watch ─────────────────────────────────────────
+    china_korea = digest.get("china_korea") or []
+    if china_korea:
+        ck_cat_colors = {
+            "thaad-retaliation": "#C0392B", "economic-coercion": "#E67E22",
+            "rare-earth": "#D4AC0D", "diplomatic": "#2980B9",
+            "military": "#8E44AD", "trade": "#1B2A4A", "public-opinion": "#16A085",
+        }
+        ck_html = ""
+        for item in china_korea:
+            cat = _esc(item.get("category", ""))
+            headline = _esc(item.get("headline", ""))
+            body = _esc(item.get("body_text", ""))
+            src = _esc(item.get("source", ""))
+            url = item.get("url", "")
+            sig = item.get("signal_type", "")
+            is_reaction = item.get("is_reaction_source", False)
+            bar_color = ck_cat_colors.get(item.get("category", ""), "#8B0000")
+            reaction_badge = '<span style="display:inline-block;padding:1px 5px;border-radius:3px;font-size:9px;font-weight:600;color:#fff;background:#888;margin-left:6px;">PRC SOURCE</span>' if is_reaction else ""
+            ck_html += f"""
+            <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid {bar_color};">
+              <div style="font-size:11px;color:#888;text-transform:uppercase;">
+                {cat} &middot; {src}{reaction_badge}
+                {"&nbsp;" + _signal_badge(sig) if sig else ""}
+              </div>
+              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
+                {_link_or_text(headline, url)}
+              </div>
+              <div style="font-size:12px;line-height:1.4;color:#555;">{body}</div>
+            </div>"""
+        sections.append(f"""
+        <div {_SEC}>
+          <h2 {_H2("#8B0000")}>China-Korea Watch</h2>
+          {ck_html}
+        </div>
+        """)
+
+    # ── 12c. Public Sentiment Tracker ──────────────────────────────────
+    sentiment = digest.get("public_sentiment") or {}
+    if sentiment:
+        def _sentiment_cell(label, data, width="25%"):
+            if not data or not data.get("value"):
+                return f"""
+                <td width="{width}" align="center" style="padding:8px 6px;">
+                  <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;">{label}</div>
+                  <div style="font-size:16px;font-weight:700;color:#888;">--</div>
+                  <div style="font-size:9px;opacity:0.5;">No recent data</div>
+                </td>"""
+            val = _esc(str(data.get("value", "")))
+            trend = data.get("trend", "")
+            source = _esc(str(data.get("source", "")))
+            updated = _esc(str(data.get("last_updated", "")))
+            trend_arrow = ""
+            if trend == "up":
+                trend_arrow = '<span style="color:#27AE60;">&#9650;</span>'
+            elif trend == "down":
+                trend_arrow = '<span style="color:#C0392B;">&#9660;</span>'
+            elif trend == "stable":
+                trend_arrow = '<span style="color:#888;">&#8594;</span>'
+            return f"""
+            <td width="{width}" align="center" style="padding:8px 6px;">
+              <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;">{label}</div>
+              <div style="font-size:16px;font-weight:700;">{val} {trend_arrow}</div>
+              <div style="font-size:9px;opacity:0.5;">{source}</div>
+              <div style="font-size:8px;opacity:0.4;">{updated}</div>
+            </td>"""
+
+        approval = sentiment.get("presidential_approval") or {}
+        fav_us = sentiment.get("favorability_us") or {}
+        fav_china = sentiment.get("favorability_china") or {}
+        fav_japan = sentiment.get("favorability_japan") or {}
+        discourse = sentiment.get("discourse_flag")
+
+        discourse_html = ""
+        if discourse:
+            discourse_html = f"""
+            <div style="margin-top:8px;padding:6px 10px;background:#FFF3E0;border-radius:4px;border-left:3px solid #E67E22;font-size:11px;color:#555;">
+              <strong style="color:#E67E22;">Discourse:</strong> {_esc(discourse)}
+            </div>"""
+
+        sections.append(f"""
+        <div style="padding:10px 32px;background:#F8F9FA;border-bottom:1px solid #E0E0E0;" class="sec">
+          <h2 {_H2("#2C3E50")}>Public Sentiment Tracker</h2>
+          <table width="100%" cellpadding="0" cellspacing="0" border="0">
+            <tr>
+              {_sentiment_cell("Presidential Approval", approval)}
+              {_sentiment_cell("Favorability: US", fav_us)}
+              {_sentiment_cell("Favorability: China", fav_china)}
+              {_sentiment_cell("Favorability: Japan", fav_japan)}
+            </tr>
+          </table>
+          {discourse_html}
         </div>
         """)
 

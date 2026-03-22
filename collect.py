@@ -34,6 +34,16 @@ TIER1_FEEDS = {
     "한겨레":              _gnews("site:hani.co.kr+-english"),
     "동아일보":            _gnews("site:donga.com+-en"),
     "MBN":                _gnews("Korea+site:mbn.co.kr"),
+    # ── Korean broadcast & cable news ────────────────────────────────────
+    "JTBC":               _gnews("site:news.jtbc.co.kr"),
+    "KBS":                _gnews("site:news.kbs.co.kr"),
+    "MBC":                _gnews("site:imnews.imbc.com"),
+    "SBS":                _gnews("site:news.sbs.co.kr"),
+    "YTN":                _gnews("site:ytn.co.kr"),
+    "Channel A":          _gnews("site:ichannela.com"),
+    # ── Korean business dailies ──────────────────────────────────────────
+    "매일경제":            _gnews("site:mk.co.kr"),
+    "한국경제":            _gnews("site:hankyung.com"),
     # ── Major international — Korea correspondents ────────────────────────
     "WSJ Korea":          _gnews("Korea+site:wsj.com"),
     "NYT Korea":          _gnews("Korea+site:nytimes.com"),
@@ -50,15 +60,26 @@ TIER1_FEEDS = {
     "Nikkei Korea":       _gnews("Korea+site:asia.nikkei.com"),
     "Japan Times Korea":  _gnews("Korea+site:japantimes.co.jp"),
     "SCMP Korea":         _gnews("Korea+site:scmp.com"),
+    "Kyodo Korea":        _gnews("Korea+site:english.kyodonews.net"),
+    "Mainichi Korea":     _gnews("Korea+site:mainichi.jp/english"),
+    "Asahi Korea":        _gnews("Korea+site:asahi.com/ajw"),
+    "CNA Korea":          _gnews("Korea+site:channelnewsasia.com"),
     # ── ROK/US Government ─────────────────────────────────────────────────
     "White House":        _gnews("Korea+site:whitehouse.gov"),
     "State Dept":         _gnews("Korea+site:state.gov"),
     "Pentagon":           _gnews("Korea+site:defense.gov"),
     "Stars and Stripes":  _gnews("Korea+site:stripes.com"),
+    # ── ROK/Japan Government ─────────────────────────────────────────────
+    "USFK":               _gnews("site:usfk.mil"),
+    "ROK MOFA":           _gnews("site:mofa.go.kr"),
+    "Japan MOFA":         _gnews("Korea+site:mofa.go.jp"),
     # ── Reaction layer (China/Russia) ─────────────────────────────────────
     "Global Times Korea": _gnews("Korea+site:globaltimes.cn"),
     "Xinhua Korea":       _gnews("Korea+site:xinhuanet.com"),
     "TASS Korea":         _gnews("Korea+site:tass.com"),
+    "Caixin Korea":       _gnews("Korea+site:caixinglobal.com"),
+    "China Daily Korea":  _gnews("Korea+site:chinadaily.com.cn"),
+    "People's Daily Korea": _gnews("Korea+site:en.people.cn"),
 }
 
 TIER2_FEEDS = {
@@ -79,6 +100,15 @@ TIER2_FEEDS = {
     "Foreign Policy":    ("https://foreignpolicy.com/feed/", "B"),
     "Diplomat":          ("https://thediplomat.com/feed/", "C"),
     "NKPro":             ("https://www.nknews.org/pro/feed/", "A"),
+    # ── Additional think tanks ───────────────────────────────────────────
+    "AEI":               (_gnews("Korea+site:aei.org"), "A"),
+    "Hudson Institute":  (_gnews("Korea+site:hudson.org"), "B"),
+    "Heritage":          (_gnews("Korea+site:heritage.org"), "B"),
+    "Atlantic Council":  (_gnews("Korea+site:atlanticcouncil.org"), "B"),
+    "KEIA":              (_gnews("Korea+site:keia.org"), "A"),
+    "NBR":               (_gnews("Korea+site:nbr.org"), "B"),
+    "PIIE":              (_gnews("Korea+site:piie.com"), "B"),
+    "USIP":              (_gnews("Korea+site:usip.org"), "B"),
 }
 
 # Tier 3: Use Google Scholar RSS and site-specific searches to reduce noise
@@ -130,6 +160,8 @@ PRESTIGE_JOURNALISTS = {
     "Ankit Panda", "Jenny Town", "Andrei Lankov", "Rachel Minyoung Lee",
     "Jean Lee", "Laura Bicker", "Simon Mundy", "Edward White",
     "Dagyum Ji", "Ifang Bremer", "Chad O'Carroll",
+    # Additional journalists
+    "Jeong-ho Lee", "Kim Tong-hyung", "Sotaro Suzuki", "Takashi Umekawa",
 }
 
 REQUEST_TIMEOUT = 12
@@ -249,7 +281,9 @@ def _collect_tier1() -> list:
     results = _fetch_feeds_parallel(TIER1_FEEDS)
     for source, (entries, _) in results.items():
         # Korean-language feeds get lang="KO"
-        lang = "KO" if source in ("조선일보", "한겨레", "동아일보", "MBN") else "EN"
+        lang = "KO" if source in ("조선일보", "한겨레", "동아일보", "MBN",
+                                    "JTBC", "KBS", "MBC", "SBS", "YTN", "Channel A",
+                                    "매일경제", "한국경제") else "EN"
         for entry in entries:
             if not _is_recent(entry, hours=24):
                 continue
