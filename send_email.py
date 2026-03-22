@@ -31,7 +31,8 @@ def send(html: str, re_line: Optional[str] = None, subject: Optional[str] = None
         recipients = [r.strip() for r in to_str.split(",") if r.strip()]
 
     if subject is None:
-        date_str = datetime.now(timezone.utc).strftime("%m/%d/%Y")
+        from zoneinfo import ZoneInfo
+        date_str = datetime.now(ZoneInfo("America/New_York")).strftime("%m/%d/%Y")
         if re_line:
             # Truncate RE: line for subject (max ~120 chars total)
             max_re = 100
@@ -48,7 +49,7 @@ def send(html: str, re_line: Optional[str] = None, subject: Optional[str] = None
     plain = (
         "Korea Daily Brief — CSIS Korea Chair\n"
         "This digest is best viewed in an HTML-capable email client.\n"
-        f"Date: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}"
+        f"Date: {datetime.now(ZoneInfo('America/New_York')).strftime('%Y-%m-%d %-I:%M %p ET')}"
     )
     msg.attach(MIMEText(plain, "plain"))
     msg.attach(MIMEText(html, "html"))

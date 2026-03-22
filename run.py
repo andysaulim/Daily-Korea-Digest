@@ -19,12 +19,17 @@ def validate_digest(digest: dict) -> list[str]:
     """Pre-send quality gate. Returns list of warnings (empty = all clear)."""
     warnings = []
 
-    # ── Top stories must have 2-4 items ──────────────────────────────────
+    # ── Top stories must have 3-4 items ──────────────────────────────────
     top_stories = digest.get("top_stories") or []
-    if len(top_stories) < 2:
-        warnings.append(f"TOP STORIES: only {len(top_stories)} (expected 2-4)")
+    if len(top_stories) < 3:
+        warnings.append(f"TOP STORIES: only {len(top_stories)} (expected 3-4)")
     elif len(top_stories) > 4:
-        warnings.append(f"TOP STORIES: {len(top_stories)} items (expected 2-4)")
+        warnings.append(f"TOP STORIES: {len(top_stories)} items (expected 3-4)")
+
+    # ── Overnight items must have 8-12 items ──────────────────────────────
+    overnight = digest.get("overnight_items") or []
+    if len(overnight) < 8:
+        warnings.append(f"OVERNIGHT ITEMS: only {len(overnight)} (expected 8-12)")
 
     # ── RE: line must be present and substantive ─────────────────────────
     re_line = digest.get("re_line")
@@ -36,7 +41,7 @@ def validate_digest(digest: dict) -> list[str]:
     if len(memo) < 3:
         warnings.append(f"MORNING MEMO: only {len(memo)} items (expected 3)")
 
-    # ── Word count check (~800 words target) ─────────────────────────────
+    # ── Word count check (hard minimum 1000, target 1200-1400) ──────────
     word_count = 0
     for section_key in ("top_stories", "overnight_items", "also_today",
                          "business_economy", "social_statements", "northeast_asia"):
@@ -49,10 +54,10 @@ def validate_digest(digest: dict) -> list[str]:
     kcna = digest.get("kcna_delta") or {}
     for field in ("bottom_line", "doctrinal_shift"):
         word_count += len(str(kcna.get(field, "")).split())
-    if word_count < 900:
-        warnings.append(f"WORD COUNT CRITICAL: ~{word_count} words (hard minimum 1000)")
-    elif word_count < 1000:
-        warnings.append(f"WORD COUNT: ~{word_count} words (target 1000+ for 5-min read)")
+    if word_count < 1000:
+        warnings.append(f"WORD COUNT CRITICAL: ~{word_count} words (HARD MINIMUM 1000 — newsletter is too short)")
+    elif word_count < 1200:
+        warnings.append(f"WORD COUNT: ~{word_count} words (target 1200-1400 for 5-min read)")
 
     # ── Check for placeholder URLs ("#", empty, non-http) ────────────────
     bad_urls = 0
@@ -105,7 +110,8 @@ def validate_digest(digest: dict) -> list[str]:
 
     # ── Digest date matches today ────────────────────────────────────────
     digest_date = digest.get("digest_date", "")
-    today_str = datetime.now(timezone.utc).strftime("%A, %d %B %Y")
+    from zoneinfo import ZoneInfo
+    today_str = datetime.now(ZoneInfo("America/New_York")).strftime("%A, %B %-d, %Y")
     if digest_date and digest_date != today_str:
         warnings.append(f"DATE MISMATCH: digest says '{digest_date}', today is '{today_str}'")
 
@@ -130,7 +136,8 @@ def main():
     print("=" * 60)
     print("  Korea Daily Brief")
     print("  CSIS Korea Chair")
-    print(f"  {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}")
+    from zoneinfo import ZoneInfo
+    print(f"  {datetime.now(ZoneInfo('America/New_York')).strftime('%Y-%m-%d %-I:%M %p ET')}")
     print("=" * 60)
 
     # ── Step 1: Collect ───────────────────────────────────────────────────────
@@ -192,7 +199,7 @@ def main():
 
     html = render(digest_data)
 
-    date_slug = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    date_slug = datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d")
     out_path  = Path(f"digest_{date_slug}.html")
     out_path.write_text(html, encoding="utf-8")
     print(f"\n📄  HTML rendered: {out_path} ({len(html):,} bytes)")

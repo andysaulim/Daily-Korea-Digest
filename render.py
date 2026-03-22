@@ -97,9 +97,10 @@ def _estimate_word_count(digest: dict) -> int:
 
 
 def render(digest: dict) -> str:
-    now = datetime.now(timezone.utc)
-    date_str = now.strftime("%A, %d %B %Y")  # Thursday, 20 March 2026
-    gen_time = now.strftime("%H:%M UTC")
+    from zoneinfo import ZoneInfo
+    now = datetime.now(ZoneInfo("America/New_York"))
+    date_str = now.strftime("%A, %B %-d, %Y")  # Thursday, March 20, 2026
+    gen_time = now.strftime("%-I:%M %p ET")
     re_line = _esc(digest.get("re_line", ""))
     word_count = _estimate_word_count(digest)
     read_min = max(1, round(word_count / 250))
