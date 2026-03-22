@@ -64,7 +64,8 @@ def _arrow(val) -> str:
 
 
 def _link_or_text(text: str, url: str, style: str = "color:#1B2A4A;text-decoration:none;") -> str:
-    """Render as <a> only if url is a real link, otherwise plain text."""
+    """Render as <a> only if url is a real link, otherwise plain text.
+    NOTE: `text` should already be HTML-escaped by the caller via _esc()."""
     if url and url != "#" and url.startswith("http"):
         return f'<a href="{_esc(url)}" style="{style}">{text}</a>'
     return text

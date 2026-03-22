@@ -107,9 +107,9 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
                     if not words or not prev_words:
                         continue
                     overlap = words & prev_words
-                    # If >50% of content words overlap, flag as duplicate
+                    # If >50% of content words overlap AND at least 2 shared words
                     min_len = min(len(words), len(prev_words))
-                    if min_len > 0 and len(overlap) / min_len >= 0.5:
+                    if min_len > 1 and len(overlap) >= 2 and len(overlap) / min_len >= 0.5:
                         warnings.append(
                             f"DUPLICATE HEADLINE: similar story in {prev_section} and {section_key}: '{headline[:60]}...' vs '{prev_headline[:60]}...'")
                         break

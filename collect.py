@@ -450,7 +450,7 @@ def _collect_markets() -> dict:
             else:
                 value = f"{price:.2f}"
             result[key] = {"value": value, "change_pct": round(change_pct, 2), "as_of": as_of}
-        except Exception as e:
+        except (requests.RequestException, KeyError, ValueError, TypeError) as e:
             print(f"    ⚠  Market data error ({key}): {e}")
             result[key] = {"value": "—", "change_pct": 0, "as_of": ""}
 
@@ -478,7 +478,8 @@ def _fetch_bok_rate() -> dict:
             rows = resp.json().get("StatisticSearch", {}).get("row", [])
             if rows:
                 val = rows[-1].get("DATA_VALUE", "")
-                return {"value": f"{float(val):.2f}%", "last_change": ""}
+                if val:
+                    return {"value": f"{float(val):.2f}%", "last_change": ""}
     except Exception:
         pass
     # Fallback: last known BOK rate (updated manually if API unavailable)
@@ -1025,7 +1026,8 @@ def _collect_sentiment() -> dict:
                         break
                 if sentiment["presidential_approval"] and sentiment["party_ruling"]:
                     break
-            except Exception:
+            except Exception as e:
+                print(f"    ⚠  Sentiment pass 1 ({query[:40]}): {e}")
                 continue
 
     # ── Pass 2: Field-by-field extraction (fallback if no headline match)
@@ -1042,7 +1044,8 @@ def _collect_sentiment() -> dict:
                     sentiment["party_ruling"] or sentiment["party_opposition"]
                 ):
                     break
-            except Exception:
+            except Exception as e:
+                print(f"    ⚠  Sentiment pass 2 ({query[:40]}): {e}")
                 continue
 
     # ── Gallup Korea Spotlight (weekly special-topic finding) ───────────
