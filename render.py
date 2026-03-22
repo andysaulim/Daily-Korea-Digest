@@ -124,12 +124,12 @@ def render(digest: dict) -> str:
           <h1 style="margin:0;font-size:24px;font-weight:700;font-family:Georgia,serif;color:#fff;letter-spacing:0.5px;">
             Korea Daily Brief
           </h1>
-          <div style="margin-top:4px;font-size:11px;color:rgba(255,255,255,0.5);font-family:Arial,sans-serif;">By Andy Lim &middot; CSIS Korea Chair</div>
+          <div style="margin-top:4px;font-size:11px;color:rgba(255,255,255,0.7);font-family:Arial,sans-serif;">By Andy Lim &middot; CSIS Korea Chair</div>
           <div style="margin-top:6px;font-size:18px;font-weight:700;color:rgba(255,255,255,0.95);letter-spacing:0.5px;font-family:Georgia,serif;">{_esc(date_str)}</div>
         </td>
         <td style="vertical-align:top;text-align:right;">
-          <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.4);margin-bottom:2px;">{gen_time}</div>
-          <div style="font-size:10px;color:rgba(255,255,255,0.35);">{word_count:,} words &middot; {read_min} min read</div>
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.6);margin-bottom:2px;">{gen_time}</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.55);">{word_count:,} words &middot; {read_min} min read</div>
         </td>
       </tr></table>
       {"<div style='margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.15);font-size:13px;color:rgba(255,255,255,0.85);font-family:Georgia,serif;'><strong style=" + '"' + "color:rgba(255,255,255,0.5);" + '"' + ">RE:</strong> " + re_line + "</div>" if re_line else ""}
@@ -163,37 +163,37 @@ def render(digest: dict) -> str:
               <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;">KOSPI</div>
               <div style="font-size:18px;font-weight:700;">{_esc(str(kospi.get("value", "—")))}</div>
               <div style="font-size:11px;">{_arrow(kospi.get("change_pct", 0))}</div>
-              {"<div style='font-size:8px;opacity:0.4;margin-top:2px;'>as of " + _esc(kospi.get("as_of", "")) + "</div>" if kospi.get("as_of") else ""}
+              {"<div style='font-size:10px;opacity:0.5;margin-top:2px;'>as of " + _esc(kospi.get("as_of", "")) + "</div>" if kospi.get("as_of") else ""}
             </td>
             <td width="34%" align="center" style="padding:10px 8px 12px;border-left:1px solid rgba(255,255,255,0.15);border-right:1px solid rgba(255,255,255,0.15);">
               <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;">Brent Crude</div>
               <div style="font-size:18px;font-weight:700;">${_esc(str(brent.get("value", "—")))}</div>
               <div style="font-size:11px;">{_arrow(brent.get("change_pct", 0))}</div>
-              {"<div style='font-size:8px;opacity:0.4;margin-top:2px;'>as of " + _esc(brent.get("as_of", "")) + "</div>" if brent.get("as_of") else ""}
+              {"<div style='font-size:10px;opacity:0.5;margin-top:2px;'>as of " + _esc(brent.get("as_of", "")) + "</div>" if brent.get("as_of") else ""}
             </td>
             <td width="33%" align="center" style="padding:10px 8px 12px;">
               <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;">USD/KRW</div>
               <div style="font-size:18px;font-weight:700;">{_esc(str(krw.get("value", "—")))}</div>
               <div style="font-size:11px;">{_arrow(krw.get("change_pct", 0))}</div>
-              {"<div style='font-size:8px;opacity:0.4;margin-top:2px;'>as of " + _esc(krw.get("as_of", "")) + "</div>" if krw.get("as_of") else ""}
+              {"<div style='font-size:10px;opacity:0.5;margin-top:2px;'>as of " + _esc(krw.get("as_of", "")) + "</div>" if krw.get("as_of") else ""}
             </td>
           </tr>
         </table>
         <table class="mkt-table" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#162340;color:#fff;border-bottom:1px solid rgba(255,255,255,0.08);">
           <tr>
             <td width="33%" align="center" style="padding:8px 8px 10px;">
-              <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;opacity:0.5;">BOK Rate</div>
+              <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;">BOK Rate</div>
               <div style="font-size:15px;font-weight:700;">{_esc(str(bok_rate.get("value", "—")))}</div>
               <div style="font-size:10px;opacity:0.6;">{_esc(str(bok_rate.get("last_change", "")))}</div>
             </td>
             <td width="34%" align="center" style="padding:8px 8px 10px;border-left:1px solid rgba(255,255,255,0.1);border-right:1px solid rgba(255,255,255,0.1);">
-              <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;opacity:0.5;">Exports{" (" + _esc(exports.get("month", "")) + ")" if exports.get("month") else " (Monthly)"}</div>
+              <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;">Exports{" (" + _esc(exports.get("month", "")) + ")" if exports.get("month") else " (Monthly)"}</div>
               <div style="font-size:15px;font-weight:700;">{_esc(str(exports.get("value", "—")))}</div>
               <div style="font-size:10px;">{_arrow(exports.get("change_pct", 0))}</div>
-              {"<div style='font-size:8px;opacity:0.4;margin-top:2px;'>as of " + _esc(exports.get("as_of", exports.get("month", ""))) + "</div>" if exports.get("as_of") or exports.get("month") else ""}
+              {"<div style='font-size:10px;opacity:0.5;margin-top:2px;'>as of " + _esc(exports.get("as_of", exports.get("month", ""))) + "</div>" if exports.get("as_of") or exports.get("month") else ""}
             </td>
             <td width="33%" align="center" style="padding:8px 8px 10px;">
-              <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;opacity:0.5;">GDP Est. (QoQ)</div>
+              <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;">GDP Est. (QoQ)</div>
               <div style="font-size:15px;font-weight:700;">{_esc(str(gdp.get("value", "—")))}</div>
               <div style="font-size:10px;opacity:0.6;">{_esc(str(gdp.get("period", "")))}</div>
             </td>
@@ -380,13 +380,13 @@ def render(digest: dict) -> str:
                 </tr>"""
             phrase_html = f"""
             <div style="margin-top:12px;">
-              <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.4);margin-bottom:4px;">Phrase Frequency</div>
+              <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.6);margin-bottom:4px;">Phrase Frequency</div>
               <table width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr style="border-bottom:1px solid rgba(255,255,255,0.1);">
-                  <td style="padding:3px 8px 3px 0;font-size:9px;color:rgba(255,255,255,0.3);text-transform:uppercase;">Phrase</td>
-                  <td style="padding:3px 6px;font-size:9px;color:rgba(255,255,255,0.3);text-align:center;">Prior</td>
-                  <td style="padding:3px 6px;font-size:9px;color:rgba(255,255,255,0.3);text-align:center;">This Wk</td>
-                  <td style="padding:3px 0 3px 6px;font-size:9px;color:rgba(255,255,255,0.3);">Delta</td>
+                  <td style="padding:3px 8px 3px 0;font-size:10px;color:rgba(255,255,255,0.5);text-transform:uppercase;">Phrase</td>
+                  <td style="padding:3px 6px;font-size:10px;color:rgba(255,255,255,0.5);text-align:center;">Prior</td>
+                  <td style="padding:3px 6px;font-size:10px;color:rgba(255,255,255,0.5);text-align:center;">This Wk</td>
+                  <td style="padding:3px 0 3px 6px;font-size:10px;color:rgba(255,255,255,0.5);">Delta</td>
                 </tr>
                 {phrase_rows}
               </table>
@@ -414,13 +414,13 @@ def render(digest: dict) -> str:
               <tr>
                 <td style="vertical-align:top;width:50%;padding-right:12px;">
                   <div style="padding:8px 12px;background:rgba(255,255,255,0.04);border-radius:4px;">
-                    <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.4);margin-bottom:4px;">Kim Jong Un</div>
+                    <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.6);margin-bottom:4px;">Kim Jong Un</div>
                     <div style="font-size:13px;color:#E0E0E0;font-weight:600;">{kim_line}</div>
                   </div>
                 </td>
                 <td style="vertical-align:top;width:50%;">
                   <div style="padding:8px 12px;background:rgba(255,255,255,0.04);border-radius:4px;">
-                    <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.4);margin-bottom:4px;">Output Volume</div>
+                    <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.6);margin-bottom:4px;">Output Volume</div>
                     <div style="font-size:13px;color:#E0E0E0;">{output_vol if output_vol else "—"}</div>
                     {"<div style='margin-top:3px;font-size:11px;color:#E67E22;font-weight:600;'>&#8644; " + tone_shift + "</div>" if tone_shift else ""}
                   </div>
@@ -585,7 +585,7 @@ def render(digest: dict) -> str:
                   <tr>
                     <td width="50" style="padding:10px 10px 10px 0;text-align:center;vertical-align:top;">
                       <div style="font-size:10px;text-transform:uppercase;color:#888;letter-spacing:0.5px;">{cal_month}</div>
-                      <div class="cal-date" style="font-size:18px;font-weight:300;color:#1B2A4A;line-height:1;">{cal_day}</div>
+                      <div class="cal-date" style="font-size:18px;font-weight:300;color:#1B2A4A;line-height:1.2;">{cal_day}</div>
                     </td>
                     <td style="padding:10px 0;vertical-align:top;">
                       <div style="font-size:13px;font-weight:600;color:#1B2A4A;margin-bottom:2px;">{cal_headline}</div>
@@ -719,7 +719,7 @@ def render(digest: dict) -> str:
               </div>
               <div style="font-size:11px;color:#555;line-height:1.4;margin-bottom:8px;">{h_note}</div>
               {s122_line}
-              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:8px;border-top:1px solid #F0E0E0;">
+              <table class="tariff-sector" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:8px;border-top:1px solid #F0E0E0;">
                 {sector_rows}
               </table>
               <div style="margin-top:8px;font-size:10px;color:#999;">{last_change}</div>
@@ -933,9 +933,9 @@ def render(digest: dict) -> str:
             if not data or not data.get("value"):
                 return f"""
                 <td width="{width}" align="center" style="padding:8px 6px;">
-                  <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;">{label}</div>
+                  <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;">{label}</div>
                   <div style="font-size:16px;font-weight:700;color:#888;">--</div>
-                  <div style="font-size:9px;opacity:0.5;">No recent data</div>
+                  <div style="font-size:10px;opacity:0.5;">No recent data</div>
                 </td>"""
             val = _esc(str(data.get("value", "")))
             trend = data.get("trend", "")
@@ -950,10 +950,10 @@ def render(digest: dict) -> str:
                 trend_arrow = '<span style="color:#888;">&#8594;</span>'
             return f"""
             <td width="{width}" align="center" style="padding:8px 6px;">
-              <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;">{label}</div>
+              <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;">{label}</div>
               <div style="font-size:16px;font-weight:700;">{val} {trend_arrow}</div>
-              <div style="font-size:9px;opacity:0.5;">{source}</div>
-              <div style="font-size:8px;opacity:0.4;">{updated}</div>
+              <div style="font-size:10px;opacity:0.5;">{source}</div>
+              <div style="font-size:10px;opacity:0.5;">{updated}</div>
             </td>"""
 
         approval = sentiment.get("presidential_approval") or {}
@@ -997,7 +997,7 @@ def render(digest: dict) -> str:
                         continue
                 if poll_dt and (now - poll_dt).days > 7:
                     stale_html = f"""
-            <div style="margin-top:8px;font-size:9px;color:#999;text-align:center;">
+            <div style="margin-top:8px;font-size:10px;color:#999;text-align:center;">
               Data from {_esc(poll_updated)} — newer polling may be available
             </div>"""
             except Exception:
@@ -1066,8 +1066,8 @@ def render(digest: dict) -> str:
             <div style="margin-bottom:12px;padding:12px;background:#F8F9FA;border-radius:6px;border-left:3px solid {badge_color};">
               <table cellpadding="0" cellspacing="0" border="0" style="margin-bottom:6px;">
                 <tr>
-                  <td width="28" style="vertical-align:middle;">
-                    <div style="width:28px;height:28px;border-radius:50%;background:{badge_color};color:#fff;text-align:center;line-height:28px;font-size:11px;font-weight:700;">{initials}</div>
+                  <td width="36" style="vertical-align:middle;">
+                    <div style="width:36px;height:36px;border-radius:50%;background:{badge_color};color:#fff;text-align:center;line-height:36px;font-size:13px;font-weight:700;">{initials}</div>
                   </td>
                   <td style="padding-left:8px;vertical-align:middle;">
                     <div style="font-size:12px;font-weight:600;color:#1B2A4A;">{who}</div>
@@ -1075,7 +1075,7 @@ def render(digest: dict) -> str:
                   </td>
                 </tr>
               </table>
-              <p style="margin:0 0 6px 0;font-size:12px;line-height:1.4;color:#333;font-style:italic;">&ldquo;{quote}&rdquo;</p>
+              <p style="margin:0 0 6px 0;font-size:13px;line-height:1.5;color:#333;font-style:italic;">&ldquo;{quote}&rdquo;</p>
               {"<p style='margin:0;font-size:11px;color:#2980B9;'><strong>Analyst:</strong> " + note + "</p>" if note else ""}
               {source_link}
             </div>"""
@@ -1137,9 +1137,9 @@ def render(digest: dict) -> str:
       <div style="font-size:11px;color:rgba(255,255,255,0.6);line-height:1.5;">
         Korea Daily Brief &middot; By Andy Lim &middot; CSIS Korea Chair<br>
         {_esc(date_str)} &middot; {gen_time}<br>
-        <span style="color:rgba(255,255,255,0.4);">Read alongside primary sources</span>
+        <span style="color:rgba(255,255,255,0.6);">Read alongside primary sources</span>
       </div>
-      <div style="font-size:9px;color:rgba(255,255,255,0.35);margin-top:12px;line-height:1.5;">
+      <div style="font-size:10px;color:rgba(255,255,255,0.55);margin-top:12px;line-height:1.5;">
         CSIS &middot; 1616 Rhode Island Ave NW &middot; Washington, DC 20036
       </div>
     </div>
@@ -1177,9 +1177,10 @@ def render(digest: dict) -> str:
       .deal-card {{ padding:10px !important; }}
       /* Deal breakdown table — full width on mobile */
       .deal-breakdown td {{ padding:3px 4px !important; font-size:10px !important; }}
-      /* Sentiment tracker — 2x2 grid on mobile */
-      .sentiment-table tr {{ display:flex !important; flex-wrap:wrap !important; }}
-      .sentiment-table td {{ display:block !important; width:50% !important; box-sizing:border-box !important; padding:10px 6px !important; text-align:center !important; }}
+      /* Sentiment tracker — 2x2 grid on mobile (no flexbox for Outlook) */
+      .sentiment-table td {{ display:inline-block !important; width:48% !important; box-sizing:border-box !important; padding:10px 4px !important; text-align:center !important; }}
+      /* Tariff sector table — stack on mobile */
+      .tariff-sector td {{ display:block !important; width:100% !important; padding:4px 8px !important; }}
       /* Typography */
       h1 {{ font-size:19px !important; }}
       h2 {{ font-size:12px !important; }}
