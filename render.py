@@ -124,7 +124,7 @@ def render(digest: dict) -> str:
             Korea Daily Brief
           </h1>
           <div style="margin-top:4px;font-size:11px;color:rgba(255,255,255,0.5);font-family:Arial,sans-serif;">Prepared by CSIS Korea Chair</div>
-          <div style="margin-top:2px;font-size:13px;color:rgba(255,255,255,0.7);">{_esc(date_str)}</div>
+          <div style="margin-top:6px;font-size:18px;font-weight:700;color:rgba(255,255,255,0.95);letter-spacing:0.5px;font-family:Georgia,serif;">{_esc(date_str)}</div>
         </td>
         <td style="vertical-align:top;text-align:right;">
           <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.4);margin-bottom:2px;">{gen_time}</div>
@@ -179,6 +179,7 @@ def render(digest: dict) -> str:
               <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;opacity:0.5;">Exports{" (" + _esc(exports.get("month", "")) + ")" if exports.get("month") else " (Monthly)"}</div>
               <div style="font-size:15px;font-weight:700;">{_esc(str(exports.get("value", "—")))}</div>
               <div style="font-size:10px;">{_arrow(exports.get("change_pct", 0))}</div>
+              {"<div style='font-size:8px;opacity:0.4;margin-top:2px;'>as of " + _esc(exports.get("as_of", exports.get("month", ""))) + "</div>" if exports.get("as_of") or exports.get("month") else ""}
             </td>
             <td width="33%" align="center" style="padding:8px 8px 10px;">
               <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;opacity:0.5;">GDP Est. (QoQ)</div>
@@ -294,42 +295,33 @@ def render(digest: dict) -> str:
         if doctrinal:
             doctrinal_html = f"<div style='margin:12px 0;padding:8px 14px;background:#8E44AD;color:#fff;border-radius:4px;font-size:12px;'><strong>Doctrinal shift:</strong> {doctrinal}</div>"
 
-        # Key quotes from KCNA
+        # Key quotes from KCNA — compact: single best quote only
         key_quotes = kcna.get("key_quotes") or []
         quotes_html = ""
         if key_quotes:
-            for q in key_quotes[:2]:
-                qt = _esc(q.get("quote", ""))
-                src_art = _esc(q.get("source_article", ""))
-                sig = _esc(q.get("significance", ""))
-                quotes_html += f"""<div class='kcna-quote' style='margin-top:8px;padding:8px 12px;background:rgba(255,255,255,0.05);border-radius:4px;border-left:2px solid #555;'>
-                  <div style='font-size:12px;color:#D0D0D0;font-style:italic;line-height:1.4;'>&ldquo;{qt}&rdquo;</div>
-                  <div style='font-size:10px;color:#888;margin-top:3px;'>{src_art}</div>
-                  <div style='font-size:11px;color:#5DADE2;margin-top:2px;'>{sig}</div>
-                </div>"""
+            q = key_quotes[0]
+            qt = _esc(q.get("quote", ""))
+            src_art = _esc(q.get("source_article", ""))
+            quotes_html = f"""<div style='margin-top:8px;padding:6px 12px;background:rgba(255,255,255,0.05);border-radius:4px;border-left:2px solid #555;'>
+              <div style='font-size:12px;color:#D0D0D0;font-style:italic;line-height:1.4;'>&ldquo;{qt}&rdquo;</div>
+              <div style='font-size:10px;color:#888;margin-top:2px;'>{src_art}</div>
+            </div>"""
 
-        # Notable omissions
+        # Notable omissions + Senior officials — combined into compact inline
         omissions = _esc(kcna.get("notable_omissions", "")) if kcna.get("notable_omissions") else ""
         omissions_html = ""
         if omissions:
-            omissions_html = f"<div style='margin-top:8px;font-size:11px;color:#E67E22;'><strong>Notable omission:</strong> {omissions}</div>"
+            omissions_html = f"<div style='margin-top:6px;font-size:11px;color:#E67E22;'><strong>Omission:</strong> {omissions}</div>"
 
-        # Senior officials
         senior = kcna.get("senior_officials") or []
         senior_html = ""
         if senior:
-            senior_items = ""
-            for s in senior:
+            senior_parts = []
+            for s in senior[:2]:
                 name = _esc(s.get("name", ""))
-                role = _esc(s.get("role", ""))
                 act = _esc(s.get("activity", ""))
-                sig = _esc(s.get("significance", ""))
-                role_str = f' <span style="color:#888;">({role})</span>' if role else ""
-                senior_items += f"<div style='margin-bottom:4px;'><strong>{name}</strong>{role_str}: {act}"
-                if sig:
-                    senior_items += f" <span style='color:#5DADE2;font-style:italic;'>{sig}</span>"
-                senior_items += "</div>"
-            senior_html = f"<div style='margin-top:10px;font-size:11px;color:#BBB;'>{senior_items}</div>"
+                senior_parts.append(f"<strong>{name}</strong>: {act}")
+            senior_html = f"<div style='margin-top:6px;font-size:11px;color:#BBB;'>" + " · ".join(senior_parts) + "</div>"
 
         # Kim Jong Un line
         kim_today = "Yes" if kcna.get("kim_appearance_today") else "No"
@@ -362,7 +354,7 @@ def render(digest: dict) -> str:
         phrase_html = ""
         if phrases:
             phrase_rows = ""
-            for p in phrases[:7]:
+            for p in phrases[:5]:
                 ph = _esc(p.get("phrase", ""))
                 ct_w = p.get("count_this_week", 0)
                 ct_p = p.get("count_prior", 0)
@@ -1137,8 +1129,6 @@ def render(digest: dict) -> str:
         <span style="color:rgba(255,255,255,0.4);">Read alongside primary sources</span>
       </div>
       <div style="font-size:9px;color:rgba(255,255,255,0.35);margin-top:12px;line-height:1.5;">
-        <a href="mailto:korea-brief-unsubscribe@csis.org?subject=Unsubscribe" style="color:rgba(255,255,255,0.5);text-decoration:underline;">Unsubscribe</a>
-        &middot; <a href="mailto:korea-brief@csis.org?subject=Feedback" style="color:rgba(255,255,255,0.5);text-decoration:underline;">Send feedback</a><br>
         CSIS &middot; 1616 Rhode Island Ave NW &middot; Washington, DC 20036
       </div>
     </div>

@@ -6,6 +6,7 @@ Uses threaded fetching for performance (~15s vs ~60s sequential).
 import feedparser
 import requests
 import json
+import os
 import re
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -473,9 +474,8 @@ def _fetch_bok_rate() -> dict:
 
 
 def _fetch_monthly_exports() -> dict:
-    """Fetch latest monthly export figure from multiple sources."""
+    """Fetch latest monthly export figure from multiple sources with as_of date."""
     # Source 1: BOK ECOS — trade balance series (monthly exports in $M)
-    # Requires API key registered at ecos.bok.or.kr — may return empty without one
     try:
         now = datetime.now(timezone.utc)
         start = (now - timedelta(days=120)).strftime("%Y%m")
@@ -491,7 +491,6 @@ def _fetch_monthly_exports() -> dict:
                 prev_val = float(prev.get("DATA_VALUE", 0))
                 change = ((val - prev_val) / prev_val * 100) if prev_val else 0
                 val_b = val / 1000
-                # Extract month from TIME field (format: "YYYYMM")
                 time_str = latest.get("TIME", "")
                 month_label = ""
                 if time_str and len(str(time_str)) >= 6:
@@ -499,7 +498,7 @@ def _fetch_monthly_exports() -> dict:
                         month_label = datetime.strptime(str(time_str)[:6], "%Y%m").strftime("%b %Y")
                     except ValueError:
                         pass
-                return {"value": f"${val_b:.1f}B", "change_pct": round(change, 1), "month": month_label}
+                return {"value": f"${val_b:.1f}B", "change_pct": round(change, 1), "month": month_label, "as_of": month_label}
             elif rows:
                 val = float(rows[-1].get("DATA_VALUE", 0))
                 val_b = val / 1000
@@ -510,11 +509,55 @@ def _fetch_monthly_exports() -> dict:
                         month_label = datetime.strptime(str(time_str)[:6], "%Y%m").strftime("%b %Y")
                     except ValueError:
                         pass
-                return {"value": f"${val_b:.1f}B", "change_pct": 0, "month": month_label}
+                return {"value": f"${val_b:.1f}B", "change_pct": 0, "month": month_label, "as_of": month_label}
     except Exception as e:
         print(f"    ⚠  BOK exports API error: {e}")
 
-    # Source 2: MOTIE / Korea Customs Service export headlines via Google News
+    # Source 2: FRED API — South Korea exports (series XTEXVA01KRM667S)
+    # Free API, no key required for basic access
+    fred_key = os.environ.get("FRED_API_KEY", "")
+    if fred_key:
+        try:
+            fred_url = f"https://api.stlouisfed.org/fred/series/observations?series_id=XTEXVA01KRM667S&sort_order=desc&limit=2&api_key={fred_key}&file_type=json"
+            resp = requests.get(fred_url, timeout=10)
+            if resp.ok:
+                obs = resp.json().get("observations", [])
+                if len(obs) >= 2:
+                    val = float(obs[0]["value"])
+                    prev_val = float(obs[1]["value"])
+                    change = ((val - prev_val) / prev_val * 100) if prev_val else 0
+                    val_b = val / 1e9 if val > 1e6 else val  # FRED may report in USD or millions
+                    date_str = obs[0].get("date", "")
+                    month_label = ""
+                    if date_str:
+                        try:
+                            month_label = datetime.strptime(date_str, "%Y-%m-%d").strftime("%b %Y")
+                        except ValueError:
+                            pass
+                    if 20 < val_b < 100:
+                        return {"value": f"${val_b:.1f}B", "change_pct": round(change, 1), "month": month_label, "as_of": month_label}
+        except Exception as e:
+            print(f"    ⚠  FRED exports API error: {e}")
+
+    # Source 3: Korea Customs Service (KCS) open data API
+    try:
+        now = datetime.now(timezone.utc)
+        ym = (now - timedelta(days=45)).strftime("%Y%m")  # Latest complete month
+        kcs_url = f"https://unipass.customs.go.kr/ets/index.do?command=searchTotalTradeList&cntyCd=&tradeKind=EXP&priodKind=MON&priodFr={ym}&priodTo={ym}"
+        resp = requests.get(kcs_url, timeout=10, headers={"User-Agent": "Mozilla/5.0"})
+        if resp.ok:
+            data = resp.json() if resp.headers.get("content-type", "").startswith("application/json") else {}
+            items = data.get("items", [])
+            if items:
+                val = float(items[0].get("balPayAmt", 0))
+                val_b = val / 1000 if val > 100 else val  # KCS reports in $M
+                month_label = datetime.strptime(ym, "%Y%m").strftime("%b %Y")
+                if 20 < val_b < 100:
+                    return {"value": f"${val_b:.1f}B", "change_pct": 0, "month": month_label, "as_of": month_label}
+    except Exception:
+        pass
+
+    # Source 4: MOTIE / Korea Customs Service export headlines via Google News
     search_queries = [
         "South+Korea+monthly+exports+billion+MOTIE",
         "South+Korea+exports+billion+customs",
@@ -526,28 +569,26 @@ def _fetch_monthly_exports() -> dict:
             entries = _parse_feed(url)
             for entry in entries[:8]:
                 text = f"{entry.get('title', '')} {entry.get('summary', entry.get('description', ''))}"
-                # Match "$58.4 billion", "$58.4B", "58.4 billion dollars"
                 match = re.search(
                     r'(?:\$(\d+(?:\.\d+)?)\s*(?:billion|B)\b|(\d+(?:\.\d+)?)\s*billion\s*(?:dollars|USD))',
                     text, re.IGNORECASE
                 )
                 if match:
                     val = float(match.group(1) or match.group(2))
-                    if 20 < val < 100:  # sanity: ROK monthly exports are $50-70B range
-                        return {"value": f"${val:.1f}B", "change_pct": 0}
-                # Korean-language pattern: "XXX억달러" or "XXX억 달러"
+                    if 20 < val < 100:
+                        return {"value": f"${val:.1f}B", "change_pct": 0, "as_of": ""}
                 match_kr = re.search(r'(\d+(?:\.\d+)?)\s*억\s*달러', text)
                 if match_kr:
                     val_100m = float(match_kr.group(1))
-                    val_b = val_100m / 10  # 억 = 100M, so /10 = billions
+                    val_b = val_100m / 10
                     if 20 < val_b < 100:
-                        return {"value": f"${val_b:.1f}B", "change_pct": 0}
+                        return {"value": f"${val_b:.1f}B", "change_pct": 0, "as_of": ""}
         except Exception:
             continue
 
-    # Fallback: last known monthly exports (updated manually if all sources fail)
+    # Fallback: last known monthly exports
     print("    ⚠  Monthly exports: using fallback ($67.5B)")
-    return {"value": "$67.5B", "change_pct": 0}
+    return {"value": "$67.5B", "change_pct": 0, "as_of": ""}
 
 
 def _fetch_gdp_estimate() -> dict:
