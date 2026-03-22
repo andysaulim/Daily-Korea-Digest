@@ -87,7 +87,7 @@ def _estimate_word_count(digest: dict) -> int:
         words += len(str(digest.get(key, "")).split())
     for section_key in ("top_stories", "overnight_items", "also_today", "business_economy",
                          "opeds_today", "academic_today", "social_statements",
-                         "japan_korea", "china_korea"):
+                         "northeast_asia"):
         for item in (digest.get(section_key) or []):
             for field in ("body", "body_text", "summary", "detail", "quote_text",
                           "so_what", "pattern_note", "central_argument", "analyst_note"):
@@ -804,64 +804,43 @@ def render(digest: dict) -> str:
 
     # ── (Overnight Flash moved to position 4b — after Top Stories) ──────
 
-    # ── 12. Japan-Korea & Trilateral ────────────────────────────────────
-    japan_korea = digest.get("japan_korea") or []
-    if japan_korea:
-        jk_cat_colors = {
-            "history-dispute": "#C0392B", "trilateral": "#2E4057", "gsomia": "#8E44AD",
-            "trade-friction": "#D4AC0D", "diplomatic": "#2980B9", "defense-cooperation": "#1B2A4A",
+    # ── 12. Northeast Asia Watch (Japan + China + Russia → Korea) ───────
+    nea_items = digest.get("northeast_asia") or []
+    if nea_items:
+        nea_cat_colors = {
+            # Japan-Korea
+            "japan-history": "#C0392B", "trilateral": "#2E4057", "gsomia": "#8E44AD",
+            "japan-trade": "#D4AC0D", "japan-diplomatic": "#2980B9", "japan-defense": "#1B2A4A",
             "territorial": "#E67E22",
+            # China-Korea
+            "thaad-retaliation": "#C0392B", "china-coercion": "#E67E22",
+            "rare-earth": "#D4AC0D", "china-diplomatic": "#2980B9",
+            "china-military": "#8E44AD", "china-trade": "#1B2A4A", "china-opinion": "#16A085",
+            # Russia-Korea
+            "russia-weapons": "#C0392B", "russia-diplomatic": "#2980B9",
+            "russia-labor": "#E67E22", "russia-sanctions": "#8E44AD", "russia-military": "#C0392B",
         }
-        jk_html = ""
-        for item in japan_korea:
+        region_colors = {"Japan-Korea": "#1B6A4A", "China-Korea": "#8B0000", "Trilateral": "#2E4057", "Russia-Korea": "#7B241C"}
+        nea_html = ""
+        for item in nea_items:
             cat = _esc(item.get("category", ""))
             headline = _esc(item.get("headline", ""))
             body = _esc(item.get("body_text", ""))
             src = _esc(item.get("source", ""))
             url = item.get("url", "")
             sig = item.get("signal_type", "")
-            bar_color = jk_cat_colors.get(item.get("category", ""), "#1B6A4A")
-            jk_html += f"""
-            <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid {bar_color};">
-              <div style="font-size:11px;color:#888;text-transform:uppercase;">
-                {cat} &middot; {src}
-                {"&nbsp;" + _signal_badge(sig) if sig else ""}
-              </div>
-              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
-                {_link_or_text(headline, url)}
-              </div>
-              <div style="font-size:12px;line-height:1.4;color:#555;">{body}</div>
-            </div>"""
-        sections.append(f"""
-        <div {_SEC}>
-          <h2 {_H2("#1B6A4A")}>Japan-Korea &amp; Trilateral</h2>
-          {jk_html}
-        </div>
-        """)
-
-    # ── 12b. China-Korea Watch ─────────────────────────────────────────
-    china_korea = digest.get("china_korea") or []
-    if china_korea:
-        ck_cat_colors = {
-            "thaad-retaliation": "#C0392B", "economic-coercion": "#E67E22",
-            "rare-earth": "#D4AC0D", "diplomatic": "#2980B9",
-            "military": "#8E44AD", "trade": "#1B2A4A", "public-opinion": "#16A085",
-        }
-        ck_html = ""
-        for item in china_korea:
-            cat = _esc(item.get("category", ""))
-            headline = _esc(item.get("headline", ""))
-            body = _esc(item.get("body_text", ""))
-            src = _esc(item.get("source", ""))
-            url = item.get("url", "")
-            sig = item.get("signal_type", "")
+            region = item.get("region_tag", "")
             is_reaction = item.get("is_reaction_source", False)
-            bar_color = ck_cat_colors.get(item.get("category", ""), "#8B0000")
-            reaction_badge = '<span style="display:inline-block;padding:1px 5px;border-radius:3px;font-size:9px;font-weight:600;color:#fff;background:#888;margin-left:6px;">PRC SOURCE</span>' if is_reaction else ""
-            ck_html += f"""
+            bar_color = nea_cat_colors.get(item.get("category", ""), region_colors.get(region, "#1B2A4A"))
+            reaction_badge = ""
+            if is_reaction:
+                badge_label = "PRC SOURCE" if "China" in region else "STATE MEDIA"
+                reaction_badge = f'<span style="display:inline-block;padding:1px 5px;border-radius:3px;font-size:9px;font-weight:600;color:#fff;background:#888;margin-left:6px;">{badge_label}</span>'
+            region_label = f'<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:{region_colors.get(region, "#888")};color:#fff;margin-right:6px;">{_esc(region)}</span>' if region else ""
+            nea_html += f"""
             <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid {bar_color};">
               <div style="font-size:11px;color:#888;text-transform:uppercase;">
-                {cat} &middot; {src}{reaction_badge}
+                {region_label}{cat} &middot; {src}{reaction_badge}
                 {"&nbsp;" + _signal_badge(sig) if sig else ""}
               </div>
               <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
@@ -871,8 +850,8 @@ def render(digest: dict) -> str:
             </div>"""
         sections.append(f"""
         <div {_SEC}>
-          <h2 {_H2("#8B0000")}>China-Korea Watch</h2>
-          {ck_html}
+          <h2 {_H2("#2C3E50")}>Northeast Asia Watch</h2>
+          {nea_html}
         </div>
         """)
 
