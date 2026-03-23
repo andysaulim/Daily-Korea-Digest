@@ -25,16 +25,24 @@ _STOP_WORDS = frozenset({"the", "a", "an", "in", "on", "of", "to", "for", "and",
                          "its", "new", "over", "after", "says", "said", "amid", "that", "has", "will", "may", "could",
                          "been", "are", "was", "were", "this", "but", "not", "all", "more", "than", "also"})
 
-# Key entities — different names for the same subject that should be treated as duplicates
-_ENTITY_ALIASES = {
+# Topic entities — entity match alone triggers dedup (institution/person/event)
+_TOPIC_ENTITIES = {
     "bok": {"bok", "bank of korea", "central bank", "monetary policy", "rate decision", "interest rate", "base rate", "benchmark rate"},
     "kim jong un": {"kim jong un", "kim jongun", "kju", "north korean leader", "dprk leader", "supreme leader"},
-    "samsung": {"samsung", "samsung electronics"},
-    "hyundai": {"hyundai", "hyundai motor", "hyundai motors"},
     "yoon": {"yoon", "yoon suk yeol", "yoon suk-yeol", "president yoon"},
     "lee jae myung": {"lee jae myung", "lee jae-myung", "lee jaemyung"},
     "usfk": {"usfk", "us forces korea", "united states forces korea"},
     "freedom shield": {"freedom shield", "joint military exercise", "joint drill", "combined exercise"},
+}
+
+# Company entities — need keyword overlap too (big conglomerates have many unrelated stories)
+_COMPANY_ENTITIES = {
+    "samsung": {"samsung", "samsung electronics"},
+    "hyundai": {"hyundai", "hyundai motor", "hyundai motors"},
+    "sk": {"sk hynix", "sk group", "sk innovation", "sk telecom"},
+    "posco": {"posco"},
+    "hanwha": {"hanwha"},
+    "lg": {"lg energy", "lg electronics", "lg chem"},
 }
 
 # All sections that contain items with URLs/headlines
@@ -42,15 +50,113 @@ _ALL_ITEM_SECTIONS = ("top_stories", "overnight_items", "also_today",
                        "business_economy", "opeds_today", "academic_today",
                        "social_statements", "northeast_asia")
 
+# Sections where duplicates get auto-stripped (priority order — first wins)
+_DEDUP_SECTIONS = ("top_stories", "overnight_items", "business_economy",
+                    "northeast_asia", "also_today")
 
-def _extract_entities(text: str) -> set[str]:
-    """Extract key entity tags from a headline for topic-level dedup."""
+
+def _extract_entities(text: str) -> tuple[set[str], set[str]]:
+    """Extract topic and company entity tags from a headline.
+    Returns (topic_entities, company_entities)."""
     text_lower = text.lower()
-    entities = set()
-    for tag, aliases in _ENTITY_ALIASES.items():
+    topics = set()
+    companies = set()
+    for tag, aliases in _TOPIC_ENTITIES.items():
         if any(alias in text_lower for alias in aliases):
-            entities.add(tag)
-    return entities
+            topics.add(tag)
+    for tag, aliases in _COMPANY_ENTITIES.items():
+        if any(alias in text_lower for alias in aliases):
+            companies.add(tag)
+    return topics, companies
+
+
+def _headline_key(item: dict) -> tuple[str, set, set, set]:
+    """Return (headline, keywords, topic_entities, company_entities) for an item."""
+    headline = (item.get("headline", "") or "").lower().strip()
+    words = {w for w in re.split(r'\W+', headline) if len(w) > 2 and w not in _STOP_WORDS}
+    topics, companies = _extract_entities(headline)
+    return headline, words, topics, companies
+
+
+def _is_dup(words_a, topics_a, companies_a, words_b, topics_b, companies_b) -> str | None:
+    """Check if two items are duplicates. Returns reason string or None."""
+    if not words_a or not words_b:
+        return None
+    # Keyword overlap
+    overlap = words_a & words_b
+    min_len = min(len(words_a), len(words_b))
+    keyword_dup = min_len > 1 and len(overlap) >= 2 and len(overlap) / min_len >= 0.5
+    if keyword_dup:
+        return "keyword overlap"
+    # Topic entity match (BOK, KJU, etc.) — standalone trigger
+    shared_topics = topics_a & topics_b
+    if shared_topics:
+        return f"shared topic: {shared_topics}"
+    # Company entity match — need 2+ non-entity keyword overlaps
+    # (company names alone aren't enough — Samsung has many unrelated stories)
+    shared_companies = companies_a & companies_b
+    if shared_companies:
+        # Strip out company name words from overlap to avoid self-matching
+        company_words = set()
+        for tag in shared_companies:
+            for alias in _COMPANY_ENTITIES.get(tag, set()):
+                company_words.update(w for w in alias.split() if len(w) > 2)
+        non_entity_overlap = overlap - company_words
+        if len(non_entity_overlap) >= 2:
+            return f"shared company + keywords: {shared_companies}, {non_entity_overlap}"
+    return None
+
+
+def _dedup_digest(digest: dict) -> tuple[dict, list[str]]:
+    """Auto-strip duplicate topics from digest. Returns (cleaned_digest, log_messages).
+
+    Walks sections in priority order. For each item, checks against all items
+    already seen. If duplicate, removes it from the lower-priority section.
+    """
+    log = []
+    seen = []  # (section, headline, words, topics, companies)
+
+    for section_key in _DEDUP_SECTIONS:
+        items = digest.get(section_key)
+        if not items or not isinstance(items, list):
+            continue
+
+        # Also dedup URLs within the section pass
+        seen_urls_in_pass = {}
+
+        kept = []
+        for item in items:
+            url = (item.get("url") or "").strip()
+
+            # URL dedup
+            if url and url.startswith("http"):
+                if url in seen_urls_in_pass:
+                    log.append(f"  Removed duplicate URL in {section_key}: {url[:80]}")
+                    continue
+                seen_urls_in_pass[url] = True
+
+            headline, words, topics, companies = _headline_key(item)
+            if len(headline) < 15:
+                kept.append(item)
+                continue
+
+            is_duplicate = False
+            for prev_section, prev_headline, prev_words, prev_topics, prev_companies in seen:
+                reason = _is_dup(words, topics, companies, prev_words, prev_topics, prev_companies)
+                if reason:
+                    log.append(
+                        f"  Removed from {section_key} ({reason}): "
+                        f"'{headline[:60]}' — kept in {prev_section}: '{prev_headline[:60]}'")
+                    is_duplicate = True
+                    break
+
+            if not is_duplicate:
+                kept.append(item)
+                seen.append((section_key, headline, words, topics, companies))
+
+        digest[section_key] = kept
+
+    return digest, log
 
 
 def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
@@ -93,7 +199,7 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
 
     # ── Single pass over all items: URLs, headlines, sources, body checks ─
     seen_urls = {}
-    seen_headlines = []  # (section, headline_text, keyword_set, entity_set)
+    seen_headlines = []  # (section, headline, keywords, topic_entities, company_entities)
     source_counts = {}
     bad_urls = 0
     dup_url_count = 0
@@ -130,29 +236,16 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
                     source_counts[src] = source_counts.get(src, 0) + 1
 
             # Duplicate topic check (keyword overlap + entity matching)
-            headline = (item.get("headline", "") or "").lower().strip()
+            headline, words, topics, companies = _headline_key(item)
             if len(headline) > 15:
-                words = {w for w in re.split(r'\W+', headline) if len(w) > 2 and w not in _STOP_WORDS}
-                entities = _extract_entities(headline)
-                is_dup = False
-                for prev_section, prev_headline, prev_words, prev_entities in seen_headlines:
-                    if not words or not prev_words:
-                        continue
-                    # Method 1: keyword overlap (existing)
-                    overlap = words & prev_words
-                    min_len = min(len(words), len(prev_words))
-                    keyword_dup = min_len > 1 and len(overlap) >= 2 and len(overlap) / min_len >= 0.5
-                    # Method 2: shared key entity (catches "BOK holds rate" vs "Central bank keeps benchmark steady")
-                    entity_dup = bool(entities and prev_entities and entities & prev_entities)
-                    if keyword_dup or entity_dup:
-                        label = "DUPLICATE TOPIC CRITICAL" if prev_section == section_key else "DUPLICATE TOPIC CRITICAL"
-                        match_reason = f"shared entities: {entities & prev_entities}" if entity_dup and not keyword_dup else "keyword overlap"
+                for prev_section, prev_headline, prev_words, prev_topics, prev_companies in seen_headlines:
+                    reason = _is_dup(words, topics, companies, prev_words, prev_topics, prev_companies)
+                    if reason:
                         warnings.append(
-                            f"{label}: same topic in {prev_section} and {section_key} ({match_reason}): "
+                            f"DUPLICATE TOPIC CRITICAL: same topic in {prev_section} and {section_key} ({reason}): "
                             f"'{headline[:60]}...' vs '{prev_headline[:60]}...'")
-                        is_dup = True
                         break
-                seen_headlines.append((section_key, headline, words, entities))
+                seen_headlines.append((section_key, headline, words, topics, companies))
 
     if bad_urls:
         warnings.append(f"BAD URLS: {bad_urls} placeholder or invalid URLs found")
@@ -244,6 +337,13 @@ def main():
     from digest import generate_digest, regenerate_digest
     MAX_VALIDATION_RETRIES = 2
     digest_data = generate_digest(payload, db_context=db_context)
+
+    # Auto-strip duplicates before validation (Claude misses these reliably)
+    digest_data, dedup_log = _dedup_digest(digest_data)
+    if dedup_log:
+        print(f"\n🧹  Auto-dedup removed {len(dedup_log)} duplicate(s):")
+        for msg in dedup_log:
+            print(msg)
     Path("digest.json").write_text(json.dumps(digest_data, ensure_ascii=False, indent=2))
 
     # ── Step 2+: Update Kim Jong Un appearance tracker ───────────────────────
@@ -276,6 +376,12 @@ def main():
             digest_data = regenerate_digest(
                 payload, digest_data, critical_warnings, db_context=db_context
             )
+            # Auto-strip duplicates again
+            digest_data, dedup_log = _dedup_digest(digest_data)
+            if dedup_log:
+                print(f"  🧹  Auto-dedup removed {len(dedup_log)} duplicate(s):")
+                for msg in dedup_log:
+                    print(msg)
             Path("digest.json").write_text(json.dumps(digest_data, ensure_ascii=False, indent=2))
         else:
             print("\n🚫  CRITICAL validation failures after all retries — newsletter will NOT be sent.")
