@@ -1206,20 +1206,31 @@ def render(digest: dict) -> str:
       .trade-policy td {{ display:block !important; width:100% !important; padding:4px 8px !important; }}
       .trade-policy tr {{ display:block !important; border-bottom:1px solid #E8E8E8 !important; padding:6px 0 !important; }}
     }}
+    /* Tablet breakpoint — tighten padding, keep grids side-by-side */
+    @media only screen and (min-width: 621px) and (max-width: 768px) {{
+      .wrapper {{ width:100% !important; }}
+      .sec, .footer {{ padding:14px 20px !important; }}
+      h1 {{ font-size:21px !important; }}
+      .deal-card {{ padding:12px !important; }}
+      .mkt-table div[style*="font-size:18px"], .mkt-table div[style*="font-size:15px"] {{ font-size:16px !important; }}
+    }}
     /* Dark mode support */
     @media (prefers-color-scheme: dark) {{
+      body {{ background:#121212 !important; }}
       .wrapper {{ background:#1a1a1a !important; }}
       .wrapper .sec {{ background:#222 !important; border-bottom-color:#333 !important; }}
       .wrapper h1, .wrapper h2, .wrapper h3 {{ color:#E0E0E0 !important; }}
-      .wrapper p, .wrapper div {{ color:#CCC !important; }}
+      .wrapper p, .wrapper div, .wrapper td, .wrapper span {{ color:#CCC !important; }}
       .wrapper a {{ color:#5DADE2 !important; }}
       .wrapper .footer {{ background:#0F1A2E !important; }}
-      .wrapper .story-card {{ background:#2a2a2a !important; }}
+      .wrapper .story-card {{ background:#2a2a2a !important; border-color:#333 !important; }}
       .wrapper .kcna-dark {{ background:#1a2a1a !important; }}
       .wrapper .kcna-dark table {{ background:#1a2a1a !important; }}
       .wrapper .gov-grid div {{ background:#2a2a2a !important; }}
       .wrapper .sentiment-spotlight {{ background:#1a2a3a !important; border-left-color:#2980B9 !important; color:#CCC !important; }}
       .wrapper .sentiment-discourse {{ background:#3a2a1a !important; border-left-color:#E67E22 !important; color:#CCC !important; }}
+      .wrapper .deal-card {{ background:#2a2a2a !important; border-color:#333 !important; }}
+      .wrapper .mkt-table td {{ border-color:#333 !important; }}
     }}
   </style>
   <!--[if mso]>
