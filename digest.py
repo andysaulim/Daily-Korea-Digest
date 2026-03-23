@@ -159,6 +159,16 @@ Cross-reference these reports with KCNA Tier 4 data to determine kim_appearance_
 {kim_history}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"""
 
+    # KCNA rhetoric history (persistent tracker)
+    kcna_block = ""
+    from kcna_tracker import build_context_block as kcna_context
+    kcna_history = kcna_context()
+    if kcna_history:
+        kcna_block = f"""
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{kcna_history}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"""
+
     # Sentiment baseline from collector
     sentiment_block = ""
     sentiment = payload.get("sentiment_baseline")
@@ -182,6 +192,7 @@ CRITICAL — SOURCE URLs: Every article, op-ed, academic paper, deal, and statem
 {market_block}
 {sentiment_block}
 {kim_block}
+{kcna_block}
 {db_block}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 TIER 1: NEWS ARTICLES (last 24h)
@@ -277,7 +288,8 @@ Return a digest object with:
     - section_122_surcharge: string — BASELINE: "10% global surcharge (Section 122, effective Feb 24 2026, expires Jul 24 2026)" — update if today's articles report a change (Trump signaled possible increase to 15% statutory max but no formal action taken)
     - last_change: date + description of most recent change
     - next_trigger: string or null — upcoming deadline/event. BASELINE: "Jul 24 2026 — Section 122 surcharge expiry (150-day statutory limit); Apr 14 2026 — Commerce/USTR semiconductor tariff report due; Section 301 investigations ongoing"
-  - deals: array of NEW deals announced TODAY only. Each: url, source, headline, value (or null), sector, parties, detail (1 sentence), wh_tracker (boolean). Empty array if no new deals.
+  - deals: array of NEW deals announced TODAY that DIRECTLY involve both the United States and South Korea. Each: url, source, headline, value (or null), sector, parties, detail (1 sentence), wh_tracker (boolean). Empty array if no new deals.
+    STRICT FILTER: Only include deals where BOTH parties are US and Korean entities, or where a Korean company is investing IN the United States, or where a US policy directly affects Korean trade. Do NOT include Korean company deals with non-US countries (e.g. Oceania, Middle East, EU, Japan). A Samsung Heavy order for an Oceanian shipper is NOT a US-Korea deal. A Hyundai contract with a German automaker is NOT a US-Korea deal. When in doubt, leave it out — this section is specifically for the US-Korea bilateral trade relationship.
   REFERENCE — White House Investment Tracker ($350B pledge). Timeline: framework agreed Jul 30 2025; Trump-Lee summit Aug 25 2025 (Washington); Trump state visit to Korea Oct 29 2025 (Gyeongju); National Assembly passed Special Investment Act Mar 12 2026 (226-8-8), creating Korea-US Strategic Investment Corporation. Investment structure: $150B shipbuilding, $200B strategic sectors (capped $20B/yr), $100B US energy purchases. Known entries:
     Samsung Electronics: $37B (Semiconductors), Hyundai: $26B (Manufacturing), SK Group: $22B (Semiconductors & Batteries), HD Hyundai: $1.3B (Energy & Shipbuilding), LS Cable & System: $689M (Manufacturing), Samsung Biologics: $280M (Pharma), Paris Baguette: $160M (Food & Beverage), Hanwha Ocean: $70M (Manufacturing), Korean Air: $36.2B (Boeing aircraft purchase, Oct 2025 summit), Korean Air / GE Aerospace: $13.7B (Engines for Boeing fleet, Oct 2025 summit).
   All MUST appear in known_deals. Set wh_tracker=true for any Korean company investing in the US.

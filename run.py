@@ -159,6 +159,44 @@ def _dedup_digest(digest: dict) -> tuple[dict, list[str]]:
     return digest, log
 
 
+_US_KEYWORDS = frozenset({
+    "us", "u.s.", "united states", "america", "american", "washington",
+    "ustr", "commerce department", "white house", "pentagon", "congress",
+    "treasury", "biden", "trump", "section 232", "section 301", "section 122",
+    "ieepa", "cfius", "ita", "itc",
+})
+
+
+def _filter_non_us_deals(digest: dict) -> list[str]:
+    """Remove deals from us_korea_deals.deals that don't involve the US.
+
+    Returns log messages for any removed items.
+    """
+    log = []
+    us_korea = digest.get("us_korea_deals")
+    if not us_korea or not isinstance(us_korea, dict):
+        return log
+
+    deals = us_korea.get("deals")
+    if not deals or not isinstance(deals, list):
+        return log
+
+    kept = []
+    for deal in deals:
+        # Check headline, detail, and parties for US connection
+        text = " ".join(str(deal.get(f, "")) for f in
+                        ("headline", "detail", "parties", "sector")).lower()
+        has_us = any(kw in text for kw in _US_KEYWORDS)
+        if has_us:
+            kept.append(deal)
+        else:
+            headline = deal.get("headline", "")[:80]
+            log.append(f"  Removed non-US deal from us_korea_deals: '{headline}'")
+
+    us_korea["deals"] = kept
+    return log
+
+
 def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
     """Pre-send quality gate. Returns list of warnings (empty = all clear)."""
     warnings = []
@@ -352,10 +390,19 @@ def main():
         print(f"\n🧹  Auto-dedup removed {len(dedup_log)} duplicate(s):")
         for msg in dedup_log:
             print(msg)
+
+    # Filter non-US deals from us_korea_deals section
+    deal_log = _filter_non_us_deals(digest_data)
+    if deal_log:
+        print(f"\n🧹  Filtered {len(deal_log)} non-US deal(s) from trade section:")
+        for msg in deal_log:
+            print(msg)
+
     Path("digest.json").write_text(json.dumps(digest_data, ensure_ascii=False, indent=2))
 
-    # ── Step 2+: Update Kim Jong Un appearance tracker ───────────────────────
+    # ── Step 2+: Update Kim Jong Un appearance tracker + KCNA rhetoric tracker
     from kim_tracker import update_from_digest
+    from kcna_tracker import update_from_digest as kcna_update_from_digest
 
     for validation_attempt in range(1 + MAX_VALIDATION_RETRIES):
         # ── Step 2a: Pre-send validation gate ─────────────────────────────────
@@ -403,12 +450,18 @@ def main():
                 print(f"  🧹  Auto-dedup removed {len(dedup_log)} duplicate(s):")
                 for msg in dedup_log:
                     print(msg)
+            deal_log = _filter_non_us_deals(digest_data)
+            if deal_log:
+                print(f"  🧹  Filtered {len(deal_log)} non-US deal(s) from trade section:")
+                for msg in deal_log:
+                    print(msg)
             Path("digest.json").write_text(json.dumps(digest_data, ensure_ascii=False, indent=2))
         else:
             print("\n🚫  CRITICAL validation failures after all retries — newsletter will NOT be sent.")
             print("    Fix the issues above or re-run. HTML still rendered for review.")
 
     update_from_digest(digest_data)
+    kcna_update_from_digest(digest_data)
 
     # ── Step 2b: Push flagged entries to databases ────────────────────────────
     if not args.no_push:
