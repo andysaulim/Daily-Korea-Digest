@@ -418,7 +418,8 @@ def _strip_fences(raw: str) -> str:
     """Remove markdown code fences if present."""
     text = raw.strip()
     if text.startswith("```"):
-        text = text.split("\n", 1)[1]
+        parts = text.split("\n", 1)
+        text = parts[1] if len(parts) > 1 else text[3:]  # handle "```" with no newline
         if text.endswith("```"):
             text = text.rsplit("```", 1)[0]
     return text
@@ -523,7 +524,7 @@ def generate_digest(payload: dict, db_context: str = "") -> dict:
 
             if content_failures:
                 # Use the best result across all attempts
-                if best_word_count > word_count:
+                if best_digest and best_word_count > word_count:
                     print(f"  ⚠  Final attempt (~{word_count} words) — using best attempt (~{best_word_count} words)")
                     digest = best_digest
                     word_count = best_word_count
@@ -552,7 +553,10 @@ def generate_digest(payload: dict, db_context: str = "") -> dict:
                 print(f"  ✗  JSON parse error: {e}")
                 raise
 
-    return digest  # fallback (shouldn't reach here)
+    # All attempts exhausted via exceptions — return best if available
+    if best_digest:
+        return best_digest
+    raise RuntimeError("Failed to generate digest after all attempts")
 
 
 def regenerate_digest(payload: dict, previous_digest: dict,

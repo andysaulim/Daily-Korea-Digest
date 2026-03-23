@@ -378,16 +378,16 @@ def render(digest: dict) -> str:
         kcna_baseline = _esc(kcna.get("baseline_period", ""))
         baseline_html = f"7-day baseline · {kcna_baseline}" if kcna_baseline else ""
 
-        # Tone shift card (separate from output volume)
-        tone_html = ""
+        # Tone shift card (full-width row below Kim/Volume)
+        tone_row_html = ""
         if tone_shift:
-            tone_html = f"""
-                <td style="vertical-align:top;width:50%;">
-                  <div style="padding:8px 12px;background:rgba(230,126,34,0.1);border-radius:4px;border-left:2px solid #E67E22;">
-                    <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.6);margin-bottom:4px;">Tone Shift</div>
-                    <div style="font-size:12px;color:#E67E22;font-weight:600;line-height:1.4;">&#8644; {tone_shift}</div>
-                  </div>
-                </td>"""
+            tone_row_html = f"""
+              <tr><td colspan="2" style="padding-top:8px;">
+                <div style="padding:8px 12px;background:rgba(230,126,34,0.1);border-radius:4px;border-left:2px solid #E67E22;">
+                  <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.6);margin-bottom:4px;">Tone Shift</div>
+                  <div style="font-size:12px;color:#E67E22;font-weight:600;line-height:1.4;">&#8644; {tone_shift}</div>
+                </div>
+              </td></tr>"""
 
         # Key phrase changes table
         phrases = kcna.get("key_phrase_changes") or []
@@ -458,7 +458,7 @@ def render(digest: dict) -> str:
                   </div>
                 </td>
               </tr>
-              {"<tr><td colspan='2' style='padding-top:8px;'></td></tr><tr>" + tone_html + "<td></td></tr>" if tone_shift else ""}
+              {tone_row_html}
             </table>
             {prop_html}
             {quotes_html}

@@ -12,7 +12,10 @@ TRACKER_FILE = Path(__file__).parent / "kim_tracker.json"
 def _load() -> dict:
     """Load tracker data from disk."""
     if TRACKER_FILE.exists():
-        return json.loads(TRACKER_FILE.read_text())
+        try:
+            return json.loads(TRACKER_FILE.read_text())
+        except (json.JSONDecodeError, IOError):
+            pass
     return {"appearances": [], "last_updated": None}
 
 

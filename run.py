@@ -203,13 +203,34 @@ _SOURCE_CAP = 2
 def _normalize_source(src: str) -> str:
     """Collapse source name variants to a canonical key."""
     s = src.lower().strip()
-    # Collapse common Yonhap variants
-    for prefix in ("yonhap", "연합뉴스"):
+    # Map of prefix → canonical name
+    _PREFIX_MAP = {
+        "yonhap": "yonhap", "연합뉴스": "yonhap",
+        "reuters": "reuters",
+        "nikkei": "nikkei",
+        "kyodo": "kyodo",
+        "associated press": "ap", "ap news": "ap",
+        "agence france": "afp", "afp": "afp",
+        "korea herald": "korea herald",
+        "korea times": "korea times",
+        "joongang": "joongang", "중앙일보": "joongang",
+        "chosun": "chosun", "조선일보": "chosun",
+        "hankyoreh": "hankyoreh", "한겨레": "hankyoreh",
+        "dong-a": "dong-a", "동아일보": "dong-a",
+        "maeil": "maeil", "매일경제": "maeil",
+        "hankook": "hankook", "한국경제": "hankook",
+        "jtbc": "jtbc", "kbs": "kbs", "mbc": "mbc", "sbs": "sbs", "ytn": "ytn",
+        "nk news": "nk news", "nk pro": "nk news",
+        "daily nk": "daily nk",
+        "scmp": "scmp", "south china morning": "scmp",
+        "global times": "global times",
+        "tass": "tass", "xinhua": "xinhua",
+        "japan times": "japan times",
+    }
+    for prefix, canonical in _PREFIX_MAP.items():
         if s.startswith(prefix):
-            return "yonhap"
-    for prefix in ("reuters", "nikkei", "kyodo"):
-        if s.startswith(prefix):
-            return prefix
+            return canonical
+    # Fallback: return as-is (lowercased)
     return s
 
 def _enforce_source_diversity(digest: dict) -> list[str]:
@@ -379,18 +400,37 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
         warnings.append(f"SENTIMENT: missing values for {', '.join(missing_sentiment)}")
 
     # ── Prestige outlet cross-reference ───────────────────────────────
+    # Use canonical name matching so "WSJ" matches "Wall Street Journal" etc.
+    _PRESTIGE_CANONICAL = {
+        "wsj": "wsj", "wall street journal": "wsj",
+        "washington post": "wapo", "wapo": "wapo",
+        "nyt": "nyt", "new york times": "nyt",
+        "bloomberg": "bloomberg",
+        "financial times": "ft", "ft": "ft",
+        "economist": "economist", "the economist": "economist",
+    }
+    def _prestige_key(source_name: str) -> str | None:
+        s = source_name.lower().strip()
+        for prefix, key in _PRESTIGE_CANONICAL.items():
+            if prefix in s:
+                return key
+        return None
+
     if payload:
-        prestige_in_input = set()
+        prestige_in_input: dict[str, str] = {}  # canonical_key -> original source name
         for a in (payload.get("tier1") or []):
             src = (a.get("source") or "").strip()
-            if any(p.lower() in src.lower() for p in _PRESTIGE_OUTLETS):
-                prestige_in_input.add(src)
-        digest_sources = set()
+            pk = _prestige_key(src)
+            if pk and pk not in prestige_in_input:
+                prestige_in_input[pk] = src
+        digest_prestige_keys: set[str] = set()
         for section_key in ("top_stories", "overnight_items", "also_today"):
             for item in (digest.get(section_key) or []):
-                digest_sources.add((item.get("source") or "").strip())
-        for src in prestige_in_input:
-            if not any(src.lower() in ds.lower() or ds.lower() in src.lower() for ds in digest_sources):
+                pk = _prestige_key(item.get("source", ""))
+                if pk:
+                    digest_prestige_keys.add(pk)
+        for pk, src in prestige_in_input.items():
+            if pk not in digest_prestige_keys:
                 warnings.append(
                     f"PRESTIGE OUTLET DROPPED: '{src}' had Korea articles in input but none appeared in digest")
 
