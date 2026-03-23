@@ -426,17 +426,24 @@ def _strip_fences(raw: str) -> str:
     return text
 
 
+FAST_MODEL = "claude-sonnet-4-20250514"
+PRIMARY_MODEL = "claude-opus-4-20250514"
+
+
 def _stream_claude(client, messages: list, max_tokens: int = 16000,
-                    _retries: int = 3) -> dict:
+                    _retries: int = 3, model: str | None = None) -> dict:
     """Stream a Claude API call and return parsed digest dict.
 
     Retries on transient connection errors (e.g. peer dropped mid-stream).
     """
+    use_model = model or PRIMARY_MODEL
+    model_label = use_model.split("-")[1]  # "opus" or "sonnet"
     for attempt in range(_retries):
         try:
+            t0 = time.time()
             collected = []
             with client.messages.stream(
-                model="claude-opus-4-20250514",
+                model=use_model,
                 max_tokens=max_tokens,
                 system=SYSTEM_PROMPT,
                 messages=messages,
@@ -446,9 +453,12 @@ def _stream_claude(client, messages: list, max_tokens: int = 16000,
             response = stream.get_final_message()
             if response.stop_reason == "max_tokens":
                 print(f"  ⚠  Response truncated (hit {response.usage.output_tokens} tokens)")
+            elapsed = time.time() - t0
             raw_text = "".join(collected)
             if not raw_text.strip():
                 raise ValueError("Empty response from Claude API")
+            print(f"    ⏱  {model_label} call: {elapsed:.0f}s "
+                  f"({response.usage.input_tokens} in / {response.usage.output_tokens} out)")
             return json.loads(_strip_fences(raw_text))
         except (httpx.RemoteProtocolError, httpx.ReadError, httpx.StreamError) as e:
             if attempt < _retries - 1:
@@ -459,9 +469,11 @@ def _stream_claude(client, messages: list, max_tokens: int = 16000,
                 raise
 
 
-def _call_claude(client, user_prompt: str, max_tokens: int = 16000) -> dict:
+def _call_claude(client, user_prompt: str, max_tokens: int = 16000,
+                  model: str | None = None) -> dict:
     """Single Claude API call. Returns parsed digest dict."""
-    return _stream_claude(client, [{"role": "user", "content": user_prompt}], max_tokens)
+    return _stream_claude(client, [{"role": "user", "content": user_prompt}],
+                          max_tokens, model=model)
 
 
 def generate_digest(payload: dict, db_context: str = "") -> dict:
@@ -484,9 +496,11 @@ def generate_digest(payload: dict, db_context: str = "") -> dict:
 
     for attempt in range(MAX_ATTEMPTS):
         try:
+            # Use Opus for initial generation, Sonnet for expansion retries
+            retry_model = None if attempt == 0 else FAST_MODEL
             if attempt == 0 or digest is None:
                 # First attempt, or previous attempt failed to produce any output
-                digest = _call_claude(client, user_prompt)
+                digest = _call_claude(client, user_prompt, model=retry_model)
             else:
                 # Re-prompt with the previous output + specific expansion instructions
                 word_deficit = max(0, 1000 - _count_digest_words(digest))
@@ -513,7 +527,7 @@ def generate_digest(payload: dict, db_context: str = "") -> dict:
                     {"role": "assistant", "content": json.dumps(digest, ensure_ascii=False)[:4000]},
                     {"role": "user", "content": expansion_prompt}
                 ]
-                digest = _stream_claude(client, messages)
+                digest = _stream_claude(client, messages, model=retry_model)
 
             # Ensure market data from collector is preserved
             if payload.get("market_indicators") and not digest.get("market_indicators"):
@@ -614,9 +628,9 @@ def regenerate_digest(payload: dict, previous_digest: dict,
         {"role": "user", "content": fix_prompt},
     ]
 
-    print(f"  Sending validation feedback to Claude ({len(validation_warnings)} issues)...")
+    print(f"  Sending validation feedback to Claude via Sonnet ({len(validation_warnings)} issues)...")
     try:
-        digest = _stream_claude(client, messages)
+        digest = _stream_claude(client, messages, model=FAST_MODEL)
         # Preserve market data
         if payload.get("market_indicators") and not digest.get("market_indicators"):
             digest["market_indicators"] = payload["market_indicators"]
