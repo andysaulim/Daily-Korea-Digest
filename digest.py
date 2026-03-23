@@ -332,24 +332,39 @@ def _check_content_minimums(digest: dict) -> list[str]:
     return failures
 
 
-def _call_claude(client, user_prompt: str, max_tokens: int = 16000) -> dict:
-    """Single Claude API call. Returns parsed digest dict."""
-    response = client.messages.create(
+def _strip_fences(raw: str) -> str:
+    """Remove markdown code fences if present."""
+    text = raw.strip()
+    if text.startswith("```"):
+        text = text.split("\n", 1)[1]
+        if text.endswith("```"):
+            text = text.rsplit("```", 1)[0]
+    return text
+
+
+def _stream_claude(client, messages: list, max_tokens: int = 16000) -> dict:
+    """Stream a Claude API call and return parsed digest dict."""
+    collected = []
+    with client.messages.stream(
         model="claude-opus-4-20250514",
         max_tokens=max_tokens,
         system=SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": user_prompt}]
-    )
+        messages=messages,
+    ) as stream:
+        for text in stream.text_stream:
+            collected.append(text)
+    response = stream.get_final_message()
     if response.stop_reason == "max_tokens":
         print(f"  ⚠  Response truncated (hit {response.usage.output_tokens} tokens)")
-    if not response.content:
+    raw_text = "".join(collected)
+    if not raw_text.strip():
         raise ValueError("Empty response from Claude API")
-    raw_text = response.content[0].text.strip()
-    if raw_text.startswith("```"):
-        raw_text = raw_text.split("\n", 1)[1]
-        if raw_text.endswith("```"):
-            raw_text = raw_text.rsplit("```", 1)[0]
-    return json.loads(raw_text)
+    return json.loads(_strip_fences(raw_text))
+
+
+def _call_claude(client, user_prompt: str, max_tokens: int = 16000) -> dict:
+    """Single Claude API call. Returns parsed digest dict."""
+    return _stream_claude(client, [{"role": "user", "content": user_prompt}], max_tokens)
 
 
 def generate_digest(payload: dict, db_context: str = "") -> dict:
@@ -401,20 +416,7 @@ def generate_digest(payload: dict, db_context: str = "") -> dict:
                     {"role": "assistant", "content": json.dumps(digest, ensure_ascii=False)[:4000]},
                     {"role": "user", "content": expansion_prompt}
                 ]
-                response = client.messages.create(
-                    model="claude-opus-4-20250514",
-                    max_tokens=16000,
-                    system=SYSTEM_PROMPT,
-                    messages=messages
-                )
-                if not response.content:
-                    raise ValueError("Empty response from Claude API")
-                raw_text = response.content[0].text.strip()
-                if raw_text.startswith("```"):
-                    raw_text = raw_text.split("\n", 1)[1]
-                    if raw_text.endswith("```"):
-                        raw_text = raw_text.rsplit("```", 1)[0]
-                digest = json.loads(raw_text)
+                digest = _stream_claude(client, messages)
 
             # Ensure market data from collector is preserved
             if payload.get("market_indicators") and not digest.get("market_indicators"):
