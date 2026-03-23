@@ -125,6 +125,20 @@ _H2 = lambda color: f'style="margin:0 0 8px 0;font-size:12px;color:{color};text-
 _PILL = lambda bg: f'style="display:inline-block;background:{bg};color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;padding:4px 12px;border-radius:12px;font-family:Arial,sans-serif;margin-bottom:8px;"'
 
 
+def _item_block(cat: str, src: str, headline: str, body: str, url: str,
+                 bar_color: str = "#1B2A4A", extra_html: str = "") -> str:
+    """Render a standard border-left news item (used by overnight, also_today, business, NEA)."""
+    return f"""
+            <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid {bar_color};">
+              <div style="font-size:11px;color:#888;text-transform:uppercase;">{cat} &middot; {src}</div>
+              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
+                {_link_or_text(headline, url)}
+              </div>
+              <div style="font-size:12px;line-height:1.4;color:#555;">{body}</div>
+              {extra_html}
+            </div>"""
+
+
 def _estimate_word_count(digest: dict) -> int:
     """Rough word count across all text fields for 'X min read' estimate."""
     words = 0
@@ -934,12 +948,6 @@ def render(digest: dict) -> str:
             "real-estate": "#E67E22", "macro": "#C0392B",
         }
         for item in biz_econ:
-            cat = _esc(_str(item.get("category", item.get("sector", ""))))
-            headline = _esc(item.get("headline", ""))
-            body = _esc(item.get("body_text", ""))
-            src = _esc(_clean_src(item.get("source", "")))
-            url = item.get("url", "")
-            bar_color = biz_sector_colors.get(_str(item.get("sector", "")), "#1B2A4A")
             companies = item.get("companies") or []
             company_tags = ""
             if companies:
@@ -948,15 +956,15 @@ def render(digest: dict) -> str:
                     for c in companies[:3]
                 )
                 company_tags = f'<div style="margin-top:3px;">{company_tags}</div>'
-            biz_html += f"""
-            <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid {bar_color};">
-              <div style="font-size:11px;color:#888;text-transform:uppercase;">{cat} &middot; {src}</div>
-              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
-                {_link_or_text(headline, url)}
-              </div>
-              <div style="font-size:12px;line-height:1.4;color:#555;">{body}</div>
-              {company_tags}
-            </div>"""
+            biz_html += _item_block(
+                cat=_esc(_str(item.get("category", item.get("sector", "")))),
+                src=_esc(_clean_src(item.get("source", ""))),
+                headline=_esc(item.get("headline", "")),
+                body=_esc(item.get("body_text", "")),
+                url=item.get("url", ""),
+                bar_color=biz_sector_colors.get(_str(item.get("sector", "")), "#1B2A4A"),
+                extra_html=company_tags,
+            )
         sections.append(f"""
         <div {_SEC}>
           <a name="business"></a><span {_PILL("#D4AC0D")}>Business &amp; Economy</span>
@@ -1117,20 +1125,14 @@ def render(digest: dict) -> str:
     if combined_also:
         wire_html = ""
         for item in combined_also:
-            cat = _esc(_str(item.get("category", "")))
-            headline = _esc(item.get("headline", ""))
-            body = _esc(item.get("body_text", ""))
-            src = _esc(_clean_src(item.get("source", "")))
-            url = item.get("url", "")
-            bar_color = _color_bar(_str(item.get("color_bar_class", "")))
-            wire_html += f"""
-            <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid {bar_color};">
-              <div style="font-size:11px;color:#888;text-transform:uppercase;">{cat} &middot; {src}</div>
-              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
-                {_link_or_text(headline, url)}
-              </div>
-              <div style="font-size:12px;line-height:1.4;color:#555;">{body}</div>
-            </div>"""
+            wire_html += _item_block(
+                cat=_esc(_str(item.get("category", ""))),
+                src=_esc(_clean_src(item.get("source", ""))),
+                headline=_esc(item.get("headline", "")),
+                body=_esc(item.get("body_text", "")),
+                url=item.get("url", ""),
+                bar_color=_color_bar(_str(item.get("color_bar_class", ""))),
+            )
         sections.append(f"""
         <div {_SEC}>
           <a name="wire"></a><span {_PILL("#7F8C8D")}>The Wire</span>

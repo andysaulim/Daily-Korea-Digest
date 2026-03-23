@@ -571,15 +571,17 @@ def _collect_markets() -> dict:
             return key, {"value": "—", "change_pct": 0, "as_of": ""}
 
     result = {}
-    with ThreadPoolExecutor(max_workers=3) as mkt_pool:
-        for k, v in mkt_pool.map(lambda kv: _fetch_symbol(*kv), symbols.items()):
+    with ThreadPoolExecutor(max_workers=6) as pool:
+        # Market prices + economic indicators in one pool
+        symbol_futures = {pool.submit(_fetch_symbol, k, v): k for k, v in symbols.items()}
+        bok_f = pool.submit(_fetch_bok_rate)
+        cds_f = pool.submit(_fetch_korea_cds)
+        gdp_f = pool.submit(_fetch_gdp_estimate)
+
+        for future in as_completed(symbol_futures):
+            k, v = future.result()
             result[k] = v
 
-    # ROK economic indicators — fetch in parallel
-    with ThreadPoolExecutor(max_workers=3) as econ_pool:
-        bok_f = econ_pool.submit(_fetch_bok_rate)
-        cds_f = econ_pool.submit(_fetch_korea_cds)
-        gdp_f = econ_pool.submit(_fetch_gdp_estimate)
     result["bok_rate"] = bok_f.result()
     result["korea_cds"] = cds_f.result()
     result["gdp_estimate"] = gdp_f.result()

@@ -230,37 +230,36 @@ def _filter_non_us_deals(digest: dict) -> list[str]:
 # Cap of 2 was too aggressive, removing 5-7 items per run and crashing word count.
 _SOURCE_CAP = 3
 
+_SOURCE_PREFIX_MAP = {
+    "yonhap": "yonhap", "연합뉴스": "yonhap",
+    "reuters": "reuters",
+    "nikkei": "nikkei",
+    "kyodo": "kyodo",
+    "associated press": "ap", "ap news": "ap",
+    "agence france": "afp", "afp": "afp",
+    "korea herald": "korea herald",
+    "korea times": "korea times",
+    "joongang": "joongang", "중앙일보": "joongang",
+    "chosun": "chosun", "조선일보": "chosun",
+    "hankyoreh": "hankyoreh", "한겨레": "hankyoreh",
+    "dong-a": "dong-a", "동아일보": "dong-a",
+    "maeil": "maeil", "매일경제": "maeil",
+    "hankook": "hankook", "한국경제": "hankook",
+    "jtbc": "jtbc", "kbs": "kbs", "mbc": "mbc", "sbs": "sbs", "ytn": "ytn",
+    "nk news": "nk news", "nk pro": "nk news",
+    "daily nk": "daily nk",
+    "scmp": "scmp", "south china morning": "scmp",
+    "global times": "global times",
+    "tass": "tass", "xinhua": "xinhua",
+    "japan times": "japan times",
+}
+
 def _normalize_source(src: str) -> str:
     """Collapse source name variants to a canonical key."""
     s = src.lower().strip()
-    # Map of prefix → canonical name
-    _PREFIX_MAP = {
-        "yonhap": "yonhap", "연합뉴스": "yonhap",
-        "reuters": "reuters",
-        "nikkei": "nikkei",
-        "kyodo": "kyodo",
-        "associated press": "ap", "ap news": "ap",
-        "agence france": "afp", "afp": "afp",
-        "korea herald": "korea herald",
-        "korea times": "korea times",
-        "joongang": "joongang", "중앙일보": "joongang",
-        "chosun": "chosun", "조선일보": "chosun",
-        "hankyoreh": "hankyoreh", "한겨레": "hankyoreh",
-        "dong-a": "dong-a", "동아일보": "dong-a",
-        "maeil": "maeil", "매일경제": "maeil",
-        "hankook": "hankook", "한국경제": "hankook",
-        "jtbc": "jtbc", "kbs": "kbs", "mbc": "mbc", "sbs": "sbs", "ytn": "ytn",
-        "nk news": "nk news", "nk pro": "nk news",
-        "daily nk": "daily nk",
-        "scmp": "scmp", "south china morning": "scmp",
-        "global times": "global times",
-        "tass": "tass", "xinhua": "xinhua",
-        "japan times": "japan times",
-    }
-    for prefix, canonical in _PREFIX_MAP.items():
+    for prefix, canonical in _SOURCE_PREFIX_MAP.items():
         if s.startswith(prefix):
             return canonical
-    # Fallback: return as-is (lowercased)
     return s
 
 def _enforce_source_diversity(digest: dict) -> list[str]:
@@ -482,6 +481,27 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
     return warnings
 
 
+def _postprocess_digest(digest_data: dict) -> tuple[dict, list[str]]:
+    """Run dedup, deal filter, and source diversity on digest. Returns (digest, all_log_messages)."""
+    log = []
+    digest_data, dedup_log = _dedup_digest(digest_data)
+    if dedup_log:
+        log.append(f"\n🧹  Auto-dedup removed {len(dedup_log)} duplicate(s):")
+        log.extend(dedup_log)
+
+    deal_log = _filter_non_us_deals(digest_data)
+    if deal_log:
+        log.append(f"\n🧹  Filtered {len(deal_log)} non-US deal(s) from trade section:")
+        log.extend(deal_log)
+
+    diversity_log = _enforce_source_diversity(digest_data)
+    if diversity_log:
+        log.append(f"\n🧹  Source diversity: removed {len(diversity_log)} over-represented item(s):")
+        log.extend(diversity_log)
+
+    return digest_data, log
+
+
 def main():
     parser = argparse.ArgumentParser(description="Korea Daily Brief pipeline")
     parser.add_argument("--no-send",    action="store_true", help="Render to file only, do not send email")
@@ -523,26 +543,10 @@ def main():
     MAX_VALIDATION_RETRIES = 2
     digest_data = generate_digest(payload, db_context=db_context)
 
-    # Auto-strip duplicates before validation (Claude misses these reliably)
-    digest_data, dedup_log = _dedup_digest(digest_data)
-    if dedup_log:
-        print(f"\n🧹  Auto-dedup removed {len(dedup_log)} duplicate(s):")
-        for msg in dedup_log:
-            print(msg)
-
-    # Filter non-US deals from us_korea_deals section
-    deal_log = _filter_non_us_deals(digest_data)
-    if deal_log:
-        print(f"\n🧹  Filtered {len(deal_log)} non-US deal(s) from trade section:")
-        for msg in deal_log:
-            print(msg)
-
-    # Enforce source diversity — cap any single source to 2 per section
-    diversity_log = _enforce_source_diversity(digest_data)
-    if diversity_log:
-        print(f"\n🧹  Source diversity: removed {len(diversity_log)} over-represented item(s):")
-        for msg in diversity_log:
-            print(msg)
+    # Auto-strip duplicates, filter deals, enforce source diversity
+    digest_data, pp_log = _postprocess_digest(digest_data)
+    for msg in pp_log:
+        print(msg)
 
     Path("digest.json").write_text(json.dumps(digest_data, ensure_ascii=False, indent=2))
 
@@ -592,22 +596,10 @@ def main():
                 payload, digest_data, retryable_warnings, db_context=db_context,
                 attempt=validation_attempt
             )
-            # Auto-strip duplicates again
-            digest_data, dedup_log = _dedup_digest(digest_data)
-            if dedup_log:
-                print(f"  🧹  Auto-dedup removed {len(dedup_log)} duplicate(s):")
-                for msg in dedup_log:
-                    print(msg)
-            deal_log = _filter_non_us_deals(digest_data)
-            if deal_log:
-                print(f"  🧹  Filtered {len(deal_log)} non-US deal(s) from trade section:")
-                for msg in deal_log:
-                    print(msg)
-            diversity_log = _enforce_source_diversity(digest_data)
-            if diversity_log:
-                print(f"  🧹  Source diversity: removed {len(diversity_log)} over-represented item(s):")
-                for msg in diversity_log:
-                    print(msg)
+            # Post-process again after regeneration
+            digest_data, pp_log = _postprocess_digest(digest_data)
+            for msg in pp_log:
+                print(f"  {msg}")
             Path("digest.json").write_text(json.dumps(digest_data, ensure_ascii=False, indent=2))
         else:
             print("\n🚫  CRITICAL validation failures after all retries — newsletter will NOT be sent.")

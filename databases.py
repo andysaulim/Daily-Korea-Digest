@@ -672,9 +672,17 @@ def process_digest_entries(digest: dict) -> dict:
     return summary
 
 
+def _story_text(story: dict) -> str:
+    """Extract searchable text from a story's key fields (avoids serializing the whole dict)."""
+    return " ".join(
+        str(story.get(f, ""))
+        for f in ("headline", "translated_title", "body", "body_text", "summary", "categories", "category")
+    ).lower()
+
+
 def _infer_nkr_tag(story: dict) -> str:
     """Infer NK-Russia timeline tag from story content."""
-    text = json.dumps(story).lower()
+    text = _story_text(story)
     if any(w in text for w in ("weapon", "arms", "ammunition", "missile", "artillery")):
         return "military"
     if any(w in text for w in ("diplomat", "summit", "visit", "meeting", "foreign minister")):
@@ -690,7 +698,7 @@ def _infer_nkr_tag(story: dict) -> str:
 
 def _infer_prov_cat(story: dict) -> str:
     """Infer provocation category from story content."""
-    text = json.dumps(story).lower()
+    text = _story_text(story)
     if any(w in text for w in ("missile", "icbm", "ballistic", "hwasong", "launch")):
         return "missile"
     if any(w in text for w in ("nuclear test", "punggye", "underground")):
@@ -706,7 +714,7 @@ def _infer_prov_cat(story: dict) -> str:
 
 def _infer_severity(story: dict) -> int:
     """Infer provocation severity (1-5) from story context."""
-    text = json.dumps(story).lower()
+    text = _story_text(story)
     if any(w in text for w in ("nuclear test", "icbm")):
         return 5
     if any(w in text for w in ("ballistic missile", "submarine launch", "slbm")):
