@@ -34,6 +34,13 @@ def _clean_src(raw: str) -> str:
     return cleaned if cleaned else raw
 
 
+def _str(val) -> str:
+    """Coerce a value to str — handles lists returned by Claude API."""
+    if isinstance(val, list):
+        return val[0] if val else ""
+    return val if isinstance(val, str) else str(val) if val is not None else ""
+
+
 def _esc(text) -> str:
     if text is None or text == "":
         return ""
@@ -257,7 +264,7 @@ def render(digest: dict) -> str:
     if top_stories:
         stories_html = ""
         for story in top_stories:
-            cat = _esc(story.get("category_tag", story.get("category", "")))
+            cat = _esc(_str(story.get("category_tag", story.get("category", ""))))
             headline = _esc(story.get("headline", ""))
             body = _esc(story.get("body", ""))
             so_what = _esc(story.get("so_what", ""))
@@ -289,12 +296,13 @@ def render(digest: dict) -> str:
                        "Japan-Korea": "#1B6A4A", "China-Korea": "#8B0000", "Trilateral": "#2E4057"}
         flash_html = ""
         for item in overnight:
-            cat = _esc(item.get("category", ""))
+            cat_raw = _str(item.get("category", ""))
+            cat = _esc(cat_raw)
             headline = _esc(item.get("headline", ""))
             body = _esc(item.get("body_text", ""))
             src = _esc(_clean_src(item.get("source", "")))
             url = item.get("url", "")
-            bar_color = _cat_colors_flash.get(item.get("category", ""), "#1B2A4A")
+            bar_color = _cat_colors_flash.get(cat_raw, "#1B2A4A")
             flash_html += f"""
             <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid {bar_color};">
               <div style="font-size:11px;color:#C0392B;text-transform:uppercase;font-weight:600;">{cat} &middot; {src}</div>
@@ -926,12 +934,12 @@ def render(digest: dict) -> str:
             "real-estate": "#E67E22", "macro": "#C0392B",
         }
         for item in biz_econ:
-            cat = _esc(item.get("category", item.get("sector", "")))
+            cat = _esc(_str(item.get("category", item.get("sector", ""))))
             headline = _esc(item.get("headline", ""))
             body = _esc(item.get("body_text", ""))
             src = _esc(_clean_src(item.get("source", "")))
             url = item.get("url", "")
-            bar_color = biz_sector_colors.get(item.get("sector", ""), "#1B2A4A")
+            bar_color = biz_sector_colors.get(_str(item.get("sector", "")), "#1B2A4A")
             companies = item.get("companies") or []
             company_tags = ""
             if companies:
@@ -977,15 +985,16 @@ def render(digest: dict) -> str:
         region_colors = {"Japan-Korea": "#1B6A4A", "China-Korea": "#8B0000", "Trilateral": "#2E4057", "Russia-Korea": "#7B241C"}
         nea_html = ""
         for item in nea_items:
-            cat = _esc(item.get("category", ""))
+            cat_raw = _str(item.get("category", ""))
+            cat = _esc(cat_raw)
             headline = _esc(item.get("headline", ""))
             body = _esc(item.get("body_text", ""))
             src = _esc(_clean_src(item.get("source", "")))
             url = item.get("url", "")
             sig = item.get("signal_type", "")
-            region = item.get("region_tag", "")
+            region = _str(item.get("region_tag", ""))
             is_reaction = item.get("is_reaction_source", False)
-            bar_color = nea_cat_colors.get(item.get("category", ""), region_colors.get(region, "#1B2A4A"))
+            bar_color = nea_cat_colors.get(cat_raw, region_colors.get(region, "#1B2A4A"))
             reaction_badge = ""
             if is_reaction:
                 badge_label = "PRC SOURCE" if "China" in region else "STATE MEDIA"
@@ -1108,12 +1117,12 @@ def render(digest: dict) -> str:
     if combined_also:
         wire_html = ""
         for item in combined_also:
-            cat = _esc(item.get("category", ""))
+            cat = _esc(_str(item.get("category", "")))
             headline = _esc(item.get("headline", ""))
             body = _esc(item.get("body_text", ""))
             src = _esc(_clean_src(item.get("source", "")))
             url = item.get("url", "")
-            bar_color = _color_bar(item.get("color_bar_class", ""))
+            bar_color = _color_bar(_str(item.get("color_bar_class", "")))
             wire_html += f"""
             <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid {bar_color};">
               <div style="font-size:11px;color:#888;text-transform:uppercase;">{cat} &middot; {src}</div>
