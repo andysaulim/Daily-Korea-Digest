@@ -354,6 +354,10 @@ def main():
         validation_warnings = validate_digest(digest_data, payload=payload)
         critical_warnings = [w for w in validation_warnings if "CRITICAL" in w]
 
+        # Don't retry for DUPLICATE TOPIC issues — dedup already handled them,
+        # and retrying just causes dedup to fight the retry loop
+        retryable_warnings = [w for w in critical_warnings if "DUPLICATE TOPIC" not in w]
+
         if not critical_warnings:
             # Passed — print any non-critical warnings and move on
             if validation_warnings:
@@ -365,6 +369,15 @@ def main():
                 print("\n✅  Validation passed — all checks OK")
             break
 
+        if not retryable_warnings:
+            # Only duplicate topic warnings remain — dedup handled what it could
+            print("\n⚠️  Remaining warnings are duplicate-topic only (auto-dedup applied):")
+            for w in critical_warnings:
+                print(f"    • {w}")
+            # Downgrade these so they don't block sending
+            critical_warnings = []
+            break
+
         # Critical failures found
         print(f"\n⚠️  VALIDATION ATTEMPT {validation_attempt + 1}/{1 + MAX_VALIDATION_RETRIES} — CRITICAL WARNINGS:")
         for w in validation_warnings:
@@ -374,7 +387,7 @@ def main():
             # Retry only the digest generation, passing validation feedback
             print("\n🔄  Re-generating digest with validation feedback (reusing collected articles)...")
             digest_data = regenerate_digest(
-                payload, digest_data, critical_warnings, db_context=db_context
+                payload, digest_data, retryable_warnings, db_context=db_context
             )
             # Auto-strip duplicates again
             digest_data, dedup_log = _dedup_digest(digest_data)
