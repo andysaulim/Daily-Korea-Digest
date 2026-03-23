@@ -44,21 +44,43 @@
       p, div { word-wrap:break-word !important; overflow-wrap:break-word !important; }
       /* Quote cards in KCNA */
       .kcna-quote { padding:6px 10px !important; }
+      /* KCNA inner cells — reduce padding on mobile */
+      .kcna-dark td { padding:10px 14px !important; }
+      .kcna-dark > div { padding:16px 14px !important; }
+      /* Scale up tiny fonts for mobile readability */
+      .mkt-table div { font-size:11px !important; }
+      .mkt-table div[style*="font-size:18px"], .mkt-table div[style*="font-size:15px"] { font-size:16px !important; }
+      /* Tariff headline rate — slightly smaller on mobile */
+      .tariff-sector td { font-size:11px !important; }
+      /* Trade policy tracker — stack on narrow screens */
+      .trade-policy td { display:block !important; width:100% !important; padding:4px 8px !important; }
+      .trade-policy tr { display:block !important; border-bottom:1px solid #E8E8E8 !important; padding:6px 0 !important; }
+    }
+    /* Tablet breakpoint — tighten padding, keep grids side-by-side */
+    @media only screen and (min-width: 621px) and (max-width: 768px) {
+      .wrapper { width:100% !important; }
+      .sec, .footer { padding:14px 20px !important; }
+      h1 { font-size:21px !important; }
+      .deal-card { padding:12px !important; }
+      .mkt-table div[style*="font-size:18px"], .mkt-table div[style*="font-size:15px"] { font-size:16px !important; }
     }
     /* Dark mode support */
     @media (prefers-color-scheme: dark) {
+      body { background:#121212 !important; }
       .wrapper { background:#1a1a1a !important; }
       .wrapper .sec { background:#222 !important; border-bottom-color:#333 !important; }
       .wrapper h1, .wrapper h2, .wrapper h3 { color:#E0E0E0 !important; }
-      .wrapper p, .wrapper div { color:#CCC !important; }
+      .wrapper p, .wrapper div, .wrapper td, .wrapper span { color:#CCC !important; }
       .wrapper a { color:#5DADE2 !important; }
       .wrapper .footer { background:#0F1A2E !important; }
-      .wrapper .story-card { background:#2a2a2a !important; }
+      .wrapper .story-card { background:#2a2a2a !important; border-color:#333 !important; }
       .wrapper .kcna-dark { background:#1a2a1a !important; }
       .wrapper .kcna-dark table { background:#1a2a1a !important; }
       .wrapper .gov-grid div { background:#2a2a2a !important; }
       .wrapper .sentiment-spotlight { background:#1a2a3a !important; border-left-color:#2980B9 !important; color:#CCC !important; }
       .wrapper .sentiment-discourse { background:#3a2a1a !important; border-left-color:#E67E22 !important; color:#CCC !important; }
+      .wrapper .deal-card { background:#2a2a2a !important; border-color:#333 !important; }
+      .wrapper .mkt-table td { border-color:#333 !important; }
     }
   </style>
   <!--[if mso]>
@@ -87,11 +109,11 @@
           <div style="margin-top:6px;font-size:18px;font-weight:700;color:rgba(255,255,255,0.95);letter-spacing:0.5px;font-family:Georgia,serif;">Sunday, March 22, 2026</div>
         </td>
         <td style="vertical-align:top;text-align:right;">
-          <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.6);margin-bottom:2px;">6:36 PM ET</div>
-          <div style="font-size:10px;color:rgba(255,255,255,0.55);">1,033 words &middot; 4 min read</div>
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.6);margin-bottom:2px;">8:42 PM ET</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.55);">1,253 words &middot; 5 min read</div>
         </td>
       </tr></table>
-      <div style='margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.15);font-size:13px;color:rgba(255,255,255,0.85);font-family:Georgia,serif;'><strong style="color:rgba(255,255,255,0.5);">RE:</strong> Kim Jong Un reappointed SAC president at SPA · Shin Hyun-song named BOK governor · 25 tln won emergency budget agreed</div>
+      <div style='margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.15);font-size:13px;color:rgba(255,255,255,0.85);font-family:Georgia,serif;'><strong style="color:rgba(255,255,255,0.5);">RE:</strong> KJU reappointed · BOK chief nominee Shin · 25T won crisis budget · exports +50.4%</div>
     </div>
     
 
@@ -107,21 +129,21 @@
           <tr>
             <td width="33%" align="center" style="padding:10px 8px 12px;">
               <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;">KOSPI</div>
-              <div style="font-size:18px;font-weight:700;">5,781.20</div>
-              <div style="font-size:11px;"><span style="color:#C0392B;">&#9660; -2.4%</span></div>
-              <div style='font-size:10px;opacity:0.5;margin-top:2px;'>as of Mar 20</div>
+              <div style="font-size:18px;font-weight:700;">5,515.03</div>
+              <div style="font-size:11px;"><span style="color:#C0392B;">&#9660; -4.3%</span></div>
+              <div style='font-size:10px;opacity:0.5;margin-top:2px;'>as of Mar 23</div>
             </td>
             <td width="34%" align="center" style="padding:10px 8px 12px;border-left:1px solid rgba(255,255,255,0.15);border-right:1px solid rgba(255,255,255,0.15);">
               <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;">Brent Crude</div>
-              <div style="font-size:18px;font-weight:700;">$107.38</div>
-              <div style="font-size:11px;"><span style="color:#C0392B;">&#9660; -4.3%</span></div>
-              <div style='font-size:10px;opacity:0.5;margin-top:2px;'>as of Mar 22</div>
+              <div style="font-size:18px;font-weight:700;">$106.69</div>
+              <div style="font-size:11px;"><span style="color:#C0392B;">&#9660; -4.9%</span></div>
+              <div style='font-size:10px;opacity:0.5;margin-top:2px;'>as of Mar 23</div>
             </td>
             <td width="33%" align="center" style="padding:10px 8px 12px;">
               <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;">USD/KRW</div>
-              <div style="font-size:18px;font-weight:700;">1,504.17</div>
-              <div style="font-size:11px;"><span style="color:#C0392B;">&#9660; -0.1%</span></div>
-              <div style='font-size:10px;opacity:0.5;margin-top:2px;'>as of Mar 22</div>
+              <div style="font-size:18px;font-weight:700;">1,508.88</div>
+              <div style="font-size:11px;"><span style="color:#27AE60;">&#9650; +1.3%</span></div>
+              <div style='font-size:10px;opacity:0.5;margin-top:2px;'>as of Mar 23</div>
             </td>
           </tr>
         </table>
@@ -151,13 +173,13 @@
           <a name="memo"></a><span style="display:inline-block;background:#1B2A4A;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;padding:4px 12px;border-radius:12px;font-family:Arial,sans-serif;margin-bottom:8px;">Morning Memo</span>
           
             <div style="margin-bottom:8px;padding-left:12px;border-left:3px solid #1B2A4A;">
-              <div style="font-size:14px;line-height:1.5;color:#333;font-family:Georgia,serif;">Kim Jong Un was reappointed as president of the State Affairs Commission at North Korea's Supreme People's Assembly meeting</div>
+              <div style="font-size:14px;line-height:1.5;color:#333;font-family:Georgia,serif;">North Korea's Supreme People's Assembly re-elected Kim Jong Un as president of state affairs Sunday in its first session since delayed elections</div>
             </div>
             <div style="margin-bottom:8px;padding-left:12px;border-left:3px solid #1B2A4A;">
-              <div style="font-size:14px;line-height:1.5;color:#333;font-family:Georgia,serif;">President Lee Jae Myung nominated BIS economist Shin Hyun-song as the new Bank of Korea governor</div>
+              <div style="font-size:14px;line-height:1.5;color:#333;font-family:Georgia,serif;">President Lee nominated BIS official Shin Hyun-song as Bank of Korea governor, pledging 'balanced' monetary policy approach</div>
             </div>
             <div style="margin-bottom:8px;padding-left:12px;border-left:3px solid #1B2A4A;">
-              <div style="font-size:14px;line-height:1.5;color:#333;font-family:Georgia,serif;">The government and ruling Democratic Party agreed on a 25 trillion won supplementary budget to address Middle East crisis impacts</div>
+              <div style="font-size:14px;line-height:1.5;color:#333;font-family:Georgia,serif;">Government and ruling party agreed on 25 trillion won supplementary budget to address Middle East crisis impacts on oil and supply chains</div>
             </div>
         </div>
         
@@ -167,30 +189,30 @@
           
             <div class="story-card" style="margin-bottom:12px;padding:10px 12px;background:#F8F9FA;border-radius:4px;border-left:4px solid #1B2A4A;">
               <h3 style="margin:0 0 6px 0;font-size:15px;color:#1B2A4A;font-family:Georgia,serif;">
-                <a href="https://en.yna.co.kr/view/AEN20260323000400315" style="color:#1B2A4A;text-decoration:none;">Kim Jong Un reappointed as president of state affairs commission at Supreme People's Assembly</a>
+                <a href="https://news.google.com/rss/articles/CBMitANBVV95cUxPemFQZFctRGRIZUI1ZUF5b3VackRRVDVGQWdldFJTSXcyaGhBdFdqS0QxeWVLemJrcFc5bUlLRTZTcW9RTEc1VEFUZll3dVNpLV9tZnVfdjB0YmlMajNacG82R3EwYTBWLUI5YkVwbVBQamM1ODdLNDBmQXB0ZUw1WU5lS1NKcFVmSXdEaDVNdEpCN2N3Vmw1eFpFMVQyejBIa0tiY2hGbktIZjJPcEpxQV80VEFtajlUTmVSdGtPYjJGeE4tcUZPU1ZFX1lHNFY5TlZWMm1UU25TNC1VOGdySjAxUS1TR0g5aDE1R3E2ZVdBN0NIaGM2SDRqLU0wb3NxNHJfdHJlRklxZk1qeWlSMkUxMFR1YmVseXIyWGxmTzg2UTFyRDBhLVpZb0lKZXR4SGtETFJxazZiWGx2U09rZ0JtcXl1V3FEb1F4NjNPOVRCb2xvZmNqa0NCM3ZKcXpPVXBjY3FKMTJqS2UwSDBKXzVVbkxmQjBEWEhLckU0UGJLNjVkS1ZVQmc3eUVLMllvcEgzT0JxODB6Q3dFampBSHpMWU42VEpkZXhUUmFSN096Wm1u?oc=5" style="color:#1B2A4A;text-decoration:none;">South Korea Names BIS Official as Next Central Bank Chief</a>
               </h3>
-              <p style="margin:0 0 8px 0;font-size:13px;line-height:1.5;color:#333;">North Korean leader Kim Jong Un was reappointed as president of the State Affairs Commission during the first session of the new Supreme People's Assembly. The session follows elections held earlier this month for the DPRK's rubber-stamp legislature. The reappointment consolidates Kim's formal authority as the country's head of state.</p>
-              <p style='margin:0 0 6px 0;font-size:12px;line-height:1.4;color:#2980B9;'><strong>So what:</strong> Confirms regime stability and Kim's continued grip on power ahead of potential policy initiatives in 2026</p>
-              <p style='margin:0 0 6px 0;font-size:12px;line-height:1.4;color:#8E44AD;'><strong>Pattern:</strong> Previous SAC reappointments in 2019 and 2021 preceded major weapons development announcements within 4-6 months</p>
-              <div style="font-size:11px;color:#999;">Yonhap EN</div>
-            </div>
-            <div class="story-card" style="margin-bottom:12px;padding:10px 12px;background:#F8F9FA;border-radius:4px;border-left:4px solid #1B2A4A;">
-              <h3 style="margin:0 0 6px 0;font-size:15px;color:#1B2A4A;font-family:Georgia,serif;">
-                <a href="https://news.google.com/rss/articles/CBMitANBVV95cUxQdWpFQTBjSDFBc3M3ZnNzY1ljU0dxX2FscVdYeks3YWxNb25TWUl4MDB4TGV6Q21pejN5SUZSUHFMUVVCRUZUeW1nSUdMTFJ5SFJVWHFITXNjWEcxU2FnMms2a1puUGR6VDlQbHZZOE5ZSW1HaXlLWjVfWUx0RUZOZlRZUVdRTDA3YXJEQzhKTWFJTE1oakVpMUNyQ0o2am8xNzRZcUJxN1NXUG9QSlZsdUlFVk9IQ051bTBjbWtRN1BxWG9zdWtrR1lmMmlMa2dKQkJQZDNtRElMZGtROWVUTk10VEd2d1RlN2x1RWpVZnFMRWNNUnA1S1NFaW91ZTVROEFIbUtPYTVkYmRHcjFrRHFSS21idTR1alBaNlhoYnpqZUdnUnYtWFllb2dGSnYtU3FHWlhOYkQzenpGWGZiRHNJX3NST21TZzV0WnhpS3RfU25Zc1ZmVFlrS29zVkFnRXRxTVoybXdqaWFTNF8wc2ljcUhqMHdRQlc3RzFRakN1WndzUEpnUVNEd3Z1dXlnMmc5akpXeUs0Y0dQX3ZUV0ZMeFFmYlVUa0NIdVYtc0xVZzVm" style="color:#1B2A4A;text-decoration:none;">South Korea names BIS economist Shin Hyun-song as next central bank chief</a>
-              </h3>
-              <p style="margin:0 0 8px 0;font-size:13px;line-height:1.5;color:#333;">President Lee Jae Myung nominated Bank for International Settlements economist Shin Hyun-song as the new Bank of Korea governor. Shin, who previously worked at the Federal Reserve Bank of New York, pledged a 'balanced' monetary policy approach. The appointment requires National Assembly confirmation and comes as Korea faces economic pressures from the Middle East crisis.</p>
-              <p style='margin:0 0 6px 0;font-size:12px;line-height:1.4;color:#2980B9;'><strong>So what:</strong> New BOK leadership will shape Korea's monetary response to global economic volatility and inflation pressures through 2026-2030</p>
-              <p style='margin:0 0 6px 0;font-size:12px;line-height:1.4;color:#8E44AD;'><strong>Pattern:</strong> Previous BOK governor changes in 2014 and 2018 preceded significant policy rate adjustments within 6 months of confirmation</p>
+              <p style="margin:0 0 8px 0;font-size:13px;line-height:1.5;color:#333;">President Lee Jae Myung nominated Shin Hyun-song, a senior economist at the Bank for International Settlements, as the next governor of the Bank of Korea on Sunday. Shin, known for his research on global capital flows and financial stability, pledged a 'balanced approach' to monetary policy as Korea faces slowing growth and persistent inflation pressures amid Middle East-driven energy shocks.</p>
+              <p style='margin:0 0 6px 0;font-size:12px;line-height:1.4;color:#2980B9;'><strong>So what:</strong> Confirmation hearing expected before April monetary policy meeting where markets anticipate rate decision</p>
+              
               <div style="font-size:11px;color:#999;">WSJ</div>
             </div>
             <div class="story-card" style="margin-bottom:12px;padding:10px 12px;background:#F8F9FA;border-radius:4px;border-left:4px solid #1B2A4A;">
               <h3 style="margin:0 0 6px 0;font-size:15px;color:#1B2A4A;font-family:Georgia,serif;">
-                <a href="https://news.google.com/rss/articles/CBMizwFBVV85cUxQMHE5N3BPdHRxNkFNSS1QSmNaVUpXa2xJN3hyN0hhSDI3UDlZUEJtZzVnVFNKV3ZneXpKQ3psQnZMekRMdmoyYkxSRzFERkp6aGRnWktWaG41Yl83WDhfZDdQVDd1X01HMVBfcVhxcy1EWXlOSG9pSGNKa1h2WXRuV3I1VEdWallwb1Z1YkJvTkVmMDZoUWxOX0REVDU0aThqNjhFczVBdzBQaTk0cEQ5NG00ZldYTThIN19kMGIza21UNDZtcVhpUV9YUkNJVTA" style="color:#1B2A4A;text-decoration:none;">Bank of Korea's newly appointed chief pledges 'balanced' policy approach</a>
+                <a href="https://en.yna.co.kr/view/AEN20260323002200320" style="color:#1B2A4A;text-decoration:none;">S. Korea's exports jump 50.4 pct in first 20 days of March</a>
               </h3>
-              <p style="margin:0 0 8px 0;font-size:13px;line-height:1.5;color:#333;">BOK governor-nominee Shin Hyun-song committed to maintaining balanced monetary policy amid economic uncertainties from the Middle East crisis. The BIS economist emphasized data-driven decision making and coordination with fiscal authorities. His appointment signals potential continuity in Korea's current accommodative stance while monitoring inflation risks.</p>
-              <p style='margin:0 0 6px 0;font-size:12px;line-height:1.4;color:#2980B9;'><strong>So what:</strong> BOK policy direction under new leadership will influence Korea's economic stability amid regional geopolitical tensions</p>
-              <p style='margin:0 0 6px 0;font-size:12px;line-height:1.4;color:#8E44AD;'><strong>Pattern:</strong> Similar 'balanced' language from BOK Governor Lee Ju-yeol in 2014 preceded 18 months of gradual rate normalization</p>
-              <div style="font-size:11px;color:#999;">Reuters</div>
+              <p style="margin:0 0 8px 0;font-size:13px;line-height:1.5;color:#333;">South Korea's exports surged 50.4% year-on-year to $37.8 billion in the first 20 days of March, driven by semiconductor shipments that rose 65.8% and automobile exports up 23.1%. The dramatic increase, building on February's 15.6% gain, signals robust demand recovery despite global economic uncertainties and positions Korea for its strongest quarterly export performance since 2022.</p>
+              <p style='margin:0 0 6px 0;font-size:12px;line-height:1.4;color:#2980B9;'><strong>So what:</strong> Export strength supports BOK's monetary policy flexibility ahead of April rate decision</p>
+              <p style='margin:0 0 6px 0;font-size:12px;line-height:1.4;color:#8E44AD;'><strong>Pattern:</strong> Largest 20-day export surge since March 2022 commodity boom</p>
+              <div style="font-size:11px;color:#999;">Yonhap</div>
+            </div>
+            <div class="story-card" style="margin-bottom:12px;padding:10px 12px;background:#F8F9FA;border-radius:4px;border-left:4px solid #1B2A4A;">
+              <h3 style="margin:0 0 6px 0;font-size:15px;color:#1B2A4A;font-family:Georgia,serif;">
+                <a href="https://www.nknews.org/2026/03/north-korean-parliament-elevates-kim-aides-set-to-tackle-constitution-revision/" style="color:#1B2A4A;text-decoration:none;">North Korean parliament elevates Kim aides, set to tackle constitution revision</a>
+              </h3>
+              <p style="margin:0 0 8px 0;font-size:13px;line-height:1.5;color:#333;">North Korea's Supreme People's Assembly opened its 15th session Sunday, formally re-electing Kim Jong Un as state leader and promoting key aides to senior positions. The parliament is expected to revise the constitution to designate South Korea as a 'principal enemy' and remove unification clauses, implementing Kim's January 2024 directive to abandon inter-Korean reconciliation.</p>
+              <p style='margin:0 0 6px 0;font-size:12px;line-height:1.4;color:#2980B9;'><strong>So what:</strong> Constitutional changes would formalize DPRK's hostile state designation before April 15 holiday</p>
+              
+              <div style="font-size:11px;color:#999;">NK News</div>
             </div>
         </div>
         
@@ -198,61 +220,61 @@
         <div style="padding:14px 32px;background:#FFF8F0;border-bottom:1px solid #E0E0E0;" class="sec">
           <a name="overnight"></a><span style="display:inline-block;background:#C0392B;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;padding:4px 12px;border-radius:12px;font-family:Arial,sans-serif;margin-bottom:8px;">&#9889; Overnight Flash</span>
           
-            <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid #D4AC0D;">
-              <div style="font-size:11px;color:#C0392B;text-transform:uppercase;font-weight:600;">Business &middot; Yonhap English</div>
+            <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid #8E44AD;">
+              <div style="font-size:11px;color:#C0392B;text-transform:uppercase;font-weight:600;">DPRK &middot; Yonhap</div>
               <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
-                <a href="https://en.yna.co.kr/view/AEN20260322002551320" style="color:#1B2A4A;text-decoration:none;">Government, ruling party agree on 25 trillion won emergency budget amid Middle East crisis</a>
+                <a href="https://en.yna.co.kr/view/AEN20260323000451315" style="color:#1B2A4A;text-decoration:none;">N. Korea's Kim reappointed as president of state affairs at Supreme People's Assembly</a>
               </div>
-              <div style="font-size:12px;line-height:1.4;color:#555;">The government and ruling Democratic Party agreed on a 25 trillion won supplementary budget to address economic impacts from the Middle East crisis. The package targets energy security, supply chain resilience, and affected industries. Passage is expected by April 10 through the National Assembly.</div>
+              <div style="font-size:12px;line-height:1.4;color:#555;">North Korea's rubber-stamp parliament unanimously re-elected Kim Jong Un as president of the State Affairs Commission during the first session of the 15th Supreme People's Assembly on Sunday. The session also elevated several of Kim's close aides to senior legislative positions, including promoting a key official to the parliament's top post, signaling continuity in the regime's power structure.</div>
+            </div>
+            <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid #8E44AD;">
+              <div style="font-size:11px;color:#C0392B;text-transform:uppercase;font-weight:600;">DPRK &middot; Reuters</div>
+              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
+                <a href="https://news.google.com/rss/articles/CBMiwwFBVV95cUxQYTl2c3djV20yRnBHOUx4ekFmSzNKVUtOVXFjbnpJTklOQXJZd2Z5RlZZNk1MUHlxUlZXZFhQU3k1WGdzcmQtUXZaNlRISndyS3I3NThJYVV6YlZxTWc2dGw1TzVvVXN2U3Uwb3VkQXlic2RaaGxyUmtpOXpDY1VOcXlRLWhpd2ZYVGVQV09JTTRzYUR6eVk3QnZKaGJTQk1uVjZINFQwSV9jOWE3Q2RTa2JxSVNfSHZTZWcwdTNvd2dzdTA?oc=5" style="color:#1B2A4A;text-decoration:none;">North Korea's Kim Jong Un reappointed as president of state affairs, KCNA says</a>
+              </div>
+              <div style="font-size:12px;line-height:1.4;color:#555;">Kim Jong Un was unanimously re-elected to North Korea's top post during Sunday's Supreme People's Assembly session, state media KCNA reported. The parliamentary meeting, the first since elections were delayed from March 2024, is expected to address constitutional revisions that could formalize the designation of South Korea as a 'hostile state' following Kim's January 2024 policy shift.</div>
             </div>
             <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid #D4AC0D;">
-              <div style="font-size:11px;color:#C0392B;text-transform:uppercase;font-weight:600;">Business &middot; Yonhap English</div>
+              <div style="font-size:11px;color:#C0392B;text-transform:uppercase;font-weight:600;">Business &middot; Yonhap</div>
+              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
+                <a href="https://en.yna.co.kr/view/AEN20260322002551320" style="color:#1B2A4A;text-decoration:none;">Gov't, ruling party agree upon 25 tln-won supplementary budget amid Middle East crisis</a>
+              </div>
+              <div style="font-size:12px;line-height:1.4;color:#555;">The government and ruling Democratic Party agreed Sunday on a 25 trillion won ($16.6 billion) supplementary budget to address economic impacts from the Middle East crisis, including surging oil prices and supply chain disruptions. The budget, to be submitted for National Assembly approval by April 10, allocates funds for energy subsidies, strategic petroleum reserve expansion, and support for affected industries.</div>
+            </div>
+            <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid #1B2A4A;">
+              <div style="font-size:11px;color:#C0392B;text-transform:uppercase;font-weight:600;">Energy &middot; Yonhap</div>
               <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
                 <a href="https://en.yna.co.kr/view/AEN20260322002600320" style="color:#1B2A4A;text-decoration:none;">Finance minister calls for preparation for prolonged Middle East crisis</a>
               </div>
-              <div style="font-size:12px;line-height:1.4;color:#555;">Finance Minister Koo Yun-cheol urged government agencies to prepare for extended regional conflict impacts on oil supply and trade routes. The warning comes as Brent crude prices remain elevated above $107 per barrel. Emergency economic response mechanisms are being activated.</div>
-            </div>
-            <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid #1B2A4A;">
-              <div style="font-size:11px;color:#C0392B;text-transform:uppercase;font-weight:600;">Technology &middot; Yonhap English</div>
-              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
-                <a href="https://en.yna.co.kr/view/AEN20260322000951320" style="color:#1B2A4A;text-decoration:none;">Government proposes EV battery disclosure regulations</a>
-              </div>
-              <div style="font-size:12px;line-height:1.4;color:#555;">New regulations will require disclosure of battery manufacturer and country of origin for electric vehicles sold in Korea. The measure aims to enhance consumer transparency amid growing EV adoption. Industry compliance timeline and penalty structures are under review.</div>
-            </div>
-            <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid #1B2A4A;">
-              <div style="font-size:11px;color:#C0392B;text-transform:uppercase;font-weight:600;">Technology &middot; Yonhap English</div>
-              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
-                <a href="https://en.yna.co.kr/view/AEN20260322000700320" style="color:#1B2A4A;text-decoration:none;">SK hynix to introduce English usage pilot program</a>
-              </div>
-              <div style="font-size:12px;line-height:1.4;color:#555;">Memory chipmaker SK hynix plans a pilot program to foster English language usage among employees. The initiative reflects the company's global expansion strategy and international collaboration needs. Implementation details and timeline remain under internal review.</div>
-            </div>
-            <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid #1B2A4A;">
-              <div style="font-size:11px;color:#C0392B;text-transform:uppercase;font-weight:600;">Technology &middot; Yonhap English</div>
-              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
-                <a href="https://en.yna.co.kr/view/AEN20260322000600320" style="color:#1B2A4A;text-decoration:none;">SKT's Adot and Naver's Papago ranked among top 50 global generative AI services</a>
-              </div>
-              <div style="font-size:12px;line-height:1.4;color:#555;">SK Telecom's Adot and Naver's Papago translation service were included in a global ranking of the 50 most-used generative AI platforms. The recognition highlights Korean companies' growing presence in the artificial intelligence market. Both services have expanded international user bases significantly.</div>
-            </div>
-            <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid #2980B9;">
-              <div style="font-size:11px;color:#C0392B;text-transform:uppercase;font-weight:600;">US-Korea &middot; Yonhap English</div>
-              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
-                <a href="https://en.yna.co.kr/view/AEN20260322001500315" style="color:#1B2A4A;text-decoration:none;">US soldier booked for assaulting South Korean man at club</a>
-              </div>
-              <div style="font-size:12px;line-height:1.4;color:#555;">An American servicemember was charged with allegedly assaulting a Korean man at an entertainment venue. The incident is under investigation by both Korean police and US military authorities. Such cases periodically strain USFK-ROK community relations and trigger calls for Status of Forces Agreement reviews.</div>
-            </div>
-            <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid #8B0000;">
-              <div style="font-size:11px;color:#C0392B;text-transform:uppercase;font-weight:600;">China-Korea &middot; SCMP Korea</div>
-              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
-                <a href="https://news.google.com/rss/articles/CBMi0AFBVV95cUxPa2VfUE1EYWI5Yk5sNDh1ejBMUFVBZmw4cS1OenItbHlvc0lMZjhxR1FvaDBEcUJOU1l6Y1dMUjg0dEt3UHBMU0J6eHhhLVhLcDE2bnBNdjB0aEhBbThKWUJRWEtvTzNlbjlDNmNMNDVKcWxoQnZ6OGMtWUhBVmhNcEpvdU01OHA5My1qOEpDcUJ3U2MwT2VPdkZIamJEcTd4UFAtTUFnVjZWVEtOdEt0ZFJtdTZ1dWRPcFBqendKNFNqMXZLVVN5MEZKTi1xWDBj" style="color:#1B2A4A;text-decoration:none;">Chinese 'new style tea' brands expand in South Korea challenging coffee dominance</a>
-              </div>
-              <div style="font-size:12px;line-height:1.4;color:#555;">Major Chinese tea chains are establishing operations in South Korea as part of broader market expansion across Asia. The brands compete directly with established coffee culture and Korean beverage companies. The trend reflects growing Chinese commercial presence in ROK consumer markets despite THAAD-related trade tensions.</div>
+              <div style="font-size:12px;line-height:1.4;color:#555;">Finance Minister Koo Yun-cheol warned Sunday that Korea must prepare for a prolonged Middle East crisis that could push oil prices above $120 per barrel and disrupt global supply chains. Koo convened an emergency economic ministers' meeting to coordinate responses including expanding strategic reserves, diversifying energy imports, and preparing targeted support for vulnerable sectors.</div>
             </div>
             <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid #D4AC0D;">
-              <div style="font-size:11px;color:#C0392B;text-transform:uppercase;font-weight:600;">Business &middot; Nikkei Korea</div>
+              <div style="font-size:11px;color:#C0392B;text-transform:uppercase;font-weight:600;">Business &middot; Reuters</div>
               <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
-                <a href="https://news.google.com/rss/articles/CBMiuAFBVV95cUxOVU5ZY19rU05FbkdPMEQ0V2ExUGtERTBQU3d6dVpEc0d6ZEp4cVlCVDU4SDNuNkY0R05uVi11bkVnZ24yYVhjSUtGMWctbnVDb0xPcG9WdjFacU1BSzF0cVBEUEJaTkQyVHFpazFhc1JmVVpYSlgtRW9sVXBmaHdoRFZpaWFXNmdpX3NBSnBBWWEyTGhoT0tHR0VXUUtfZG92WS04TXota1diM01Ma1hndkZzTlpJQlFL" style="color:#1B2A4A;text-decoration:none;">Seoul mandates gender pay gap disclosure to address wage disparity</a>
+                <a href="https://news.google.com/rss/articles/CBMizwFBVV95cUxQMHE5N3BPdHRxNkFNSS1QSmNaVUpXa2xJN3hyN0hhSDI3UDlZUEJtZzVnVFNKV3ZneXpKQ3psQnZMekRMdmoyYkxSRzFERkp6aGRnWktWaG41Yl83WDhfZDdQVDd1X01HMVBfcVhxcy1EWXlOSG9pSGNKa1h2WXRuV3I1VEdWallwb1Z1YkJvTkVmMDZoUWxOX0REVDU0aThqNjhFczVBdzBQaTk0cEQ5NG00ZldYTThIN19kMGIza21UNDZtcVhpUV9YUkNJVTA?oc=5" style="color:#1B2A4A;text-decoration:none;">Bank of Korea's newly appointed chief pledges 'balanced' policy</a>
               </div>
-              <div style="font-size:12px;line-height:1.4;color:#555;">South Korea will require companies to publicly disclose gender pay gaps as part of efforts to address one of the developed world's largest wage disparities. The transparency measure targets systemic workplace inequality that has persisted despite economic development. Implementation timeline and company size thresholds are being finalized.</div>
+              <div style="font-size:12px;line-height:1.4;color:#555;">Shin Hyun-song, nominated as Bank of Korea governor, pledged to pursue 'balanced' monetary policy that considers both inflation control and financial stability. The BIS economist, known for his work on global capital flows and macroprudential policy, would replace the current governor at a critical juncture as Korea faces slowing growth, persistent inflation, and Middle East-driven energy price shocks.</div>
+            </div>
+            <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid #2980B9;">
+              <div style="font-size:11px;color:#C0392B;text-transform:uppercase;font-weight:600;">US-Korea &middot; Korea Times</div>
+              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
+                <a href="https://www.koreatimes.co.kr/southkorea/law-crime/20260323/explainer-korea-takes-major-stride-in-prosecution-reform-with-passage-of-bills?utm_source=rss" style="color:#1B2A4A;text-decoration:none;">Korea takes major stride in prosecution reform with passage of bills</a>
+              </div>
+              <div style="font-size:12px;line-height:1.4;color:#555;">The National Assembly passed two landmark bills Friday and Saturday that will separate prosecutorial powers to investigate and indict, creating distinct agencies for each function by October. The reforms, fulfilling a key Lee administration pledge, aim to prevent abuse of prosecutorial power by dividing the current unified system that has drawn criticism for political investigations.</div>
+            </div>
+            <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid #2980B9;">
+              <div style="font-size:11px;color:#C0392B;text-transform:uppercase;font-weight:600;">US-Korea &middot; Yonhap</div>
+              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
+                <a href="https://en.yna.co.kr/view/AEN20260322001500315" style="color:#1B2A4A;text-decoration:none;">U.S. soldier booked for assaulting S. Korean man at club</a>
+              </div>
+              <div style="font-size:12px;line-height:1.4;color:#555;">Seoul police booked a U.S. soldier Sunday for allegedly assaulting a South Korean man at a club in the Hongdae district. The incident marks the latest in a series of altercations involving U.S. service members that have strained local relations, coming as the allies work to maintain public support for the 28,500-strong U.S. military presence.</div>
+            </div>
+            <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid #D4AC0D;">
+              <div style="font-size:11px;color:#C0392B;text-transform:uppercase;font-weight:600;">Business &middot; Yonhap</div>
+              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
+                <a href="https://en.yna.co.kr/view/AEN20260322000800315" style="color:#1B2A4A;text-decoration:none;">Lee excludes officials with multiple homes from real estate policymaking</a>
+              </div>
+              <div style="font-size:12px;line-height:1.4;color:#555;">President Lee Jae Myung ordered Sunday that government officials owning multiple properties be excluded from real estate policy decisions, citing potential conflicts of interest. The directive affects dozens of senior officials across housing, finance, and land ministries as the administration tackles soaring property prices that have become a key political vulnerability.</div>
             </div>
         </div>
         
@@ -260,10 +282,10 @@
         <a name="key-stat"></a>
         <div style="padding:12px 32px;background:#1B2A4A;color:#fff;border-bottom:1px solid #E0E0E0;text-align:center;" class="sec">
           <div style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;opacity:0.6;margin-bottom:2px;">Stat of the Day</div>
-          <div class="key-stat-num" style="font-size:32px;font-weight:700;font-family:Georgia,serif;">25 trillion won</div>
-          <div style="font-size:12px;opacity:0.85;margin-top:2px;">Emergency supplementary budget agreed by government and ruling party</div>
-          <div style="font-size:11px;opacity:0.65;margin-top:4px;font-style:italic;">Largest emergency budget package since COVID-19 pandemic to address Middle East crisis economic impacts</div>
-          <div style='font-size:10px;opacity:0.45;margin-top:4px;'>Source: Yonhap English</div>
+          <div class="key-stat-num" style="font-size:32px;font-weight:700;font-family:Georgia,serif;">50.4%</div>
+          <div style="font-size:12px;opacity:0.85;margin-top:2px;">Export surge in first 20 days of March</div>
+          <div style="font-size:11px;opacity:0.65;margin-top:4px;font-style:italic;">South Korea's exports jumped 50.4% year-on-year through March 20, signaling strong recovery despite global headwinds</div>
+          <div style='font-size:10px;opacity:0.45;margin-top:4px;'>Source: S. Korea's exports jump 50.4 pct in first 20 days of March</div>
         </div>
         
 
@@ -276,7 +298,7 @@
                 <span style="display:inline-block;width:60px;height:2px;background:#27AE60;vertical-align:middle;margin-left:10px;"></span>
               </td>
               <td style="padding:10px 32px;text-align:right;">
-                <span style="font-size:11px;color:#8a8a8a;">7-day baseline · Mar 15-21</span>
+                <span style="font-size:11px;color:#8a8a8a;">7-day baseline · Mar 13-19</span>
               </td>
             </tr>
           </table>
@@ -289,19 +311,19 @@
                 <td style="vertical-align:top;width:50%;padding-right:12px;">
                   <div style="padding:8px 12px;background:rgba(255,255,255,0.04);border-radius:4px;">
                     <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.6);margin-bottom:4px;">Kim Jong Un</div>
-                    <div style="font-size:13px;color:#E0E0E0;font-weight:600;">Kim Jong Un public appearance — Reappointed as president of the State Affairs Commission at Supreme People's Assembly first session</div>
+                    <div style="font-size:13px;color:#E0E0E0;font-weight:600;">No Kim Jong Un appearance (1 days since last)</div>
                   </div>
                 </td>
                 <td style="vertical-align:top;width:50%;">
                   <div style="padding:8px 12px;background:rgba(255,255,255,0.04);border-radius:4px;">
                     <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.6);margin-bottom:4px;">Output Volume</div>
-                    <div style="font-size:13px;color:#E0E0E0;">Light — 2 articles (avg: 15)</div>
+                    <div style="font-size:13px;color:#E0E0E0;">Light — 8 articles</div>
                     
                   </div>
                 </td>
               </tr>
             </table>
-            <div style='margin-top:8px;font-size:11px;color:#888;'><strong style="color:#BBB;">Focus:</strong> state affairs commission · supreme people's assembly · socialist construction</div>
+            <div style='margin-top:8px;font-size:11px;color:#888;'><strong style="color:#BBB;">Focus:</strong> Supreme People's Assembly · state governance · constitutional authority</div>
             
             
             <div style="margin-top:12px;">
@@ -315,28 +337,28 @@
                 </tr>
                 
                 <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
-                  <td style="padding:4px 8px 4px 0;font-size:11px;color:#D0D0D0;">State Affairs Commission president</td>
+                  <td style="padding:4px 8px 4px 0;font-size:11px;color:#D0D0D0;">president of state affairs</td>
                   <td style="padding:4px 6px;font-size:11px;color:#888;text-align:center;white-space:nowrap;">0</td>
-                  <td style="padding:4px 6px;font-size:11px;color:#D0D0D0;text-align:center;white-space:nowrap;font-weight:600;">1</td>
+                  <td style="padding:4px 6px;font-size:11px;color:#D0D0D0;text-align:center;white-space:nowrap;font-weight:600;">4</td>
                   <td style="padding:4px 0 4px 6px;font-size:10px;color:#27AE60;white-space:nowrap;">↑ new phrase</td>
                 </tr>
                 <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
                   <td style="padding:4px 8px 4px 0;font-size:11px;color:#D0D0D0;">Supreme People's Assembly</td>
-                  <td style="padding:4px 6px;font-size:11px;color:#888;text-align:center;white-space:nowrap;">0</td>
-                  <td style="padding:4px 6px;font-size:11px;color:#D0D0D0;text-align:center;white-space:nowrap;font-weight:600;">1</td>
-                  <td style="padding:4px 0 4px 6px;font-size:10px;color:#27AE60;white-space:nowrap;">↑ new phrase</td>
+                  <td style="padding:4px 6px;font-size:11px;color:#888;text-align:center;white-space:nowrap;">1</td>
+                  <td style="padding:4px 6px;font-size:11px;color:#D0D0D0;text-align:center;white-space:nowrap;font-weight:600;">8</td>
+                  <td style="padding:4px 0 4px 6px;font-size:10px;color:#27AE60;white-space:nowrap;">↑ from ×1</td>
                 </tr>
                 <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
                   <td style="padding:4px 8px 4px 0;font-size:11px;color:#D0D0D0;">Kim Jong Un public appearance</td>
-                  <td style="padding:4px 6px;font-size:11px;color:#888;text-align:center;white-space:nowrap;">3</td>
-                  <td style="padding:4px 6px;font-size:11px;color:#D0D0D0;text-align:center;white-space:nowrap;font-weight:600;">4</td>
-                  <td style="padding:4px 0 4px 6px;font-size:10px;color:#888;white-space:nowrap;">→ stable</td>
+                  <td style="padding:4px 6px;font-size:11px;color:#888;text-align:center;white-space:nowrap;">2</td>
+                  <td style="padding:4px 6px;font-size:11px;color:#D0D0D0;text-align:center;white-space:nowrap;font-weight:600;">0</td>
+                  <td style="padding:4px 0 4px 6px;font-size:10px;color:#C0392B;white-space:nowrap;">↓ from ×2</td>
                 </tr>
               </table>
             </div>
             
             
-            <div style='margin-top:12px;padding:10px 14px;background:rgba(255,255,255,0.04);border-radius:4px;font-size:13px;line-height:1.6;color:#E0E0E0;font-family:Georgia,serif;'><strong style="color:#E8DCC8;">Bottom line:</strong> Kim Jong Un's formal reappointment as SAC president consolidates authority ahead of potential policy announcements. Monitor for new initiatives following legislative session.</div>
+            <div style='margin-top:12px;padding:10px 14px;background:rgba(255,255,255,0.04);border-radius:4px;font-size:13px;line-height:1.6;color:#E0E0E0;font-family:Georgia,serif;'><strong style="color:#E8DCC8;">Bottom line:</strong> Focus on institutional governance with Kim's reappointment as state president. Limited output suggests more SPA announcements pending through Mar 24.</div>
           </div>
         </div>
         
@@ -349,57 +371,57 @@
                 <td style="width:50%;padding:4px;vertical-align:top;">
                   <div style="background:#F0FAF0;border-radius:4px;padding:10px 12px;border-left:3px solid #27AE60;min-height:60px;">
                     <div style="font-size:12px;font-weight:700;color:#1B2A4A;margin-bottom:3px;">Yongbyon Nuclear Complex</div>
-                    <div style="margin-bottom:4px;"><span style="display:inline-block;padding:2px 8px;border-radius:3px;font-size:9px;font-weight:700;color:#fff;background:#27AE60;letter-spacing:0.5px;">Normal</span> <span style="font-size:9px;color:#999;margin-left:4px;">Mar 15</span></div>
-                    <div style="font-size:11px;line-height:1.4;color:#666;margin-top:4px;">No significant changes reported. Facility remains in operational configuration with routine cooling system activity observed.</div>
+                    <div style="margin-bottom:4px;"><span style="display:inline-block;padding:2px 8px;border-radius:3px;font-size:9px;font-weight:700;color:#fff;background:#27AE60;letter-spacing:0.5px;">Normal</span> <span style="font-size:9px;color:#999;margin-left:4px;">14 days ago</span></div>
+                    <div style="font-size:11px;line-height:1.4;color:#666;margin-top:4px;">No significant changes. Facility remains in standby configuration.</div>
                   </div>
                 </td>
                 <td style="width:50%;padding:4px;vertical-align:top;">
                   <div style="background:#F0FAF0;border-radius:4px;padding:10px 12px;border-left:3px solid #27AE60;min-height:60px;">
                     <div style="font-size:12px;font-weight:700;color:#1B2A4A;margin-bottom:3px;">Sinpo South Shipyard</div>
-                    <div style="margin-bottom:4px;"><span style="display:inline-block;padding:2px 8px;border-radius:3px;font-size:9px;font-weight:700;color:#fff;background:#27AE60;letter-spacing:0.5px;">Normal</span> <span style="font-size:9px;color:#999;margin-left:4px;">Mar 18</span></div>
-                    <div style="font-size:11px;line-height:1.4;color:#666;margin-top:4px;">Submarine construction activities continue at normal pace. No unusual vessel movements detected.</div>
+                    <div style="margin-bottom:4px;"><span style="display:inline-block;padding:2px 8px;border-radius:3px;font-size:9px;font-weight:700;color:#fff;background:#27AE60;letter-spacing:0.5px;">Normal</span> <span style="font-size:9px;color:#999;margin-left:4px;">Mar 5</span></div>
+                    <div style="font-size:11px;line-height:1.4;color:#666;margin-top:4px;">No recent activity reported. Submarine program continues at baseline pace.</div>
                   </div>
                 </td></tr><tr>
                 <td style="width:50%;padding:4px;vertical-align:top;">
                   <div style="background:#F0FAF0;border-radius:4px;padding:10px 12px;border-left:3px solid #27AE60;min-height:60px;">
                     <div style="font-size:12px;font-weight:700;color:#1B2A4A;margin-bottom:3px;">THAAD Site — Seongju County</div>
-                    <div style="margin-bottom:4px;"><span style="display:inline-block;padding:2px 8px;border-radius:3px;font-size:9px;font-weight:700;color:#fff;background:#27AE60;letter-spacing:0.5px;">Normal</span> <span style="font-size:9px;color:#999;margin-left:4px;">Mar 20</span></div>
-                    <div style="font-size:11px;line-height:1.4;color:#666;margin-top:4px;">Routine maintenance activities observed. No changes to deployment configuration or radar operations.</div>
+                    <div style="margin-bottom:4px;"><span style="display:inline-block;padding:2px 8px;border-radius:3px;font-size:9px;font-weight:700;color:#fff;background:#27AE60;letter-spacing:0.5px;">Normal</span> <span style="font-size:9px;color:#999;margin-left:4px;">Mar 15</span></div>
+                    <div style="font-size:11px;line-height:1.4;color:#666;margin-top:4px;">Site operational. No protests or disruptions reported.</div>
                   </div>
                 </td>
                 <td style="width:50%;padding:4px;vertical-align:top;">
                   <div style="background:#F0FAF0;border-radius:4px;padding:10px 12px;border-left:3px solid #27AE60;min-height:60px;">
                     <div style="font-size:12px;font-weight:700;color:#1B2A4A;margin-bottom:3px;">Sohae Satellite Launch Station</div>
-                    <div style="margin-bottom:4px;"><span style="display:inline-block;padding:2px 8px;border-radius:3px;font-size:9px;font-weight:700;color:#fff;background:#27AE60;letter-spacing:0.5px;">Normal</span> <span style="font-size:9px;color:#999;margin-left:4px;">Mar 17</span></div>
-                    <div style="font-size:11px;line-height:1.4;color:#666;margin-top:4px;">Launch pad and assembly building show no preparation activities. Vehicle storage areas remain clear.</div>
+                    <div style="margin-bottom:4px;"><span style="display:inline-block;padding:2px 8px;border-radius:3px;font-size:9px;font-weight:700;color:#fff;background:#27AE60;letter-spacing:0.5px;">Normal</span> <span style="font-size:9px;color:#999;margin-left:4px;">Mar 10</span></div>
+                    <div style="font-size:11px;line-height:1.4;color:#666;margin-top:4px;">No launch preparations observed. Facility in maintenance mode.</div>
                   </div>
                 </td></tr><tr>
                 <td style="width:50%;padding:4px;vertical-align:top;">
                   <div style="background:#F0FAF0;border-radius:4px;padding:10px 12px;border-left:3px solid #27AE60;min-height:60px;">
                     <div style="font-size:12px;font-weight:700;color:#1B2A4A;margin-bottom:3px;">Punggye-ri Nuclear Test Site</div>
-                    <div style="margin-bottom:4px;"><span style="display:inline-block;padding:2px 8px;border-radius:3px;font-size:9px;font-weight:700;color:#fff;background:#27AE60;letter-spacing:0.5px;">Normal</span> <span style="font-size:9px;color:#999;margin-left:4px;">Mar 14</span></div>
-                    <div style="font-size:11px;line-height:1.4;color:#666;margin-top:4px;">Test tunnels remain sealed. No construction or preparation activities visible at any portal entrances.</div>
+                    <div style="margin-bottom:4px;"><span style="display:inline-block;padding:2px 8px;border-radius:3px;font-size:9px;font-weight:700;color:#fff;background:#27AE60;letter-spacing:0.5px;">Normal</span> <span style="font-size:9px;color:#999;margin-left:4px;">Mar 1</span></div>
+                    <div style="font-size:11px;line-height:1.4;color:#666;margin-top:4px;">No unusual activity. Site remains dormant since 2018 closure ceremony.</div>
                   </div>
                 </td>
                 <td style="width:50%;padding:4px;vertical-align:top;">
-                  <div style="background:#FDF6E3;border-radius:4px;padding:10px 12px;border-left:3px solid #D4AC0D;min-height:60px;">
+                  <div style="background:#F0FAF0;border-radius:4px;padding:10px 12px;border-left:3px solid #27AE60;min-height:60px;">
                     <div style="font-size:12px;font-weight:700;color:#1B2A4A;margin-bottom:3px;">Tumangang–Khasan (NK-Russia border)</div>
-                    <div style="margin-bottom:4px;"><span style="display:inline-block;padding:2px 8px;border-radius:3px;font-size:9px;font-weight:700;color:#fff;background:#D4AC0D;letter-spacing:0.5px;">Active &#9650;</span> <span style="font-size:9px;color:#999;margin-left:4px;">Mar 21</span></div>
-                    <div style="font-size:11px;line-height:1.4;color:#666;margin-top:4px;">Increased rail freight activity observed with multiple cargo trains crossing daily. Container staging areas show elevated capacity utilization.</div>
+                    <div style="margin-bottom:4px;"><span style="display:inline-block;padding:2px 8px;border-radius:3px;font-size:9px;font-weight:700;color:#fff;background:#27AE60;letter-spacing:0.5px;">Normal</span> <span style="font-size:9px;color:#999;margin-left:4px;">Mar 18</span></div>
+                    <div style="font-size:11px;line-height:1.4;color:#666;margin-top:4px;">Rail traffic at routine levels. No surge in cargo movements detected.</div>
                   </div>
                 </td></tr><tr>
                 <td style="width:50%;padding:4px;vertical-align:top;">
                   <div style="background:#F0FAF0;border-radius:4px;padding:10px 12px;border-left:3px solid #27AE60;min-height:60px;">
                     <div style="font-size:12px;font-weight:700;color:#1B2A4A;margin-bottom:3px;">Sinuiju–Dandong (NK-China border)</div>
-                    <div style="margin-bottom:4px;"><span style="display:inline-block;padding:2px 8px;border-radius:3px;font-size:9px;font-weight:700;color:#fff;background:#27AE60;letter-spacing:0.5px;">Normal</span> <span style="font-size:9px;color:#999;margin-left:4px;">Mar 19</span></div>
-                    <div style="font-size:11px;line-height:1.4;color:#666;margin-top:4px;">Cross-border trade flows at normal levels. No unusual freight accumulation or processing delays reported.</div>
+                    <div style="margin-bottom:4px;"><span style="display:inline-block;padding:2px 8px;border-radius:3px;font-size:9px;font-weight:700;color:#fff;background:#27AE60;letter-spacing:0.5px;">Normal</span> <span style="font-size:9px;color:#999;margin-left:4px;">Mar 12</span></div>
+                    <div style="font-size:11px;line-height:1.4;color:#666;margin-top:4px;">Cross-border trade continues at reduced pandemic-era levels.</div>
                   </div>
                 </td>
                 <td style="width:50%;padding:4px;vertical-align:top;">
                   <div style="background:#F0FAF0;border-radius:4px;padding:10px 12px;border-left:3px solid #27AE60;min-height:60px;">
                     <div style="font-size:12px;font-weight:700;color:#1B2A4A;margin-bottom:3px;">Rason SEZ</div>
-                    <div style="margin-bottom:4px;"><span style="display:inline-block;padding:2px 8px;border-radius:3px;font-size:9px;font-weight:700;color:#fff;background:#27AE60;letter-spacing:0.5px;">Normal</span> <span style="font-size:9px;color:#999;margin-left:4px;">Mar 16</span></div>
-                    <div style="font-size:11px;line-height:1.4;color:#666;margin-top:4px;">Port operations continue at reduced capacity. Limited foreign business presence with routine cargo handling activities.</div>
+                    <div style="margin-bottom:4px;"><span style="display:inline-block;padding:2px 8px;border-radius:3px;font-size:9px;font-weight:700;color:#fff;background:#27AE60;letter-spacing:0.5px;">Normal</span> <span style="font-size:9px;color:#999;margin-left:4px;">Mar 8</span></div>
+                    <div style="font-size:11px;line-height:1.4;color:#666;margin-top:4px;">Port operations normal. Limited foreign presence continues.</div>
                   </div>
                 </td></tr>
           </table>
@@ -410,52 +432,7 @@
           <a name="rok-gov"></a><span style="display:inline-block;background:#1B6A4A;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;padding:4px 12px;border-radius:12px;font-family:Arial,sans-serif;margin-bottom:8px;">ROK Government</span> <span style="font-size:10px;color:#888;font-family:Arial,sans-serif;">President + Ministries &middot; Sunday, March 22, 2026</span>
           <div style="padding-top:4px;">
             
-            <table width="100%" cellpadding="0" cellspacing="0" border="0" class="gov-grid">
-              <tr>
-                <td style="width:50%;padding:8px;vertical-align:top;">
-                  <div style="background:#FAFAF5;border-radius:4px;padding:14px;min-height:100px;">
-                    <div style="margin-bottom:6px;"><span style="font-size:11px;color:#888;">대통령실 · </span><span style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:0.3px;">Presidential Office</span></div>
-                    <div style="font-size:14px;font-weight:700;color:#1B2A4A;line-height:1.3;margin-bottom:6px;">Nominated Shin Hyun-song as Bank of Korea governor</div>
-                    <div style="font-size:12px;line-height:1.5;color:#555;">Selected Bank for International Settlements economist to replace outgoing BOK chief. Shin pledges 'balanced' monetary policy approach amid Middle East crisis.</div>
-                    <div style="margin-top:6px;font-size:11px;color:#888;">→ presidential.go.kr</div>
-                  </div>
-                </td>
-                <td style="width:50%;padding:8px;vertical-align:top;">
-                  <div style="background:#FAFAF5;border-radius:4px;padding:14px;min-height:100px;">
-                    <div style="margin-bottom:6px;"><span style="font-size:11px;color:#888;">대통령실 · </span><span style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:0.3px;">Presidential Office</span></div>
-                    <div style="font-size:14px;font-weight:700;color:#1B2A4A;line-height:1.3;margin-bottom:6px;">Excluded multi-homeowners from real estate policymaking</div>
-                    <div style="font-size:12px;line-height:1.5;color:#555;">Instructed government to bar officials owning multiple properties from participating in housing policy decisions to avoid conflicts of interest.</div>
-                    <div style="margin-top:6px;font-size:11px;color:#888;">→ Yonhap EN</div>
-                  </div>
-                </td></tr><tr>
-                <td style="width:50%;padding:8px;vertical-align:top;">
-                  <div style="background:#FAFAF5;border-radius:4px;padding:14px;min-height:100px;">
-                    <div style="margin-bottom:6px;"><span style="font-size:11px;color:#888;">산업통상자원부 · </span><span style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:0.3px;">Ministry of Trade, Industry and Energy</span></div>
-                    <div style="font-size:14px;font-weight:700;color:#1B2A4A;line-height:1.3;margin-bottom:6px;">Proposed EV battery disclosure regulations</div>
-                    <div style="font-size:12px;line-height:1.5;color:#555;">Customers will be able to check battery manufacturer and country of origin before purchase. Regulation aims to enhance transparency in EV market.</div>
-                    <div style="margin-top:6px;font-size:11px;color:#888;">→ MOTIE EN</div>
-                  </div>
-                </td>
-                <td style="width:50%;padding:8px;vertical-align:top;">
-                  <div style="background:#FAFAF5;border-radius:4px;padding:14px;min-height:100px;">
-                    <div style="margin-bottom:6px;"><span style="font-size:11px;color:#888;">기획재정부 · </span><span style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:0.3px;">Ministry of Economy and Finance</span></div>
-                    <div style="font-size:14px;font-weight:700;color:#1B2A4A;line-height:1.3;margin-bottom:6px;">Called for preparation for prolonged Middle East crisis</div>
-                    <div style="font-size:12px;line-height:1.5;color:#555;">Urged readiness measures as regional conflict threatens oil supply and trade routes. Government preparing economic response mechanisms.</div>
-                    <div style="margin-top:6px;font-size:11px;color:#888;">→ Yonhap EN</div>
-                  </div>
-                </td></tr>
-            </table>
             
-            <div style="margin-top:16px;">
-              <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#2C3E50;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #E8E8E8;">Personnel Changes</div>
-              
-                <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid #2980B9;">
-                  <div style="font-size:13px;font-weight:600;color:#1B2A4A;">Shin Hyun-song<span style="display:inline-block;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:600;color:#fff;background:#2980B9;text-transform:uppercase;margin-left:6px;">nominated</span></div>
-                  <div style="font-size:12px;color:#555;">Bank of Korea Governor</div>
-                  <div style="font-size:12px;line-height:1.4;color:#555;">President Lee Jae Myung selected Bank for International Settlements economist as next central bank chief. National Assembly confirmation required before Shin can assume the four-year term.</div>
-                  <div style="font-size:11px;color:#888;margin-top:2px;">Replaces: Current BOK governor (name not specified in reports)</div>
-                </div>
-            </div>
             
             
             <div style="margin-top:20px;">
@@ -471,8 +448,8 @@
                       <div class="cal-date" style="font-size:18px;font-weight:300;color:#1B2A4A;line-height:1.2;">24</div>
                     </td>
                     <td style="padding:10px 0;vertical-align:top;">
-                      <div style="font-size:13px;font-weight:600;color:#1B2A4A;margin-bottom:2px;">NK underwater nuclear drone test anniversary</div>
-                      <div style="font-size:12px;line-height:1.4;color:#555;">Third anniversary of DPRK 'Haeil' underwater nuclear attack drone launch from Riwon County. System claimed capable of generating radioactive tsunami.</div>
+                      <div style="font-size:13px;font-weight:600;color:#1B2A4A;margin-bottom:2px;">DPRK 'Haeil' underwater nuclear drone test anniversary</div>
+                      <div style="font-size:12px;line-height:1.4;color:#555;">Three-year anniversary of North Korea's first test of the 'Haeil' underwater nuclear attack drone. Pyongyang may conduct commemorative military activity.</div>
                     </td>
                   </tr>
                 </table>
@@ -480,11 +457,23 @@
                   <tr>
                     <td width="50" style="padding:10px 10px 10px 0;text-align:center;vertical-align:top;">
                       <div style="font-size:10px;text-transform:uppercase;color:#888;letter-spacing:0.5px;">MAR</div>
-                      <div class="cal-date" style="font-size:18px;font-weight:300;color:#1B2A4A;line-height:1.2;">27</div>
+                      <div class="cal-date" style="font-size:18px;font-weight:300;color:#1B2A4A;line-height:1.2;">25</div>
                     </td>
                     <td style="padding:10px 0;vertical-align:top;">
-                      <div style="font-size:13px;font-weight:600;color:#1B2A4A;margin-bottom:2px;">G'day ROK event at Grand Hyatt Seoul</div>
-                      <div style="font-size:12px;line-height:1.4;color:#555;">Australian Chamber of Commerce flagship networking event includes Australia-Korea Business Awards ceremony. Flight to Australia giveaway included.</div>
+                      <div style="font-size:13px;font-weight:600;color:#1B2A4A;margin-bottom:2px;">DPRK SRBM test anniversary</div>
+                      <div style="font-size:12px;line-height:1.4;color:#555;">Five-year anniversary of March 25, 2021 dual SRBM launch from Hamju. Part of DPRK's spring training cycle pattern.</div>
+                    </td>
+                  </tr>
+                </table>
+                <table class="cal-table" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-bottom:1px solid #E8E8E8;">
+                  <tr>
+                    <td width="50" style="padding:10px 10px 10px 0;text-align:center;vertical-align:top;">
+                      <div style="font-size:10px;text-transform:uppercase;color:#888;letter-spacing:0.5px;">MAR</div>
+                      <div class="cal-date" style="font-size:18px;font-weight:300;color:#1B2A4A;line-height:1.2;">28</div>
+                    </td>
+                    <td style="padding:10px 0;vertical-align:top;">
+                      <div style="font-size:13px;font-weight:600;color:#1B2A4A;margin-bottom:2px;">Quad Foreign Ministers Meeting</div>
+                      <div style="font-size:12px;line-height:1.4;color:#555;">Quarterly Quad foreign ministers meeting expected to address Indo-Pacific security architecture and technology cooperation.</div>
                     </td>
                   </tr>
                 </table>
@@ -495,8 +484,20 @@
                       <div class="cal-date" style="font-size:18px;font-weight:300;color:#1B2A4A;line-height:1.2;">10</div>
                     </td>
                     <td style="padding:10px 0;vertical-align:top;">
-                      <div style="font-size:13px;font-weight:600;color:#1B2A4A;margin-bottom:2px;">Supplementary budget passage expected</div>
-                      <div style="font-size:12px;line-height:1.4;color:#555;">Ruling Democratic Party plans to pass 25 trillion won emergency budget package through National Assembly to address Middle East crisis impacts.</div>
+                      <div style="font-size:13px;font-weight:600;color:#1B2A4A;margin-bottom:2px;">ROK supplementary budget vote</div>
+                      <div style="font-size:12px;line-height:1.4;color:#555;">National Assembly expected to vote on 25 trillion won supplementary budget addressing Middle East crisis impacts on energy and supply chains.</div>
+                    </td>
+                  </tr>
+                </table>
+                <table class="cal-table" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-bottom:1px solid #E8E8E8;">
+                  <tr>
+                    <td width="50" style="padding:10px 10px 10px 0;text-align:center;vertical-align:top;">
+                      <div style="font-size:10px;text-transform:uppercase;color:#888;letter-spacing:0.5px;">APR</div>
+                      <div class="cal-date" style="font-size:18px;font-weight:300;color:#1B2A4A;line-height:1.2;">14</div>
+                    </td>
+                    <td style="padding:10px 0;vertical-align:top;">
+                      <div style="font-size:13px;font-weight:600;color:#1B2A4A;margin-bottom:2px;">US semiconductor tariff report deadline</div>
+                      <div style="font-size:12px;line-height:1.4;color:#555;">Commerce Department and USTR report on expanded semiconductor tariffs due. Will determine scope beyond current 25% on advanced logic chips.</div>
                     </td>
                   </tr>
                 </table>
@@ -507,32 +508,8 @@
                       <div class="cal-date" style="font-size:18px;font-weight:300;color:#1B2A4A;line-height:1.2;">15</div>
                     </td>
                     <td style="padding:10px 0;vertical-align:top;">
-                      <div style="font-size:13px;font-weight:600;color:#1B2A4A;margin-bottom:2px;">Kim Il Sung birthday (Day of the Sun)</div>
-                      <div style="font-size:12px;line-height:1.4;color:#555;">Major DPRK national holiday typically marked by military parades, weapons displays, or leadership statements. Historical precedent for provocations.</div>
-                    </td>
-                  </tr>
-                </table>
-                <table class="cal-table" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-bottom:1px solid #E8E8E8;">
-                  <tr>
-                    <td width="50" style="padding:10px 10px 10px 0;text-align:center;vertical-align:top;">
-                      <div style="font-size:10px;text-transform:uppercase;color:#888;letter-spacing:0.5px;">APR</div>
-                      <div class="cal-date" style="font-size:18px;font-weight:300;color:#1B2A4A;line-height:1.2;">25</div>
-                    </td>
-                    <td style="padding:10px 0;vertical-align:top;">
-                      <div style="font-size:13px;font-weight:600;color:#1B2A4A;margin-bottom:2px;">Korean People's Army founding anniversary</div>
-                      <div style="font-size:12px;line-height:1.4;color:#555;">DPRK military holiday often accompanied by weapons tests or major exercises. KPA established in 1932 according to official DPRK chronology.</div>
-                    </td>
-                  </tr>
-                </table>
-                <table class="cal-table" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-bottom:1px solid #E8E8E8;">
-                  <tr>
-                    <td width="50" style="padding:10px 10px 10px 0;text-align:center;vertical-align:top;">
-                      <div style="font-size:10px;text-transform:uppercase;color:#888;letter-spacing:0.5px;">MAY</div>
-                      <div class="cal-date" style="font-size:18px;font-weight:300;color:#1B2A4A;line-height:1.2;">1</div>
-                    </td>
-                    <td style="padding:10px 0;vertical-align:top;">
-                      <div style="font-size:13px;font-weight:600;color:#1B2A4A;margin-bottom:2px;">International Workers' Day</div>
-                      <div style="font-size:12px;line-height:1.4;color:#555;">Labor holiday observed in both Koreas. DPRK typically holds mass rallies while ROK labor unions may stage demonstrations.</div>
+                      <div style="font-size:13px;font-weight:600;color:#1B2A4A;margin-bottom:2px;">Kim Il Sung's birthday (Day of the Sun)</div>
+                      <div style="font-size:12px;line-height:1.4;color:#555;">North Korea's most important holiday. Military parade or strategic weapons test possible. Kim Jong Un typically presides over major events.</div>
                     </td>
                   </tr>
                 </table>
@@ -547,45 +524,75 @@
             <div style="margin-bottom:16px;padding:12px 14px;background:#FFF5F5;border-radius:4px;border:1px solid #F0D0D0;">
               <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#C0392B;font-weight:600;margin-bottom:6px;">US Tariff Rate on South Korea</div>
               <div style="margin-bottom:6px;">
-                <span style="font-size:28px;font-weight:700;color:#C0392B;">25%</span>
+                <span style="font-size:28px;font-weight:700;color:#C0392B;">10%</span>
                 <span style="display:inline-block;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:700;color:#fff;background:#C0392B;letter-spacing:0.5px;vertical-align:middle;margin-left:8px;">ACTIVE</span>
               </div>
-              <div style="font-size:11px;color:#555;line-height:1.4;margin-bottom:8px;">Reciprocal tariff rate maintained on Korean goods under current trade framework</div>
-              
+              <div style="font-size:11px;color:#555;line-height:1.4;margin-bottom:8px;">Section 122 global surcharge at 10% on all Korean goods since February 24, 2026</div>
+              <div style="margin-top:6px;font-size:11px;color:#E67E22;font-weight:600;">+ Section 122 global surcharge: 10% global surcharge (Section 122, effective Feb 24 2026, expires Jul 24 2026)</div>
               <table class="tariff-sector" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:8px;border-top:1px solid #F0E0E0;">
                 
                 <tr style="border-bottom:1px solid #F0E0E0;">
-                  <td style="padding:4px 6px 4px 0;font-size:11px;font-weight:600;color:#1B2A4A;">Steel</td>
-                  <td style="padding:4px 6px;font-size:13px;font-weight:700;color:#C0392B;text-align:center;white-space:nowrap;">0%</td>
-                  <td style="padding:4px 6px;font-size:9px;color:#888;text-transform:uppercase;white-space:nowrap;">Section 232 Exemption</td>
-                  <td style="padding:4px 0 4px 6px;font-size:10px;color:#666;">Bilateral agreement exemption continues</td>
+                  <td style="padding:4px 6px 4px 0;font-size:11px;font-weight:600;color:#1B2A4A;">Steel &amp; Aluminum</td>
+                  <td style="padding:4px 6px;font-size:13px;font-weight:700;color:#C0392B;text-align:center;white-space:nowrap;">50%</td>
+                  <td style="padding:4px 6px;font-size:9px;color:#888;text-transform:uppercase;white-space:nowrap;">Section 232</td>
+                  <td style="padding:4px 0 4px 6px;font-size:10px;color:#666;">No Korea exemption; all country exemptions eliminated March 2025</td>
                 </tr>
                 <tr style="border-bottom:1px solid #F0E0E0;">
-                  <td style="padding:4px 6px 4px 0;font-size:11px;font-weight:600;color:#1B2A4A;">Automobiles</td>
-                  <td style="padding:4px 6px;font-size:13px;font-weight:700;color:#C0392B;text-align:center;white-space:nowrap;">2.5%</td>
-                  <td style="padding:4px 6px;font-size:9px;color:#888;text-transform:uppercase;white-space:nowrap;">MFN</td>
-                  <td style="padding:4px 0 4px 6px;font-size:10px;color:#666;">Standard MFN rate applied</td>
+                  <td style="padding:4px 6px 4px 0;font-size:11px;font-weight:600;color:#1B2A4A;">Copper</td>
+                  <td style="padding:4px 6px;font-size:13px;font-weight:700;color:#C0392B;text-align:center;white-space:nowrap;">50%</td>
+                  <td style="padding:4px 6px;font-size:9px;color:#888;text-transform:uppercase;white-space:nowrap;">Section 232</td>
+                  <td style="padding:4px 0 4px 6px;font-size:10px;color:#666;">Added to Section 232 scope in March 2025 expansion</td>
                 </tr>
                 <tr style="border-bottom:1px solid #F0E0E0;">
-                  <td style="padding:4px 6px 4px 0;font-size:11px;font-weight:600;color:#1B2A4A;">Semiconductors</td>
+                  <td style="padding:4px 6px 4px 0;font-size:11px;font-weight:600;color:#1B2A4A;">Automobiles &amp; Auto Parts</td>
+                  <td style="padding:4px 6px;font-size:13px;font-weight:700;color:#27AE60;text-align:center;white-space:nowrap;">15%</td>
+                  <td style="padding:4px 6px;font-size:9px;color:#888;text-transform:uppercase;white-space:nowrap;">Section 232 (reduced)</td>
+                  <td style="padding:4px 0 4px 6px;font-size:10px;color:#666;">Reduced from 25% under US-Korea deal, retroactive to November 1, 2025</td>
+                </tr>
+                <tr style="border-bottom:1px solid #F0E0E0;">
+                  <td style="padding:4px 6px 4px 0;font-size:11px;font-weight:600;color:#1B2A4A;">Timber / Lumber / Wood Derivatives</td>
+                  <td style="padding:4px 6px;font-size:13px;font-weight:700;color:#27AE60;text-align:center;white-space:nowrap;">15%</td>
+                  <td style="padding:4px 6px;font-size:9px;color:#888;text-transform:uppercase;white-space:nowrap;">Section 232 (reduced)</td>
+                  <td style="padding:4px 0 4px 6px;font-size:10px;color:#666;">Reduced under US-Korea deal per USTR December 3, 2025 implementation</td>
+                </tr>
+                <tr style="border-bottom:1px solid #F0E0E0;">
+                  <td style="padding:4px 6px 4px 0;font-size:11px;font-weight:600;color:#1B2A4A;">Semiconductors (advanced logic)</td>
+                  <td style="padding:4px 6px;font-size:13px;font-weight:700;color:#C0392B;text-align:center;white-space:nowrap;">25%</td>
+                  <td style="padding:4px 6px;font-size:9px;color:#888;text-transform:uppercase;white-space:nowrap;">Section 232</td>
+                  <td style="padding:4px 0 4px 6px;font-size:10px;color:#666;">Effective January 15, 2026; broader scope pending April 14 report</td>
+                </tr>
+                <tr style="border-bottom:1px solid #F0E0E0;">
+                  <td style="padding:4px 6px 4px 0;font-size:11px;font-weight:600;color:#1B2A4A;">Pharmaceuticals</td>
+                  <td style="padding:4px 6px;font-size:13px;font-weight:700;color:#C0392B;text-align:center;white-space:nowrap;">up to 15%</td>
+                  <td style="padding:4px 6px;font-size:9px;color:#888;text-transform:uppercase;white-space:nowrap;">Section 232</td>
+                  <td style="padding:4px 0 4px 6px;font-size:10px;color:#666;">Rate cap agreed in deal but specific Section 232 action not yet issued</td>
+                </tr>
+                <tr style="border-bottom:1px solid #F0E0E0;">
+                  <td style="padding:4px 6px 4px 0;font-size:11px;font-weight:600;color:#1B2A4A;">Civil Aircraft &amp; Parts</td>
                   <td style="padding:4px 6px;font-size:13px;font-weight:700;color:#C0392B;text-align:center;white-space:nowrap;">0%</td>
-                  <td style="padding:4px 6px;font-size:9px;color:#888;text-transform:uppercase;white-space:nowrap;">ITA Agreement</td>
-                  <td style="padding:4px 0 4px 6px;font-size:10px;color:#666;">Information Technology Agreement coverage</td>
+                  <td style="padding:4px 6px;font-size:9px;color:#888;text-transform:uppercase;white-space:nowrap;">Exempted</td>
+                  <td style="padding:4px 0 4px 6px;font-size:10px;color:#666;">Tariffs removed under US-Korea deal per USTR December 3, 2025 notice</td>
+                </tr>
+                <tr style="border-bottom:1px solid #F0E0E0;">
+                  <td style="padding:4px 6px 4px 0;font-size:11px;font-weight:600;color:#1B2A4A;">Generic Pharma / Precursors / Rare Natural Resources</td>
+                  <td style="padding:4px 6px;font-size:13px;font-weight:700;color:#C0392B;text-align:center;white-space:nowrap;">0%</td>
+                  <td style="padding:4px 6px;font-size:9px;color:#888;text-transform:uppercase;white-space:nowrap;">Aligned Partners</td>
+                  <td style="padding:4px 0 4px 6px;font-size:10px;color:#666;">Eliminated for Aligned Partners per US-Korea deal framework</td>
                 </tr>
               </table>
-              <div style="margin-top:8px;font-size:10px;color:#999;">Jan 2024 - Steel exemption renewal</div>
-              <div style="margin-top:4px;font-size:10px;color:#2980B9;">Next trigger: Annual steel quota review - June 2026</div>
+              <div style="margin-top:8px;font-size:10px;color:#999;">Feb 24, 2026 — Section 122 10% surcharge imposed after Supreme Court struck down IEEPA tariffs</div>
+              <div style="margin-top:4px;font-size:10px;color:#2980B9;">Next trigger: Jul 24 2026 — Section 122 surcharge expiry (150-day statutory limit); Apr 14 2026 — Commerce/USTR semiconductor tariff report due; Section 301 investigations ongoing</div>
             </div>
             <div style="margin-bottom:16px;padding:12px 14px;background:#F0F7FF;border-radius:4px;border:1px solid #D6E9F8;">
               <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#1B2A4A;font-weight:600;margin-bottom:6px;">ROK-US Investment Commitment</div>
               <div style="margin-bottom:4px;">
-                <span style="font-size:22px;font-weight:700;color:#1B2A4A;">$87.5B</span>
+                <span style="font-size:22px;font-weight:700;color:#1B2A4A;">$137.3B</span>
                 <span style="font-size:13px;color:#888;"> of $350B pledged</span>
               </div>
               <div style="background:#E0E0E0;border-radius:4px;height:8px;overflow:hidden;">
-                <div style="background:#27AE60;width:25%;height:100%;border-radius:4px;"></div>
+                <div style="background:#27AE60;width:39%;height:100%;border-radius:4px;"></div>
               </div>
-              <div style="font-size:11px;color:#888;margin-top:4px;">25% fulfilled &middot; Major US robot companies prioritizing shift from Chinese to Korean component suppliers according to business reports</div>
+              <div style="font-size:11px;color:#888;margin-top:4px;">39% fulfilled &middot; Korean Air's $49.9B Boeing/GE deals from October 2025 summit remain largest single commitments</div>
               
                 <div style="margin-top:10px;">
                   <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#888;font-weight:600;margin-bottom:4px;">Deal Breakdown</div>
@@ -631,32 +638,42 @@
                       <td style="padding:4px 6px;font-size:11px;font-weight:700;color:#27AE60;text-align:right;white-space:nowrap;">$70M</td>
                       <td style="padding:4px 0 4px 6px;font-size:10px;color:#888;">Manufacturing</td>
                     </tr>
+                    <tr style="border-bottom:1px solid #E8EDF3;">
+                      <td style="padding:4px 6px 4px 0;font-size:11px;font-weight:600;color:#1B2A4A;">Korean Air</td>
+                      <td style="padding:4px 6px;font-size:11px;font-weight:700;color:#27AE60;text-align:right;white-space:nowrap;">$36.2B</td>
+                      <td style="padding:4px 0 4px 6px;font-size:10px;color:#888;">Boeing aircraft purchase</td>
+                    </tr>
+                    <tr style="border-bottom:1px solid #E8EDF3;">
+                      <td style="padding:4px 6px 4px 0;font-size:11px;font-weight:600;color:#1B2A4A;">Korean Air / GE Aerospace</td>
+                      <td style="padding:4px 6px;font-size:11px;font-weight:700;color:#27AE60;text-align:right;white-space:nowrap;">$13.7B</td>
+                      <td style="padding:4px 0 4px 6px;font-size:10px;color:#888;">Engines for Boeing fleet</td>
+                    </tr>
                   </table>
                 </div>
             </div>
             <div style="margin-bottom:16px;">
               <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#888;font-weight:600;margin-bottom:6px;">US Trade Policy Tracker</div>
-              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #E8E8E8;">
+              <table class="trade-policy" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #E8E8E8;">
                 
                 <tr style="border-bottom:1px solid #F0F0F0;">
-                  <td style="padding:6px 8px 6px 0;vertical-align:top;font-size:12px;font-weight:600;color:#1B2A4A;width:30%;">EV Battery Supply Chain Review<span style="font-size:9px;color:#888;font-weight:400;"> · DOE/Treasury</span></td>
-                  <td style="padding:6px 4px;vertical-align:top;font-size:11px;color:#555;line-height:1.4;">Ongoing review of Korean battery manufacturers' eligibility for IRA tax credits amid Chinese content restrictions</td>
+                  <td style="padding:6px 8px 6px 0;vertical-align:top;font-size:12px;font-weight:600;color:#1B2A4A;width:30%;">Section 301 investigation - South Korea<span style="font-size:9px;color:#888;font-weight:400;"> · USTR</span></td>
+                  <td style="padding:6px 4px;vertical-align:top;font-size:11px;color:#555;line-height:1.4;">Launched March 11, 2026 alongside 15 other trading partners; potential basis for post-Section 122 tariffs</td>
                   <td style="padding:6px 0 6px 4px;vertical-align:top;text-align:right;white-space:nowrap;"><span style="display:inline-block;padding:1px 6px;border-radius:3px;font-size:9px;font-weight:700;color:#fff;background:#C0392B;letter-spacing:0.5px;">ACTIVE</span></td>
                 </tr>
                 <tr style="border-bottom:1px solid #F0F0F0;">
-                  <td style="padding:6px 8px 6px 0;vertical-align:top;font-size:12px;font-weight:600;color:#1B2A4A;width:30%;">CHIPS Act Funding - Samsung Austin<span style="font-size:9px;color:#888;font-weight:400;"> · Commerce Department</span></td>
-                  <td style="padding:6px 4px;vertical-align:top;font-size:11px;color:#555;line-height:1.4;">Final funding determination pending for Samsung's Texas semiconductor expansion project</td>
+                  <td style="padding:6px 8px 6px 0;vertical-align:top;font-size:12px;font-weight:600;color:#1B2A4A;width:30%;">CFIUS review expansion<span style="font-size:9px;color:#888;font-weight:400;"> · Treasury</span></td>
+                  <td style="padding:6px 4px;vertical-align:top;font-size:11px;color:#555;line-height:1.4;">Enhanced scrutiny of Korean tech investments in US critical infrastructure sectors</td>
+                  <td style="padding:6px 0 6px 4px;vertical-align:top;text-align:right;white-space:nowrap;"><span style="display:inline-block;padding:1px 6px;border-radius:3px;font-size:9px;font-weight:700;color:#fff;background:#C0392B;letter-spacing:0.5px;">ACTIVE</span></td>
+                </tr>
+                <tr style="border-bottom:1px solid #F0F0F0;">
+                  <td style="padding:6px 8px 6px 0;vertical-align:top;font-size:12px;font-weight:600;color:#1B2A4A;width:30%;">Export control alignment<span style="font-size:9px;color:#888;font-weight:400;"> · Commerce</span></td>
+                  <td style="padding:6px 4px;vertical-align:top;font-size:11px;color:#555;line-height:1.4;">Korea maintains semiconductor equipment restrictions to China per October 2023 agreement</td>
+                  <td style="padding:6px 0 6px 4px;vertical-align:top;text-align:right;white-space:nowrap;"><span style="display:inline-block;padding:1px 6px;border-radius:3px;font-size:9px;font-weight:700;color:#fff;background:#C0392B;letter-spacing:0.5px;">ACTIVE</span></td>
+                </tr>
+                <tr style="border-bottom:1px solid #F0F0F0;">
+                  <td style="padding:6px 8px 6px 0;vertical-align:top;font-size:12px;font-weight:600;color:#1B2A4A;width:30%;">ITC anti-dumping probe<span style="font-size:9px;color:#888;font-weight:400;"> · ITC</span></td>
+                  <td style="padding:6px 4px;vertical-align:top;font-size:11px;color:#555;line-height:1.4;">Investigation into Korean steel products continues; preliminary determination due April 2026</td>
                   <td style="padding:6px 0 6px 4px;vertical-align:top;text-align:right;white-space:nowrap;"><span style="display:inline-block;padding:1px 6px;border-radius:3px;font-size:9px;font-weight:700;color:#fff;background:#D4AC0D;letter-spacing:0.5px;">PENDING</span></td>
-                </tr>
-                <tr style="border-bottom:1px solid #F0F0F0;">
-                  <td style="padding:6px 8px 6px 0;vertical-align:top;font-size:12px;font-weight:600;color:#1B2A4A;width:30%;">Section 232 Steel Exemptions<span style="font-size:9px;color:#888;font-weight:400;"> · Commerce Department</span></td>
-                  <td style="padding:6px 4px;vertical-align:top;font-size:11px;color:#555;line-height:1.4;">Korean steel imports maintain tariff exemption status under bilateral agreement framework</td>
-                  <td style="padding:6px 0 6px 4px;vertical-align:top;text-align:right;white-space:nowrap;"><span style="display:inline-block;padding:1px 6px;border-radius:3px;font-size:9px;font-weight:700;color:#fff;background:#C0392B;letter-spacing:0.5px;">ACTIVE</span></td>
-                </tr>
-                <tr style="border-bottom:1px solid #F0F0F0;">
-                  <td style="padding:6px 8px 6px 0;vertical-align:top;font-size:12px;font-weight:600;color:#1B2A4A;width:30%;">CFIUS - Korean Defense Investments<span style="font-size:9px;color:#888;font-weight:400;"> · Treasury/CFIUS</span></td>
-                  <td style="padding:6px 4px;vertical-align:top;font-size:11px;color:#555;line-height:1.4;">Enhanced screening of Korean defense company acquisitions in US critical technology sectors</td>
-                  <td style="padding:6px 0 6px 4px;vertical-align:top;text-align:right;white-space:nowrap;"><span style="display:inline-block;padding:1px 6px;border-radius:3px;font-size:9px;font-weight:700;color:#fff;background:#2980B9;letter-spacing:0.5px;">MONITOR</span></td>
                 </tr>
               </table>
             </div>
@@ -667,29 +684,53 @@
         <div style="padding:14px 32px;border-bottom:1px solid #E0E0E0;" class="sec">
           <a name="business"></a><span style="display:inline-block;background:#D4AC0D;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;padding:4px 12px;border-radius:12px;font-family:Arial,sans-serif;margin-bottom:8px;">Business &amp; Economy</span>
           
-            <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid #D4AC0D;">
-              <div style="font-size:11px;color:#888;text-transform:uppercase;">finance &middot; Bloomberg Korea</div>
+            <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid #8E44AD;">
+              <div style="font-size:11px;color:#888;text-transform:uppercase;">tech &middot; Yonhap</div>
               <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
-                <a href="https://news.google.com/rss/articles/CBMisAFBVV85cUxQTnFySnNoS3hNZ2hCLW13bUNLR2ZBdTlYZ21QUnJOTlF0X0VGY0daeUN6S2FsWFZlaVhwdUZSNWFJaGZoOVRxQ3FvRFBfTWt0ckxpWUhfWXQyZVM1bjRRZi1YdDd1Z0lMWE14OGFGWmZSeW9sOFQxekhyd3U2OHcwajgySzZQUEpacjlQcUVlc05PbnRBRzhiRlZCN1BfaGw3OVJjRk9MOS1uX2txQ2h3dA" style="color:#1B2A4A;text-decoration:none;">Lee nominates BIS official Shin as new BOK governor</a>
+                <a href="https://en.yna.co.kr/view/AEN20260323002100320" style="color:#1B2A4A;text-decoration:none;">Samsung, Hyundai introduce Car-to-Home service via SmartThings platform</a>
               </div>
-              <div style="font-size:12px;line-height:1.4;color:#555;">President Lee Jae Myung selected Bank for International Settlements economist Shin Hyun-song to lead Korea's central bank through 2030. Shin brings international financial markets expertise as Korea faces economic headwinds from Middle East crisis impacts.</div>
-              <div style="margin-top:3px;"><span style="display:inline-block;padding:1px 5px;border-radius:3px;font-size:9px;background:#E8E8E8;color:#555;margin-right:3px;">Bank of Korea</span></div>
+              <div style="font-size:12px;line-height:1.4;color:#555;">Samsung Electronics and Hyundai Motor launched Car-to-Home service enabling vehicle control of home IoT devices through Samsung's SmartThings platform. The integration reflects Korean conglomerates' push into connected ecosystems as global automakers partner with tech giants for smart services.</div>
+              <div style="margin-top:3px;"><span style="display:inline-block;padding:1px 5px;border-radius:3px;font-size:9px;background:#E8E8E8;color:#555;margin-right:3px;">Samsung Electronics</span> <span style="display:inline-block;padding:1px 5px;border-radius:3px;font-size:9px;background:#E8E8E8;color:#555;margin-right:3px;">Hyundai Motor</span></div>
             </div>
             <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid #D4AC0D;">
-              <div style="font-size:11px;color:#888;text-transform:uppercase;">finance &middot; Nikkei Korea</div>
+              <div style="font-size:11px;color:#888;text-transform:uppercase;">finance &middot; Nikkei Asia</div>
               <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
-                <a href="https://news.google.com/rss/articles/CBMikwFBVV85cUxPLWh6MVpiSVdlS3p1czlFbGZLS1BuN1BqUmhkbVBwMi16R2czQThfNjdyM1ptbVNkbVpadXVYUFpvS0M0eVpVakQtd0tFMTJmWUlZZERSRkVpT1VyWVhNcVhQaGhPVENRTGxlTHJ4RzNzM28zcHh6SHFmamNpMEtzTm5xaktqSU1LVzNPb0F5STB3Q28" style="color:#1B2A4A;text-decoration:none;">Shin Hyun-song named as central bank governor</a>
+                <a href="https://news.google.com/rss/articles/CBMikwFBVV95cUxPLWh6MVpiSVdlS3p1czlFbGZLS1BuN1BqUmhkbVBwMi16R2czQThfNjdyM1ptbVNkbVpadXVYUFpvS0M0eVpVakQtd0tFMTJmWUlZZERSRkVpT1VyWVhNcVhQaGhPVENRTGxlTHJ4RzNzM28zcHh6SHFmamNpMEtzTm5xaktqSU1LVzNPb0F5STB3Q28?oc=5" style="color:#1B2A4A;text-decoration:none;">South Korea names Shin Hyun-song as central bank governor</a>
               </div>
-              <div style="font-size:12px;line-height:1.4;color:#555;">BIS economist appointment signals continuity in monetary policy as Korea navigates regional economic challenges. Shin's international experience positions BOK for coordinated global central bank responses.</div>
-              <div style="margin-top:3px;"><span style="display:inline-block;padding:1px 5px;border-radius:3px;font-size:9px;background:#E8E8E8;color:#555;margin-right:3px;">Bank of Korea</span></div>
+              <div style="font-size:12px;line-height:1.4;color:#555;">BIS economist Shin Hyun-song's nomination as BOK governor signals focus on financial stability amid global volatility. His expertise in capital flows and macroprudential policy comes as Korea balances growth concerns with inflation pressures.</div>
+              
             </div>
             <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid #D4AC0D;">
-              <div style="font-size:11px;color:#888;text-transform:uppercase;">finance &middot; Nikkei Korea</div>
+              <div style="font-size:11px;color:#888;text-transform:uppercase;">finance &middot; Bloomberg</div>
               <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
-                <a href="https://news.google.com/rss/articles/CBMilwFBVV85cUxNMmtjOGJXdDZhRHRfTkQzVzhObUF1Nk1EeVduUWlNa2lvbW0wX0s2MGE4WGxtSHhVQThoQ25JN2FFRldFVmhtMWlOU3BJb093V2prcWQ0bzVfNDBad3dlUVVKRVd2MktHRlo5OEw2dm8yeUhtZDYxSC1kcjhqd2VZR19meWhJUzd3al9RakgzT0VlZTVBMG1j" style="color:#1B2A4A;text-decoration:none;">South Korea's next central bank chief eyes 'balanced' approach</a>
+                <a href="https://news.google.com/rss/articles/CBMisAFBVV95cUxQTnFySnNoS3hNZ2hCLW13bUNLR2ZBdTlYZ21QUnJOTlF0X0VGY0daeUN6S2FsWFZlaVhwdUZSNWFJaGZoOVRxQ3FvRFBfTWt0ckxpWUhfWXQyZVM1bjRRZi1YdDd1Z0lMWE14OGFGWmZSeW9sOFQxekhyd3U2OHcwajgySzZQUEpacjlQcUVlc05PbnRBRzhiRlZCN1BfaGw3OVJjRk9MOS1uX2txQ2h3dA?oc=5" style="color:#1B2A4A;text-decoration:none;">SKorea's Lee Nominates BIS Official Shin as New BOK Governor</a>
               </div>
-              <div style="font-size:12px;line-height:1.4;color:#555;">BOK governor-nominee pledged data-driven monetary policy balancing growth and price stability concerns. The approach comes as Korea faces inflationary pressures from Middle East energy price volatility.</div>
-              <div style="margin-top:3px;"><span style="display:inline-block;padding:1px 5px;border-radius:3px;font-size:9px;background:#E8E8E8;color:#555;margin-right:3px;">Bank of Korea</span></div>
+              <div style="font-size:12px;line-height:1.4;color:#555;">President Lee's choice of international economist Shin Hyun-song for central bank chief emphasizes global perspective as Korea navigates Middle East crisis impacts. Shin's BIS experience positions him to manage capital flow volatility amid energy shocks.</div>
+              
+            </div>
+            <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid #D4AC0D;">
+              <div style="font-size:11px;color:#888;text-transform:uppercase;">finance &middot; Financial Times</div>
+              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
+                <a href="https://news.google.com/rss/articles/CBMicEFVX3lxTE4zcXFfRDhRemtQUGVmOXZpTFRlYmFnSnN5RC1WLWh3eUxsaVd1UlJmOWZ2NzVCTGVCc0t6djBHZmJ3Zm5weG5TbEpSMkFhNDUxOExIOF96QzZPNmNIN2lqaUJrbWpYd0prVHdMd1lLX3k?oc=5" style="color:#1B2A4A;text-decoration:none;">Shin nominated governor of Bank of Korea</a>
+              </div>
+              <div style="font-size:12px;line-height:1.4;color:#555;">The nomination of BIS's Shin Hyun-song as Korea's central bank chief brings international monetary expertise to Seoul's policy circles. His appointment comes as Korea faces its most complex economic environment since the 1997 Asian financial crisis.</div>
+              
+            </div>
+            <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid #8E44AD;">
+              <div style="font-size:11px;color:#888;text-transform:uppercase;">tech &middot; Maeil Business</div>
+              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
+                <a href="https://news.google.com/rss/articles/CBMiU0FVX3lxTE02SUxhd3laWlpiSVowV3VMY2hyVVRvVTR4MFpmWUE5d2E5WmMySldnZ1UzX0ZJX1NTcmpPOTVDQVoxWU01bE95RmlYbHRfOXlCSXpn?oc=5" style="color:#1B2A4A;text-decoration:none;">Qualcomm Showcases Advanced AI Experiences at Joint Event with AMCHAM Korea</a>
+              </div>
+              <div style="font-size:12px;line-height:1.4;color:#555;">Qualcomm demonstrated AI capabilities at AMCHAM Korea event, highlighting US tech companies' continued engagement with Korean market. The showcase underscores ongoing technology cooperation despite broader trade tensions.</div>
+              <div style="margin-top:3px;"><span style="display:inline-block;padding:1px 5px;border-radius:3px;font-size:9px;background:#E8E8E8;color:#555;margin-right:3px;">Qualcomm</span></div>
+            </div>
+            <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid #2980B9;">
+              <div style="font-size:11px;color:#888;text-transform:uppercase;">manufacturing &middot; Maeil Business</div>
+              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
+                <a href="https://news.google.com/rss/articles/CBMiS0FVX3lxTFB1UnZNa1FMMGktZlpQQmlUbFdscHg4bi1EdE5objc2VlRpREJGcFQ3UV9oOGZ1QTItR2xzbk1EWDBRN2k1T1N3OUVHQQ?oc=5" style="color:#1B2A4A;text-decoration:none;">Major U.S. robot companies prioritize transition from Chinese to Korean parts</a>
+              </div>
+              <div style="font-size:12px;line-height:1.4;color:#555;">US robotics firms accelerate supply chain shifts from Chinese to Korean components amid decoupling pressures. The trend benefits Korean manufacturers as friend-shoring policies reshape global tech supply chains.</div>
+              
             </div>
         </div>
         
@@ -697,15 +738,35 @@
         <div style="padding:14px 32px;border-bottom:1px solid #E0E0E0;" class="sec">
           <a name="nea"></a><span style="display:inline-block;background:#2C3E50;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;padding:4px 12px;border-radius:12px;font-family:Arial,sans-serif;margin-bottom:8px;">Northeast Asia Watch</span>
           
-            <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid #1B2A4A;">
+            <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid #D4AC0D;">
               <div style="font-size:11px;color:#888;text-transform:uppercase;">
-                <span style="font-size:9px;padding:1px 5px;border-radius:3px;background:#8B0000;color:#fff;margin-right:6px;">China-Korea</span>china-trade &middot; SCMP Korea
+                <span style="font-size:9px;padding:1px 5px;border-radius:3px;background:#1B6A4A;color:#fff;margin-right:6px;">Japan-Korea</span>japan-trade &middot; Nikkei Asia
                 &nbsp;<span style="display:inline-block;padding:2px 8px;border-radius:3px;font-size:11px;font-weight:600;color:#fff;background:#2980B9;letter-spacing:0.5px;">DEVELOPMENT</span>
               </div>
               <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
-                <a href="https://news.google.com/rss/articles/CBMi0AFBVV85cUxPa2VfUE1EYWI5Yk5sNDh1ejBMUFVBZmw4cS1OenItbHlvc0lMZjhxR1FvaDBEcUJOU1l6Y1dMUjg0dEt3UHBMU0J6eHhhLVhLcDE2bnBNdjB0aEhBbThKWUJRWEtvTzNlbjlDNmNMNDVKcWxoQnZ6OGMtWUhBVmhNcEpvdU01OHA5My1qOEpDcUJ3U2MwT2VPdkZIamJEcTd4UFAtTUFnVjZWVEtOdEt0ZFJtdTZ1dWRPcFBqendKNFNqMXZLVVN5MEZKTi1xWDBj" style="color:#1B2A4A;text-decoration:none;">Chinese 'new style tea' makers expand in South Korea challenging coffee culture</a>
+                <a href="https://news.google.com/rss/articles/CBMiuAFBVV95cUxOVU5ZY19rU05FbkdPMEQ0V2ExUGtERTBQU3d6dVpEc0d6ZEp4cVlCVDU4SDNuNkY0R05uVi11bkVnZ24yYVhjSUtGMWctbnVDb0xPcG9WdjFacU1BSzF0cVBEUEJaTkQyVHFpazFhc1JmVVpYSlgtRW9sVXBmaHdoRFZpaWFXNmdpX3NBSnBBWWEyTGhoT0tHR0VXUUtfZG92WS04TXota1diM01Ma1hndkZzTlpJQlFL?oc=5" style="color:#1B2A4A;text-decoration:none;">South Korea has a huge gender pay gap. Seoul wants to bring it into the open</a>
               </div>
-              <div style="font-size:12px;line-height:1.4;color:#555;">Major Chinese bubble tea and specialty tea chains are establishing Korean operations as part of Asian market expansion. The brands compete directly with Korea's dominant coffee culture and local beverage companies.</div>
+              <div style="font-size:12px;line-height:1.4;color:#555;">The government plans mandatory disclosure of company gender pay gaps as Korea tackles the OECD's widest wage disparity at 31.2%. The push reflects growing pressure to address workplace inequality that constrains economic growth.</div>
+            </div>
+            <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid #D4AC0D;">
+              <div style="font-size:11px;color:#888;text-transform:uppercase;">
+                <span style="font-size:9px;padding:1px 5px;border-radius:3px;background:#1B6A4A;color:#fff;margin-right:6px;">Japan-Korea</span>japan-trade &middot; Nikkei Asia
+                &nbsp;<span style="display:inline-block;padding:2px 8px;border-radius:3px;font-size:11px;font-weight:600;color:#fff;background:#7F8C8D;letter-spacing:0.5px;">CONTEXT</span>
+              </div>
+              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
+                <a href="https://news.google.com/rss/articles/CBMilwFBVV95cUxNMmtjOGJXdDZhRHRfTkQzVzhObUF1Nk1EeVduUWlNa2lvbW0wX0s2MGE4WGxtSHhVQThoQ25JN2FFRldFVmhtMWlOU3BJb093V2prcWQ0bzVfNDBad3dlUVVKRVd2MktHRlo5OEw2dm8yeUhtZDYxSC1kcjhqd2VZR19meWhJUzd3al9RakgzT0VlZTVBMG1j?oc=5" style="color:#1B2A4A;text-decoration:none;">South Korea's next central bank chief eyes 'balanced' approach</a>
+              </div>
+              <div style="font-size:12px;line-height:1.4;color:#555;">BOK nominee Shin Hyun-song's emphasis on balance reflects Korea's delicate position between growth support and inflation control. His international perspective from BIS could shape Korea's response to global monetary divergence.</div>
+            </div>
+            <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid #1B2A4A;">
+              <div style="font-size:11px;color:#888;text-transform:uppercase;">
+                <span style="font-size:9px;padding:1px 5px;border-radius:3px;background:#8B0000;color:#fff;margin-right:6px;">China-Korea</span>china-trade &middot; SCMP
+                &nbsp;<span style="display:inline-block;padding:2px 8px;border-radius:3px;font-size:11px;font-weight:600;color:#fff;background:#2980B9;letter-spacing:0.5px;">DEVELOPMENT</span>
+              </div>
+              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
+                <a href="https://news.google.com/rss/articles/CBMi0AFBVV95cUxPa2VfUE1EYWI5Yk5sNDh1ejBMUFVBZmw4cS1OenItbHlvc0lMZjhxR1FvaDBEcUJOU1l6Y1dMUjg0dEt3UHBMU0J6eHhhLVhLcDE2bnBNdjB0aEhBbThKWUJRWEtvTzNlbjlDNmNMNDVKcWxoQnZ6OGMtWUhBVmhNcEpvdU01OHA5My1qOEpDcUJ3U2MwT2VPdkZIamJEcTd4UFAtTUFnVjZWVEtOdEt0ZFJtdTZ1dWRPcFBqendKNFNqMXZLVVN5MEZKTi1xWDBj0gHQAUFVX3lxTE1TTmNpbWJwWGxEbzJ3WmNyV28wcGFWWDh3LTJjaERMOHQybS1ocUIyOFV4dlI5aGR4bnhiZWpHTnhBM0FGRE5KMVF4THdiTHJjOHBqbFRadDg2UDIzcTJZY0J6b1FueDVzWkNHUVB0RDY2U1Iwemo0cnBkVDdkamp4VFBJeHhDbE9CS182M3laRExpTHBrWTdEU2NraGNPd1Z4eVl1Y1p0VXBQZk5tVEZoam4xd2JzLVc3NnZUUEgxbmNxRXFfVG80VEViQ1FpU2Y?oc=5" style="color:#1B2A4A;text-decoration:none;">Chinese 'new style tea' makers expand in South Korea in challenge to coffee</a>
+              </div>
+              <div style="font-size:12px;line-height:1.4;color:#555;">Chinese tea franchises accelerate Korean expansion as younger consumers embrace alternatives to coffee culture. The trend reflects shifting consumption patterns and growing Chinese retail presence in Korean markets.</div>
             </div>
         </div>
         
@@ -719,28 +780,28 @@
               <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;">Presidential Approval</div>
               <div style="font-size:16px;font-weight:700;">67% <span style="color:#27AE60;">&#9650;</span></div>
               <div style="font-size:10px;opacity:0.5;">Gallup Korea</div>
-              <div style="font-size:10px;opacity:0.5;">Mar 17-19, 2026</div>
+              <div style="font-size:10px;opacity:0.5;">Mar 3rd week, 2026</div>
             </td>
               
             <td width="25%" align="center" style="padding:8px 6px;">
               <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;">Ruling (더불어민주당)</div>
               <div style="font-size:16px;font-weight:700;">46% <span style="color:#888;">&#8594;</span></div>
               <div style="font-size:10px;opacity:0.5;">Gallup Korea</div>
-              <div style="font-size:10px;opacity:0.5;">Mar 17-19, 2026</div>
+              <div style="font-size:10px;opacity:0.5;">Mar 3rd week, 2026</div>
             </td>
               
             <td width="25%" align="center" style="padding:8px 6px;">
               <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;">Opposition (국민의힘)</div>
               <div style="font-size:16px;font-weight:700;">20% <span style="color:#888;">&#8594;</span></div>
               <div style="font-size:10px;opacity:0.5;">Gallup Korea</div>
-              <div style="font-size:10px;opacity:0.5;">Mar 17-19, 2026</div>
+              <div style="font-size:10px;opacity:0.5;">Mar 3rd week, 2026</div>
             </td>
               
             <td width="25%" align="center" style="padding:8px 6px;">
               <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;">Independents (무당층)</div>
               <div style="font-size:16px;font-weight:700;">27% <span style="color:#888;">&#8594;</span></div>
               <div style="font-size:10px;opacity:0.5;">Gallup Korea</div>
-              <div style="font-size:10px;opacity:0.5;">Mar 17-19, 2026</div>
+              <div style="font-size:10px;opacity:0.5;">Mar 3rd week, 2026</div>
             </td>
             </tr>
           </table>
@@ -754,87 +815,46 @@
           <a name="wire"></a><span style="display:inline-block;background:#7F8C8D;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;padding:4px 12px;border-radius:12px;font-family:Arial,sans-serif;margin-bottom:8px;">The Wire</span>
           
             <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid #2980B9;">
-              <div style="font-size:11px;color:#888;text-transform:uppercase;">Business &middot; Korea Times</div>
+              <div style="font-size:11px;color:#888;text-transform:uppercase;">US-Korea &middot; Yonhap</div>
               <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
-                <a href="https://www.koreatimes.co.kr/southkorea/law-crime/20260323/explainer-korea-takes-major-stride-in-prosecution-reform-with-passage-of-bills" style="color:#1B2A4A;text-decoration:none;">Korea passes bills separating prosecution powers in major judicial reform</a>
+                <a href="https://en.yna.co.kr/view/AEN20260323001600315" style="color:#1B2A4A;text-decoration:none;">Lee's approval rating up for 3rd consecutive week: poll</a>
               </div>
-              <div style="font-size:12px;line-height:1.4;color:#555;">National Assembly passed legislation creating separate agencies for criminal charges and investigations, dismantling current prosecutorial offices by October. The reform addresses long-standing concerns about prosecutorial overreach and political interference.</div>
+              <div style="font-size:12px;line-height:1.4;color:#555;">President Lee Jae Myung's approval rating rose to 67% in the latest Gallup Korea poll, marking three consecutive weeks of gains. The Democratic Party maintained 46% support while the opposition People Power Party held at 20%.</div>
+            </div>
+            <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid #16A085;">
+              <div style="font-size:11px;color:#888;text-transform:uppercase;">Energy &middot; Yonhap</div>
+              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
+                <a href="https://en.yna.co.kr/view/AEN20260323001400320" style="color:#1B2A4A;text-decoration:none;">Electricity rate remains frozen for Q2</a>
+              </div>
+              <div style="font-size:12px;line-height:1.4;color:#555;">State-run KEPCO announced electricity rates will remain unchanged for the second quarter despite rising fuel costs from Middle East tensions. The decision aims to ease household burdens while the utility absorbs higher procurement costs.</div>
+            </div>
+            <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid #16A085;">
+              <div style="font-size:11px;color:#888;text-transform:uppercase;">Technology &middot; Yonhap</div>
+              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
+                <a href="https://en.yna.co.kr/view/AEN20260322000951320" style="color:#1B2A4A;text-decoration:none;">Gov't proposes revision disclosing EV battery manufacturer, country of origin</a>
+              </div>
+              <div style="font-size:12px;line-height:1.4;color:#555;">The government proposed new regulations requiring electric vehicle makers to disclose battery manufacturers and country of origin following safety concerns. The move addresses consumer demands for transparency after multiple EV fire incidents.</div>
+            </div>
+            <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid #D4AC0D;">
+              <div style="font-size:11px;color:#888;text-transform:uppercase;">Business &middot; Yonhap</div>
+              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
+                <a href="https://en.yna.co.kr/view/AEN20260322000700320" style="color:#1B2A4A;text-decoration:none;">SK hynix to introduce pilot program to foster English usage</a>
+              </div>
+              <div style="font-size:12px;line-height:1.4;color:#555;">SK Hynix plans a pilot program to increase English usage in daily operations as part of its global expansion strategy. The initiative reflects Korean tech giants' push to internationalize corporate culture amid growing overseas operations.</div>
+            </div>
+            <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid #16A085;">
+              <div style="font-size:11px;color:#888;text-transform:uppercase;">Technology &middot; Yonhap</div>
+              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
+                <a href="https://en.yna.co.kr/view/AEN20260322000600320" style="color:#1B2A4A;text-decoration:none;">SKT's Adot, Naver's Papago included among top 50 most used generative AI</a>
+              </div>
+              <div style="font-size:12px;line-height:1.4;color:#555;">Two Korean AI services, SK Telecom's Adot and Naver's Papago, ranked among the world's 50 most-used generative AI applications. The recognition highlights Korean tech companies' growing competitiveness in global AI markets.</div>
             </div>
             <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid #D4AC0D;">
               <div style="font-size:11px;color:#888;text-transform:uppercase;">Business &middot; Korea Times</div>
               <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
-                <a href="https://www.koreatimes.co.kr/southkorea/globalcommunity/20260323/australian-food-takes-center-stage-at-gday-rok-event-but-dont-expect-toowoomba-pasta" style="color:#1B2A4A;text-decoration:none;">Australian food showcased at G'day ROK networking event March 27</a>
+                <a href="https://www.koreatimes.co.kr/southkorea/globalcommunity/20260323/australian-food-takes-center-stage-at-gday-rok-event-but-dont-expect-toowoomba-pasta?utm_source=rss" style="color:#1B2A4A;text-decoration:none;">Australian Chamber hosts G'day ROK networking event March 27</a>
               </div>
-              <div style="font-size:12px;line-height:1.4;color:#555;">Australian Chamber of Commerce hosts flagship event at Grand Hyatt Seoul featuring antipodean cuisine and business awards ceremony. Event includes networking opportunities and flight giveaway to Australia.</div>
-            </div>
-            <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid #2980B9;">
-              <div style="font-size:11px;color:#888;text-transform:uppercase;">Business &middot; Yonhap English</div>
-              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
-                <a href="https://en.yna.co.kr/view/AEN20260322000800315" style="color:#1B2A4A;text-decoration:none;">Lee excludes multi-homeowners from real estate policymaking roles</a>
-              </div>
-              <div style="font-size:12px;line-height:1.4;color:#555;">President instructed government to bar officials owning multiple properties from housing policy decisions to prevent conflicts of interest. Move addresses public concerns about fairness in real estate regulation development.</div>
-            </div>
-        </div>
-        
-
-        <div style="padding:14px 32px;border-bottom:1px solid #E0E0E0;" class="sec">
-          <a name="analysis"></a><span style="display:inline-block;background:#1B2A4A;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;padding:4px 12px;border-radius:12px;font-family:Arial,sans-serif;margin-bottom:8px;">Statements &amp; Analysis</span>
-          
-            <div style="margin-bottom:12px;padding:12px;background:#F8F9FA;border-radius:6px;border-left:3px solid #1B2A4A;">
-              <table cellpadding="0" cellspacing="0" border="0" style="margin-bottom:6px;">
-                <tr>
-                  <td width="36" style="vertical-align:middle;">
-                    <div style="width:36px;height:36px;border-radius:50%;background:#1B2A4A;color:#fff;text-align:center;line-height:36px;font-size:13px;font-weight:700;">SH</div>
-                  </td>
-                  <td style="padding-left:8px;vertical-align:middle;">
-                    <div style="font-size:12px;font-weight:600;color:#1B2A4A;">Shin Hyun-song</div>
-                    <div style="font-size:10px;color:#888;">BOK Governor Nominee</div>
-                  </td>
-                </tr>
-              </table>
-              <p style="margin:0 0 6px 0;font-size:13px;line-height:1.5;color:#333;font-style:italic;">&ldquo;I will maintain a balanced monetary policy approach based on economic data and coordination with fiscal authorities&rdquo;</p>
-              <p style='margin:0;font-size:11px;color:#2980B9;'><strong>Analyst:</strong> Standard central banker language echoing Fed and ECB communication strategies amid global economic uncertainty</p>
-              <a href="https://news.google.com/rss/articles/CBMizwFBVV85cUxQMHE5N3BPdHRxNkFNSS1QSmNaVUpXa2xJN3hyN0hhSDI3UDlZUEJtZzVnVFNKV3ZneXpKQ3psQnZMekRMdmoyYkxSRzFERkp6aGRnWktWaG41Yl83WDhfZDdQVDd1X01HMVBfcVhxcy1EWXlOSG9pSGNKa1h2WXRuV3I1VEdWallwb1Z1YkJvTkVmMDZoUWxOX0REVDU0aThqNjhFczVBdzBQaTk0cEQ5NG00ZldYTThIN19kMGIza21UNDZtcVhpUV9YUkNJVTA" style="font-size:10px;color:#2980B9;text-decoration:none;">Source &#8594;</a>
-            </div>
-            <div style="margin-bottom:12px;padding:12px;background:#F8F9FA;border-radius:6px;border-left:3px solid #C0392B;">
-              <table cellpadding="0" cellspacing="0" border="0" style="margin-bottom:6px;">
-                <tr>
-                  <td width="36" style="vertical-align:middle;">
-                    <div style="width:36px;height:36px;border-radius:50%;background:#C0392B;color:#fff;text-align:center;line-height:36px;font-size:13px;font-weight:700;">KY</div>
-                  </td>
-                  <td style="padding-left:8px;vertical-align:middle;">
-                    <div style="font-size:12px;font-weight:600;color:#1B2A4A;">Koo Yun-cheol</div>
-                    <div style="font-size:10px;color:#888;">Finance Minister</div>
-                  </td>
-                </tr>
-              </table>
-              <p style="margin:0 0 6px 0;font-size:13px;line-height:1.5;color:#333;font-style:italic;">&ldquo;Government agencies must prepare for a prolonged Middle East crisis that could affect oil supply and trade routes&rdquo;</p>
-              <p style='margin:0;font-size:11px;color:#2980B9;'><strong>Analyst:</strong> First high-level ROK acknowledgment that regional conflict may persist longer than initially anticipated</p>
-              <a href="https://en.yna.co.kr/view/AEN20260322002600320" style="font-size:10px;color:#2980B9;text-decoration:none;">Source &#8594;</a>
-            </div>
-            <div style="margin-bottom:12px;padding:12px;background:#F8F9FA;border-radius:6px;border-left:3px solid #1B2A4A;">
-              <table cellpadding="0" cellspacing="0" border="0" style="margin-bottom:6px;">
-                <tr>
-                  <td width="36" style="vertical-align:middle;">
-                    <div style="width:36px;height:36px;border-radius:50%;background:#1B2A4A;color:#fff;text-align:center;line-height:36px;font-size:13px;font-weight:700;">LJ</div>
-                  </td>
-                  <td style="padding-left:8px;vertical-align:middle;">
-                    <div style="font-size:12px;font-weight:600;color:#1B2A4A;">Lee Jae Myung</div>
-                    <div style="font-size:10px;color:#888;">President</div>
-                  </td>
-                </tr>
-              </table>
-              <p style="margin:0 0 6px 0;font-size:13px;line-height:1.5;color:#333;font-style:italic;">&ldquo;Officials owning multiple properties are instructed not to participate in real estate policy decisions to avoid conflicts of interest&rdquo;</p>
-              <p style='margin:0;font-size:11px;color:#2980B9;'><strong>Analyst:</strong> Addresses persistent public criticism of wealth inequality among government officials and housing policy fairness</p>
-              <a href="https://en.yna.co.kr/view/AEN20260322000800315" style="font-size:10px;color:#2980B9;text-decoration:none;">Source &#8594;</a>
-            </div>
-            <div style="margin-bottom:12px;padding-left:12px;border-left:3px solid #D4AC0D;">
-              <div style="font-size:11px;color:#888;">Sejong Institute</div>
-              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
-                <a href="https://news.google.com/rss/articles/CBMifkFVX3lxTE8tTFZ6LTVadHp2MDNVaVB6cVN3b1NjVWg4dEMxb1M5NXJSNzY0YzNjbmpsRnFNMDRuUzJwQUU4cmIzUy1wT2RpYVBUZFItSGpHTFoxVHdHWElzVUhLOVczck4tOGtNMnhMM3dJd3A0TmtkdFJpOEhpRVlkNmhoQQ" style="color:#1B2A4A;text-decoration:none;">South Korea must develop comprehensive action plans combining diplomatic engagement, military deterrence, and economic pressure to respond effectively to North Korea's sixth nuclear test.</a>
-              </div>
-              <div style="font-size:12px;line-height:1.4;color:#555;">Analysis examines South Korean policy options following North Korea's 2017 nuclear test, evaluating diplomatic, military, and economic response mechanisms. The piece argues for coordinated multilateral approach combining sanctions enforcement with dialogue opportunities.</div>
-              <div style='font-size:11px;color:#2980B9;margin-top:3px;'><strong>So what:</strong> Contributes to ongoing debate over balanced deterrence and engagement strategies toward DPRK nuclear program</div>
+              <div style="font-size:12px;line-height:1.4;color:#555;">The Australian Chamber of Commerce will host its flagship G'day ROK event Friday at the Grand Hyatt Seoul, featuring Australia-Korea Business Awards. The event highlights growing bilateral trade ties as both nations expand strategic partnerships.</div>
             </div>
         </div>
         
@@ -843,12 +863,12 @@
       
         <div style="text-align:left;margin-bottom:14px;padding:10px 14px;background:rgba(255,255,255,0.08);border-radius:4px;">
           <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.5);margin-bottom:4px;">On This Day</div>
-          <div style="font-size:12px;color:rgba(255,255,255,0.85);"><strong>March 23, 2022:</strong> North Korean state-sponsored hackers stole approximately $625 million from the Ronin blockchain network in the largest crypto heist in history</div>
-          <div style="font-size:11px;color:rgba(255,255,255,0.7);font-style:italic;">Underscores ongoing DPRK cyber capabilities and sanctions evasion methods amid current financial isolation</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.85);"><strong>March 24, 2023:</strong> North Korea launched its 'Haeil' underwater nuclear attack drone, capable of creating radioactive tsunamis, from Riwon County to Hongwon Bay</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.7);font-style:italic;">Three years after unveiling asymmetric nuclear delivery systems, DPRK continues developing unconventional strike capabilities alongside traditional missiles</div>
         </div>
       <div style="font-size:11px;color:rgba(255,255,255,0.6);line-height:1.5;">
         Korea Daily Brief &middot; By Andy Lim &middot; CSIS Korea Chair<br>
-        Sunday, March 22, 2026 &middot; 6:36 PM ET<br>
+        Sunday, March 22, 2026 &middot; 8:42 PM ET<br>
         <span style="color:rgba(255,255,255,0.6);">Read alongside primary sources</span>
       </div>
       <div style="font-size:10px;color:rgba(255,255,255,0.55);margin-top:12px;line-height:1.5;">
