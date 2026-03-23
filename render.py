@@ -4,7 +4,34 @@ CSIS Korea Chair
 Takes structured digest JSON from Claude and renders a styled HTML email.
 Uses table-based layout for maximum email client compatibility.
 """
+import re as _re
 from datetime import datetime, timezone
+from urllib.parse import urlparse as _urlparse
+
+
+def _clean_src(raw: str) -> str:
+    """Strip raw URLs from source lines, keeping only human-readable text.
+
+    If the entire src_line is a URL, extract the domain as a label.
+    If it contains a mix of text and URLs, remove the URL portions."""
+    if not raw:
+        return raw
+    # If the whole string is a URL, extract domain
+    stripped = raw.strip()
+    if _re.match(r'^https?://', stripped) and ' ' not in stripped:
+        try:
+            host = _urlparse(stripped).hostname or ""
+            # Remove www. prefix
+            if host.startswith("www."):
+                host = host[4:]
+            return host if host else raw
+        except Exception:
+            return raw
+    # Remove inline URLs from mixed text
+    cleaned = _re.sub(r'https?://\S+', '', raw).strip()
+    # Collapse multiple spaces
+    cleaned = _re.sub(r'  +', ' ', cleaned)
+    return cleaned if cleaned else raw
 
 
 def _esc(text) -> str:
@@ -235,7 +262,7 @@ def render(digest: dict) -> str:
             body = _esc(story.get("body", ""))
             so_what = _esc(story.get("so_what", ""))
             pattern = _esc(story.get("pattern_note", ""))
-            src_line = _esc(story.get("src_line", story.get("source", "")))
+            src_line = _esc(_clean_src(story.get("src_line", story.get("source", ""))))
             url = story.get("url", "")
             stories_html += f"""
             <div class="story-card" style="margin-bottom:12px;padding:10px 12px;background:#F8F9FA;border-radius:4px;border-left:4px solid #1B2A4A;">
@@ -265,7 +292,7 @@ def render(digest: dict) -> str:
             cat = _esc(item.get("category", ""))
             headline = _esc(item.get("headline", ""))
             body = _esc(item.get("body_text", ""))
-            src = _esc(item.get("source", ""))
+            src = _esc(_clean_src(item.get("source", "")))
             url = item.get("url", "")
             bar_color = _cat_colors_flash.get(item.get("category", ""), "#1B2A4A")
             flash_html += f"""
@@ -902,7 +929,7 @@ def render(digest: dict) -> str:
             cat = _esc(item.get("category", item.get("sector", "")))
             headline = _esc(item.get("headline", ""))
             body = _esc(item.get("body_text", ""))
-            src = _esc(item.get("source", ""))
+            src = _esc(_clean_src(item.get("source", "")))
             url = item.get("url", "")
             bar_color = biz_sector_colors.get(item.get("sector", ""), "#1B2A4A")
             companies = item.get("companies") or []
@@ -953,7 +980,7 @@ def render(digest: dict) -> str:
             cat = _esc(item.get("category", ""))
             headline = _esc(item.get("headline", ""))
             body = _esc(item.get("body_text", ""))
-            src = _esc(item.get("source", ""))
+            src = _esc(_clean_src(item.get("source", "")))
             url = item.get("url", "")
             sig = item.get("signal_type", "")
             region = item.get("region_tag", "")
@@ -1084,7 +1111,7 @@ def render(digest: dict) -> str:
             cat = _esc(item.get("category", ""))
             headline = _esc(item.get("headline", ""))
             body = _esc(item.get("body_text", ""))
-            src = _esc(item.get("source", ""))
+            src = _esc(_clean_src(item.get("source", "")))
             url = item.get("url", "")
             bar_color = _color_bar(item.get("color_bar_class", ""))
             wire_html += f"""
