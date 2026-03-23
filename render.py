@@ -137,14 +137,7 @@ def render(digest: dict) -> str:
     </div>
     """)
 
-    # ── 1b. Forward CTA ─────────────────────────────────────────────────
-    sections.append("""
-        <div style="padding:8px 32px;background:#F8F9FA;border-bottom:1px solid #E0E0E0;" class="sec">
-          <div style="font-size:11px;color:#888;font-family:Arial,sans-serif;">
-            Know someone who'd find this useful? <a href="mailto:?subject=Korea%20Daily%20Brief&amp;body=Check%20out%20the%20Korea%20Daily%20Brief%20from%20CSIS%20Korea%20Chair." style="color:#2980B9;text-decoration:none;font-weight:600;">Forward to a colleague &rarr;</a>
-          </div>
-        </div>
-        """)
+    # ── 1b. Forward CTA — removed (placeholder for future subscribe link) ──
 
     # ── 2. Market Indicators ───────────────────────────────────────────────
     markets = digest.get("market_indicators") or {}

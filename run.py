@@ -176,6 +176,10 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
     elif len(overnight) > 12:
         warnings.append(f"OVERNIGHT ITEMS: {len(overnight)} items (expected 8-12)")
 
+    biz = digest.get("business_economy") or []
+    if len(biz) > 8:
+        warnings.append(f"BUSINESS ECONOMY CRITICAL: {len(biz)} items (max 8 — trim to most policy-relevant)")
+
     memo = digest.get("morning_memo") or []
     if len(memo) < 3:
         warnings.append(f"MORNING MEMO CRITICAL: only {len(memo)} items (expected 3)")
