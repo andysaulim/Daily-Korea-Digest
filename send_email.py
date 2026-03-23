@@ -44,7 +44,8 @@ def send(html: str, re_line: Optional[str] = None, subject: Optional[str] = None
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
     msg["From"] = f"CSIS Korea Chair <{gmail_user}>"
-    msg["To"] = ", ".join(recipients)
+    msg["To"] = gmail_user
+    msg["Bcc"] = ", ".join(recipients)
 
     plain = (
         "Korea Daily Brief — CSIS Korea Chair\n"
@@ -54,7 +55,7 @@ def send(html: str, re_line: Optional[str] = None, subject: Optional[str] = None
     msg.attach(MIMEText(plain, "plain"))
     msg.attach(MIMEText(html, "html"))
 
-    print(f"\n📨  Sending digest to: {', '.join(recipients)}")
+    print(f"\n📨  Sending digest (BCC) to: {', '.join(recipients)}")
     max_retries = 3
     for attempt in range(max_retries):
         try:
