@@ -510,7 +510,7 @@ def render(digest: dict) -> str:
                 note_html = f'<div style="font-size:11px;line-height:1.4;color:#666;margin-top:4px;">{note}</div>' if note else ""
                 row_cards += f"""
                 <td style="width:50%;padding:4px;vertical-align:top;">
-                  <div style="background:{b_bg};border-radius:4px;padding:10px 12px;border-left:3px solid {b_color};min-height:60px;">
+                  <div style="background:{b_bg};border-radius:4px;padding:10px 12px;border-left:3px solid {b_color};">
                     <div style="font-size:12px;font-weight:700;color:#1B2A4A;margin-bottom:3px;">{name}</div>
                     <div style="margin-bottom:4px;">{status_badge} <span style="font-size:9px;color:#999;margin-left:4px;">{last_report}</span></div>
                     {note_html}
@@ -1174,6 +1174,8 @@ def render(digest: dict) -> str:
       /* BP Facility tracker — stack on mobile */
       .loc-grid td {{ display:block !important; width:100% !important; padding:4px 0 !important; }}
       .loc-grid tr {{ display:block !important; }}
+      /* BP notes — bump font size for readability on mobile */
+      .loc-grid div[style*="font-size:11px"] {{ font-size:12px !important; }}
       /* Calendar watch tables — stack date beside text on narrow screens */
       .cal-table td[width="50"] {{ width:40px !important; padding:8px 6px 8px 0 !important; }}
       /* ROK Government grid — stack on mobile */
@@ -1238,6 +1240,9 @@ def render(digest: dict) -> str:
       .wrapper .kcna-dark {{ background:#1a2a1a !important; }}
       .wrapper .kcna-dark table {{ background:#1a2a1a !important; }}
       .wrapper .gov-grid div {{ background:#2a2a2a !important; }}
+      .wrapper .loc-grid div {{ background:#2a2a2a !important; border-color:#555 !important; }}
+      .wrapper .loc-grid div[style*="color:#1B2A4A"] {{ color:#D0D0D0 !important; }}
+      .wrapper .loc-grid div[style*="color:#666"] {{ color:#AAA !important; }}
       .wrapper .sentiment-spotlight {{ background:#1a2a3a !important; border-left-color:#2980B9 !important; color:#CCC !important; }}
       .wrapper .sentiment-discourse {{ background:#3a2a1a !important; border-left-color:#E67E22 !important; color:#CCC !important; }}
       .wrapper .deal-card {{ background:#2a2a2a !important; border-color:#333 !important; }}
