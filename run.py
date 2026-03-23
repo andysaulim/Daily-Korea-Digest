@@ -89,10 +89,19 @@ def _is_dup(words_a, topics_a, companies_a, words_b, topics_b, companies_b) -> s
     keyword_dup = min_len > 1 and len(overlap) >= 2 and len(overlap) / min_len >= 0.5
     if keyword_dup:
         return "keyword overlap"
-    # Topic entity match (BOK, KJU, etc.) — standalone trigger
+    # Topic entity match — require keyword overlap too (just like companies).
+    # On heavy news days a single figure (e.g. KJU) dominates many *distinct*
+    # stories; entity-only matching was wiping them all out.
     shared_topics = topics_a & topics_b
     if shared_topics:
-        return f"shared topic: {shared_topics}"
+        # Strip entity alias words from overlap to avoid self-matching
+        entity_words = set()
+        for tag in shared_topics:
+            for alias in _TOPIC_ENTITIES.get(tag, set()):
+                entity_words.update(w for w in alias.split() if len(w) > 2)
+        non_entity_overlap = overlap - entity_words
+        if len(non_entity_overlap) >= 2:
+            return f"shared topic + keywords: {shared_topics}, {non_entity_overlap}"
     # Company entity match — need 2+ non-entity keyword overlaps
     # (company names alone aren't enough — Samsung has many unrelated stories)
     shared_companies = companies_a & companies_b
@@ -113,7 +122,9 @@ def _dedup_digest(digest: dict) -> tuple[dict, list[str]]:
 
     Walks sections in priority order. For each item, checks against all items
     already seen. If duplicate, removes it from the lower-priority section.
+    Respects section minimums — won't strip a section below its floor.
     """
+    _SECTION_FLOORS = {"top_stories": 3, "overnight_items": 3}
     log = []
     seen = []  # (section, headline, words, topics, companies)
     seen_urls_global = {}  # url -> section_key (track across ALL sections)
@@ -123,14 +134,18 @@ def _dedup_digest(digest: dict) -> tuple[dict, list[str]]:
         if not items or not isinstance(items, list):
             continue
 
+        floor = _SECTION_FLOORS.get(section_key, 0)
         kept = []
+        deferred_removals = []  # (index, log_msg) — removals that may be restored
+
         for item in items:
             url = (item.get("url") or "").strip()
 
             # URL dedup — across all sections
             if url and url.startswith("http"):
                 if url in seen_urls_global:
-                    log.append(f"  Removed duplicate URL in {section_key} (already in {seen_urls_global[url]}): {url[:80]}")
+                    msg = f"  Removed duplicate URL in {section_key} (already in {seen_urls_global[url]}): {url[:80]}"
+                    deferred_removals.append((item, msg))
                     continue
                 seen_urls_global[url] = section_key
 
@@ -143,15 +158,29 @@ def _dedup_digest(digest: dict) -> tuple[dict, list[str]]:
             for prev_section, prev_headline, prev_words, prev_topics, prev_companies in seen:
                 reason = _is_dup(words, topics, companies, prev_words, prev_topics, prev_companies)
                 if reason:
-                    log.append(
+                    msg = (
                         f"  Removed from {section_key} ({reason}): "
                         f"'{headline[:60]}' — kept in {prev_section}: '{prev_headline[:60]}'")
+                    deferred_removals.append((item, msg))
                     is_duplicate = True
                     break
 
             if not is_duplicate:
                 kept.append(item)
                 seen.append((section_key, headline, words, topics, companies))
+
+        # Restore items if removals would breach section floor
+        if len(kept) < floor and deferred_removals:
+            need = floor - len(kept)
+            restored = deferred_removals[-need:]
+            deferred_removals = deferred_removals[:-need]
+            for item, _msg in restored:
+                kept.append(item)
+                headline, words, topics, companies = _headline_key(item)
+                seen.append((section_key, headline, words, topics, companies))
+
+        for _item, msg in deferred_removals:
+            log.append(msg)
 
         digest[section_key] = kept
 
