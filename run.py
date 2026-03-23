@@ -197,6 +197,53 @@ def _filter_non_us_deals(digest: dict) -> list[str]:
     return log
 
 
+# Max times a single source can appear in overnight_items / top_stories
+_SOURCE_CAP = 2
+
+def _normalize_source(src: str) -> str:
+    """Collapse source name variants to a canonical key."""
+    s = src.lower().strip()
+    # Collapse common Yonhap variants
+    for prefix in ("yonhap", "연합뉴스"):
+        if s.startswith(prefix):
+            return "yonhap"
+    for prefix in ("reuters", "nikkei", "kyodo"):
+        if s.startswith(prefix):
+            return prefix
+    return s
+
+def _enforce_source_diversity(digest: dict) -> list[str]:
+    """Cap any single source to _SOURCE_CAP appearances in overnight_items.
+
+    Excess items from over-represented sources are dropped.
+    Returns log messages for removed items.
+    """
+    log = []
+    for section_key in ("overnight_items",):
+        items = digest.get(section_key)
+        if not items or not isinstance(items, list):
+            continue
+
+        source_counts: dict[str, int] = {}
+        kept = []
+        dropped = []
+        for item in items:
+            src = _normalize_source(item.get("source", "Unknown"))
+            source_counts[src] = source_counts.get(src, 0) + 1
+            if source_counts[src] <= _SOURCE_CAP:
+                kept.append(item)
+            else:
+                headline = item.get("headline", "")[:60]
+                dropped.append((src, headline))
+
+        if dropped:
+            digest[section_key] = kept
+            for src, headline in dropped:
+                log.append(f"  Removed excess {src} from {section_key}: '{headline}'")
+
+    return log
+
+
 def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
     """Pre-send quality gate. Returns list of warnings (empty = all clear)."""
     warnings = []
@@ -298,11 +345,18 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
     if empty_body_count:
         warnings.append(f"EMPTY BODIES: {empty_body_count} items have no substantive body text")
 
-    # Source diversity
+    # Source diversity (normalize source names to catch variants like "Yonhap" / "Yonhap News")
+    normalized_counts: dict[str, int] = {}
     for src, count in source_counts.items():
+        key = _normalize_source(src)
+        normalized_counts[key] = normalized_counts.get(key, 0) + count
+    for src, count in normalized_counts.items():
         if count > 3:
             warnings.append(
-                f"SOURCE DIVERSITY: '{src}' appears {count} times across top sections — diversify sources")
+                f"SOURCE DIVERSITY CRITICAL: '{src}' appears {count} times across top sections — diversify sources")
+        elif count > 2:
+            warnings.append(
+                f"SOURCE DIVERSITY: '{src}' appears {count} times across top sections — consider diversifying")
 
     # ── Check for "None" strings in critical fields ──────────────────────
     for field in ("re_line", "digest_date"):
@@ -398,6 +452,13 @@ def main():
         for msg in deal_log:
             print(msg)
 
+    # Enforce source diversity — cap any single source to 2 per section
+    diversity_log = _enforce_source_diversity(digest_data)
+    if diversity_log:
+        print(f"\n🧹  Source diversity: removed {len(diversity_log)} over-represented item(s):")
+        for msg in diversity_log:
+            print(msg)
+
     Path("digest.json").write_text(json.dumps(digest_data, ensure_ascii=False, indent=2))
 
     # ── Step 2+: Update Kim Jong Un appearance tracker + KCNA rhetoric tracker
@@ -455,6 +516,11 @@ def main():
             if deal_log:
                 print(f"  🧹  Filtered {len(deal_log)} non-US deal(s) from trade section:")
                 for msg in deal_log:
+                    print(msg)
+            diversity_log = _enforce_source_diversity(digest_data)
+            if diversity_log:
+                print(f"  🧹  Source diversity: removed {len(diversity_log)} over-represented item(s):")
+                for msg in diversity_log:
                     print(msg)
             Path("digest.json").write_text(json.dumps(digest_data, ensure_ascii=False, indent=2))
         else:
