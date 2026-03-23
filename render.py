@@ -411,7 +411,7 @@ def render(digest: dict) -> str:
             {"<div style='margin-bottom:12px;padding:8px 14px;background:#C0392B;color:#fff;border-radius:4px;font-size:12px;font-weight:600;'>&#9888; Complete KCNA silence today</div>" if silence else ""}
             {"<div style='margin-bottom:12px;padding:8px 14px;background:#C0392B;color:#fff;border-radius:4px;font-size:12px;font-weight:600;'>&#9888; WATCH FLAG — Escalation-level rhetoric or unusual activity detected</div>" if watch and not silence else ""}
             {doctrinal_html}
-            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:10px;">
+            <table class="kcna-kv" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:10px;">
               <tr>
                 <td style="vertical-align:top;width:50%;padding-right:12px;">
                   <div style="padding:8px 12px;background:rgba(255,255,255,0.04);border-radius:4px;">
@@ -1194,9 +1194,14 @@ def render(digest: dict) -> str:
       p, div {{ word-wrap:break-word !important; overflow-wrap:break-word !important; }}
       /* Quote cards in KCNA */
       .kcna-quote {{ padding:6px 10px !important; }}
-      /* KCNA inner cells — reduce padding on mobile */
-      .kcna-dark td {{ padding:10px 14px !important; }}
+      /* KCNA — reduce side padding so nothing is clipped on mobile */
+      .kcna-dark td {{ padding-left:14px !important; padding-right:14px !important; }}
       .kcna-dark > div {{ padding:16px 14px !important; }}
+      /* KCNA phrase table — prevent horizontal overflow */
+      .kcna-dark table {{ table-layout:fixed !important; }}
+      .kcna-dark table td {{ white-space:normal !important; word-break:break-word !important; }}
+      /* Stack Kim / Output volume cards vertically on phones */
+      .kcna-kv td {{ display:block !important; width:100% !important; padding-right:0 !important; padding-bottom:8px !important; }}
       /* Scale up tiny fonts for mobile readability */
       .mkt-table div {{ font-size:11px !important; }}
       .mkt-table div[style*="font-size:18px"], .mkt-table div[style*="font-size:15px"] {{ font-size:16px !important; }}
