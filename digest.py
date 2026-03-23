@@ -329,8 +329,8 @@ def _check_content_minimums(digest: dict) -> list[str]:
     if top < 3:
         failures.append(f"TOP STORIES: {top} (minimum 3)")
     overnight = len(digest.get("overnight_items") or [])
-    if overnight < 8:
-        failures.append(f"OVERNIGHT ITEMS: {overnight} (minimum 8)")
+    if overnight < 3:
+        failures.append(f"OVERNIGHT ITEMS: {overnight} (minimum 3)")
     memo = len(digest.get("morning_memo") or [])
     if memo < 3:
         failures.append(f"MORNING MEMO: {memo} (minimum 3)")
@@ -412,7 +412,7 @@ def generate_digest(payload: dict, db_context: str = "") -> dict:
                     "Each business_economy/northeast_asia/also_today item must be 40-60 words. "
                     "Add MORE items from the available articles to reach 1000+ words — do not inflate existing bodies with filler.\n"
                     "- TOP STORIES: Include at least 3 stories. Pull from the available articles.\n"
-                    "- OVERNIGHT ITEMS: Include at least 8 items. Add more items from available articles.\n"
+                    "- OVERNIGHT ITEMS: Include at least 3 items (max 6).\n"
                     "- MORNING MEMO: Include exactly 3 items.\n"
                     "Return ONLY valid JSON."
                 )
@@ -505,7 +505,7 @@ def regenerate_digest(payload: dict, previous_digest: dict,
         "- If word count is too low: write more substantive body text for each story "
         "(2-3 sentences per top_stories, 2-3 per overnight_items) and add more items.\n"
         "- If top_stories count is too low: include at least 3 top stories from the articles.\n"
-        "- If overnight_items count is too low: include at least 8 items.\n"
+        "- If overnight_items count is too low: include at least 3 items (max 6).\n"
         "- If morning_memo is too short: include exactly 3 items.\n"
         "- If KCNA delta is missing: generate the kcna_delta section from Tier 4 data.\n"
         "- If RE: line is missing: write a crisp one-liner RE: summary.\n"
