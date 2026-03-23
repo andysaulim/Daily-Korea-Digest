@@ -62,22 +62,9 @@ jobs:
           DIGEST_TO: ${{ secrets.DIGEST_TO }}
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
           WEB_URL: https://andysaulim.github.io/Daily-Korea-Digest
-        # Retry the core pipeline up to 3 times with backoff
         run: |
-          for attempt in 1 2 3; do
-            echo "=== Attempt $attempt of 3 ==="
-            if python run.py; then
-              echo "success=true" >> "$GITHUB_OUTPUT"
-              exit 0
-            fi
-            if [ $attempt -lt 3 ]; then
-              sleep_time=$((attempt * 15))
-              echo "⚠️  Attempt $attempt failed — retrying in ${sleep_time}s..."
-              sleep $sleep_time
-            fi
-          done
-          echo "❌  All 3 attempts failed"
-          exit 1
+          python run.py
+          echo "success=true" >> "$GITHUB_OUTPUT"
 
       # Post-email steps use continue-on-error so a Pages/README failure
       # doesn't mark the workflow as "failed" and trigger a duplicate

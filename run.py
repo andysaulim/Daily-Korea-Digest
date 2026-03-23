@@ -207,28 +207,48 @@ def main():
     databases = fetch_all()
     db_context = build_context_block(databases)
 
-    # ── Step 2: Generate digest via Claude ───────────────────────────────────
-    from digest import generate_digest
+    # ── Step 2: Generate digest via Claude (with validation retry) ──────────
+    from digest import generate_digest, regenerate_digest
+    MAX_VALIDATION_RETRIES = 2
     digest_data = generate_digest(payload, db_context=db_context)
     Path("digest.json").write_text(json.dumps(digest_data, ensure_ascii=False, indent=2))
 
     # ── Step 2+: Update Kim Jong Un appearance tracker ───────────────────────
     from kim_tracker import update_from_digest
-    update_from_digest(digest_data)
 
-    # ── Step 2a: Pre-send validation gate ─────────────────────────────────────
-    validation_warnings = validate_digest(digest_data, payload=payload)
-    critical_warnings = [w for w in validation_warnings if "CRITICAL" in w]
-    if validation_warnings:
-        print("\n⚠️  PRE-SEND VALIDATION WARNINGS:")
+    for validation_attempt in range(1 + MAX_VALIDATION_RETRIES):
+        # ── Step 2a: Pre-send validation gate ─────────────────────────────────
+        validation_warnings = validate_digest(digest_data, payload=payload)
+        critical_warnings = [w for w in validation_warnings if "CRITICAL" in w]
+
+        if not critical_warnings:
+            # Passed — print any non-critical warnings and move on
+            if validation_warnings:
+                print("\n⚠️  PRE-SEND VALIDATION WARNINGS (non-critical):")
+                for w in validation_warnings:
+                    print(f"    • {w}")
+                print()
+            else:
+                print("\n✅  Validation passed — all checks OK")
+            break
+
+        # Critical failures found
+        print(f"\n⚠️  VALIDATION ATTEMPT {validation_attempt + 1}/{1 + MAX_VALIDATION_RETRIES} — CRITICAL WARNINGS:")
         for w in validation_warnings:
             print(f"    • {w}")
-        print()
-    else:
-        print("\n✅  Validation passed — all checks OK")
-    if critical_warnings:
-        print("🚫  CRITICAL validation failures — newsletter will NOT be sent.")
-        print("    Fix the issues above or re-run. HTML still rendered for review.")
+
+        if validation_attempt < MAX_VALIDATION_RETRIES:
+            # Retry only the digest generation, passing validation feedback
+            print("\n🔄  Re-generating digest with validation feedback (reusing collected articles)...")
+            digest_data = regenerate_digest(
+                payload, digest_data, critical_warnings, db_context=db_context
+            )
+            Path("digest.json").write_text(json.dumps(digest_data, ensure_ascii=False, indent=2))
+        else:
+            print("\n🚫  CRITICAL validation failures after all retries — newsletter will NOT be sent.")
+            print("    Fix the issues above or re-run. HTML still rendered for review.")
+
+    update_from_digest(digest_data)
 
     # ── Step 2b: Push flagged entries to databases ────────────────────────────
     if not args.no_push:

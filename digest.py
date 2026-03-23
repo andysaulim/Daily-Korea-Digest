@@ -473,6 +473,63 @@ def generate_digest(payload: dict, db_context: str = "") -> dict:
     return digest  # fallback (shouldn't reach here)
 
 
+def regenerate_digest(payload: dict, previous_digest: dict,
+                      validation_warnings: list[str], db_context: str = "") -> dict:
+    """Re-generate digest by sending validation feedback to Claude.
+
+    Reuses the same collected articles — only re-calls the Claude API with
+    the previous output and specific instructions to fix validation failures.
+    """
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    if not api_key:
+        raise RuntimeError("Missing ANTHROPIC_API_KEY environment variable.")
+    client = anthropic.Anthropic(api_key=api_key)
+    from zoneinfo import ZoneInfo
+    date_str = datetime.now(ZoneInfo("America/New_York")).strftime("%A, %B %-d, %Y")
+    user_prompt = build_user_prompt(payload, date_str, db_context=db_context)
+
+    word_count = _count_digest_words(previous_digest)
+    warning_list = "\n".join(f"  - {w}" for w in validation_warnings)
+
+    fix_prompt = (
+        f"Your previous digest failed validation with these CRITICAL issues:\n"
+        f"{warning_list}\n\n"
+        f"Current word count: ~{word_count} words.\n\n"
+        "Return a COMPLETE corrected digest JSON that fixes ALL issues above. "
+        "Keep everything that was correct — only fix what failed. Specifically:\n"
+        "- If word count is too low: write more substantive body text for each story "
+        "(2-3 sentences per top_stories, 2-3 per overnight_items) and add more items.\n"
+        "- If top_stories count is too low: include at least 3 top stories from the articles.\n"
+        "- If overnight_items count is too low: include at least 8 items.\n"
+        "- If morning_memo is too short: include exactly 3 items.\n"
+        "- If KCNA delta is missing: generate the kcna_delta section from Tier 4 data.\n"
+        "- If RE: line is missing: write a crisp one-liner RE: summary.\n"
+        "Return ONLY valid JSON."
+    )
+
+    messages = [
+        {"role": "user", "content": user_prompt},
+        {"role": "assistant", "content": json.dumps(previous_digest, ensure_ascii=False)[:8000]},
+        {"role": "user", "content": fix_prompt},
+    ]
+
+    print(f"  Sending validation feedback to Claude ({len(validation_warnings)} issues)...")
+    try:
+        digest = _stream_claude(client, messages)
+        # Preserve market data
+        if payload.get("market_indicators") and not digest.get("market_indicators"):
+            digest["market_indicators"] = payload["market_indicators"]
+        new_word_count = _count_digest_words(digest)
+        top_count = len(digest.get("top_stories") or [])
+        overnight_count = len(digest.get("overnight_items") or [])
+        print(f"  ✅  Re-generated: ~{new_word_count} words, {top_count} top stories, "
+              f"{overnight_count} overnight items")
+        return digest
+    except (anthropic.APIError, anthropic.APIConnectionError, json.JSONDecodeError) as e:
+        print(f"  ⚠  Re-generation failed ({e}) — keeping previous digest")
+        return previous_digest
+
+
 if __name__ == "__main__":
     payload = json.loads(Path("collected.json").read_text())
     digest = generate_digest(payload)
