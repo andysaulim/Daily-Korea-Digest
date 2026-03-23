@@ -115,9 +115,15 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
                     overlap = words & prev_words
                     min_len = min(len(words), len(prev_words))
                     if min_len > 1 and len(overlap) >= 2 and len(overlap) / min_len >= 0.5:
-                        warnings.append(
-                            f"DUPLICATE HEADLINE: similar story in {prev_section} and {section_key}: "
-                            f"'{headline[:60]}...' vs '{prev_headline[:60]}...'")
+                        if prev_section == section_key:
+                            # Same topic within the same section is a critical issue
+                            warnings.append(
+                                f"DUPLICATE TOPIC CRITICAL: two similar stories within {section_key}: "
+                                f"'{headline[:60]}...' vs '{prev_headline[:60]}...'")
+                        else:
+                            warnings.append(
+                                f"DUPLICATE HEADLINE: similar story in {prev_section} and {section_key}: "
+                                f"'{headline[:60]}...' vs '{prev_headline[:60]}...'")
                         break
                 seen_headlines.append((section_key, headline, words))
 
