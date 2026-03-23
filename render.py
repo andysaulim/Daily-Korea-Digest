@@ -314,57 +314,80 @@ def render(digest: dict) -> str:
         if doctrinal:
             doctrinal_html = f"<div style='margin:12px 0;padding:8px 14px;background:#8E44AD;color:#fff;border-radius:4px;font-size:12px;'><strong>Doctrinal shift:</strong> {doctrinal}</div>"
 
-        # Key quotes from KCNA — compact: single best quote only
+        # Key quotes from KCNA — featured quote block
         key_quotes = kcna.get("key_quotes") or []
         quotes_html = ""
         if key_quotes:
             q = key_quotes[0]
             qt = _esc(q.get("quote", ""))
             src_art = _esc(q.get("source_article", ""))
-            quotes_html = f"""<div class="kcna-quote" style='margin-top:8px;padding:6px 12px;background:rgba(255,255,255,0.05);border-radius:4px;border-left:2px solid #555;'>
-              <div style='font-size:12px;color:#D0D0D0;font-style:italic;line-height:1.4;'>&ldquo;{qt}&rdquo;</div>
-              <div style='font-size:10px;color:#888;margin-top:2px;'>{src_art}</div>
+            quotes_html = f"""<div class="kcna-quote" style='margin-top:12px;padding:10px 14px;background:rgba(255,255,255,0.06);border-radius:4px;border-left:3px solid #27AE60;'>
+              <div style='font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:rgba(255,255,255,0.5);margin-bottom:4px;'>Key Quote</div>
+              <div style='font-size:13px;color:#E8E8E8;font-style:italic;line-height:1.5;'>&ldquo;{qt}&rdquo;</div>
+              <div style='font-size:10px;color:#888;margin-top:4px;'>— {src_art}</div>
             </div>"""
 
-        # Notable omissions + Senior officials — combined into compact inline
+        # Notable omissions — highlighted warning
         omissions = _esc(kcna.get("notable_omissions", "")) if kcna.get("notable_omissions") else ""
         omissions_html = ""
         if omissions:
-            omissions_html = f"<div style='margin-top:6px;font-size:11px;color:#E67E22;'><strong>Omission:</strong> {omissions}</div>"
+            omissions_html = f"<div style='margin-top:8px;padding:6px 12px;background:rgba(230,126,34,0.12);border-radius:4px;border-left:2px solid #E67E22;font-size:11px;color:#E67E22;line-height:1.4;'><strong>Notable omission:</strong> {omissions}</div>"
 
+        # Senior officials — individual cards
         senior = kcna.get("senior_officials") or []
         senior_html = ""
         if senior:
-            senior_parts = []
+            senior_cards = ""
             for s in senior[:2]:
                 name = _esc(s.get("name", ""))
+                role = _esc(s.get("role", "")) if s.get("role") else ""
                 act = _esc(s.get("activity", ""))
-                senior_parts.append(f"<strong>{name}</strong>: {act}")
-            senior_html = f"<div style='margin-top:6px;font-size:11px;color:#BBB;'>" + " · ".join(senior_parts) + "</div>"
+                role_tag = f' <span style="font-size:9px;color:#888;font-weight:400;">({role})</span>' if role else ""
+                senior_cards += f"""<div style='display:inline-block;margin-right:10px;margin-top:6px;padding:4px 10px;background:rgba(255,255,255,0.04);border-radius:3px;border-left:2px solid #5DADE2;font-size:11px;'>
+                  <strong style="color:#D0D0D0;">{name}</strong>{role_tag}<br><span style="color:#AAA;">{act}</span>
+                </div>"""
+            senior_html = f"<div style='margin-top:8px;'><div style='font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:rgba(255,255,255,0.5);margin-bottom:2px;'>Senior Officials</div>{senior_cards}</div>"
 
         # Kim Jong Un line
         kim_today = "Yes" if kcna.get("kim_appearance_today") else "No"
         kim_activity = _esc(kcna.get("kim_activity", "")) if kcna.get("kim_activity") else ""
         days_absent = kcna.get("days_since_last_appearance")
 
-        # Propaganda focus & Kim appearance as inline items
+        # Propaganda focus — pill-style tags
         prop_focus = kcna.get("propaganda_focus") or []
         prop_html = ""
         if prop_focus:
-            prop_html = "<div style='margin-top:8px;font-size:11px;color:#888;'><strong style=\"color:#BBB;\">Focus:</strong> " + " · ".join(_esc(str(p)) for p in prop_focus) + "</div>"
+            pills = ""
+            for p in prop_focus:
+                pills += f'<span style="display:inline-block;padding:2px 8px;margin:2px 4px 2px 0;background:rgba(255,255,255,0.08);border-radius:12px;font-size:10px;color:#BBB;letter-spacing:0.3px;">{_esc(str(p))}</span>'
+            prop_html = f"<div style='margin-top:10px;'><div style='font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:rgba(255,255,255,0.5);margin-bottom:4px;'>Propaganda Focus</div>{pills}</div>"
 
         kim_line = ""
+        kim_icon = ""
         if kim_today == "Yes":
-            kim_line = f"Kim Jong Un public appearance"
+            kim_icon = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#27AE60;margin-right:6px;vertical-align:middle;"></span>'
+            kim_line = f"Public appearance"
             if kim_activity:
                 kim_line += f" — {kim_activity}"
         else:
-            kim_line = "No Kim Jong Un appearance"
+            kim_icon = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#C0392B;margin-right:6px;vertical-align:middle;"></span>'
+            kim_line = "No appearance"
             if days_absent:
-                kim_line += f" ({days_absent} days since last)"
+                kim_line += f" ({days_absent}d since last)"
 
         kcna_baseline = _esc(kcna.get("baseline_period", ""))
         baseline_html = f"7-day baseline · {kcna_baseline}" if kcna_baseline else ""
+
+        # Tone shift card (separate from output volume)
+        tone_html = ""
+        if tone_shift:
+            tone_html = f"""
+                <td style="vertical-align:top;width:50%;">
+                  <div style="padding:8px 12px;background:rgba(230,126,34,0.1);border-radius:4px;border-left:2px solid #E67E22;">
+                    <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.6);margin-bottom:4px;">Tone Shift</div>
+                    <div style="font-size:12px;color:#E67E22;font-weight:600;line-height:1.4;">&#8644; {tone_shift}</div>
+                  </div>
+                </td>"""
 
         # Key phrase changes table
         phrases = kcna.get("key_phrase_changes") or []
@@ -378,22 +401,25 @@ def render(digest: dict) -> str:
                 delta = _esc(p.get("delta_label", ""))
                 # Color delta based on direction
                 d_color = "#27AE60" if "↑" in delta else ("#C0392B" if "↓" in delta else "#888")
+                # Bar visualization (proportional to count)
+                bar_w = min(ct_w * 12, 60)
+                bar_html = f'<span style="display:inline-block;width:{bar_w}px;height:3px;background:{d_color};border-radius:2px;vertical-align:middle;margin-right:4px;"></span>' if bar_w > 0 else ""
                 phrase_rows += f"""
                 <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
-                  <td style="padding:4px 8px 4px 0;font-size:11px;color:#D0D0D0;">{ph}</td>
-                  <td style="padding:4px 6px;font-size:11px;color:#888;text-align:center;white-space:nowrap;">{ct_p}</td>
-                  <td style="padding:4px 6px;font-size:11px;color:#D0D0D0;text-align:center;white-space:nowrap;font-weight:600;">{ct_w}</td>
-                  <td style="padding:4px 0 4px 6px;font-size:10px;color:{d_color};white-space:nowrap;">{delta}</td>
+                  <td style="padding:5px 8px 5px 0;font-size:11px;color:#D0D0D0;">{ph}</td>
+                  <td style="padding:5px 6px;font-size:11px;color:#888;text-align:center;white-space:nowrap;">{ct_p}</td>
+                  <td style="padding:5px 6px;font-size:11px;color:#D0D0D0;text-align:center;white-space:nowrap;font-weight:600;">{bar_html}{ct_w}</td>
+                  <td style="padding:5px 0 5px 6px;font-size:10px;color:{d_color};white-space:nowrap;font-weight:600;">{delta}</td>
                 </tr>"""
             phrase_html = f"""
-            <div style="margin-top:12px;">
-              <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.6);margin-bottom:4px;">Phrase Frequency</div>
+            <div style="margin-top:14px;">
+              <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.6);margin-bottom:6px;">Phrase Frequency</div>
               <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                <tr style="border-bottom:1px solid rgba(255,255,255,0.1);">
-                  <td style="padding:3px 8px 3px 0;font-size:10px;color:rgba(255,255,255,0.5);text-transform:uppercase;">Phrase</td>
-                  <td style="padding:3px 6px;font-size:10px;color:rgba(255,255,255,0.5);text-align:center;">Prior</td>
-                  <td style="padding:3px 6px;font-size:10px;color:rgba(255,255,255,0.5);text-align:center;">This Wk</td>
-                  <td style="padding:3px 0 3px 6px;font-size:10px;color:rgba(255,255,255,0.5);">Delta</td>
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.12);">
+                  <td style="padding:4px 8px 4px 0;font-size:10px;color:rgba(255,255,255,0.5);text-transform:uppercase;">Phrase</td>
+                  <td style="padding:4px 6px;font-size:10px;color:rgba(255,255,255,0.5);text-align:center;">Prior</td>
+                  <td style="padding:4px 6px;font-size:10px;color:rgba(255,255,255,0.5);text-align:center;">Today</td>
+                  <td style="padding:4px 0 4px 6px;font-size:10px;color:rgba(255,255,255,0.5);">Delta</td>
                 </tr>
                 {phrase_rows}
               </table>
@@ -422,24 +448,24 @@ def render(digest: dict) -> str:
                 <td style="vertical-align:top;width:50%;padding-right:12px;">
                   <div style="padding:8px 12px;background:rgba(255,255,255,0.04);border-radius:4px;">
                     <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.6);margin-bottom:4px;">Kim Jong Un</div>
-                    <div style="font-size:13px;color:#E0E0E0;font-weight:600;">{kim_line}</div>
+                    <div style="font-size:13px;color:#E0E0E0;font-weight:600;">{kim_icon}{kim_line}</div>
                   </div>
                 </td>
                 <td style="vertical-align:top;width:50%;">
                   <div style="padding:8px 12px;background:rgba(255,255,255,0.04);border-radius:4px;">
                     <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.6);margin-bottom:4px;">Output Volume</div>
                     <div style="font-size:13px;color:#E0E0E0;">{output_vol if output_vol else "—"}</div>
-                    {"<div style='margin-top:3px;font-size:11px;color:#E67E22;font-weight:600;'>&#8644; " + tone_shift + "</div>" if tone_shift else ""}
                   </div>
                 </td>
               </tr>
+              {"<tr><td colspan='2' style='padding-top:8px;'></td></tr><tr>" + tone_html + "<td></td></tr>" if tone_shift else ""}
             </table>
             {prop_html}
             {quotes_html}
             {phrase_html}
             {omissions_html}
             {senior_html}
-            {"<div style='margin-top:12px;padding:10px 14px;background:rgba(255,255,255,0.04);border-radius:4px;font-size:13px;line-height:1.6;color:#E0E0E0;font-family:Georgia,serif;'><strong style=" + chr(34) + "color:#E8DCC8;" + chr(34) + ">Bottom line:</strong> " + bottom_line + "</div>" if bottom_line else ""}
+            {"<div style='margin-top:14px;padding:10px 14px;background:rgba(255,255,255,0.06);border-radius:4px;border-left:3px solid #E8DCC8;font-size:13px;line-height:1.6;color:#E0E0E0;font-family:Georgia,serif;'><strong style=" + chr(34) + "color:#E8DCC8;" + chr(34) + ">Bottom line:</strong> " + bottom_line + "</div>" if bottom_line else ""}
           </div>
         </div>
         """)
@@ -484,13 +510,21 @@ def render(digest: dict) -> str:
               {source_links_html}
             </div>"""
 
-        # BP Monitored Locations — 2-column card grid
+        # BP Monitored Locations — 2-column card grid with status context
         _badge_styles = {
             "normal": ("#27AE60", "#F0FAF0", "Normal"),
             "activity": ("#D4AC0D", "#FDF6E3", "Active"),
             "elevated": ("#E67E22", "#FFF3E0", "Elevated"),
             "alert": ("#C0392B", "#FBE9E7", "Alert"),
         }
+        # Count non-normal statuses for summary line
+        active_count = sum(1 for l in locations if l.get("status", "normal") != "normal")
+        summary_html = ""
+        if active_count:
+            summary_html = f'<div style="font-size:11px;color:#888;margin-top:6px;margin-bottom:12px;">{active_count} of {len(locations)} sites showing non-baseline activity</div>'
+        else:
+            summary_html = f'<div style="font-size:11px;color:#888;margin-top:6px;margin-bottom:12px;">All {len(locations)} monitored sites at baseline</div>'
+
         loc_cards = ""
         for i in range(0, len(locations), 2):
             row_cards = ""
@@ -507,13 +541,21 @@ def render(digest: dict) -> str:
                 elif direction == "down":
                     b_label += " &#9660;"
                 status_badge = f'<span style="display:inline-block;padding:2px 8px;border-radius:3px;font-size:9px;font-weight:700;color:#fff;background:{b_color};letter-spacing:0.5px;">{b_label}</span>'
-                note_html = f'<div style="font-size:11px;line-height:1.4;color:#666;margin-top:4px;">{note}</div>' if note else ""
+                # Note rendering — style differently for carried-forward vs active
+                note_html = ""
+                if note and "no new reporting" in note.lower():
+                    note_html = f'<div style="font-size:10px;line-height:1.3;color:#999;margin-top:4px;font-style:italic;">{note}</div>'
+                elif note:
+                    note_html = f'<div style="font-size:11px;line-height:1.4;color:#555;margin-top:4px;">{note}</div>'
+                # Last report date — more prominent with clock icon
+                last_html = f'<div style="font-size:9px;color:#999;margin-top:3px;">&#128339; Last report: {last_report}</div>' if last_report and last_report != "unknown" else ""
                 row_cards += f"""
                 <td style="width:50%;padding:4px;vertical-align:top;">
                   <div style="background:{b_bg};border-radius:4px;padding:10px 12px;border-left:3px solid {b_color};">
-                    <div style="font-size:12px;font-weight:700;color:#1B2A4A;margin-bottom:3px;">{name}</div>
-                    <div style="margin-bottom:4px;">{status_badge} <span style="font-size:9px;color:#999;margin-left:4px;">{last_report}</span></div>
+                    <div style="font-size:12px;font-weight:700;color:#1B2A4A;margin-bottom:4px;">{name}</div>
+                    <div style="margin-bottom:2px;">{status_badge}</div>
                     {note_html}
+                    {last_html}
                   </div>
                 </td>"""
             if len(locations) - i == 1:
@@ -523,6 +565,7 @@ def render(digest: dict) -> str:
         sections.append(f"""
         <div {_SEC}>
           <a name="satellite"></a><span {_PILL("#2C3E50")}>Satellite &amp; Location Watch</span>
+          {summary_html}
           {img_report_html}
           <table width="100%" cellpadding="0" cellspacing="0" border="0" class="loc-grid">
             {loc_cards}
