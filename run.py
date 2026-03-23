@@ -163,30 +163,30 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
     """Pre-send quality gate. Returns list of warnings (empty = all clear)."""
     warnings = []
 
-    # ── Section count checks ──────────────────────────────────────────────
-    top_stories = digest.get("top_stories") or []
-    if len(top_stories) < 3:
-        warnings.append(f"TOP STORIES CRITICAL: only {len(top_stories)} (expected 3-4)")
-    elif len(top_stories) > 4:
-        warnings.append(f"TOP STORIES: {len(top_stories)} items (expected 3-4)")
-
-    overnight = digest.get("overnight_items") or []
-    if len(overnight) < 8:
-        warnings.append(f"OVERNIGHT ITEMS CRITICAL: only {len(overnight)} (expected 8-12)")
-    elif len(overnight) > 12:
-        warnings.append(f"OVERNIGHT ITEMS: {len(overnight)} items (expected 8-12)")
-
-    biz = digest.get("business_economy") or []
-    if len(biz) > 8:
-        warnings.append(f"BUSINESS ECONOMY CRITICAL: {len(biz)} items (max 8 — trim to most policy-relevant)")
-
-    cal = digest.get("calendar_watch") or []
-    if len(cal) > 5:
-        warnings.append(f"CALENDAR WATCH CRITICAL: {len(cal)} items (max 5 — keep only the most consequential)")
-
-    memo = digest.get("morning_memo") or []
-    if len(memo) < 3:
-        warnings.append(f"MORNING MEMO CRITICAL: only {len(memo)} items (expected 3)")
+    # ── Section count checks (hard caps) ─────────────────────────────────
+    SECTION_CAPS = {
+        "top_stories":       (3, 4),
+        "overnight_items":   (3, 6),
+        "business_economy":  (0, 6),
+        "calendar_watch":    (0, 5),
+        "also_today":        (0, 6),
+        "northeast_asia":    (0, 6),
+        "social_statements": (0, 6),
+        "rok_government":    (0, 6),
+        "rok_assembly":      (0, 6),
+        "opeds_today":       (0, 6),
+        "academic_today":    (0, 6),
+        "rok_personnel":     (0, 6),
+        "morning_memo":      (3, 3),
+        "on_this_day":       (0, 1),
+    }
+    for section_key, (min_ct, max_ct) in SECTION_CAPS.items():
+        items = digest.get(section_key) or []
+        label = section_key.upper().replace("_", " ")
+        if min_ct and len(items) < min_ct:
+            warnings.append(f"{label} CRITICAL: only {len(items)} (min {min_ct})")
+        elif len(items) > max_ct:
+            warnings.append(f"{label} CRITICAL: {len(items)} items (max {max_ct})")
 
     # ── RE: line must be present and substantive ─────────────────────────
     re_line = digest.get("re_line")
