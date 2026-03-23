@@ -127,7 +127,7 @@ _PILL = lambda bg: f'style="display:inline-block;background:{bg};color:#fff;font
 
 def _item_block(cat: str, src: str, headline: str, body: str, url: str,
                  bar_color: str = "#1B2A4A", extra_html: str = "") -> str:
-    """Render a standard border-left news item (used by overnight, also_today, business, NEA)."""
+    """Render a standard border-left news item."""
     return f"""
             <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid {bar_color};">
               <div style="font-size:11px;color:#888;text-transform:uppercase;">{cat} &middot; {src}</div>
