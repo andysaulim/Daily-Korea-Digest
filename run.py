@@ -21,12 +21,36 @@ from digest import _count_digest_words
 _PRESTIGE_OUTLETS = {"WSJ", "Wall Street Journal", "Washington Post", "WaPo", "NYT",
                       "New York Times", "Bloomberg", "Financial Times", "FT", "Economist", "The Economist"}
 
-_STOP_WORDS = frozenset({"the", "a", "an", "in", "on", "of", "to", "for", "and", "is", "at", "by", "as", "with", "from"})
+_STOP_WORDS = frozenset({"the", "a", "an", "in", "on", "of", "to", "for", "and", "is", "at", "by", "as", "with", "from",
+                         "its", "new", "over", "after", "says", "said", "amid", "that", "has", "will", "may", "could",
+                         "been", "are", "was", "were", "this", "but", "not", "all", "more", "than", "also"})
+
+# Key entities — different names for the same subject that should be treated as duplicates
+_ENTITY_ALIASES = {
+    "bok": {"bok", "bank of korea", "central bank", "monetary policy", "rate decision", "interest rate", "base rate", "benchmark rate"},
+    "kim jong un": {"kim jong un", "kim jongun", "kju", "north korean leader", "dprk leader", "supreme leader"},
+    "samsung": {"samsung", "samsung electronics"},
+    "hyundai": {"hyundai", "hyundai motor", "hyundai motors"},
+    "yoon": {"yoon", "yoon suk yeol", "yoon suk-yeol", "president yoon"},
+    "lee jae myung": {"lee jae myung", "lee jae-myung", "lee jaemyung"},
+    "usfk": {"usfk", "us forces korea", "united states forces korea"},
+    "freedom shield": {"freedom shield", "joint military exercise", "joint drill", "combined exercise"},
+}
 
 # All sections that contain items with URLs/headlines
 _ALL_ITEM_SECTIONS = ("top_stories", "overnight_items", "also_today",
                        "business_economy", "opeds_today", "academic_today",
                        "social_statements", "northeast_asia")
+
+
+def _extract_entities(text: str) -> set[str]:
+    """Extract key entity tags from a headline for topic-level dedup."""
+    text_lower = text.lower()
+    entities = set()
+    for tag, aliases in _ENTITY_ALIASES.items():
+        if any(alias in text_lower for alias in aliases):
+            entities.add(tag)
+    return entities
 
 
 def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
@@ -69,7 +93,7 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
 
     # ── Single pass over all items: URLs, headlines, sources, body checks ─
     seen_urls = {}
-    seen_headlines = []  # (section, headline_text, keyword_set)
+    seen_headlines = []  # (section, headline_text, keyword_set, entity_set)
     source_counts = {}
     bad_urls = 0
     dup_url_count = 0
@@ -105,27 +129,30 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
                 if src:
                     source_counts[src] = source_counts.get(src, 0) + 1
 
-            # Duplicate headline check
+            # Duplicate topic check (keyword overlap + entity matching)
             headline = (item.get("headline", "") or "").lower().strip()
-            if len(headline) > 20:
+            if len(headline) > 15:
                 words = {w for w in re.split(r'\W+', headline) if len(w) > 2 and w not in _STOP_WORDS}
-                for prev_section, prev_headline, prev_words in seen_headlines:
+                entities = _extract_entities(headline)
+                is_dup = False
+                for prev_section, prev_headline, prev_words, prev_entities in seen_headlines:
                     if not words or not prev_words:
                         continue
+                    # Method 1: keyword overlap (existing)
                     overlap = words & prev_words
                     min_len = min(len(words), len(prev_words))
-                    if min_len > 1 and len(overlap) >= 2 and len(overlap) / min_len >= 0.5:
-                        if prev_section == section_key:
-                            # Same topic within the same section is a critical issue
-                            warnings.append(
-                                f"DUPLICATE TOPIC CRITICAL: two similar stories within {section_key}: "
-                                f"'{headline[:60]}...' vs '{prev_headline[:60]}...'")
-                        else:
-                            warnings.append(
-                                f"DUPLICATE HEADLINE: similar story in {prev_section} and {section_key}: "
-                                f"'{headline[:60]}...' vs '{prev_headline[:60]}...'")
+                    keyword_dup = min_len > 1 and len(overlap) >= 2 and len(overlap) / min_len >= 0.5
+                    # Method 2: shared key entity (catches "BOK holds rate" vs "Central bank keeps benchmark steady")
+                    entity_dup = bool(entities and prev_entities and entities & prev_entities)
+                    if keyword_dup or entity_dup:
+                        label = "DUPLICATE TOPIC CRITICAL" if prev_section == section_key else "DUPLICATE TOPIC CRITICAL"
+                        match_reason = f"shared entities: {entities & prev_entities}" if entity_dup and not keyword_dup else "keyword overlap"
+                        warnings.append(
+                            f"{label}: same topic in {prev_section} and {section_key} ({match_reason}): "
+                            f"'{headline[:60]}...' vs '{prev_headline[:60]}...'")
+                        is_dup = True
                         break
-                seen_headlines.append((section_key, headline, words))
+                seen_headlines.append((section_key, headline, words, entities))
 
     if bad_urls:
         warnings.append(f"BAD URLS: {bad_urls} placeholder or invalid URLs found")
