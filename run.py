@@ -475,7 +475,7 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
         for pk, src in prestige_in_input.items():
             if pk not in digest_prestige_keys:
                 warnings.append(
-                    f"PRESTIGE OUTLET DROPPED CRITICAL: '{src}' had Korea articles in input but none appeared in digest")
+                    f"PRESTIGE OUTLET DROPPED: '{src}' had Korea articles in input but none appeared in digest")
 
     return warnings
 
