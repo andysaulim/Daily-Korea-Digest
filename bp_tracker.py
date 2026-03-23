@@ -47,23 +47,25 @@ def update_from_digest(digest: dict):
         name = loc.get("name", "")
         if not name:
             continue
-        # Only update if there's actual new reporting (not "No new reporting")
         note = loc.get("note", "")
-        if note and "no new reporting" not in note.lower():
+        status = loc.get("status", "normal")
+        existing = data["locations"].get(name)
+
+        # Accept the update if:
+        # 1. There's a substantive note (not "no new reporting"), OR
+        # 2. The location is new to the tracker, OR
+        # 3. The status changed from what we had before
+        has_substance = note and "no new reporting" not in note.lower()
+        is_new = existing is None
+        status_changed = existing and existing.get("status", "normal") != status
+
+        if has_substance or is_new or status_changed:
             data["locations"][name] = {
                 "name": name,
-                "status": loc.get("status", "normal"),
-                "note": note,
-                "last_report": loc.get("last_report", "unknown"),
+                "status": status,
+                "note": note if has_substance else (existing or {}).get("note", "No new reporting"),
+                "last_report": loc.get("last_report", (existing or {}).get("last_report", "unknown")),
                 "direction": loc.get("direction", ""),
-            }
-        elif name not in data["locations"]:
-            data["locations"][name] = {
-                "name": name,
-                "status": "normal",
-                "note": "No new reporting",
-                "last_report": "unknown",
-                "direction": "",
             }
 
     _save(data)
@@ -77,8 +79,15 @@ def build_context_block() -> str:
         return ""
 
     lines = ["BP LOCATIONS HISTORY (last known status from persistent tracker):"]
-    lines.append("CARRY FORWARD these notes and statuses for each location unless today's articles contain a newer report.")
-    lines.append("Readers rely on this section for the most recent known status of each facility — do NOT blank notes to 'No new reporting' when the tracker has context.\n")
+    lines.append(
+        "CARRY-FORWARD RULE: For each location, copy the note and status below "
+        "VERBATIM into your bp_locations output UNLESS today's articles contain a "
+        "specific newer report about that facility. NEVER replace a substantive "
+        "note with 'No new reporting' — the tracker's note IS the most recent "
+        "known status and must be preserved for readers. Only update a location's "
+        "note when you have a concrete new source (satellite imagery, think tank "
+        "report, or news article) with new information.\n"
+    )
 
     for name, loc in locs.items():
         status = loc.get("status", "normal")

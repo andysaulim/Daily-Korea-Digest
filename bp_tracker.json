@@ -1,0 +1,61 @@
+{
+  "locations": {
+    "Yongbyon Nuclear Complex": {
+      "name": "Yongbyon Nuclear Complex",
+      "status": "activity",
+      "note": "5 MWe reactor and radiochemical laboratory show continued operational signatures. Cooling water discharge and steam patterns consistent with ongoing plutonium reprocessing campaign.",
+      "last_report": "Mar 2026",
+      "direction": ""
+    },
+    "Sinpo South Shipyard": {
+      "name": "Sinpo South Shipyard",
+      "status": "activity",
+      "note": "Construction activity at submarine launch facility continues. Satellite imagery shows vessel assembly building modifications and pier-side equipment movement consistent with SLBM program development.",
+      "last_report": "Mar 2026",
+      "direction": ""
+    },
+    "THAAD Site — Seongju County": {
+      "name": "THAAD Site — Seongju County",
+      "status": "normal",
+      "note": "THAAD battery remains operationally deployed. No changes to launcher configuration or radar positioning observed.",
+      "last_report": "Mar 2026",
+      "direction": ""
+    },
+    "Sohae Satellite Launch Station": {
+      "name": "Sohae Satellite Launch Station",
+      "status": "activity",
+      "note": "Launch pad infrastructure rebuilding completed. Engine test stand shows signs of recent activity. Facility restored after 2018 partial dismantlement.",
+      "last_report": "Mar 2026",
+      "direction": ""
+    },
+    "Punggye-ri Nuclear Test Site": {
+      "name": "Punggye-ri Nuclear Test Site",
+      "status": "activity",
+      "note": "Tunnel 3 and Tunnel 4 portal areas show continued maintenance activity. Support infrastructure intact. Site assessed as test-ready if political decision is made.",
+      "last_report": "Mar 2026",
+      "direction": ""
+    },
+    "Tumangang–Khasan (NK-Russia border)": {
+      "name": "Tumangang–Khasan (NK-Russia border)",
+      "status": "elevated",
+      "note": "Rail traffic across Friendship Bridge remains elevated since 2024. Freight movements consistent with military equipment and ammunition transfers under NK-Russia cooperation framework.",
+      "last_report": "Mar 2026",
+      "direction": "up"
+    },
+    "Sinuiju–Dandong (NK-China border)": {
+      "name": "Sinuiju–Dandong (NK-China border)",
+      "status": "activity",
+      "note": "Cross-border trade via Friendship Bridge showing gradual normalization. Truck traffic volumes recovering toward pre-COVID baseline levels. New customs infrastructure visible.",
+      "last_report": "Mar 2026",
+      "direction": "up"
+    },
+    "Rason SEZ": {
+      "name": "Rason SEZ",
+      "status": "activity",
+      "note": "Port activity increased with Russian-flagged vessels. Rajin port infrastructure shows new construction consistent with expanded NK-Russia trade logistics.",
+      "last_report": "Mar 2026",
+      "direction": "up"
+    }
+  },
+  "last_updated": "2026-03-23T17:26:00.231045+00:00"
+}
