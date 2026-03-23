@@ -566,7 +566,7 @@ def render(digest: dict) -> str:
                 name = _esc(loc.get("name", ""))
                 status = loc.get("status", "normal")
                 note = _esc(loc.get("note", ""))
-                last_report = _esc(loc.get("last_report", ""))
+                last_source_date = _esc(loc.get("last_source_date", ""))
                 direction = loc.get("direction", "")
                 b_color, b_bg, b_label = _badge_styles.get(status, ("#7F8C8D", "#F5F5F5", "Monitor"))
                 if direction == "up":
@@ -581,7 +581,7 @@ def render(digest: dict) -> str:
                 elif note:
                     note_html = f'<div style="font-size:11px;line-height:1.4;color:#555;margin-top:4px;">{note}</div>'
                 # Last report date — more prominent with clock icon
-                last_html = f'<div style="font-size:9px;color:#999;margin-top:3px;">&#9201; {last_report}</div>' if last_report and last_report != "unknown" else ""
+                last_html = f'<div style="font-size:9px;color:#999;margin-top:3px;">&#9201; {last_source_date}</div>' if last_source_date and last_source_date != "unknown" else ""
                 row_cards += f"""
                 <td style="width:50%;padding:4px;vertical-align:top;">
                   <div style="background:{b_bg};border-radius:4px;padding:10px 12px;border-left:3px solid {b_color};">
@@ -1219,8 +1219,7 @@ def render(digest: dict) -> str:
       {otd_footer}
       <div style="font-size:11px;color:rgba(255,255,255,0.6);line-height:1.5;">
         Korea Daily Brief &middot; By Andy Lim &middot; CSIS Korea Chair<br>
-        {_esc(date_str)} &middot; {gen_time}<br>
-        <span style="color:rgba(255,255,255,0.6);">Read alongside primary sources</span>
+        {_esc(date_str)} &middot; {gen_time}
       </div>
       <div style="font-size:10px;color:rgba(255,255,255,0.55);margin-top:12px;line-height:1.5;">
         CSIS &middot; 1616 Rhode Island Ave NW &middot; Washington, DC 20036

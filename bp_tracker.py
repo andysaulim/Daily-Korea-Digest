@@ -1,7 +1,7 @@
 """
 Beyond Parallel Locations Tracker
 Persistent tracking of monitored facility status across digest runs.
-Carries forward last_report dates and status so Claude doesn't have to invent them.
+Carries forward last_source_date dates and status so Claude doesn't have to invent them.
 """
 import json
 from pathlib import Path
@@ -11,14 +11,14 @@ TRACKER_FILE = Path(__file__).parent / "bp_tracker.json"
 
 # The 8 monitored locations
 DEFAULT_LOCATIONS = [
-    {"name": "Yongbyon Nuclear Complex", "status": "normal", "note": "No new reporting", "last_report": "unknown", "direction": ""},
-    {"name": "Sinpo South Shipyard", "status": "normal", "note": "No new reporting", "last_report": "unknown", "direction": ""},
-    {"name": "THAAD Site — Seongju County", "status": "normal", "note": "No new reporting", "last_report": "unknown", "direction": ""},
-    {"name": "Sohae Satellite Launch Station", "status": "normal", "note": "No new reporting", "last_report": "unknown", "direction": ""},
-    {"name": "Punggye-ri Nuclear Test Site", "status": "normal", "note": "No new reporting", "last_report": "unknown", "direction": ""},
-    {"name": "Tumangang–Khasan (NK-Russia border)", "status": "normal", "note": "No new reporting", "last_report": "unknown", "direction": ""},
-    {"name": "Sinuiju–Dandong (NK-China border)", "status": "normal", "note": "No new reporting", "last_report": "unknown", "direction": ""},
-    {"name": "Rason SEZ", "status": "normal", "note": "No new reporting", "last_report": "unknown", "direction": ""},
+    {"name": "Yongbyon Nuclear Complex", "status": "normal", "note": "No new reporting", "last_source_date": "unknown", "direction": ""},
+    {"name": "Sinpo South Shipyard", "status": "normal", "note": "No new reporting", "last_source_date": "unknown", "direction": ""},
+    {"name": "THAAD Site — Seongju County", "status": "normal", "note": "No new reporting", "last_source_date": "unknown", "direction": ""},
+    {"name": "Sohae Satellite Launch Station", "status": "normal", "note": "No new reporting", "last_source_date": "unknown", "direction": ""},
+    {"name": "Punggye-ri Nuclear Test Site", "status": "normal", "note": "No new reporting", "last_source_date": "unknown", "direction": ""},
+    {"name": "Tumangang–Khasan (NK-Russia border)", "status": "normal", "note": "No new reporting", "last_source_date": "unknown", "direction": ""},
+    {"name": "Sinuiju–Dandong (NK-China border)", "status": "normal", "note": "No new reporting", "last_source_date": "unknown", "direction": ""},
+    {"name": "Rason SEZ", "status": "normal", "note": "No new reporting", "last_source_date": "unknown", "direction": ""},
 ]
 
 
@@ -64,7 +64,7 @@ def update_from_digest(digest: dict):
                 "name": name,
                 "status": status,
                 "note": note if has_substance else (existing or {}).get("note", "No new reporting"),
-                "last_report": loc.get("last_report", (existing or {}).get("last_report", "unknown")),
+                "last_source_date": loc.get("last_source_date", (existing or {}).get("last_source_date", "unknown")),
                 "direction": loc.get("direction", ""),
             }
 
@@ -92,7 +92,7 @@ def build_context_block() -> str:
     for name, loc in locs.items():
         status = loc.get("status", "normal")
         note = loc.get("note", "No new reporting")
-        last = loc.get("last_report", "unknown")
+        last = loc.get("last_source_date", "unknown")
         direction = loc.get("direction", "")
         dir_str = f" (trending: {direction})" if direction else ""
         lines.append(f"  - {name}: [{status}]{dir_str} — {note} (last report: {last})")

@@ -283,7 +283,7 @@ def fetch_all() -> dict:
 # ─────────────────────────────────────────────────────────────────────────────
 
 def get_on_this_day(provocations: list, timeline: list,
-                    today: Optional[datetime] = None, window_days: int = 7) -> list:
+                    today: Optional[datetime] = None, window_days: int = 3) -> list:
     """
     Find historical events from both databases that occurred on or near
     today's date (same month/day, any year) within a ±window_days range.
