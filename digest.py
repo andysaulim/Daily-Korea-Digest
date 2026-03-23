@@ -608,11 +608,13 @@ def generate_digest(payload: dict, db_context: str = "") -> dict:
 
 
 def regenerate_digest(payload: dict, previous_digest: dict,
-                      validation_warnings: list[str], db_context: str = "") -> dict:
+                      validation_warnings: list[str], db_context: str = "",
+                      attempt: int = 0) -> dict:
     """Re-generate digest by sending validation feedback to Claude.
 
     Reuses the same collected articles — only re-calls the Claude API with
     the previous output and specific instructions to fix validation failures.
+    First retry uses Opus (better at hitting word counts); subsequent retries use Sonnet.
     """
     api_key = os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
@@ -634,7 +636,10 @@ def regenerate_digest(payload: dict, previous_digest: dict,
         "- If word count is too low: write more substantive body text for each story "
         "(2-3 sentences per top_stories, 2-3 per overnight_items) and add more items.\n"
         "- If top_stories count is too low: include at least 3 top stories from the articles.\n"
-        "- If overnight_items count is too low: include at least 3 items (max 6).\n"
+        "- If overnight_items count is too low: include at least 6 overnight_items drawn from "
+        "DIVERSE sources (Korea Herald, JoongAng, Reuters, AP, Nikkei, SCMP — NOT all Yonhap). "
+        "A post-processing filter removes excess items from any single source, so if you "
+        "put 6 Yonhap items the section will shrink to 2 and fail validation again.\n"
         "- If morning_memo is too short: include exactly 3 items.\n"
         "- If KCNA delta is missing: generate the kcna_delta section from Tier 4 data.\n"
         "- If RE: line is missing: write a crisp one-liner RE: summary.\n"
@@ -647,9 +652,13 @@ def regenerate_digest(payload: dict, previous_digest: dict,
         {"role": "user", "content": fix_prompt},
     ]
 
-    print(f"  Sending validation feedback to Claude via Sonnet ({len(validation_warnings)} issues)...")
+    # First retry uses Opus (better at meeting word count targets);
+    # subsequent retries use Sonnet for speed.
+    retry_model = PRIMARY_MODEL if attempt == 0 else FAST_MODEL
+    model_label = "Opus" if attempt == 0 else "Sonnet"
+    print(f"  Sending validation feedback to Claude via {model_label} ({len(validation_warnings)} issues)...")
     try:
-        digest = _stream_claude(client, messages, model=FAST_MODEL)
+        digest = _stream_claude(client, messages, model=retry_model)
         # Preserve market data
         if payload.get("market_indicators") and not digest.get("market_indicators"):
             digest["market_indicators"] = payload["market_indicators"]

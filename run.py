@@ -236,14 +236,18 @@ def _normalize_source(src: str) -> str:
 def _enforce_source_diversity(digest: dict) -> list[str]:
     """Cap any single source to _SOURCE_CAP appearances in overnight_items.
 
-    Excess items from over-represented sources are dropped.
+    Excess items from over-represented sources are dropped, but the section
+    is never reduced below its minimum item count (e.g. 3 for overnight_items).
     Returns log messages for removed items.
     """
+    _SECTION_MINIMUMS = {"overnight_items": 3, "top_stories": 3}
     log = []
     for section_key in ("overnight_items",):
         items = digest.get(section_key)
         if not items or not isinstance(items, list):
             continue
+
+        floor = _SECTION_MINIMUMS.get(section_key, 0)
 
         source_counts: dict[str, int] = {}
         kept = []
@@ -255,11 +259,21 @@ def _enforce_source_diversity(digest: dict) -> list[str]:
                 kept.append(item)
             else:
                 headline = item.get("headline", "")[:60]
-                dropped.append((src, headline))
+                dropped.append((item, src, headline))
+
+        # If removing all excess items would breach the section minimum,
+        # keep enough excess items (from the end) to stay at the floor.
+        if len(kept) < floor and dropped:
+            need = floor - len(kept)
+            # Re-add the last N dropped items (least egregious duplicates)
+            restored = dropped[-need:]
+            dropped = dropped[:-need]
+            for item, src, headline in restored:
+                kept.append(item)
 
         if dropped:
             digest[section_key] = kept
-            for src, headline in dropped:
+            for _item, src, headline in dropped:
                 log.append(f"  Removed excess {src} from {section_key}: '{headline}'")
 
     return log
@@ -372,10 +386,10 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
         key = _normalize_source(src)
         normalized_counts[key] = normalized_counts.get(key, 0) + count
     for src, count in normalized_counts.items():
-        if count > 3:
+        if count > 5:
             warnings.append(
                 f"SOURCE DIVERSITY CRITICAL: '{src}' appears {count} times across top sections — diversify sources")
-        elif count > 2:
+        elif count > 3:
             warnings.append(
                 f"SOURCE DIVERSITY: '{src}' appears {count} times across top sections — consider diversifying")
 
@@ -424,7 +438,7 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
             if pk and pk not in prestige_in_input:
                 prestige_in_input[pk] = src
         digest_prestige_keys: set[str] = set()
-        for section_key in ("top_stories", "overnight_items", "also_today"):
+        for section_key in _ALL_ITEM_SECTIONS:
             for item in (digest.get(section_key) or []):
                 pk = _prestige_key(item.get("source", ""))
                 if pk:
@@ -544,7 +558,8 @@ def main():
             # Retry only the digest generation, passing validation feedback
             print("\n🔄  Re-generating digest with validation feedback (reusing collected articles)...")
             digest_data = regenerate_digest(
-                payload, digest_data, retryable_warnings, db_context=db_context
+                payload, digest_data, retryable_warnings, db_context=db_context,
+                attempt=validation_attempt
             )
             # Auto-strip duplicates again
             digest_data, dedup_log = _dedup_digest(digest_data)
