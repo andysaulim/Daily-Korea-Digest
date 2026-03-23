@@ -77,7 +77,8 @@ def build_context_block() -> str:
         return ""
 
     lines = ["BP LOCATIONS HISTORY (last known status from persistent tracker):"]
-    lines.append("Use these as defaults. ONLY update a location if today's articles contain a specific report about it.\n")
+    lines.append("CARRY FORWARD these notes and statuses for each location unless today's articles contain a newer report.")
+    lines.append("Readers rely on this section for the most recent known status of each facility — do NOT blank notes to 'No new reporting' when the tracker has context.\n")
 
     for name, loc in locs.items():
         status = loc.get("status", "normal")

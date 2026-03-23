@@ -24,7 +24,7 @@ SOURCE-OR-SKIP PRINCIPLE: For EVERY factual claim you write, you must be able to
 - If two sources conflict on a fact, note both. If a source is vague, stay vague. Precision means knowing what you DON'T know.
 - Cross-check: before writing any person's name + title, verify that BOTH the name AND the title appear together in at least one source article in this batch. If not, do not assert the pairing.
 - HISTORICAL CLAIMS: Do NOT cite specific historical dates or precedents from memory. pattern_note and analyst_note fields should ONLY reference precedents that are mentioned in today's source articles or in the reference databases provided in this prompt. If no relevant precedent appears in the provided data, set the field to null rather than inventing one. A wrong date is worse than no date.
-- FACILITY STATUS: For bp_locations, ONLY report status changes that are sourced from today's articles (satellite imagery reports, think tank analyses). If no article mentions a facility today, report status as "No new reporting" with the last known report date — do NOT invent activity descriptions or trending assessments.
+- FACILITY STATUS: For bp_locations, if today's articles contain a new report about a facility (satellite imagery, think tank analysis), update that facility's status and note from the article. If no article mentions a facility today, CARRY FORWARD the last known status and note from the BP LOCATIONS HISTORY tracker — do NOT blank it to "No new reporting". The tracker preserves context from prior reports so readers always see the most recent known status. Only set note to "No new reporting" if a facility has NEVER had a report in the tracker history.
 - OMISSIONS & STREAKS: Do NOT claim "X absent for N days" or "no mention of Y for N days" unless the KCNA RHETORIC HISTORY tracker data provided in this prompt supports the specific count. If no tracker history is available, do not fabricate streak counts — say "absent today" without a count.
 CURRENT POLITICAL LEADERS — REFERENCE (as of March 2026, update from today's articles if changed):
 - ROK President: Lee Jae-myung (이재명), Democratic Party, inaugurated Feb 2026
@@ -106,18 +106,47 @@ Return ONLY valid JSON. No markdown, no preamble, no commentary outside the JSON
 # ─────────────────────────────────────────────────────────────────────────────
 # USER PROMPT BUILDER
 # ─────────────────────────────────────────────────────────────────────────────
+
+def _build_kcna_summary_block(payload: dict) -> str:
+    """Format the pre-collected KCNA summary into a prompt block."""
+    summary = payload.get("kcna_summary")
+    if not summary or not summary.get("total_articles"):
+        return ""
+    lines = [
+        f"KCNA OUTPUT SUMMARY (scraped today — use for output_volume and propaganda_focus):",
+        f"Total articles collected: {summary['total_articles']}",
+    ]
+    cats = summary.get("categories", {})
+    if cats:
+        cat_strs = [f"{cat} ({count})" for cat, count in list(cats.items())[:15]]
+        lines.append(f"Categories: {', '.join(cat_strs)}")
+    headlines = summary.get("headlines", [])
+    if headlines:
+        lines.append(f"\nToday's KCNA headlines ({len(headlines)} articles):")
+        for h in headlines:
+            lines.append(f"  • {h}")
+    lines.append("")  # trailing newline
+    return "\n".join(lines)
+
+
 def build_user_prompt(payload: dict, date_str: str, db_context: str = "") -> str:
     def tier_json(articles: list, max_items: int = 60) -> str:
         trimmed = articles[:max_items]
-        return json.dumps([{
-            "title":   a.get("title", ""),
-            "url":     a.get("url", ""),
-            "summary": a.get("summary", "")[:800],
-            "source":  a.get("source", ""),
-            "lang":    a.get("lang", "EN"),
-            "prestige":    a.get("prestige"),
-            "journal_tier": a.get("journal_tier"),
-        } for a in trimmed], ensure_ascii=False, indent=1)
+        result = []
+        for a in trimmed:
+            item = {
+                "title":   a.get("title", ""),
+                "url":     a.get("url", ""),
+                "summary": a.get("summary", "")[:800],
+                "source":  a.get("source", ""),
+                "lang":    a.get("lang", "EN"),
+                "prestige":    a.get("prestige"),
+                "journal_tier": a.get("journal_tier"),
+            }
+            if a.get("tags"):
+                item["tags"] = a["tags"]
+            result.append(item)
+        return json.dumps(result, ensure_ascii=False, indent=1)
 
     # Pass market data if available
     market_block = ""
@@ -242,6 +271,7 @@ Inclusion: score >= 6 (A+ journals: score >= 4).
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 TIER 4: KCNA / RODONG SINMUN (last 24h)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{_build_kcna_summary_block(payload)}
 {tier_json(payload.get("tier4", []), max_items=30)}
 Return a SINGLE kcna_delta object:
 - kim_appearance_today: boolean — cross-reference KCNA articles AND the KIM JONG UN APPEARANCE REPORTS section above (scraped from NK Leadership Watch, Daily NK, KCNA Watch, and general news). If ANY credible source reports a Kim appearance in the last 24h, set to true.
@@ -256,7 +286,7 @@ Return a SINGLE kcna_delta object:
 - key_phrase_changes: array of phrase frequency objects. IMPORTANT: Use the KCNA RHETORIC HISTORY tracker data provided in this prompt as ground truth for count_prior values. If no tracker history is available, set count_prior to 0 and delta_label to "no baseline" — do NOT invent prior counts. Each: phrase (the exact phrase, e.g. "nuclear war deterrent"), count_this_week (integer — count from TODAY's KCNA articles only), count_prior (integer from tracker history — use AGGREGATE PHRASE COUNTS if available, otherwise 0), delta_label (human-readable delta string, e.g. "↑ from ×0", "↑ new phrase", "→ stable", "no baseline"). Also include Kim Jong Un appearance tracking as the last item: phrase="Kim Jong Un public appearance", count_this_week=count, delta_label based on tracker data. MAX 5 phrases — only include phrases that actually changed or are analytically significant. Do not pad with stable/routine phrases.
 - doctrinal_shift: if any phrase represents a new doctrinal position (e.g. new weapons designation, revised nuclear posture language, novel alliance framing), describe in 1-2 sentences. These shifts historically precede hardware developments by 12-18 months. null if routine rhetoric.
 - key_quotes: 1 direct quote from KCNA that is most analytically significant today (the single most important quote only). Each: quote (exact text, translated to English), source_article (KCNA article title). Empty array if nothing notable.
-- output_volume: string assessment of today's KCNA output volume vs. normal (e.g. "Heavy — 23 articles (avg: 15)", "Light — 8 articles", "Normal — 14 articles"). Unusually high or low volume is a signal.
+- output_volume: string assessment of today's KCNA output volume vs. normal (e.g. "Heavy — 23 articles (avg: 15)", "Light — 8 articles", "Normal — 14 articles"). Use the KCNA OUTPUT SUMMARY above for the actual article count — do NOT guess the number. Unusually high or low volume is a signal.
 - silence_today: boolean (complete KCNA blackout)
 - watch_flag: boolean — true if KCNA output contains ESCALATION-level rhetoric, silence after regular output, unusual Kim absence (7+ days), or nuclear/ICBM-related content
 - bottom_line: 1-2 sentences MAX. State the single most important KCNA takeaway and what to watch next. Be ruthlessly concise. Example: "First use of 'sacred nuclear deterrent force' coincides with Yongbyon activity (Mar 19). Monitor Sohae through Apr 15."
@@ -274,7 +304,7 @@ Return a digest object with:
   Jan 6 2016: DPRK 4th nuclear test (claimed H-bomb). Feb 12 2013: DPRK 3rd nuclear test. Mar 26 2010: ROKS Cheonan sinking (46 killed). Apr 15: Kim Il Sung birthday (Day of the Sun). Apr 27 2018: Moon-Kim Panmunjom summit. May 24 2009: Roh Moo-hyun dies. May 25 2009: DPRK 2nd nuclear test. Jun 12 2018: Trump-Kim Singapore summit. Jun 25 1950: Korean War begins. Jul 4 2017: DPRK first ICBM test (Hwasong-14). Jul 27 1953: Korean War armistice signed. Aug 15: Korean Liberation Day. Sep 3 2017: DPRK 6th nuclear test (claimed H-bomb). Sep 9: DPRK founding day. Sep 19 2018: Pyongyang Joint Declaration. Oct 9 2006: DPRK 1st nuclear test. Oct 10: DPRK Workers Party founding day. Nov 23 2010: Yeonpyeong Island shelling. Nov 29 2017: DPRK Hwasong-15 ICBM test. Dec 19 2011: Kim Jong Il death announced.
 - key_stat: a single striking statistic or number pulled directly from TODAY's articles — not from databases or historical data. Must come from a story in the current digest. IMPORTANT: This stat MUST be different every day — do not repeat the same stat from the previous digest. Pick a FRESH number from today's unique news. Object with: number (the stat, e.g. "$2.3B", "53%", "12"), label (what it measures, under 60 chars), context (1 sentence explaining why it matters today), source (which article it came from). Pick the most policy-relevant number from today's news — trade figures, military spending, sanctions data, economic indicators, deployment numbers, etc.
 - imagery_report: if satellite imagery analysis was published today (AEI, 38North, CSIS Beyond Parallel, Planet Labs), return an object with: source (e.g. "AEI / 38North"), date (e.g. "Mar 18-19"), label (e.g. "New imagery reports"), headline (main finding), body (2-3 sentences), source_links (array of {{label, url}} for each source cited), bp_location_ids (array of strings identifying which BP locations are affected, e.g. ["YBGN-ENR (Active/Expanding)", "THAAD-SNGJ (Active/Drawdown)"]). Return null if no imagery analysis today.
-- bp_locations: array of 8 monitored location status objects. GROUNDING RULE: ONLY update a location's status or note if today's articles contain a specific report about that facility (satellite imagery analysis, think tank report, news article). If no article mentions a facility today, set status to "normal", note to "No new reporting", direction to "", and carry forward the last_report date from the BP LOCATIONS HISTORY if provided. Do NOT invent activity descriptions, construction observations, or trending assessments from memory. Each: name, status (normal/activity/elevated/alert), note (1-2 sentences — ONLY from today's sourced reports, or "No new reporting" if no article covers this facility), last_report (date from the source report, or from tracker history), direction (string: "up"/"down"/"" — ONLY if today's report explicitly states a trend, otherwise ""). Locations: Yongbyon Nuclear Complex, Sinpo South Shipyard, THAAD Site — Seongju County, Sohae Satellite Launch Station, Punggye-ri Nuclear Test Site, Tumangang–Khasan (NK-Russia border), Sinuiju–Dandong (NK-China border), Rason SEZ.
+- bp_locations: array of 8 monitored location status objects. GROUNDING RULE: If today's articles contain a specific report about a facility (satellite imagery analysis, think tank report, news article), update that facility's status and note from the article. If NO article mentions a facility today, CARRY FORWARD the last known status, note, direction, and last_report from the BP LOCATIONS HISTORY tracker data provided in this prompt — this preserves context from prior reports so readers always see the most recent known status. Do NOT invent NEW activity descriptions or trending assessments from memory — only use what the tracker provides or what today's articles report. Each: name, status (normal/activity/elevated/alert — from today's report OR carried forward from tracker), note (1-2 sentences — from today's report if available, otherwise carry forward the tracker's note verbatim), last_report (date from today's source report, or carried forward from tracker history), direction (string: "up"/"down"/"" — from today's report or carried forward from tracker). Locations: Yongbyon Nuclear Complex, Sinpo South Shipyard, THAAD Site — Seongju County, Sohae Satellite Launch Station, Punggye-ri Nuclear Test Site, Tumangang–Khasan (NK-Russia border), Sinuiju–Dandong (NK-China border), Rason SEZ.
 - rok_government: array of ROK ministry/agency actions from today's news (Presidential Office, MOFA, MND, MOU, MOTIE, NIS, FSC, MOJ — see system prompt for full list). Each: ministry (English name, e.g. "Blue House / President's Office", "Ministry of Foreign Affairs", "Ministry of National Defense"), ministry_korean (Korean name, e.g. "청와대", "외교부", "국방부", "산업통상자원부", "국토교통부", "방위사업청"), official (name of the official who acted/spoke, e.g. "FM Cho Tae-yul"), action (1-line headline), detail (1-2 sentences), source_label (short source label for link, e.g. "president.go.kr", "MoFA EN", "MND", "MOTIE EN", "DAPA EN"). Include only substantive policy actions — meetings, statements, personnel changes, policy announcements. This section renders as a 2-column card grid showing the full ROK government posture.
 - calendar_watch: array of 5 key upcoming events in the next 14-30 days relevant to Korea policy (MAX 5 — pick the most consequential). GROUNDING: Only include events that are (a) mentioned in today's source articles with a specific date, (b) in the VERIFIED KOREA DATES reference above, or (c) in the tariff/trade baseline deadlines in this prompt. Do NOT invent upcoming events or dates from memory. Each: month (3-letter, e.g. "MAR", "APR"), day (integer), headline (short title), detail (1-2 sentences). No signals, no urgency labels — just the event and when it happens.
 - rok_assembly: array of ROK National Assembly activity from today's news — committee hearings, bills, votes related to defense/foreign affairs/unification/intelligence. Each: committee, action (1 line), detail (1-2 sentences). Empty array if no relevant activity.

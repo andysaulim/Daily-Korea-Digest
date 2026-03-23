@@ -240,6 +240,13 @@ def _entry_to_article(entry, source: str, lang: str = "EN", extra: dict | None =
             pub_date = datetime(*parsed[:6], tzinfo=timezone.utc).isoformat()
             break
 
+    # Extract RSS category tags (feedparser stores them in entry.tags)
+    tags = []
+    for tag in getattr(entry, "tags", []) or []:
+        term = tag.get("term", "").strip()
+        if term:
+            tags.append(term)
+
     article = {
         "title": title,
         "url": link,
@@ -248,6 +255,8 @@ def _entry_to_article(entry, source: str, lang: str = "EN", extra: dict | None =
         "lang": lang,
         "pub_date": pub_date,
     }
+    if tags:
+        article["tags"] = tags
     if extra:
         article.update(extra)
     return article
@@ -398,6 +407,116 @@ def _collect_tier4() -> list:
             article = _entry_to_article(entry, source, lang="KO")
             articles.append(article)
     return _dedup(articles)
+
+
+def _scrape_kcna_watch() -> list:
+    """Scrape KCNA Watch newstream page for today's article headlines and categories.
+    Returns a list of dicts with title, url, category, pub_date."""
+    articles = []
+    try:
+        resp = requests.get(
+            "https://kcnawatch.org/newstream/",
+            timeout=REQUEST_TIMEOUT,
+            headers={**HEADERS, "Accept": "text/html"},
+        )
+        resp.raise_for_status()
+        html = resp.text
+
+        # KCNA Watch uses article entries with titles and category tags
+        # Extract article blocks: <article ...> ... </article> or <h2><a href="...">title</a></h2>
+        # Pattern for newstream entries: links with titles and category spans
+        import re as _re
+
+        # Match article links: <a href="/newstream/..." ...>Title</a>
+        link_pattern = _re.compile(
+            r'<a\s+href="(https?://kcnawatch\.org/newstream/\d{4}/\d{2}/\d{2}/[^"]+)"[^>]*>\s*([^<]+?)\s*</a>',
+            _re.IGNORECASE,
+        )
+        # Match category badges near articles
+        cat_pattern = _re.compile(
+            r'<span[^>]*class="[^"]*category[^"]*"[^>]*>\s*([^<]+?)\s*</span>',
+            _re.IGNORECASE,
+        )
+
+        today_str = datetime.now(timezone.utc).strftime("%Y/%m/%d")
+        yesterday_str = (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y/%m/%d")
+
+        seen_urls = set()
+        for match in link_pattern.finditer(html):
+            url, title = match.group(1), match.group(2).strip()
+            if url in seen_urls:
+                continue
+            # Only include today's or yesterday's articles
+            if today_str not in url and yesterday_str not in url:
+                continue
+            seen_urls.add(url)
+
+            # Try to find a category near this link (within 500 chars before)
+            start = max(0, match.start() - 500)
+            context = html[start:match.end() + 200]
+            cat_match = cat_pattern.search(context)
+            category = cat_match.group(1).strip() if cat_match else "Uncategorized"
+
+            articles.append({
+                "title": re.sub(r"<[^>]+>", "", title).strip(),
+                "url": url,
+                "category": category,
+            })
+
+        print(f"  ── KCNA Watch scrape: {len(articles)} articles from newstream page")
+    except Exception as e:
+        print(f"  ── KCNA Watch scrape: ⚠ failed ({e})")
+
+    return articles
+
+
+def _build_kcna_summary(tier4_articles: list, scraped_articles: list) -> dict:
+    """Build a structured summary of today's KCNA output for the digest prompt."""
+    # Combine sources for article count
+    all_titles = set()
+    categories = {}
+    sources = {}
+
+    for art in tier4_articles:
+        title = art.get("title", "").strip()
+        if title:
+            all_titles.add(title.lower())
+        src = art.get("source", "Unknown")
+        sources[src] = sources.get(src, 0) + 1
+        for tag in art.get("tags", []):
+            categories[tag] = categories.get(tag, 0) + 1
+
+    for art in scraped_articles:
+        title = art.get("title", "").strip()
+        if title and title.lower() not in all_titles:
+            all_titles.add(title.lower())
+        cat = art.get("category", "Uncategorized")
+        if cat:
+            categories[cat] = categories.get(cat, 0) + 1
+
+    # Build headline list from scraped articles (more structured)
+    headlines = []
+    for art in scraped_articles:
+        entry = art.get("title", "")
+        cat = art.get("category", "")
+        if entry:
+            headlines.append(f"[{cat}] {entry}" if cat else entry)
+
+    # Also add tier4 RSS headlines not already covered
+    scraped_titles = {a.get("title", "").lower() for a in scraped_articles}
+    for art in tier4_articles:
+        title = art.get("title", "")
+        if title and title.lower() not in scraped_titles:
+            tags = art.get("tags", [])
+            tag_str = tags[0] if tags else art.get("source", "")
+            headlines.append(f"[{tag_str}] {title}")
+
+    return {
+        "total_articles": len(all_titles),
+        "categories": dict(sorted(categories.items(), key=lambda x: -x[1])),
+        "sources": sources,
+        "headlines": headlines[:50],  # Cap at 50 headlines
+    }
 
 
 def _collect_kim_tracker() -> list:
@@ -1085,13 +1204,14 @@ def collect() -> dict:
     # Run all collectors concurrently — each already uses internal thread pools
     # for their own feeds, but the collectors themselves were running sequentially.
     collectors = {
-        "tier1":       ("Tier 1: News articles",        _collect_tier1),
-        "tier2":       ("Tier 2: Op-eds & commentary",   _collect_tier2),
-        "tier3":       ("Tier 3: Academic journals",      _collect_tier3),
-        "tier4":       ("Tier 4: KCNA / Rodong Sinmun",  _collect_tier4),
-        "kim_tracker": ("Kim Jong Un appearance tracker", _collect_kim_tracker),
-        "markets":     ("Market data",                    _collect_markets),
-        "sentiment":   ("Public sentiment polls",         _collect_sentiment),
+        "tier1":        ("Tier 1: News articles",        _collect_tier1),
+        "tier2":        ("Tier 2: Op-eds & commentary",   _collect_tier2),
+        "tier3":        ("Tier 3: Academic journals",      _collect_tier3),
+        "tier4":        ("Tier 4: KCNA / Rodong Sinmun",  _collect_tier4),
+        "kcna_scrape":  ("KCNA Watch scrape",             _scrape_kcna_watch),
+        "kim_tracker":  ("Kim Jong Un appearance tracker", _collect_kim_tracker),
+        "markets":      ("Market data",                    _collect_markets),
+        "sentiment":    ("Public sentiment polls",         _collect_sentiment),
     }
 
     results = {}
@@ -1120,14 +1240,21 @@ def collect() -> dict:
     tier2 = results["tier2"]
     tier3 = results["tier3"]
     tier4 = results["tier4"]
+    kcna_scraped = results.get("kcna_scrape", [])
     total = len(tier1) + len(tier2) + len(tier3) + len(tier4)
     print(f"\n  📊  Total collected: {total} items")
+
+    # Build structured KCNA summary from RSS + scrape data
+    kcna_summary = _build_kcna_summary(tier4, kcna_scraped)
+    if kcna_summary["total_articles"]:
+        print(f"  📡  KCNA summary: {kcna_summary['total_articles']} unique articles, {len(kcna_summary.get('categories', {}))} categories")
 
     return {
         "tier1": tier1,
         "tier2": tier2,
         "tier3": tier3,
         "tier4": tier4,
+        "kcna_summary": kcna_summary,
         "kim_tracker_articles": results["kim_tracker"],
         "market_indicators": results["markets"],
         "sentiment_baseline": results["sentiment"],
