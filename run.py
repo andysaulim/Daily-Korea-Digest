@@ -225,8 +225,10 @@ def _filter_non_us_deals(digest: dict) -> list[str]:
     return log
 
 
-# Max times a single source can appear in overnight_items / top_stories
-_SOURCE_CAP = 2
+# Max times a single source can appear in overnight_items / also_today.
+# Yonhap (연합뉴스) is Korea's dominant wire service — like AP for the US.
+# Cap of 2 was too aggressive, removing 5-7 items per run and crashing word count.
+_SOURCE_CAP = 3
 
 def _normalize_source(src: str) -> str:
     """Collapse source name variants to a canonical key."""
@@ -415,10 +417,10 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
         key = _normalize_source(src)
         normalized_counts[key] = normalized_counts.get(key, 0) + count
     for src, count in normalized_counts.items():
-        if count > 7:
+        if count > 10:
             warnings.append(
                 f"SOURCE DIVERSITY CRITICAL: '{src}' appears {count} times across top sections — diversify sources")
-        elif count > 5:
+        elif count > 7:
             warnings.append(
                 f"SOURCE DIVERSITY: '{src}' appears {count} times across top sections — consider diversifying")
 
