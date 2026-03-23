@@ -7,6 +7,7 @@ import os
 import time
 from datetime import datetime, timezone
 from pathlib import Path
+import httpx
 import anthropic
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -425,24 +426,37 @@ def _strip_fences(raw: str) -> str:
     return text
 
 
-def _stream_claude(client, messages: list, max_tokens: int = 16000) -> dict:
-    """Stream a Claude API call and return parsed digest dict."""
-    collected = []
-    with client.messages.stream(
-        model="claude-opus-4-20250514",
-        max_tokens=max_tokens,
-        system=SYSTEM_PROMPT,
-        messages=messages,
-    ) as stream:
-        for text in stream.text_stream:
-            collected.append(text)
-    response = stream.get_final_message()
-    if response.stop_reason == "max_tokens":
-        print(f"  ⚠  Response truncated (hit {response.usage.output_tokens} tokens)")
-    raw_text = "".join(collected)
-    if not raw_text.strip():
-        raise ValueError("Empty response from Claude API")
-    return json.loads(_strip_fences(raw_text))
+def _stream_claude(client, messages: list, max_tokens: int = 16000,
+                    _retries: int = 3) -> dict:
+    """Stream a Claude API call and return parsed digest dict.
+
+    Retries on transient connection errors (e.g. peer dropped mid-stream).
+    """
+    for attempt in range(_retries):
+        try:
+            collected = []
+            with client.messages.stream(
+                model="claude-opus-4-20250514",
+                max_tokens=max_tokens,
+                system=SYSTEM_PROMPT,
+                messages=messages,
+            ) as stream:
+                for text in stream.text_stream:
+                    collected.append(text)
+            response = stream.get_final_message()
+            if response.stop_reason == "max_tokens":
+                print(f"  ⚠  Response truncated (hit {response.usage.output_tokens} tokens)")
+            raw_text = "".join(collected)
+            if not raw_text.strip():
+                raise ValueError("Empty response from Claude API")
+            return json.loads(_strip_fences(raw_text))
+        except (httpx.RemoteProtocolError, httpx.ReadError, httpx.StreamError) as e:
+            if attempt < _retries - 1:
+                wait = 5 * (attempt + 1)
+                print(f"  ⚠  Stream interrupted ({e.__class__.__name__}), retrying in {wait}s...")
+                time.sleep(wait)
+            else:
+                raise
 
 
 def _call_claude(client, user_prompt: str, max_tokens: int = 16000) -> dict:
@@ -537,7 +551,8 @@ def generate_digest(payload: dict, db_context: str = "") -> dict:
                       f"{overnight_count} overnight items")
             return digest
 
-        except (anthropic.APIError, anthropic.APIConnectionError) as e:
+        except (anthropic.APIError, anthropic.APIConnectionError,
+                httpx.RemoteProtocolError, httpx.StreamError) as e:
             if attempt < MAX_ATTEMPTS - 1:
                 wait = 5 * (attempt + 1)
                 print(f"  ⚠  API error (retrying in {wait}s): {e}")
@@ -611,7 +626,8 @@ def regenerate_digest(payload: dict, previous_digest: dict,
         print(f"  ✅  Re-generated: ~{new_word_count} words, {top_count} top stories, "
               f"{overnight_count} overnight items")
         return digest
-    except (anthropic.APIError, anthropic.APIConnectionError, json.JSONDecodeError) as e:
+    except (anthropic.APIError, anthropic.APIConnectionError, json.JSONDecodeError,
+            httpx.RemoteProtocolError, httpx.StreamError) as e:
         print(f"  ⚠  Re-generation failed ({e}) — keeping previous digest")
         return previous_digest
 
