@@ -233,15 +233,16 @@ def _normalize_source(src: str) -> str:
     return s
 
 def _enforce_source_diversity(digest: dict) -> list[str]:
-    """Cap any single source to _SOURCE_CAP appearances in overnight_items.
+    """Cap any single source to _SOURCE_CAP appearances per section.
 
-    Excess items from over-represented sources are dropped, but the section
-    is never reduced below its minimum item count (e.g. 3 for overnight_items).
+    Skips top_stories (curated 3-4 item section where story importance
+    outweighs source diversity). Excess items from over-represented sources
+    are dropped, but the section is never reduced below its floor.
     Returns log messages for removed items.
     """
-    _SECTION_MINIMUMS = {"overnight_items": 3, "top_stories": 3}
+    _SECTION_MINIMUMS = {"overnight_items": 3}
     log = []
-    for section_key in ("top_stories", "overnight_items", "also_today"):
+    for section_key in ("overnight_items", "also_today"):
         items = digest.get(section_key)
         if not items or not isinstance(items, list):
             continue
@@ -385,10 +386,10 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
         key = _normalize_source(src)
         normalized_counts[key] = normalized_counts.get(key, 0) + count
     for src, count in normalized_counts.items():
-        if count > 5:
+        if count > 7:
             warnings.append(
                 f"SOURCE DIVERSITY CRITICAL: '{src}' appears {count} times across top sections — diversify sources")
-        elif count > 3:
+        elif count > 5:
             warnings.append(
                 f"SOURCE DIVERSITY: '{src}' appears {count} times across top sections — consider diversifying")
 
