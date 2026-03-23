@@ -403,6 +403,7 @@ def main():
     # ── Step 2+: Update Kim Jong Un appearance tracker + KCNA rhetoric tracker
     from kim_tracker import update_from_digest
     from kcna_tracker import update_from_digest as kcna_update_from_digest
+    from bp_tracker import update_from_digest as bp_update_from_digest
 
     for validation_attempt in range(1 + MAX_VALIDATION_RETRIES):
         # ── Step 2a: Pre-send validation gate ─────────────────────────────────
@@ -462,6 +463,7 @@ def main():
 
     update_from_digest(digest_data)
     kcna_update_from_digest(digest_data)
+    bp_update_from_digest(digest_data)
 
     # ── Step 2b: Push flagged entries to databases ────────────────────────────
     if not args.no_push:
