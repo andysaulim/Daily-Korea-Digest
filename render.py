@@ -1182,12 +1182,14 @@ def render(digest: dict) -> str:
       .cal-date {{ font-size:18px !important; }}
       /* Deal / business cards — tighter on mobile */
       .deal-card {{ padding:10px !important; }}
-      /* Deal breakdown table — full width on mobile */
-      .deal-breakdown td {{ padding:3px 4px !important; font-size:10px !important; }}
+      /* Deal breakdown table — stack on mobile so company/value/sector don't overflow */
+      .deal-breakdown td {{ display:block !important; width:100% !important; padding:2px 8px !important; font-size:11px !important; white-space:normal !important; }}
+      .deal-breakdown tr {{ display:block !important; border-bottom:1px solid #E8EDF3 !important; padding:4px 0 !important; }}
       /* Sentiment tracker — 2x2 grid on mobile (no flexbox for Outlook) */
       .sentiment-table td {{ display:inline-block !important; width:48% !important; box-sizing:border-box !important; padding:10px 4px !important; text-align:center !important; }}
       /* Tariff sector table — stack on mobile */
-      .tariff-sector td {{ display:block !important; width:100% !important; padding:4px 8px !important; }}
+      .tariff-sector td {{ display:block !important; width:100% !important; padding:3px 8px !important; white-space:normal !important; }}
+      .tariff-sector tr {{ display:block !important; border-bottom:1px solid #F0E0E0 !important; padding:4px 0 !important; }}
       /* Typography */
       h1 {{ font-size:19px !important; }}
       h2 {{ font-size:12px !important; }}
@@ -1211,8 +1213,6 @@ def render(digest: dict) -> str:
       /* Scale up tiny fonts for mobile readability */
       .mkt-table div {{ font-size:11px !important; }}
       .mkt-table div[style*="font-size:18px"], .mkt-table div[style*="font-size:15px"] {{ font-size:16px !important; }}
-      /* Tariff headline rate — slightly smaller on mobile */
-      .tariff-sector td {{ font-size:11px !important; }}
       /* Trade policy tracker — stack on narrow screens */
       .trade-policy td {{ display:block !important; width:100% !important; padding:4px 8px !important; }}
       .trade-policy tr {{ display:block !important; border-bottom:1px solid #E8E8E8 !important; padding:6px 0 !important; }}
