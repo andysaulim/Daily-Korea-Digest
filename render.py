@@ -548,7 +548,7 @@ def render(digest: dict) -> str:
                 elif note:
                     note_html = f'<div style="font-size:11px;line-height:1.4;color:#555;margin-top:4px;">{note}</div>'
                 # Last report date — more prominent with clock icon
-                last_html = f'<div style="font-size:9px;color:#999;margin-top:3px;">&#128339; Last report: {last_report}</div>' if last_report and last_report != "unknown" else ""
+                last_html = f'<div style="font-size:9px;color:#999;margin-top:3px;">&#9201; {last_report}</div>' if last_report and last_report != "unknown" else ""
                 row_cards += f"""
                 <td style="width:50%;padding:4px;vertical-align:top;">
                   <div style="background:{b_bg};border-radius:4px;padding:10px 12px;border-left:3px solid {b_color};">
@@ -1246,15 +1246,20 @@ def render(digest: dict) -> str:
       /* Tighter body text on mobile */
       p, div {{ word-wrap:break-word !important; overflow-wrap:break-word !important; }}
       /* Quote cards in KCNA */
-      .kcna-quote {{ padding:6px 10px !important; }}
+      .kcna-quote {{ padding:8px 10px !important; }}
       /* KCNA — reduce side padding so nothing is clipped on mobile */
       .kcna-dark td {{ padding-left:14px !important; padding-right:14px !important; }}
       .kcna-dark > div {{ padding:16px 14px !important; }}
       /* KCNA phrase table — prevent horizontal overflow */
       .kcna-dark table {{ table-layout:fixed !important; }}
       .kcna-dark table td {{ white-space:normal !important; word-break:break-word !important; }}
-      /* Stack Kim / Output volume cards vertically on phones */
+      /* Stack Kim / Output volume / Tone shift cards vertically on phones */
       .kcna-kv td {{ display:block !important; width:100% !important; padding-right:0 !important; padding-bottom:8px !important; }}
+      .kcna-kv td[colspan] {{ display:block !important; }}
+      /* KCNA senior official cards — stack vertically on mobile */
+      .kcna-dark div[style*="display:inline-block"][style*="border-left:2px solid #5DADE2"] {{ display:block !important; margin-right:0 !important; }}
+      /* KCNA phrase bar viz — cap width on mobile */
+      .kcna-dark span[style*="height:3px"] {{ max-width:40px !important; }}
       /* Scale up tiny fonts for mobile readability */
       .mkt-table div {{ font-size:11px !important; }}
       .mkt-table div[style*="font-size:18px"], .mkt-table div[style*="font-size:15px"] {{ font-size:16px !important; }}
@@ -1285,7 +1290,8 @@ def render(digest: dict) -> str:
       .wrapper .gov-grid div {{ background:#2a2a2a !important; }}
       .wrapper .loc-grid div {{ background:#2a2a2a !important; border-color:#555 !important; }}
       .wrapper .loc-grid div[style*="color:#1B2A4A"] {{ color:#D0D0D0 !important; }}
-      .wrapper .loc-grid div[style*="color:#666"] {{ color:#AAA !important; }}
+      .wrapper .loc-grid div[style*="color:#555"] {{ color:#AAA !important; }}
+      .wrapper .loc-grid div[style*="color:#999"] {{ color:#888 !important; }}
       .wrapper .sentiment-spotlight {{ background:#1a2a3a !important; border-left-color:#2980B9 !important; color:#CCC !important; }}
       .wrapper .sentiment-discourse {{ background:#3a2a1a !important; border-left-color:#E67E22 !important; color:#CCC !important; }}
       .wrapper .deal-card {{ background:#2a2a2a !important; border-color:#333 !important; }}
