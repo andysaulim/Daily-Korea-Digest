@@ -52,7 +52,8 @@ _ALL_ITEM_SECTIONS = ("top_stories", "overnight_items", "also_today",
 
 # Sections where duplicates get auto-stripped (priority order — first wins)
 _DEDUP_SECTIONS = ("top_stories", "overnight_items", "business_economy",
-                    "northeast_asia", "also_today")
+                    "northeast_asia", "also_today", "opeds_today",
+                    "academic_today", "social_statements")
 
 
 def _extract_entities(text: str) -> tuple[set[str], set[str]]:
@@ -115,25 +116,23 @@ def _dedup_digest(digest: dict) -> tuple[dict, list[str]]:
     """
     log = []
     seen = []  # (section, headline, words, topics, companies)
+    seen_urls_global = {}  # url -> section_key (track across ALL sections)
 
     for section_key in _DEDUP_SECTIONS:
         items = digest.get(section_key)
         if not items or not isinstance(items, list):
             continue
 
-        # Also dedup URLs within the section pass
-        seen_urls_in_pass = {}
-
         kept = []
         for item in items:
             url = (item.get("url") or "").strip()
 
-            # URL dedup
+            # URL dedup — across all sections
             if url and url.startswith("http"):
-                if url in seen_urls_in_pass:
-                    log.append(f"  Removed duplicate URL in {section_key}: {url[:80]}")
+                if url in seen_urls_global:
+                    log.append(f"  Removed duplicate URL in {section_key} (already in {seen_urls_global[url]}): {url[:80]}")
                     continue
-                seen_urls_in_pass[url] = True
+                seen_urls_global[url] = section_key
 
             headline, words, topics, companies = _headline_key(item)
             if len(headline) < 15:
@@ -242,7 +241,7 @@ def _enforce_source_diversity(digest: dict) -> list[str]:
     """
     _SECTION_MINIMUMS = {"overnight_items": 3, "top_stories": 3}
     log = []
-    for section_key in ("overnight_items",):
+    for section_key in ("top_stories", "overnight_items", "also_today"):
         items = digest.get(section_key)
         if not items or not isinstance(items, list):
             continue
@@ -446,7 +445,7 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
         for pk, src in prestige_in_input.items():
             if pk not in digest_prestige_keys:
                 warnings.append(
-                    f"PRESTIGE OUTLET DROPPED: '{src}' had Korea articles in input but none appeared in digest")
+                    f"PRESTIGE OUTLET DROPPED CRITICAL: '{src}' had Korea articles in input but none appeared in digest")
 
     return warnings
 
