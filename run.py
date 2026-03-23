@@ -180,6 +180,10 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
     if len(biz) > 8:
         warnings.append(f"BUSINESS ECONOMY CRITICAL: {len(biz)} items (max 8 — trim to most policy-relevant)")
 
+    cal = digest.get("calendar_watch") or []
+    if len(cal) > 5:
+        warnings.append(f"CALENDAR WATCH CRITICAL: {len(cal)} items (max 5 — keep only the most consequential)")
+
     memo = digest.get("morning_memo") or []
     if len(memo) < 3:
         warnings.append(f"MORNING MEMO CRITICAL: only {len(memo)} items (expected 3)")
