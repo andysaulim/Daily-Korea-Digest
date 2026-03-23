@@ -321,10 +321,12 @@ def render(digest: dict) -> str:
             q = key_quotes[0]
             qt = _esc(q.get("quote", ""))
             src_art = _esc(q.get("source_article", ""))
-            quotes_html = f"""<div class="kcna-quote" style='margin-top:12px;padding:10px 14px;background:rgba(255,255,255,0.06);border-radius:4px;border-left:3px solid #27AE60;'>
+            if qt:
+                src_line = f"<div style='font-size:10px;color:#888;margin-top:4px;'>— {src_art}</div>" if src_art else ""
+                quotes_html = f"""<div class="kcna-quote" style='margin-top:12px;padding:10px 14px;background:rgba(255,255,255,0.06);border-radius:4px;border-left:3px solid #27AE60;'>
               <div style='font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:rgba(255,255,255,0.5);margin-bottom:4px;'>Key Quote</div>
               <div style='font-size:13px;color:#E8E8E8;font-style:italic;line-height:1.5;'>&ldquo;{qt}&rdquo;</div>
-              <div style='font-size:10px;color:#888;margin-top:4px;'>— {src_art}</div>
+              {src_line}
             </div>"""
 
         # Notable omissions — highlighted warning
@@ -340,13 +342,17 @@ def render(digest: dict) -> str:
             senior_cards = ""
             for s in senior[:2]:
                 name = _esc(s.get("name", ""))
+                if not name:
+                    continue
                 role = _esc(s.get("role", "")) if s.get("role") else ""
                 act = _esc(s.get("activity", ""))
                 role_tag = f' <span style="font-size:9px;color:#888;font-weight:400;">({role})</span>' if role else ""
+                act_html = f"<br><span style='color:#AAA;'>{act}</span>" if act else ""
                 senior_cards += f"""<div style='display:inline-block;margin-right:10px;margin-top:6px;padding:4px 10px;background:rgba(255,255,255,0.04);border-radius:3px;border-left:2px solid #5DADE2;font-size:11px;'>
-                  <strong style="color:#D0D0D0;">{name}</strong>{role_tag}<br><span style="color:#AAA;">{act}</span>
+                  <strong style="color:#D0D0D0;">{name}</strong>{role_tag}{act_html}
                 </div>"""
-            senior_html = f"<div style='margin-top:8px;'><div style='font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:rgba(255,255,255,0.5);margin-bottom:2px;'>Senior Officials</div>{senior_cards}</div>"
+            if senior_cards:
+                senior_html = f"<div style='margin-top:8px;'><div style='font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:rgba(255,255,255,0.5);margin-bottom:2px;'>Senior Officials</div>{senior_cards}</div>"
 
         # Kim Jong Un line
         kim_today = "Yes" if kcna.get("kim_appearance_today") else "No"
