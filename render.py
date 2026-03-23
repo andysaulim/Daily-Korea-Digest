@@ -63,6 +63,19 @@ def _arrow(val) -> str:
 
 
 
+def _cds_arrow(val) -> str:
+    """CDS arrow — up (wider spread) is red/risk, down (tighter) is green."""
+    try:
+        val = float(val)
+    except (TypeError, ValueError):
+        return '<span style="color:#7F8C8D;">—</span>'
+    if val > 0:
+        return f'<span style="color:#C0392B;">&#9650; +{val:.1f} bps</span>'
+    elif val < 0:
+        return f'<span style="color:#27AE60;">&#9660; {val:.1f} bps</span>'
+    return '<span style="color:#7F8C8D;">— flat</span>'
+
+
 def _link_or_text(text: str, url: str, style: str = "color:#1B2A4A;text-decoration:none;") -> str:
     """Render as <a> only if url is a real link, otherwise plain text.
     NOTE: `text` should already be HTML-escaped by the caller via _esc()."""
@@ -146,7 +159,7 @@ def render(digest: dict) -> str:
         brent = markets.get("brent") or {}
         krw = markets.get("usd_krw") or {}
         bok_rate = markets.get("bok_rate") or {}
-        exports = markets.get("monthly_exports") or {}
+        korea_cds = markets.get("korea_cds") or {}
         gdp = markets.get("gdp_estimate") or {}
         # Top row: KOSPI, Brent, USD/KRW
         sections.append(f"""
@@ -181,10 +194,10 @@ def render(digest: dict) -> str:
               <div style="font-size:10px;opacity:0.6;">{_esc(str(bok_rate.get("last_change", "")))}</div>
             </td>
             <td width="34%" align="center" style="padding:8px 8px 10px;border-left:1px solid rgba(255,255,255,0.1);border-right:1px solid rgba(255,255,255,0.1);">
-              <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;">Exports{" (" + _esc(exports.get("month", "")) + ")" if exports.get("month") else " (Monthly)"}</div>
-              <div style="font-size:15px;font-weight:700;">{_esc(str(exports.get("value", "—")))}</div>
-              <div style="font-size:10px;">{_arrow(exports.get("change_pct", 0))}</div>
-              {"<div style='font-size:10px;opacity:0.5;margin-top:2px;'>as of " + _esc(exports.get("as_of", exports.get("month", ""))) + "</div>" if exports.get("as_of") or exports.get("month") else ""}
+              <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;">Korea 5Y CDS</div>
+              <div style="font-size:15px;font-weight:700;">{_esc(str(korea_cds.get("value", "—")))} bps</div>
+              <div style="font-size:10px;">{_cds_arrow(korea_cds.get("change_bps", 0))}</div>
+              {"<div style='font-size:10px;opacity:0.5;margin-top:2px;'>as of " + _esc(korea_cds.get("as_of", "")) + "</div>" if korea_cds.get("as_of") else ""}
             </td>
             <td width="33%" align="center" style="padding:8px 8px 10px;">
               <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;">GDP Est. (QoQ)</div>
