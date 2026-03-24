@@ -11,13 +11,13 @@ Automated daily intelligence briefing on the Korean Peninsula for CSIS Korea Cha
 
 | Metric | Value |
 |--------|-------|
-| Last generated | March 23, 2026 at 7:31 PM ET |
-| Digest date | Monday, March 23, 2026 |
-| Articles collected | 143 |
-| Unique sources | 29 |
+| Last generated | March 24, 2026 at 8:08 AM ET |
+| Digest date | Tuesday, March 24, 2026 |
+| Articles collected | 151 |
+| Unique sources | 31 |
 | Top stories | 3 |
-| Overnight items | 5 |
-| Word count | ~1,014 |
+| Overnight items | 6 |
+| Word count | ~1,269 |
 | Kim Jong Un appeared | Yes |
 
 <!-- STATS:END -->
