@@ -17,14 +17,17 @@ def send(html: str, re_line: Optional[str] = None, subject: Optional[str] = None
     """
     Send the digest HTML via Gmail SMTP.
     Required environment variables:
-      GMAIL_USER      — Gmail address
+      GMAIL_USER      — Gmail address (used for SMTP auth)
       GMAIL_APP_PASS  — 16-char Gmail App Password
       DIGEST_TO       — comma-separated recipient list
+    Optional:
+      GMAIL_FROM      — sending alias (defaults to GMAIL_USER)
     """
     gmail_user = os.environ.get("GMAIL_USER")
     gmail_pass = os.environ.get("GMAIL_APP_PASS")
     if not gmail_user or not gmail_pass:
         raise RuntimeError("Missing GMAIL_USER or GMAIL_APP_PASS environment variables")
+    from_addr = os.environ.get("GMAIL_FROM", gmail_user)
     to_str = os.environ.get("DIGEST_TO", gmail_user)
 
     if recipients is None:
@@ -43,8 +46,8 @@ def send(html: str, re_line: Optional[str] = None, subject: Optional[str] = None
 
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
-    msg["From"] = f"CSIS Korea Chair <{gmail_user}>"
-    msg["To"] = gmail_user
+    msg["From"] = f"CSIS Korea Chair <{from_addr}>"
+    msg["To"] = from_addr
     msg["Bcc"] = ", ".join(recipients)
 
     plain = (
