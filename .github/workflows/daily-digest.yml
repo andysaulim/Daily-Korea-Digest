@@ -2,10 +2,10 @@ name: Daily Korea News Digest
 
 on:
   schedule:
-    # Primary: 7:30 AM ET = 12:30 PM UTC (EST) / 11:30 AM UTC (EDT)
+    # Primary: 7:00 AM ET = 12:00 PM UTC (EST) / 11:00 AM UTC (EDT)
+    - cron: '0 11 * * *'
+    # Fallback: 7:30 AM ET — catches cases where the primary run was skipped
     - cron: '30 11 * * *'
-    # Fallback: 8:00 AM ET — catches cases where the primary run was skipped
-    - cron: '0 12 * * *'
   workflow_dispatch: # Allow manual trigger
 
 permissions:
@@ -31,7 +31,7 @@ jobs:
             --workflow "Daily Korea News Digest" \
             --status success --created "$today" \
             --json conclusion -q 'length' 2>/dev/null || echo "0")
-          if [ "$success_count" -gt "0" ] && [ "${{ github.event.schedule }}" = "0 12 * * *" ]; then
+          if [ "$success_count" -gt "0" ] && [ "${{ github.event.schedule }}" = "30 11 * * *" ]; then
             echo "Primary run already succeeded today — skipping fallback"
             echo "should_run=false" >> "$GITHUB_OUTPUT"
           else
