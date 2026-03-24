@@ -515,8 +515,8 @@ def generate_digest(payload: dict, db_context: str = "") -> dict:
 
     for attempt in range(MAX_ATTEMPTS):
         try:
-            # Use Opus for initial generation, Sonnet for expansion retries
-            retry_model = None if attempt == 0 else FAST_MODEL
+            # Use Sonnet for initial generation, Opus for expansion retries
+            retry_model = FAST_MODEL if attempt == 0 else None
             if attempt == 0 or digest is None:
                 # First attempt, or previous attempt failed to produce any output
                 digest = _call_claude(client, user_prompt, model=retry_model)
@@ -652,10 +652,10 @@ def regenerate_digest(payload: dict, previous_digest: dict,
         {"role": "user", "content": fix_prompt},
     ]
 
-    # First retry uses Opus (better at meeting word count targets);
-    # subsequent retries use Sonnet for speed.
-    retry_model = PRIMARY_MODEL if attempt == 0 else FAST_MODEL
-    model_label = "Opus" if attempt == 0 else "Sonnet"
+    # First retry uses Sonnet (cost-efficient); subsequent retries
+    # escalate to Opus if Sonnet couldn't fix the issues.
+    retry_model = FAST_MODEL if attempt == 0 else PRIMARY_MODEL
+    model_label = "Sonnet" if attempt == 0 else "Opus"
     print(f"  Sending validation feedback to Claude via {model_label} ({len(validation_warnings)} issues)...")
     try:
         digest = _stream_claude(client, messages, model=retry_model)
