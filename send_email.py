@@ -48,7 +48,8 @@ def send(html: str, re_line: Optional[str] = None, subject: Optional[str] = None
     msg["Subject"] = subject
     msg["From"] = f"CSIS Korea Chair <{from_addr}>"
     msg["To"] = from_addr
-    msg["Bcc"] = ", ".join(recipients)
+    # BCC recipients are NOT added as a header — they are passed only to
+    # sendmail() so they receive the email without being visible to others.
 
     plain = (
         "Korea Daily Brief — CSIS Korea Chair\n"
