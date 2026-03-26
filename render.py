@@ -110,7 +110,7 @@ def _cds_arrow(val) -> str:
     return '<span style="color:#7F8C8D;">— flat</span>'
 
 
-def _link_or_text(text: str, url: str, style: str = "color:#1B2A4A;text-decoration:none;") -> str:
+def _link_or_text(text: str, url: str, style: str = "color:#1B2A4A;text-decoration:underline;") -> str:
     """Render as <a> only if url is a real link, otherwise plain text.
     NOTE: `text` should already be HTML-escaped by the caller via _esc()."""
     if url and url != "#" and url.startswith("http"):

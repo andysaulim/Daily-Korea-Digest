@@ -15,11 +15,44 @@ import re
 from pathlib import Path
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from digest import _count_digest_words
 
 
 _PRESTIGE_OUTLETS = {"WSJ", "Wall Street Journal", "Washington Post", "WaPo", "NYT",
                       "New York Times", "Bloomberg", "Financial Times", "FT", "Economist", "The Economist"}
+
+
+def _check_url(url: str, timeout: float = 5.0) -> tuple[str, bool, str]:
+    """HEAD-check a URL; returns (url, ok, reason)."""
+    import requests
+    try:
+        resp = requests.head(url, timeout=timeout, allow_redirects=True,
+                             headers={"User-Agent": "Mozilla/5.0 Korea-Digest-Validator/1.0"})
+        if resp.status_code >= 400:
+            return (url, False, f"HTTP {resp.status_code}")
+        return (url, True, "")
+    except requests.exceptions.Timeout:
+        return (url, False, "timeout")
+    except requests.exceptions.ConnectionError:
+        return (url, False, "connection error")
+    except Exception as e:
+        return (url, False, str(e)[:50])
+
+
+def _validate_urls(urls: list[str]) -> list[tuple[str, str]]:
+    """Check URLs in parallel; returns list of (url, reason) for broken ones."""
+    broken = []
+    with ThreadPoolExecutor(max_workers=10) as pool:
+        futures = {pool.submit(_check_url, u): u for u in urls}
+        for f in as_completed(futures, timeout=15):
+            try:
+                url, ok, reason = f.result()
+                if not ok:
+                    broken.append((url, reason))
+            except Exception:
+                broken.append((futures[f], "check failed"))
+    return broken
 
 _STOP_WORDS = frozenset({"the", "a", "an", "in", "on", "of", "to", "for", "and", "is", "at", "by", "as", "with", "from",
                          "its", "new", "over", "after", "says", "said", "amid", "that", "has", "will", "may", "could",
@@ -407,6 +440,15 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
 
     if bad_urls:
         warnings.append(f"BAD URLS: {bad_urls} placeholder or invalid URLs found")
+
+    # Live URL accessibility check (HEAD requests in parallel)
+    all_urls = [u for u in seen_urls if u.startswith("http")]
+    if all_urls:
+        broken = _validate_urls(all_urls)
+        for url, reason in broken:
+            section = seen_urls.get(url, "unknown")
+            warnings.append(f"BROKEN LINK ({reason}): {url} in {section}")
+
     if empty_body_count:
         warnings.append(f"EMPTY BODIES: {empty_body_count} items have no substantive body text")
 
