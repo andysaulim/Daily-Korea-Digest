@@ -46,9 +46,11 @@ TIER1_FEEDS = {
     "SBS":                _gnews("site:news.sbs.co.kr"),
     "YTN":                _gnews("site:ytn.co.kr"),
     "Channel A":          _gnews("site:ichannela.com"),
+    "Arirang News":       _gnews("Korea+site:arirang.com"),
     # ── Korean business dailies ──────────────────────────────────────────
     "매일경제":            _gnews("site:mk.co.kr"),
     "한국경제":            _gnews("site:hankyung.com"),
+    "Korea Economic Daily": _gnews("Korea+site:kedglobal.com"),
     # ── Major international — Korea correspondents ────────────────────────
     "WSJ Korea":          _gnews("Korea+site:wsj.com"),
     "NYT Korea":          _gnews("Korea+site:nytimes.com"),
@@ -59,6 +61,8 @@ TIER1_FEEDS = {
     "Bloomberg Korea":    _gnews("Korea+site:bloomberg.com"),
     "BBC Korea":          _gnews("Korea+site:bbc.com"),
     "CNN Korea":          _gnews("Korea+site:cnn.com"),
+    "CNBC Korea":         _gnews("Korea+site:cnbc.com"),
+    "MSNBC Korea":        _gnews("Korea+site:msnbc.com"),
     "Guardian Korea":     _gnews("Korea+site:theguardian.com"),
     "Al Jazeera Korea":   _gnews("Korea+site:aljazeera.com"),
     # ── Regional Asia ─────────────────────────────────────────────────────
