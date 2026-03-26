@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 
 TRACKER_FILE = Path(__file__).parent / "bp_tracker.json"
 
-# The 8 monitored locations
+# The 10 monitored locations
 DEFAULT_LOCATIONS = [
     {"name": "Yongbyon Nuclear Complex", "status": "normal", "note": "No new reporting", "last_source_date": "unknown", "direction": ""},
     {"name": "Sinpo South Shipyard", "status": "normal", "note": "No new reporting", "last_source_date": "unknown", "direction": ""},
@@ -19,6 +19,8 @@ DEFAULT_LOCATIONS = [
     {"name": "Tumangang–Khasan (NK-Russia border)", "status": "normal", "note": "No new reporting", "last_source_date": "unknown", "direction": ""},
     {"name": "Sinuiju–Dandong (NK-China border)", "status": "normal", "note": "No new reporting", "last_source_date": "unknown", "direction": ""},
     {"name": "Rason SEZ", "status": "normal", "note": "No new reporting", "last_source_date": "unknown", "direction": ""},
+    {"name": "Yellow Sea NLL/PMZ", "status": "normal", "note": "No new reporting", "last_source_date": "unknown", "direction": ""},
+    {"name": "Vostochny/Dunai (Russian Far East)", "status": "normal", "note": "No new reporting", "last_source_date": "unknown", "direction": ""},
 ]
 
 
