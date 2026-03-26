@@ -116,6 +116,8 @@ TIER2_FEEDS = {
     "RAND":              ("https://www.rand.org/topics/north-korea.xml", "A"),
     "CFR":               (_gnews("Korea+site:cfr.org"), "A"),
     "38 North":          (_gnews("site:38north.org"), "A"),
+    "AccessDPRK":        (_gnews("site:accessdprk.com"), "A"),
+    "ArmsControlWonk":   (_gnews("site:armscontrolwonk.com"), "A"),
     "Stimson":           ("https://www.stimson.org/feed/", "B"),
     "IISS":              (_gnews("Korea+site:iiss.org"), "B"),
     "ASAN Institute":    (_gnews("Korea+site:asaninst.org"), "B"),
