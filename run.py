@@ -654,12 +654,16 @@ def main():
             print("\n🚫  CRITICAL validation failures after all retries — newsletter will NOT be sent.")
             print("    Fix the issues above or re-run. HTML still rendered for review.")
 
-    update_from_digest(digest_data)
-    kcna_update_from_digest(digest_data)
-    bp_update_from_digest(digest_data)
+    # Only update trackers if digest passed validation (avoid corrupting state)
+    if not critical_warnings:
+        update_from_digest(digest_data)
+        kcna_update_from_digest(digest_data)
+        bp_update_from_digest(digest_data)
+    else:
+        print("  ⚠  Skipping tracker updates due to critical validation failures")
 
     # ── Step 2b: Push flagged entries to databases ────────────────────────────
-    if not args.no_push:
+    if not args.no_push and not critical_warnings:
         push_summary = process_digest_entries(digest_data)
         if push_summary.get("nk_russia_added") or push_summary.get("provocations_added"):
             print(f"    NK-Russia: {push_summary.get('nk_russia_added', 0)} added, "
