@@ -248,9 +248,9 @@ def render(digest: dict) -> str:
               {"<div style='font-size:10px;opacity:0.5;margin-top:2px;'>as of " + _esc(korea_cds.get("as_of", "")) + "</div>" if korea_cds.get("as_of") else ""}
             </td>
             <td width="33%" align="center" style="padding:8px 8px 10px;">
-              <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;">GDP Est. (QoQ)</div>
+              <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;">GDP Est.</div>
               <div style="font-size:15px;font-weight:700;">{_esc(str(gdp.get("value", "—")))}</div>
-              <div style="font-size:10px;opacity:0.6;">{_esc(str(gdp.get("period", "")))}</div>
+              <div style="font-size:10px;opacity:0.6;">{_esc(str(gdp.get("source", "BOK")))}{" · " + _esc(str(gdp.get("period", ""))) if gdp.get("period") else ""}</div>
             </td>
           </tr>
         </table>

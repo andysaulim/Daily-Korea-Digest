@@ -661,8 +661,10 @@ def _fetch_korea_cds() -> dict:
 
 
 def _fetch_gdp_estimate() -> dict:
-    """Fetch latest GDP growth estimate from BOK."""
-    # Try broader date range to catch latest available quarter
+    """Fetch latest GDP growth estimate from BOK, with OECD as secondary source."""
+    estimates = []
+
+    # Source 1: BOK API (quarterly GDP data)
     try:
         now = datetime.now(timezone.utc)
         start = (now - timedelta(days=730)).strftime("%Y") + "Q1"
@@ -675,31 +677,54 @@ def _fetch_gdp_estimate() -> dict:
                 latest = rows[-1]
                 val = latest.get("DATA_VALUE", "")
                 period = latest.get("TIME", "")
-                # Format period: "2026Q1" -> "Q1 2026"
                 if "Q" in str(period):
                     parts = str(period).split("Q")
                     period = f"Q{parts[1]} {parts[0]}"
-                return {"value": f"{float(val):.1f}%", "period": period}
+                estimates.append({"value": f"{float(val):.1f}%", "period": period, "source": "BOK"})
     except Exception as e:
         print(f"    ⚠  BOK GDP API error: {e}")
 
-    # Fallback: scrape latest BOK GDP forecast from news
+    # Source 2: OECD forecast (scrape from news)
     try:
-        url = _gnews("Bank+of+Korea+GDP+growth+forecast+2026")
+        url = _gnews("OECD+Korea+GDP+growth+forecast+2026")
         entries = _parse_feed(url)
         for entry in entries[:5]:
             text = f"{entry.get('title', '')} {entry.get('summary', entry.get('description', ''))}"
             match = re.search(r'(\d+\.\d+)\s*(?:percent|%|pct)', text, re.IGNORECASE)
             if match:
                 val = float(match.group(1))
-                if 0 < val < 10:  # sanity check for GDP growth rate
-                    return {"value": f"{val:.1f}%", "period": "BOK forecast"}
+                if 0 < val < 10:
+                    estimates.append({"value": f"{val:.1f}%", "period": "2026 forecast", "source": "OECD"})
+                    break
     except Exception:
         pass
 
-    # Fallback: last known GDP estimate (updated manually if all sources fail)
-    print("    ⚠  GDP estimate: using fallback (2.0%)")
-    return {"value": "2.0%", "period": "BOK forecast"}
+    # Source 3: BOK forecast from news (fallback)
+    if not estimates:
+        try:
+            url = _gnews("Bank+of+Korea+GDP+growth+forecast+2026")
+            entries = _parse_feed(url)
+            for entry in entries[:5]:
+                text = f"{entry.get('title', '')} {entry.get('summary', entry.get('description', ''))}"
+                match = re.search(r'(\d+\.\d+)\s*(?:percent|%|pct)', text, re.IGNORECASE)
+                if match:
+                    val = float(match.group(1))
+                    if 0 < val < 10:
+                        estimates.append({"value": f"{val:.1f}%", "period": "2026 forecast", "source": "BOK"})
+                        break
+        except Exception:
+            pass
+
+    if estimates:
+        # Return the most recent estimate; attach all sources for the digest prompt
+        primary = estimates[0]
+        if len(estimates) > 1:
+            primary["alt_estimates"] = estimates[1:]
+        return primary
+
+    # Hardcoded fallback (updated manually if all sources fail)
+    print("    ⚠  GDP estimate: using fallback (1.5%)")
+    return {"value": "1.5%", "period": "2026 forecast", "source": "BOK"}
 
 
 # ─────────────────────────────────────────────────────────────────────────────
