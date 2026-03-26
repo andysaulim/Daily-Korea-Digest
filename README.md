@@ -125,7 +125,7 @@ python run.py --no-push      # Skip GitHub database updates
 
 ## Automated Schedule
 
-The GitHub Actions workflow (`.github/workflows/daily-digest.yml`) runs daily at **6:00 AM ET** and can be triggered manually via `workflow_dispatch`.
+The GitHub Actions workflow (`.github/workflows/daily-digest.yml`) runs daily at **7:00 AM ET** (with a 7:30 AM fallback) and can be triggered manually via `workflow_dispatch`.
 
 Required repository secrets:
 
