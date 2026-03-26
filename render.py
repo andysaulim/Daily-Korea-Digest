@@ -886,7 +886,7 @@ def render(digest: dict) -> str:
                 st_color = status_colors.get(st, "#7F8C8D")
                 status_badge = f'<span style="display:inline-block;padding:1px 6px;border-radius:3px;font-size:9px;font-weight:700;color:#fff;background:{st_color};letter-spacing:0.5px;">{_esc(st)}</span>'
                 agency_tag = f'<span style="font-size:9px;color:#888;font-weight:400;"> · {agency}</span>' if agency else ""
-                item_label = f'<a href="{_esc(item_url)}" style="color:#1B2A4A;text-decoration:underline;" target="_blank">{item_text}</a>' if item_url else item_text
+                item_label = f'<a href="{_esc(item_url)}" style="color:#1B2A4A;text-decoration:underline;" target="_blank">{item_text}</a>' if item_url and item_url != "#" and item_url.startswith("http") else item_text
                 tracker_rows += f"""
                 <tr style="border-bottom:1px solid #F0F0F0;">
                   <td style="padding:6px 8px 6px 0;vertical-align:top;font-size:12px;font-weight:600;color:#1B2A4A;width:30%;">{item_label}{agency_tag}</td>

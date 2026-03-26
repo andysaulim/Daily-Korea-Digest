@@ -622,7 +622,7 @@ def regenerate_digest(payload: dict, previous_digest: dict,
 
     Reuses the same collected articles — only re-calls the Claude API with
     the previous output and specific instructions to fix validation failures.
-    First retry uses Opus (better at hitting word counts); subsequent retries use Sonnet.
+    First retry uses Sonnet (cost-efficient); subsequent retries escalate to Opus.
     """
     api_key = os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:

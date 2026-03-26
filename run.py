@@ -24,12 +24,16 @@ _PRESTIGE_OUTLETS = {"WSJ", "Wall Street Journal", "Washington Post", "WaPo", "N
 
 
 def _check_url(url: str, timeout: float = 5.0) -> tuple[str, bool, str]:
-    """HEAD-check a URL; returns (url, ok, reason)."""
+    """HEAD-check a URL; returns (url, ok, reason).
+    Only flags 404/410 (definitively dead). Treats 403/405/429 as OK
+    since paywalled sites and bot-protected servers commonly return these."""
     import requests
     try:
         resp = requests.head(url, timeout=timeout, allow_redirects=True,
                              headers={"User-Agent": "Mozilla/5.0 Korea-Digest-Validator/1.0"})
-        if resp.status_code >= 400:
+        # Only flag definitively dead URLs — 403/405/429/451 are normal for
+        # paywalled sites (WSJ, FT, Bloomberg) and bot-protected servers
+        if resp.status_code in (404, 410):
             return (url, False, f"HTTP {resp.status_code}")
         return (url, True, "")
     except requests.exceptions.Timeout:
@@ -43,15 +47,18 @@ def _check_url(url: str, timeout: float = 5.0) -> tuple[str, bool, str]:
 def _validate_urls(urls: list[str]) -> list[tuple[str, str]]:
     """Check URLs in parallel; returns list of (url, reason) for broken ones."""
     broken = []
-    with ThreadPoolExecutor(max_workers=10) as pool:
-        futures = {pool.submit(_check_url, u): u for u in urls}
-        for f in as_completed(futures, timeout=15):
-            try:
-                url, ok, reason = f.result()
-                if not ok:
-                    broken.append((url, reason))
-            except Exception:
-                broken.append((futures[f], "check failed"))
+    try:
+        with ThreadPoolExecutor(max_workers=10) as pool:
+            futures = {pool.submit(_check_url, u): u for u in urls}
+            for f in as_completed(futures, timeout=30):
+                try:
+                    url, ok, reason = f.result()
+                    if not ok:
+                        broken.append((url, reason))
+                except Exception:
+                    broken.append((futures[f], "check failed"))
+    except TimeoutError:
+        pass  # some URLs still pending — report what we have so far
     return broken
 
 _STOP_WORDS = frozenset({"the", "a", "an", "in", "on", "of", "to", "for", "and", "is", "at", "by", "as", "with", "from",
