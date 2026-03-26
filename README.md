@@ -79,7 +79,7 @@ collect.py          digest.py           render.py          send_email.py
 | Social Statements | Direct quotes from senior officials with analyst context |
 | Op-Eds & Academic | Think tank commentary and journal articles |
 | Calendar Watch | Upcoming events in the next 14-30 days |
-| Satellite & Location Watch | 10 monitored locations with status tracking; satellite imagery articles get dual placement as standalone news stories |
+| Satellite & Location Watch | 11 monitored locations with status tracking; satellite imagery articles get dual placement as standalone news stories |
 
 ---
 
