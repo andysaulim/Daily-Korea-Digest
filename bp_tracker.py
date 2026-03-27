@@ -19,9 +19,9 @@ DEFAULT_LOCATIONS = [
     {"name": "Tumangang–Khasan (NK-Russia border)", "status": "normal", "note": "No new reporting", "last_source_date": "unknown", "direction": ""},
     {"name": "Sinuiju–Dandong (NK-China border)", "status": "normal", "note": "No new reporting", "last_source_date": "unknown", "direction": ""},
     {"name": "Rason SEZ", "status": "normal", "note": "No new reporting", "last_source_date": "unknown", "direction": ""},
-    {"name": "Yellow Sea NLL", "status": "normal", "note": "Inter-Korean maritime boundary near five West Sea islands. Site of 1999, 2002 naval clashes and 2010 Yeonpyeong shelling.", "last_source_date": "baseline", "direction": ""},
-    {"name": "Yellow Sea PMZ", "status": "normal", "note": "Korea-China Provisional Measures Zone (2001 Fisheries Agreement). Joint fisheries management zone in central-southern Yellow Sea.", "last_source_date": "baseline", "direction": ""},
-    {"name": "Vostochny/Dunai (Russian Far East)", "status": "activity", "note": "Site of Sep 2023 Kim-Putin summit. NK-Russia arms supply chain assessed active via Khasan rail crossing. 10,000-12,000 DPRK troops deployed to Russia confirmed Oct-Nov 2024. UN Panel of Experts dissolved Apr 2024 after Russian veto.", "last_source_date": "2024-11", "direction": "up"},
+    {"name": "Yellow Sea NLL", "status": "normal", "note": "Sep 26, 2025: 140m DPRK merchant vessel Toksong crossed NLL near Baengnyeong Island, advanced 5km south. ROK Navy fired ~60 warning shots; vessel retreated after 1 hour. Ship switched AIS nationality to China and flew Chinese flag. First NLL intrusion in three years.", "last_source_date": "2025-09-26", "direction": ""},
+    {"name": "Yellow Sea PMZ", "status": "activity", "note": "Atlantic Amsterdam (converted oil rig, Chinese aquaculture platform) relocated out of PMZ Jan 27-28, 2026 to Weihai shipyard following Lee Jae-myung Beijing state visit. Two giant aquaculture cages (Shen Lan 1, Shen Lan 2) and 13 buoys remain in the PMZ.", "last_source_date": "2026-01-28", "direction": "down"},
+    {"name": "Vostochny/Dunai (Russian Far East)", "status": "activity", "note": "Jan 2026: Arms shipments slowed due to ice — one Russian vessel (likely Angara or Lady R) visited Rason, docked Jan 14 at arms export berth. Cargo routed to Vostochny. Since Sep 2023: 64 voyages by 4 vessels (Angara, Maria, Maya-1, Lady R) delivered ~15,800 containers (~4.2-5.8M munitions) from Rajin to Vostochny/Dunai.", "last_source_date": "2026-01", "direction": "up"},
 ]
 
 
