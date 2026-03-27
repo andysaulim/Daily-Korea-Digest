@@ -325,6 +325,14 @@ Return a digest object with:
   Jul 10 2026: BOK Monetary Policy Board meeting — rate decision.
   Jul 24 2026: Section 122 surcharge expiry — 150-day statutory limit; Congress must extend or tariff authority lapses.
   Jul 27 1953: Korean War armistice anniversary — 73rd anniversary in 2026.
+  Apr 2-3 2026: Macron state visit to Seoul — first European state visit of Lee administration. Trade, AI, nuclear energy cooperation on agenda.
+  Apr 7 2026: Constitutional amendment bill introduction deadline — must be introduced by this date for referendum to be held alongside Jun 3 local elections.
+  May 1: Labor Day (근로자의 날) — private sector holiday in South Korea.
+  May 5: Children's Day (어린이날) — public holiday.
+  May 14-15 2026: Trump-Xi summit in Beijing — rescheduled from March; could create diplomatic window for US-DPRK engagement.
+  May 20-23 2026: APEC Ministers Responsible for Trade Meeting (MRT) — Suzhou, China. Korea trade minister expected.
+  Jun 3 2026: ROK nationwide local elections — governors, mayors, councils. First electoral test for Lee Jae-myung administration. Public holiday.
+  Jun 11 2026: FIFA World Cup — South Korea first match (vs UEFA Playoff D winner), Guadalajara, Mexico.
   Aug 15: Korean Liberation Day (광복절) — national holiday; politically significant speeches by ROK president.
   Aug 2026: Ulchi Freedom Shield (UFS) — annual US-ROK combined military exercise, typically 11 days in mid-August. Expect DPRK rhetorical escalation.
   Sep 9: DPRK founding day — 78th anniversary in 2026. Watch for military parades, missile tests.
