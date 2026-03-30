@@ -358,7 +358,7 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
         "top_stories":       (3, 4),
         "overnight_items":   (3, 6),
         "business_economy":  (0, 6),
-        "calendar_watch":    (0, 5),
+        "calendar_watch":    (4, 5),
         "also_today":        (0, 6),
         "northeast_asia":    (0, 6),
         "social_statements": (0, 6),
@@ -526,6 +526,31 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
             if pk not in digest_prestige_keys:
                 warnings.append(
                     f"PRESTIGE OUTLET DROPPED: '{src}' had Korea articles in input but none appeared in digest")
+
+    # ── Cross-reference: every digest URL must exist in input feed ────────
+    if payload:
+        input_urls: set[str] = set()
+        for tier_key in ("tier1", "tier2", "tier3", "tier4"):
+            for a in (payload.get(tier_key) or []):
+                u = (a.get("url") or "").strip()
+                if u and u.startswith("http"):
+                    input_urls.add(u)
+        fabricated_count = 0
+        for section_key in _ALL_ITEM_SECTIONS:
+            for item in (digest.get(section_key) or []):
+                url = (item.get("url") or "").strip()
+                if url and url.startswith("http") and url not in input_urls:
+                    headline = (item.get("headline") or item.get("translated_title")
+                                or item.get("title") or "")[:80]
+                    fabricated_count += 1
+                    if fabricated_count <= 5:
+                        warnings.append(
+                            f"FABRICATED ARTICLE CRITICAL: URL not in input feed — {section_key}: "
+                            f"'{headline}' ({url})")
+        if fabricated_count:
+            warnings.append(
+                f"FABRICATED ARTICLES CRITICAL: {fabricated_count} article(s) have URLs not found "
+                f"in today's input feed — likely hallucinated")
 
     return warnings
 
