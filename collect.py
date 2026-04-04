@@ -23,7 +23,7 @@ def _gnews(query: str) -> str:
 
 TIER1_FEEDS = {
     # ── Korean English-language dailies ────────────────────────────────────
-    "Korea Herald":       "http://www.koreaherald.com/common/rss_xml.php?ct=102",
+    "Korea Herald":       "https://www.koreaherald.com/common/rss_xml.php?ct=102",
     "Korea Times":        "https://www.koreatimes.co.kr/www/rss/nation.xml",
     "Yonhap English":     "https://en.yna.co.kr/RSS/news.xml",
     "JoongAng Daily":     "https://koreajoongangdaily.joins.com/section/rss",

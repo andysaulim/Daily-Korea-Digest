@@ -1032,7 +1032,7 @@ def render(digest: dict) -> str:
     sentiment = digest.get("public_sentiment") or {}
     if sentiment and any(sentiment.values()):
         def _sentiment_cell(label, data, width="25%"):
-            if not data or not data.get("value"):
+            if not data or not data.get("value") or str(data.get("value")).strip().lower() in ("none", ""):
                 return f"""
                 <td width="{width}" align="center" style="padding:8px 6px;">
                   <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;">{label}</div>

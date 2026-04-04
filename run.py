@@ -212,12 +212,15 @@ def _dedup_digest(digest: dict) -> tuple[dict, list[str]]:
         # Restore items if removals would breach section floor
         if len(kept) < floor and deferred_removals:
             need = floor - len(kept)
-            restored = deferred_removals[-need:]
-            deferred_removals = deferred_removals[:-need]
+            restored = deferred_removals[:need]
+            deferred_removals = deferred_removals[need:]
             for item, _msg in restored:
                 kept.append(item)
                 headline, words, topics, companies = _headline_key(item)
                 seen.append((section_key, headline, words, topics, companies))
+                url = (item.get("url") or "").strip()
+                if url and url.startswith("http"):
+                    seen_urls_global[url] = section_key
 
         for _item, msg in deferred_removals:
             log.append(msg)
@@ -629,6 +632,7 @@ def main():
     from kcna_tracker import update_from_digest as kcna_update_from_digest
     from bp_tracker import update_from_digest as bp_update_from_digest
 
+    validation_passed = False
     for validation_attempt in range(1 + MAX_VALIDATION_RETRIES):
         # ── Step 2a: Pre-send validation gate ─────────────────────────────────
         validation_warnings = validate_digest(digest_data, payload=payload)
@@ -647,6 +651,7 @@ def main():
                 print()
             else:
                 print("\n✅  Validation passed — all checks OK")
+            validation_passed = True
             break
 
         if not retryable_warnings:
@@ -655,7 +660,7 @@ def main():
             for w in critical_warnings:
                 print(f"    • {w}")
             # Downgrade these so they don't block sending
-            critical_warnings = []
+            validation_passed = True
             break
 
         # Critical failures found
@@ -680,7 +685,7 @@ def main():
             print("    Fix the issues above or re-run. HTML still rendered for review.")
 
     # Only update trackers if digest passed validation (avoid corrupting state)
-    if not critical_warnings:
+    if validation_passed:
         update_from_digest(digest_data)
         kcna_update_from_digest(digest_data)
         bp_update_from_digest(digest_data)
@@ -688,7 +693,7 @@ def main():
         print("  ⚠  Skipping tracker updates due to critical validation failures")
 
     # ── Step 2b: Push flagged entries to databases ────────────────────────────
-    if not args.no_push and not critical_warnings:
+    if not args.no_push and validation_passed:
         push_summary = process_digest_entries(digest_data)
         if push_summary.get("nk_russia_added") or push_summary.get("provocations_added"):
             print(f"    NK-Russia: {push_summary.get('nk_russia_added', 0)} added, "
@@ -726,7 +731,7 @@ def main():
     )
 
     # ── Step 4: Send email ───────────────────────────────────────────────────
-    if critical_warnings:
+    if not validation_passed:
         print("\n🚫  Skipping email due to critical validation failures. Review latest.html.")
         import sys
         sys.exit(1)
