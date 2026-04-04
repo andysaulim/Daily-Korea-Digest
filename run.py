@@ -381,6 +381,16 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
         elif len(items) > max_ct:
             warnings.append(f"{label} CRITICAL: {len(items)} items (max {max_ct})")
 
+    # ── Morning memo uniqueness check ───────────────────────────────────
+    memo_items = digest.get("morning_memo") or []
+    if len(memo_items) >= 2:
+        memo_texts = [
+            (m.get("headline") or m.get("title") or m.get("text") or "").strip()
+            for m in memo_items
+        ]
+        if len(set(memo_texts)) < len(memo_texts):
+            warnings.append("MORNING MEMO: duplicate memo items detected — all 3 must be distinct")
+
     # ── RE: line must be present and substantive ─────────────────────────
     re_line = digest.get("re_line")
     if not re_line or len(str(re_line).strip()) < 10:
@@ -487,6 +497,20 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
     if digest_date and digest_date != today_str:
         warnings.append(f"DATE MISMATCH: digest says '{digest_date}', today is '{today_str}'")
 
+    # ── Stale calendar_watch dates ──────────────────────────────────────
+    today_date = datetime.now(ZoneInfo("America/New_York")).date()
+    for cal_item in (digest.get("calendar_watch") or []):
+        cal_date_str = (cal_item.get("date") or "").strip()
+        if cal_date_str:
+            try:
+                from dateutil.parser import parse as _date_parse
+                cal_date = _date_parse(cal_date_str, fuzzy=True).date()
+                if cal_date < today_date:
+                    headline = (cal_item.get("headline") or cal_item.get("title") or "")[:80]
+                    warnings.append(f"STALE CALENDAR: {headline} date is in the past")
+            except Exception:
+                pass  # unparseable date — skip silently
+
     # ── Public sentiment must have all 4 metrics ─────────────────────────
     sentiment = digest.get("public_sentiment") or {}
     missing_sentiment = [k for k in ("presidential_approval", "party_ruling",
@@ -514,11 +538,12 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
 
     if payload:
         prestige_in_input: dict[str, str] = {}  # canonical_key -> original source name
-        for a in (payload.get("tier1") or []):
-            src = (a.get("source") or "").strip()
-            pk = _prestige_key(src)
-            if pk and pk not in prestige_in_input:
-                prestige_in_input[pk] = src
+        for tier_key in ("tier1", "tier2", "tier3", "tier4"):
+            for a in (payload.get(tier_key) or []):
+                src = (a.get("source") or "").strip()
+                pk = _prestige_key(src)
+                if pk and pk not in prestige_in_input:
+                    prestige_in_input[pk] = src
         digest_prestige_keys: set[str] = set()
         for section_key in _ALL_ITEM_SECTIONS:
             for item in (digest.get(section_key) or []):
@@ -529,6 +554,21 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
             if pk not in digest_prestige_keys:
                 warnings.append(
                     f"PRESTIGE OUTLET DROPPED: '{src}' had Korea articles in input but none appeared in digest")
+
+    # ── Satellite imagery dual-placement check ──────────────────────────
+    imagery_report = digest.get("imagery_report")
+    if imagery_report and isinstance(imagery_report, dict):
+        source_links = imagery_report.get("source_links") or []
+        if source_links:
+            story_urls: set[str] = set()
+            for sk in ("top_stories", "overnight_items"):
+                for item in (digest.get(sk) or []):
+                    u = (item.get("url") or "").strip()
+                    if u:
+                        story_urls.add(u)
+            if not any(link in story_urls for link in source_links):
+                warnings.append(
+                    "IMAGERY DUAL PLACEMENT: imagery_report exists but no matching story in top_stories/overnight_items")
 
     # ── Cross-reference: every digest URL must exist in input feed ────────
     if payload:
