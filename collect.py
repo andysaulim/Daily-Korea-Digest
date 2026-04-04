@@ -543,11 +543,17 @@ def _collect_kim_tracker() -> list:
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _collect_markets() -> dict:
-    """Fetch KOSPI, Brent Crude, USD/KRW from Yahoo Finance API."""
+    """Fetch KOSPI, Brent Crude, USD/KRW from Yahoo Finance API with validation."""
     symbols = {
         "kospi": "^KS11",
         "brent": "BZ=F",
         "usd_krw": "KRW=X",
+    }
+    # Sanity ranges — if price falls outside, the API likely returned stale/bad data
+    _SANITY_RANGES = {
+        "kospi": (1500, 4500),      # KOSPI reasonable range
+        "brent": (40, 200),         # Brent crude $/barrel
+        "usd_krw": (1000, 1700),    # USD/KRW rate
     }
     def _fetch_symbol(key, symbol):
         try:
@@ -560,8 +566,20 @@ def _collect_markets() -> dict:
             meta = data["chart"]["result"][0]["meta"]
             price = meta.get("regularMarketPrice", 0)
             prev_close = meta.get("chartPreviousClose", meta.get("previousClose", price))
-            change_pct = ((price - prev_close) / prev_close * 100) if prev_close else 0
+            # Validate the market timestamp — reject data older than 5 days
             mkt_time = meta.get("regularMarketTime", 0)
+            if mkt_time:
+                from datetime import timedelta
+                data_age = datetime.now(timezone.utc) - datetime.fromtimestamp(mkt_time, tz=timezone.utc)
+                if data_age > timedelta(days=5):
+                    print(f"    ⚠  {key}: Yahoo data is {data_age.days} days old — rejecting")
+                    return key, {"value": "—", "change_pct": 0, "as_of": "", "stale": True}
+            # Sanity check price range
+            lo, hi = _SANITY_RANGES.get(key, (0, float("inf")))
+            if price and (price < lo or price > hi):
+                print(f"    ⚠  {key}: price ${price} outside sanity range ({lo}-{hi}) — rejecting")
+                return key, {"value": "—", "change_pct": 0, "as_of": "", "stale": True}
+            change_pct = ((price - prev_close) / prev_close * 100) if prev_close else 0
             as_of = ""
             if mkt_time:
                 as_of = datetime.fromtimestamp(mkt_time, tz=timezone.utc).strftime("%b %d")
