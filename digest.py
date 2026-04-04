@@ -31,9 +31,9 @@ SOURCE-OR-SKIP PRINCIPLE: For EVERY factual claim you write, you must be able to
 - DATES: For calendar_watch and on_this_day, only use dates that appear in (a) today's source articles, (b) the VERIFIED KOREA DATES list, or (c) the baseline references in this prompt. Do NOT generate dates from memory — wrong dates destroy credibility.
 - EVERY ARTICLE MUST EXIST IN THE INPUT: Every item in top_stories, overnight_items, opeds_today, also_today, business_economy, northeast_asia, and social_statements MUST correspond to an actual article from the input data above — with a real URL from that input. Do NOT generate articles from your training data. Do NOT present old events (e.g. a 2022 NATO summit) as today's news. Do NOT fabricate generic think tank analyses (e.g. "CFR examines South Korea's security challenges") when no such article exists in today's feed. If a section has fewer qualifying articles than its target count, return fewer items or an empty array. An empty section is ALWAYS better than a fabricated entry.
 - THINK TANK FABRICATION — HARD BLOCK: You have a strong tendency to fabricate generic-sounding think tank articles from CSIS, CFR, Brookings, Carnegie, RAND, etc. when the feed is thin. These fabrications follow a telltale pattern: vague titles ("examines evolving security environment", "argues for alliance modernization", "analyzes expanding dimensions"), no specific data points, and no real URL. STOP. If a think tank article does not appear in the input data with a real URL, it does not exist. Do NOT create it. This applies to ALL sections — opeds_today, overnight_items, top_stories, also_today. Violating this rule destroys the digest's credibility with expert readers who will immediately recognize a fabricated entry.
-CURRENT POLITICAL LEADERS — REFERENCE (as of March 2026, update from today's articles if changed):
-- ROK President: Lee Jae-myung (이재명), Democratic Party, inaugurated Feb 2026
-- ROK PM: Han Duck-soo (한덕수) (acting/holdover — update if today's articles name a new PM)
+CURRENT POLITICAL LEADERS — REFERENCE (as of April 2026, update from today's articles if changed):
+- ROK President: Lee Jae-myung (이재명), Democratic Party, inaugurated Feb 25 2026
+- ROK PM: update from today's articles if a new PM is named; check against latest reporting
 - Japan PM: Takaichi Sanae (高市早苗), LDP, took office Nov 2025 (NOT Kishida, NOT Ishiba — both are former PMs)
 - US President: Donald Trump (2nd term, inaugurated Jan 2025)
 - US SecState: Marco Rubio; US SecDef: Pete Hegseth; US NSA: Mike Waltz
@@ -560,7 +560,7 @@ def generate_digest(payload: dict, db_context: str = "") -> dict:
     for attempt in range(MAX_ATTEMPTS):
         try:
             # Use Sonnet for initial generation, Opus for expansion retries
-            retry_model = FAST_MODEL if attempt == 0 else None
+            retry_model = FAST_MODEL if attempt == 0 else PRIMARY_MODEL
             if attempt == 0 or digest is None:
                 # First attempt, or previous attempt failed to produce any output
                 digest = _call_claude(client, user_prompt, model=retry_model)
@@ -680,7 +680,7 @@ def regenerate_digest(payload: dict, previous_digest: dict,
         "- If word count is too low: write more substantive body text for each story "
         "(2-3 sentences per top_stories, 2-3 per overnight_items) and add more items.\n"
         "- If top_stories count is too low: include at least 3 top stories from the articles.\n"
-        "- If overnight_items count is too low: include at least 6 overnight_items drawn from "
+        "- If overnight_items count is too low: include at least 4 overnight_items (max 6) drawn from "
         "DIVERSE sources (Korea Herald, JoongAng, Reuters, AP, Nikkei, SCMP — NOT all Yonhap). "
         "A post-processing filter removes excess items from any single source, so if you "
         "put 6 Yonhap items the section will shrink to 2 and fail validation again.\n"

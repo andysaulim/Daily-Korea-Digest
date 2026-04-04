@@ -70,14 +70,19 @@ def update_from_digest(digest: dict):
     kcna = digest.get("kcna_delta") or {}
     if kcna.get("kim_appearance_today"):
         date_str = digest.get("digest_date", datetime.now(timezone.utc).strftime("%Y-%m-%d"))
-        # Normalize date format (handle "Sunday, 22 March 2026" etc.)
-        for fmt in ("%Y-%m-%d", "%A, %d %B %Y", "%d %B %Y", "%B %d, %Y"):
+        # Normalize date format (handle "Friday, April 4, 2026" etc.)
+        parsed_ok = False
+        for fmt in ("%Y-%m-%d", "%A, %B %d, %Y", "%A, %d %B %Y", "%d %B %Y", "%B %d, %Y"):
             try:
                 parsed = datetime.strptime(date_str, fmt)
                 date_str = parsed.strftime("%Y-%m-%d")
+                parsed_ok = True
                 break
             except ValueError:
                 continue
+        if not parsed_ok:
+            # Last resort: use today's date
+            date_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         activity = kcna.get("kim_activity", "Public appearance reported")
         record_appearance(date_str, activity, "KCNA digest")
 

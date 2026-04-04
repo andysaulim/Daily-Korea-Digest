@@ -556,43 +556,49 @@ def _collect_markets() -> dict:
         "usd_krw": (1000, 1700),    # USD/KRW rate
     }
     def _fetch_symbol(key, symbol):
-        try:
-            url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?range=2d&interval=1d"
-            resp = requests.get(url, timeout=10, headers={
-                "User-Agent": "Mozilla/5.0"
-            })
-            resp.raise_for_status()
-            data = resp.json()
-            meta = data["chart"]["result"][0]["meta"]
-            price = meta.get("regularMarketPrice", 0)
-            prev_close = meta.get("chartPreviousClose", meta.get("previousClose", price))
-            # Validate the market timestamp — reject data older than 5 days
-            mkt_time = meta.get("regularMarketTime", 0)
-            if mkt_time:
-                from datetime import timedelta
-                data_age = datetime.now(timezone.utc) - datetime.fromtimestamp(mkt_time, tz=timezone.utc)
-                if data_age > timedelta(days=5):
-                    print(f"    ⚠  {key}: Yahoo data is {data_age.days} days old — rejecting")
+        from datetime import timedelta
+        last_error = None
+        for retry in range(3):
+            try:
+                url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?range=2d&interval=1d"
+                resp = requests.get(url, timeout=10, headers={
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+                })
+                resp.raise_for_status()
+                data = resp.json()
+                meta = data["chart"]["result"][0]["meta"]
+                price = meta.get("regularMarketPrice", 0)
+                prev_close = meta.get("chartPreviousClose", meta.get("previousClose", price))
+                # Validate the market timestamp — reject data older than 5 days
+                mkt_time = meta.get("regularMarketTime", 0)
+                if mkt_time:
+                    data_age = datetime.now(timezone.utc) - datetime.fromtimestamp(mkt_time, tz=timezone.utc)
+                    if data_age > timedelta(days=5):
+                        print(f"    ⚠  {key}: Yahoo data is {data_age.days} days old — rejecting")
+                        return key, {"value": "—", "change_pct": 0, "as_of": "", "stale": True}
+                # Sanity check price range
+                lo, hi = _SANITY_RANGES.get(key, (0, float("inf")))
+                if price and (price < lo or price > hi):
+                    print(f"    ⚠  {key}: price ${price} outside sanity range ({lo}-{hi}) — rejecting")
                     return key, {"value": "—", "change_pct": 0, "as_of": "", "stale": True}
-            # Sanity check price range
-            lo, hi = _SANITY_RANGES.get(key, (0, float("inf")))
-            if price and (price < lo or price > hi):
-                print(f"    ⚠  {key}: price ${price} outside sanity range ({lo}-{hi}) — rejecting")
-                return key, {"value": "—", "change_pct": 0, "as_of": "", "stale": True}
-            change_pct = ((price - prev_close) / prev_close * 100) if prev_close else 0
-            as_of = ""
-            if mkt_time:
-                as_of = datetime.fromtimestamp(mkt_time, tz=timezone.utc).strftime("%b %d")
-            if key == "usd_krw":
-                value = f"{price:,.2f}"
-            elif key == "kospi":
-                value = f"{price:,.2f}"
-            else:
-                value = f"{price:.2f}"
-            return key, {"value": value, "change_pct": round(change_pct, 2), "as_of": as_of}
-        except (requests.RequestException, KeyError, ValueError, TypeError) as e:
-            print(f"    ⚠  Market data error ({key}): {e}")
-            return key, {"value": "—", "change_pct": 0, "as_of": ""}
+                change_pct = ((price - prev_close) / prev_close * 100) if prev_close and prev_close != 0 else 0
+                as_of = ""
+                if mkt_time:
+                    as_of = datetime.fromtimestamp(mkt_time, tz=timezone.utc).strftime("%b %d")
+                if key == "usd_krw":
+                    value = f"{price:,.2f}"
+                elif key == "kospi":
+                    value = f"{price:,.2f}"
+                else:
+                    value = f"{price:.2f}"
+                return key, {"value": value, "change_pct": round(change_pct, 2), "as_of": as_of}
+            except (requests.RequestException, KeyError, ValueError, TypeError) as e:
+                last_error = e
+                if retry < 2:
+                    import time as _time
+                    _time.sleep(1 * (retry + 1))
+        print(f"    ⚠  Market data error ({key}) after 3 tries: {last_error}")
+        return key, {"value": "—", "change_pct": 0, "as_of": ""}
 
     result = {}
     with ThreadPoolExecutor(max_workers=6) as pool:
