@@ -194,7 +194,7 @@ def render(digest: dict) -> str:
           <div style="font-size:10px;color:rgba(255,255,255,0.55);">{word_count:,} words &middot; {read_min} min read</div>
         </td>
       </tr></table>
-      {"<div style='margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.15);font-size:13px;color:rgba(255,255,255,0.85);font-family:Georgia,serif;'><strong style=" + '"' + "color:rgba(255,255,255,0.5);" + '"' + ">RE:</strong> " + re_line + "</div>" if re_line else ""}
+      {"<div style='margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.15);font-size:13px;color:rgba(255,255,255,0.85);font-family:Georgia,serif;'><strong style='color:rgba(255,255,255,0.5);'>RE:</strong> " + re_line + "</div>" if re_line else ""}
     </div>
     """)
 
@@ -520,7 +520,7 @@ def render(digest: dict) -> str:
             {phrase_html}
             {omissions_html}
             {senior_html}
-            {"<div style='margin-top:14px;padding:10px 14px;background:rgba(255,255,255,0.06);border-radius:4px;border-left:3px solid #E8DCC8;font-size:13px;line-height:1.6;color:#E0E0E0;font-family:Georgia,serif;'><strong style=" + chr(34) + "color:#E8DCC8;" + chr(34) + ">Bottom line:</strong> " + bottom_line + "</div>" if bottom_line else ""}
+            {"<div style='margin-top:14px;padding:10px 14px;background:rgba(255,255,255,0.06);border-radius:4px;border-left:3px solid #E8DCC8;font-size:13px;line-height:1.6;color:#E0E0E0;font-family:Georgia,serif;'><strong style='color:#E8DCC8;'>Bottom line:</strong> " + bottom_line + "</div>" if bottom_line else ""}
           </div>
         </div>
         """)
@@ -702,7 +702,6 @@ def render(digest: dict) -> str:
             <div style="margin-top:20px;">
               <div style="padding:8px 0;border-bottom:1px solid #1B2A4A;margin-bottom:4px;">
                 <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#1B2A4A;">Upcoming</span>
-                <span style="font-size:11px;color:#888;margin-left:8px;">14 days</span>
               </div>
               {cal_items}
             </div>"""
@@ -824,9 +823,7 @@ def render(digest: dict) -> str:
               </div>
               <div style="font-size:11px;color:#555;line-height:1.4;margin-bottom:8px;">{h_note}</div>
               {s122_line}
-              <table class="tariff-sector" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:8px;border-top:1px solid #F0E0E0;">
-                {sector_rows}
-              </table>
+              {'<table class="tariff-sector" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:8px;border-top:1px solid #F0E0E0;">' + sector_rows + '</table>' if sector_rows.strip() else ''}
               <div style="margin-top:8px;font-size:10px;color:#999;">{last_change}</div>
               {next_line}
             </div>"""
