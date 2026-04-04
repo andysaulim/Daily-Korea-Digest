@@ -499,17 +499,20 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
 
     # ── Stale calendar_watch dates ──────────────────────────────────────
     today_date = datetime.now(ZoneInfo("America/New_York")).date()
+    _MONTH_MAP = {"jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6,
+                  "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12}
     for cal_item in (digest.get("calendar_watch") or []):
-        cal_date_str = (cal_item.get("date") or "").strip()
-        if cal_date_str:
+        month_str = str(cal_item.get("month", "")).strip().lower()[:3]
+        day_num = cal_item.get("day")
+        if month_str in _MONTH_MAP and day_num:
             try:
-                from dateutil.parser import parse as _date_parse
-                cal_date = _date_parse(cal_date_str, fuzzy=True).date()
+                from datetime import date as _date
+                cal_date = _date(today_date.year, _MONTH_MAP[month_str], int(day_num))
                 if cal_date < today_date:
-                    headline = (cal_item.get("headline") or cal_item.get("title") or "")[:80]
-                    warnings.append(f"STALE CALENDAR: {headline} date is in the past")
-            except Exception:
-                pass  # unparseable date — skip silently
+                    headline = (cal_item.get("headline") or "")[:80]
+                    warnings.append(f"STALE CALENDAR: '{headline}' ({month_str.upper()} {day_num}) is in the past")
+            except (ValueError, TypeError):
+                pass
 
     # ── Public sentiment must have all 4 metrics ─────────────────────────
     sentiment = digest.get("public_sentiment") or {}
