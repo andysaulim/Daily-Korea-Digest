@@ -23,7 +23,7 @@ def _gnews(query: str) -> str:
 
 TIER1_FEEDS = {
     # ── Korean English-language dailies ────────────────────────────────────
-    "Korea Herald":       "http://www.koreaherald.com/common/rss_xml.php?ct=102",
+    "Korea Herald":       "https://www.koreaherald.com/common/rss_xml.php?ct=102",
     "Korea Times":        "https://www.koreatimes.co.kr/www/rss/nation.xml",
     "Yonhap English":     "https://en.yna.co.kr/RSS/news.xml",
     "JoongAng Daily":     "https://koreajoongangdaily.joins.com/section/rss",
@@ -46,9 +46,11 @@ TIER1_FEEDS = {
     "SBS":                _gnews("site:news.sbs.co.kr"),
     "YTN":                _gnews("site:ytn.co.kr"),
     "Channel A":          _gnews("site:ichannela.com"),
+    "Arirang News":       _gnews("Korea+site:arirang.com"),
     # ── Korean business dailies ──────────────────────────────────────────
     "매일경제":            _gnews("site:mk.co.kr"),
     "한국경제":            _gnews("site:hankyung.com"),
+    "Korea Economic Daily": _gnews("Korea+site:kedglobal.com"),
     # ── Major international — Korea correspondents ────────────────────────
     "WSJ Korea":          _gnews("Korea+site:wsj.com"),
     "NYT Korea":          _gnews("Korea+site:nytimes.com"),
@@ -59,6 +61,8 @@ TIER1_FEEDS = {
     "Bloomberg Korea":    _gnews("Korea+site:bloomberg.com"),
     "BBC Korea":          _gnews("Korea+site:bbc.com"),
     "CNN Korea":          _gnews("Korea+site:cnn.com"),
+    "CNBC Korea":         _gnews("Korea+site:cnbc.com"),
+    "MSNBC Korea":        _gnews("Korea+site:msnbc.com"),
     "Guardian Korea":     _gnews("Korea+site:theguardian.com"),
     "Al Jazeera Korea":   _gnews("Korea+site:aljazeera.com"),
     # ── Regional Asia ─────────────────────────────────────────────────────
@@ -112,6 +116,8 @@ TIER2_FEEDS = {
     "RAND":              ("https://www.rand.org/topics/north-korea.xml", "A"),
     "CFR":               (_gnews("Korea+site:cfr.org"), "A"),
     "38 North":          (_gnews("site:38north.org"), "A"),
+    "AccessDPRK":        (_gnews("site:accessdprk.com"), "A"),
+    "ArmsControlWonk":   (_gnews("site:armscontrolwonk.com"), "A"),
     "Stimson":           ("https://www.stimson.org/feed/", "B"),
     "IISS":              (_gnews("Korea+site:iiss.org"), "B"),
     "ASAN Institute":    (_gnews("Korea+site:asaninst.org"), "B"),
@@ -199,9 +205,9 @@ PRESTIGE_JOURNALISTS = {
     "Sotaro Suzuki", "Takashi Umekawa",
 }
 
-REQUEST_TIMEOUT = 12
+REQUEST_TIMEOUT = 8
 HEADERS = {"User-Agent": "CSISKoreaDigest/1.0"}
-MAX_WORKERS = 20  # Thread pool size for parallel fetching
+MAX_WORKERS = 25  # Thread pool size for parallel fetching
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -216,9 +222,9 @@ def _parse_feed(url: str) -> list:
             return feedparser.parse(resp.content).entries
         except (requests.ConnectionError, requests.Timeout) as e:
             if attempt < 2:
-                time.sleep(2 ** (attempt + 1))
+                time.sleep(2 * (attempt + 1))
                 continue
-            print(f"    ⚠  Feed error (after retries): {e}")
+            print(f"    ⚠  Feed error (after 3 tries): {e}")
             return []
         except Exception as e:
             print(f"    ⚠  Feed error: {e}")
@@ -240,6 +246,13 @@ def _entry_to_article(entry, source: str, lang: str = "EN", extra: dict | None =
             pub_date = datetime(*parsed[:6], tzinfo=timezone.utc).isoformat()
             break
 
+    # Extract RSS category tags (feedparser stores them in entry.tags)
+    tags = []
+    for tag in getattr(entry, "tags", []) or []:
+        term = tag.get("term", "").strip()
+        if term:
+            tags.append(term)
+
     article = {
         "title": title,
         "url": link,
@@ -248,6 +261,8 @@ def _entry_to_article(entry, source: str, lang: str = "EN", extra: dict | None =
         "lang": lang,
         "pub_date": pub_date,
     }
+    if tags:
+        article["tags"] = tags
     if extra:
         article.update(extra)
     return article
@@ -260,6 +275,18 @@ def _is_recent(entry, hours: int = 48) -> bool:
         if parsed:
             return datetime(*parsed[:6], tzinfo=timezone.utc) >= cutoff
     return True
+
+
+_ENTERTAINMENT_FILTER = re.compile(
+    r"\bk-?pop\b|\bbts\b|\bblackpink\b|\bnewjeans\b|\baespa\b|\bstray\s*kids\b"
+    r"|\btwice\b|\b(?:k-?)?drama\b|\bidol\b|\bkcon\b|\bhybe\b|\bjyp\b|\bsm\s*ent",
+    re.IGNORECASE,
+)
+
+
+def _is_entertainment(entry) -> bool:
+    text = f"{entry.get('title', '')} {entry.get('summary', entry.get('description', ''))}"
+    return bool(_ENTERTAINMENT_FILTER.search(text))
 
 
 def _is_korea_related(entry) -> bool:
@@ -333,6 +360,8 @@ def _collect_tier1() -> list:
                 continue
             if not _is_korea_related(entry):
                 continue
+            if _is_entertainment(entry):
+                continue
             article = _entry_to_article(entry, source, lang=lang)
             article = _flag_journalist(article)
             articles.append(article)
@@ -386,6 +415,116 @@ def _collect_tier4() -> list:
     return _dedup(articles)
 
 
+def _scrape_kcna_watch() -> list:
+    """Scrape KCNA Watch newstream page for today's article headlines and categories.
+    Returns a list of dicts with title, url, category, pub_date."""
+    articles = []
+    try:
+        resp = requests.get(
+            "https://kcnawatch.org/newstream/",
+            timeout=REQUEST_TIMEOUT,
+            headers={**HEADERS, "Accept": "text/html"},
+        )
+        resp.raise_for_status()
+        html = resp.text
+
+        # KCNA Watch uses article entries with titles and category tags
+        # Extract article blocks: <article ...> ... </article> or <h2><a href="...">title</a></h2>
+        # Pattern for newstream entries: links with titles and category spans
+        import re as _re
+
+        # Match article links: <a href="/newstream/..." ...>Title</a>
+        link_pattern = _re.compile(
+            r'<a\s+href="(https?://kcnawatch\.org/newstream/\d{4}/\d{2}/\d{2}/[^"]+)"[^>]*>\s*([^<]+?)\s*</a>',
+            _re.IGNORECASE,
+        )
+        # Match category badges near articles
+        cat_pattern = _re.compile(
+            r'<span[^>]*class="[^"]*category[^"]*"[^>]*>\s*([^<]+?)\s*</span>',
+            _re.IGNORECASE,
+        )
+
+        today_str = datetime.now(timezone.utc).strftime("%Y/%m/%d")
+        yesterday_str = (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y/%m/%d")
+
+        seen_urls = set()
+        for match in link_pattern.finditer(html):
+            url, title = match.group(1), match.group(2).strip()
+            if url in seen_urls:
+                continue
+            # Only include today's or yesterday's articles
+            if today_str not in url and yesterday_str not in url:
+                continue
+            seen_urls.add(url)
+
+            # Try to find a category near this link (within 500 chars before)
+            start = max(0, match.start() - 500)
+            context = html[start:match.end() + 200]
+            cat_match = cat_pattern.search(context)
+            category = cat_match.group(1).strip() if cat_match else "Uncategorized"
+
+            articles.append({
+                "title": re.sub(r"<[^>]+>", "", title).strip(),
+                "url": url,
+                "category": category,
+            })
+
+        print(f"  ── KCNA Watch scrape: {len(articles)} articles from newstream page")
+    except Exception as e:
+        print(f"  ── KCNA Watch scrape: ⚠ failed ({e})")
+
+    return articles
+
+
+def _build_kcna_summary(tier4_articles: list, scraped_articles: list) -> dict:
+    """Build a structured summary of today's KCNA output for the digest prompt."""
+    # Combine sources for article count
+    all_titles = set()
+    categories = {}
+    sources = {}
+
+    for art in tier4_articles:
+        title = art.get("title", "").strip()
+        if title:
+            all_titles.add(title.lower())
+        src = art.get("source", "Unknown")
+        sources[src] = sources.get(src, 0) + 1
+        for tag in art.get("tags", []):
+            categories[tag] = categories.get(tag, 0) + 1
+
+    for art in scraped_articles:
+        title = art.get("title", "").strip()
+        if title and title.lower() not in all_titles:
+            all_titles.add(title.lower())
+        cat = art.get("category", "Uncategorized")
+        if cat:
+            categories[cat] = categories.get(cat, 0) + 1
+
+    # Build headline list from scraped articles (more structured)
+    headlines = []
+    for art in scraped_articles:
+        entry = art.get("title", "")
+        cat = art.get("category", "")
+        if entry:
+            headlines.append(f"[{cat}] {entry}" if cat else entry)
+
+    # Also add tier4 RSS headlines not already covered
+    scraped_titles = {a.get("title", "").lower() for a in scraped_articles}
+    for art in tier4_articles:
+        title = art.get("title", "")
+        if title and title.lower() not in scraped_titles:
+            tags = art.get("tags", [])
+            tag_str = tags[0] if tags else art.get("source", "")
+            headlines.append(f"[{tag_str}] {title}")
+
+    return {
+        "total_articles": len(all_titles),
+        "categories": dict(sorted(categories.items(), key=lambda x: -x[1])),
+        "sources": sources,
+        "headlines": headlines[:50],  # Cap at 50 headlines
+    }
+
+
 def _collect_kim_tracker() -> list:
     """Collect recent Kim Jong Un appearance/activity reports from multiple sources."""
     articles = []
@@ -404,47 +543,78 @@ def _collect_kim_tracker() -> list:
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _collect_markets() -> dict:
-    """Fetch KOSPI, Brent Crude, USD/KRW from Yahoo Finance API."""
+    """Fetch KOSPI, Brent Crude, USD/KRW from Yahoo Finance API with validation."""
     symbols = {
         "kospi": "^KS11",
         "brent": "BZ=F",
         "usd_krw": "KRW=X",
     }
-    result = {}
-    for key, symbol in symbols.items():
-        try:
-            url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?range=2d&interval=1d"
-            resp = requests.get(url, timeout=10, headers={
-                "User-Agent": "Mozilla/5.0"
-            })
-            resp.raise_for_status()
-            data = resp.json()
-            meta = data["chart"]["result"][0]["meta"]
-            price = meta.get("regularMarketPrice", 0)
-            prev_close = meta.get("chartPreviousClose", meta.get("previousClose", price))
-            change_pct = ((price - prev_close) / prev_close * 100) if prev_close else 0
-            # Extract market timestamp for "as of" display
-            mkt_time = meta.get("regularMarketTime", 0)
-            as_of = ""
-            if mkt_time:
-                as_of = datetime.fromtimestamp(mkt_time, tz=timezone.utc).strftime("%b %d")
-            # Format value
-            if key == "usd_krw":
-                value = f"{price:,.2f}"
-            elif key == "kospi":
-                value = f"{price:,.2f}"
-            else:
-                value = f"{price:.2f}"
-            result[key] = {"value": value, "change_pct": round(change_pct, 2), "as_of": as_of}
-        except Exception as e:
-            print(f"    ⚠  Market data error ({key}): {e}")
-            result[key] = {"value": "—", "change_pct": 0, "as_of": ""}
+    # Sanity ranges — if price falls outside, the API likely returned stale/bad data
+    _SANITY_RANGES = {
+        "kospi": (1500, 4500),      # KOSPI reasonable range
+        "brent": (40, 200),         # Brent crude $/barrel
+        "usd_krw": (1000, 1700),    # USD/KRW rate
+    }
+    def _fetch_symbol(key, symbol):
+        from datetime import timedelta
+        last_error = None
+        for retry in range(3):
+            try:
+                url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?range=2d&interval=1d"
+                resp = requests.get(url, timeout=10, headers={
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+                })
+                resp.raise_for_status()
+                data = resp.json()
+                meta = data["chart"]["result"][0]["meta"]
+                price = meta.get("regularMarketPrice", 0)
+                prev_close = meta.get("chartPreviousClose", meta.get("previousClose", price))
+                # Validate the market timestamp — reject data older than 5 days
+                mkt_time = meta.get("regularMarketTime", 0)
+                if mkt_time:
+                    data_age = datetime.now(timezone.utc) - datetime.fromtimestamp(mkt_time, tz=timezone.utc)
+                    if data_age > timedelta(days=5):
+                        print(f"    ⚠  {key}: Yahoo data is {data_age.days} days old — rejecting")
+                        return key, {"value": "—", "change_pct": 0, "as_of": "", "stale": True}
+                # Sanity check price range
+                lo, hi = _SANITY_RANGES.get(key, (0, float("inf")))
+                if price and (price < lo or price > hi):
+                    print(f"    ⚠  {key}: price ${price} outside sanity range ({lo}-{hi}) — rejecting")
+                    return key, {"value": "—", "change_pct": 0, "as_of": "", "stale": True}
+                change_pct = ((price - prev_close) / prev_close * 100) if prev_close and prev_close != 0 else 0
+                as_of = ""
+                if mkt_time:
+                    as_of = datetime.fromtimestamp(mkt_time, tz=timezone.utc).strftime("%b %d")
+                if key == "usd_krw":
+                    value = f"{price:,.2f}"
+                elif key == "kospi":
+                    value = f"{price:,.2f}"
+                else:
+                    value = f"{price:.2f}"
+                return key, {"value": value, "change_pct": round(change_pct, 2), "as_of": as_of}
+            except (requests.RequestException, KeyError, ValueError, TypeError) as e:
+                last_error = e
+                if retry < 2:
+                    import time as _time
+                    _time.sleep(1 * (retry + 1))
+        print(f"    ⚠  Market data error ({key}) after 3 tries: {last_error}")
+        return key, {"value": "—", "change_pct": 0, "as_of": ""}
 
-    # ROK economic indicators (BOK rate, monthly exports, GDP estimate)
-    # Sourced from BOK ECOS API / MOTIE / KOSTAT — fallback to static latest known
-    result["bok_rate"] = _fetch_bok_rate()
-    result["monthly_exports"] = _fetch_monthly_exports()
-    result["gdp_estimate"] = _fetch_gdp_estimate()
+    result = {}
+    with ThreadPoolExecutor(max_workers=6) as pool:
+        # Market prices + economic indicators in one pool
+        symbol_futures = {pool.submit(_fetch_symbol, k, v): k for k, v in symbols.items()}
+        bok_f = pool.submit(_fetch_bok_rate)
+        cds_f = pool.submit(_fetch_korea_cds)
+        gdp_f = pool.submit(_fetch_gdp_estimate)
+
+        for future in as_completed(symbol_futures):
+            k, v = future.result()
+            result[k] = v
+
+    result["bok_rate"] = bok_f.result()
+    result["korea_cds"] = cds_f.result()
+    result["gdp_estimate"] = gdp_f.result()
 
     # Always return market data — even if Yahoo Finance fails, BOK indicators
     # have hardcoded fallbacks so there's always something to show
@@ -464,7 +634,8 @@ def _fetch_bok_rate() -> dict:
             rows = resp.json().get("StatisticSearch", {}).get("row", [])
             if rows:
                 val = rows[-1].get("DATA_VALUE", "")
-                return {"value": f"{float(val):.2f}%", "last_change": ""}
+                if val:
+                    return {"value": f"{float(val):.2f}%", "last_change": ""}
     except Exception:
         pass
     # Fallback: last known BOK rate (updated manually if API unavailable)
@@ -473,127 +644,51 @@ def _fetch_bok_rate() -> dict:
     return {"value": "2.50%", "last_change": fallback_date}
 
 
-def _fetch_monthly_exports() -> dict:
-    """Fetch latest monthly export figure from multiple sources with as_of date."""
-    # Source 1: BOK ECOS — trade balance series (monthly exports in $M)
+def _fetch_korea_cds() -> dict:
+    """Fetch Korea 5-year CDS spread (bps) from WorldGovernmentBonds."""
     try:
-        now = datetime.now(timezone.utc)
-        start = (now - timedelta(days=120)).strftime("%Y%m")
-        end = now.strftime("%Y%m")
-        url = f"https://ecos.bok.or.kr/api/StatisticSearch/json/en/1/5/403Y014/M/{start}/{end}/000000/"
-        resp = requests.get(url, timeout=10, headers={"User-Agent": "Mozilla/5.0"})
+        url = "https://www.worldgovernmentbonds.com/cds-historical-data/south-korea/5-years/"
+        resp = requests.get(url, timeout=12, headers={
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        })
         if resp.ok:
-            rows = resp.json().get("StatisticSearch", {}).get("row", [])
-            if len(rows) >= 2:
-                latest = rows[-1]
-                prev = rows[-2]
-                val = float(latest.get("DATA_VALUE", 0))
-                prev_val = float(prev.get("DATA_VALUE", 0))
-                change = ((val - prev_val) / prev_val * 100) if prev_val else 0
-                val_b = val / 1000
-                time_str = latest.get("TIME", "")
-                month_label = ""
-                if time_str and len(str(time_str)) >= 6:
+            # Parse latest two CDS values from the history table
+            # Table rows contain: Date | CDS spread (bps)
+            matches = re.findall(
+                r'<td[^>]*>\s*(\d{1,2}\s+\w+\s+\d{4})\s*</td>\s*<td[^>]*>\s*([\d.]+)\s*</td>',
+                resp.text
+            )
+            if len(matches) >= 2:
+                latest_date, latest_val = matches[0]
+                _, prev_val = matches[1]
+                spread = float(latest_val)
+                prev_spread = float(prev_val)
+                change = spread - prev_spread
+                as_of = ""
+                try:
+                    as_of = datetime.strptime(latest_date.strip(), "%d %B %Y").strftime("%b %d")
+                except ValueError:
                     try:
-                        month_label = datetime.strptime(str(time_str)[:6], "%Y%m").strftime("%b %Y")
+                        as_of = datetime.strptime(latest_date.strip(), "%d %b %Y").strftime("%b %d")
                     except ValueError:
                         pass
-                return {"value": f"${val_b:.1f}B", "change_pct": round(change, 1), "month": month_label, "as_of": month_label}
-            elif rows:
-                val = float(rows[-1].get("DATA_VALUE", 0))
-                val_b = val / 1000
-                time_str = rows[-1].get("TIME", "")
-                month_label = ""
-                if time_str and len(str(time_str)) >= 6:
-                    try:
-                        month_label = datetime.strptime(str(time_str)[:6], "%Y%m").strftime("%b %Y")
-                    except ValueError:
-                        pass
-                return {"value": f"${val_b:.1f}B", "change_pct": 0, "month": month_label, "as_of": month_label}
+                return {"value": f"{spread:.0f}", "change_bps": round(change, 1), "as_of": as_of}
+            elif matches:
+                spread = float(matches[0][1])
+                return {"value": f"{spread:.0f}", "change_bps": 0, "as_of": ""}
     except Exception as e:
-        print(f"    ⚠  BOK exports API error: {e}")
+        print(f"    ⚠  Korea CDS fetch error: {e}")
 
-    # Source 2: FRED API — South Korea exports (series XTEXVA01KRM667S)
-    # Free API, no key required for basic access
-    fred_key = os.environ.get("FRED_API_KEY", "")
-    if fred_key:
-        try:
-            fred_url = f"https://api.stlouisfed.org/fred/series/observations?series_id=XTEXVA01KRM667S&sort_order=desc&limit=2&api_key={fred_key}&file_type=json"
-            resp = requests.get(fred_url, timeout=10)
-            if resp.ok:
-                obs = resp.json().get("observations", [])
-                if len(obs) >= 2:
-                    val = float(obs[0]["value"])
-                    prev_val = float(obs[1]["value"])
-                    change = ((val - prev_val) / prev_val * 100) if prev_val else 0
-                    val_b = val / 1e9 if val > 1e6 else val  # FRED may report in USD or millions
-                    date_str = obs[0].get("date", "")
-                    month_label = ""
-                    if date_str:
-                        try:
-                            month_label = datetime.strptime(date_str, "%Y-%m-%d").strftime("%b %Y")
-                        except ValueError:
-                            pass
-                    if 20 < val_b < 100:
-                        return {"value": f"${val_b:.1f}B", "change_pct": round(change, 1), "month": month_label, "as_of": month_label}
-        except Exception as e:
-            print(f"    ⚠  FRED exports API error: {e}")
-
-    # Source 3: Korea Customs Service (KCS) open data API
-    try:
-        now = datetime.now(timezone.utc)
-        ym = (now - timedelta(days=45)).strftime("%Y%m")  # Latest complete month
-        kcs_url = f"https://unipass.customs.go.kr/ets/index.do?command=searchTotalTradeList&cntyCd=&tradeKind=EXP&priodKind=MON&priodFr={ym}&priodTo={ym}"
-        resp = requests.get(kcs_url, timeout=10, headers={"User-Agent": "Mozilla/5.0"})
-        if resp.ok:
-            data = resp.json() if resp.headers.get("content-type", "").startswith("application/json") else {}
-            items = data.get("items", [])
-            if items:
-                val = float(items[0].get("balPayAmt", 0))
-                val_b = val / 1000 if val > 100 else val  # KCS reports in $M
-                month_label = datetime.strptime(ym, "%Y%m").strftime("%b %Y")
-                if 20 < val_b < 100:
-                    return {"value": f"${val_b:.1f}B", "change_pct": 0, "month": month_label, "as_of": month_label}
-    except Exception:
-        pass
-
-    # Source 4: MOTIE / Korea Customs Service export headlines via Google News
-    search_queries = [
-        "South+Korea+monthly+exports+billion+MOTIE",
-        "South+Korea+exports+billion+customs",
-        "한국+수출+억달러+산업통상자원부",
-    ]
-    for query in search_queries:
-        try:
-            url = _gnews(query)
-            entries = _parse_feed(url)
-            for entry in entries[:8]:
-                text = f"{entry.get('title', '')} {entry.get('summary', entry.get('description', ''))}"
-                match = re.search(
-                    r'(?:\$(\d+(?:\.\d+)?)\s*(?:billion|B)\b|(\d+(?:\.\d+)?)\s*billion\s*(?:dollars|USD))',
-                    text, re.IGNORECASE
-                )
-                if match:
-                    val = float(match.group(1) or match.group(2))
-                    if 20 < val < 100:
-                        return {"value": f"${val:.1f}B", "change_pct": 0, "as_of": ""}
-                match_kr = re.search(r'(\d+(?:\.\d+)?)\s*억\s*달러', text)
-                if match_kr:
-                    val_100m = float(match_kr.group(1))
-                    val_b = val_100m / 10
-                    if 20 < val_b < 100:
-                        return {"value": f"${val_b:.1f}B", "change_pct": 0, "as_of": ""}
-        except Exception:
-            continue
-
-    # Fallback: last known monthly exports
-    print("    ⚠  Monthly exports: using fallback ($67.5B)")
-    return {"value": "$67.5B", "change_pct": 0, "as_of": ""}
+    # Fallback
+    print("    ⚠  Korea 5Y CDS: using fallback (25 bps)")
+    return {"value": "25", "change_bps": 0, "as_of": ""}
 
 
 def _fetch_gdp_estimate() -> dict:
-    """Fetch latest GDP growth estimate from BOK."""
-    # Try broader date range to catch latest available quarter
+    """Fetch latest GDP growth estimate from BOK, with OECD as secondary source."""
+    estimates = []
+
+    # Source 1: BOK API (quarterly GDP data)
     try:
         now = datetime.now(timezone.utc)
         start = (now - timedelta(days=730)).strftime("%Y") + "Q1"
@@ -606,31 +701,54 @@ def _fetch_gdp_estimate() -> dict:
                 latest = rows[-1]
                 val = latest.get("DATA_VALUE", "")
                 period = latest.get("TIME", "")
-                # Format period: "2026Q1" -> "Q1 2026"
                 if "Q" in str(period):
                     parts = str(period).split("Q")
                     period = f"Q{parts[1]} {parts[0]}"
-                return {"value": f"{float(val):.1f}%", "period": period}
+                estimates.append({"value": f"{float(val):.1f}%", "period": period, "source": "BOK"})
     except Exception as e:
         print(f"    ⚠  BOK GDP API error: {e}")
 
-    # Fallback: scrape latest BOK GDP forecast from news
+    # Source 2: OECD forecast (scrape from news)
     try:
-        url = _gnews("Bank+of+Korea+GDP+growth+forecast+2026")
+        url = _gnews("OECD+Korea+GDP+growth+forecast+2026")
         entries = _parse_feed(url)
         for entry in entries[:5]:
             text = f"{entry.get('title', '')} {entry.get('summary', entry.get('description', ''))}"
             match = re.search(r'(\d+\.\d+)\s*(?:percent|%|pct)', text, re.IGNORECASE)
             if match:
                 val = float(match.group(1))
-                if 0 < val < 10:  # sanity check for GDP growth rate
-                    return {"value": f"{val:.1f}%", "period": "BOK forecast"}
+                if 0 < val < 10:
+                    estimates.append({"value": f"{val:.1f}%", "period": "2026 forecast", "source": "OECD"})
+                    break
     except Exception:
         pass
 
-    # Fallback: last known GDP estimate (updated manually if all sources fail)
-    print("    ⚠  GDP estimate: using fallback (2.0%)")
-    return {"value": "2.0%", "period": "BOK forecast"}
+    # Source 3: BOK forecast from news (fallback)
+    if not estimates:
+        try:
+            url = _gnews("Bank+of+Korea+GDP+growth+forecast+2026")
+            entries = _parse_feed(url)
+            for entry in entries[:5]:
+                text = f"{entry.get('title', '')} {entry.get('summary', entry.get('description', ''))}"
+                match = re.search(r'(\d+\.\d+)\s*(?:percent|%|pct)', text, re.IGNORECASE)
+                if match:
+                    val = float(match.group(1))
+                    if 0 < val < 10:
+                        estimates.append({"value": f"{val:.1f}%", "period": "2026 forecast", "source": "BOK"})
+                        break
+        except Exception:
+            pass
+
+    if estimates:
+        # Return the most recent estimate; attach all sources for the digest prompt
+        primary = estimates[0]
+        if len(estimates) > 1:
+            primary["alt_estimates"] = estimates[1:]
+        return primary
+
+    # Hardcoded fallback (updated manually if all sources fail)
+    print("    ⚠  GDP estimate: using fallback (1.5%)")
+    return {"value": "1.5%", "period": "2026 forecast", "source": "BOK"}
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1011,7 +1129,8 @@ def _collect_sentiment() -> dict:
                         break
                 if sentiment["presidential_approval"] and sentiment["party_ruling"]:
                     break
-            except Exception:
+            except Exception as e:
+                print(f"    ⚠  Sentiment pass 1 ({query[:40]}): {e}")
                 continue
 
     # ── Pass 2: Field-by-field extraction (fallback if no headline match)
@@ -1028,7 +1147,8 @@ def _collect_sentiment() -> dict:
                     sentiment["party_ruling"] or sentiment["party_opposition"]
                 ):
                     break
-            except Exception:
+            except Exception as e:
+                print(f"    ⚠  Sentiment pass 2 ({query[:40]}): {e}")
                 continue
 
     # ── Gallup Korea Spotlight (weekly special-topic finding) ───────────
@@ -1138,46 +1258,63 @@ def collect() -> dict:
     """Run all tier collectors + market data and return combined payload."""
     print("\n📡  Collecting Korea news from 100+ sources (parallel)...")
 
-    print("  ── Tier 1: News articles")
-    tier1 = _collect_tier1()
-    print(f"     {len(tier1)} articles")
+    # Run all collectors concurrently — each already uses internal thread pools
+    # for their own feeds, but the collectors themselves were running sequentially.
+    collectors = {
+        "tier1":        ("Tier 1: News articles",        _collect_tier1),
+        "tier2":        ("Tier 2: Op-eds & commentary",   _collect_tier2),
+        "tier3":        ("Tier 3: Academic journals",      _collect_tier3),
+        "tier4":        ("Tier 4: KCNA / Rodong Sinmun",  _collect_tier4),
+        "kcna_scrape":  ("KCNA Watch scrape",             _scrape_kcna_watch),
+        "kim_tracker":  ("Kim Jong Un appearance tracker", _collect_kim_tracker),
+        "markets":      ("Market data",                    _collect_markets),
+        "sentiment":    ("Public sentiment polls",         _collect_sentiment),
+    }
 
-    print("  ── Tier 2: Op-eds & commentary")
-    tier2 = _collect_tier2()
-    print(f"     {len(tier2)} pieces")
+    results = {}
+    with ThreadPoolExecutor(max_workers=7) as pool:
+        futures = {pool.submit(fn): key for key, (_label, fn) in collectors.items()}
+        for future in as_completed(futures):
+            key = futures[future]
+            label = collectors[key][0]
+            try:
+                results[key] = future.result()
+                data = results[key]
+                if key == "markets":
+                    print(f"  ── {label}: {'OK' if data else 'unavailable'}")
+                elif key == "sentiment":
+                    found = sum(1 for v in data.values() if v) if data else 0
+                    print(f"  ── {label}: {found} metric(s) found" if found else f"  ── {label}: no recent polls found")
+                elif key == "kim_tracker":
+                    print(f"  ── {label}: {len(data)} articles (72h window)")
+                else:
+                    print(f"  ── {label}: {len(data)} items")
+            except Exception as e:
+                print(f"  ── {label}: ⚠ FAILED ({e})")
+                results[key] = [] if key not in ("markets", "sentiment") else {}
 
-    print("  ── Tier 3: Academic journals")
-    tier3 = _collect_tier3()
-    print(f"     {len(tier3)} papers")
-
-    print("  ── Tier 4: KCNA / Rodong Sinmun")
-    tier4 = _collect_tier4()
-    print(f"     {len(tier4)} items")
-
-    print("  ── Kim Jong Un appearance tracker")
-    kim_articles = _collect_kim_tracker()
-    print(f"     {len(kim_articles)} articles (72h window)")
-
-    print("  ── Market data")
-    markets = _collect_markets()
-    print(f"     {'OK' if markets else 'unavailable'}")
-
-    print("  ── Public sentiment polls")
-    sentiment = _collect_sentiment()
-    found = sum(1 for v in sentiment.values() if v) if sentiment else 0
-    print(f"     {found} metric(s) found" if found else "     no recent polls found")
-
+    tier1 = results["tier1"]
+    tier2 = results["tier2"]
+    tier3 = results["tier3"]
+    tier4 = results["tier4"]
+    kcna_scraped = results.get("kcna_scrape", [])
     total = len(tier1) + len(tier2) + len(tier3) + len(tier4)
     print(f"\n  📊  Total collected: {total} items")
+
+    # Build structured KCNA summary from RSS + scrape data
+    kcna_summary = _build_kcna_summary(tier4, kcna_scraped)
+    if kcna_summary["total_articles"]:
+        print(f"  📡  KCNA summary: {kcna_summary['total_articles']} unique articles, {len(kcna_summary.get('categories', {}))} categories")
 
     return {
         "tier1": tier1,
         "tier2": tier2,
         "tier3": tier3,
         "tier4": tier4,
-        "kim_tracker_articles": kim_articles,
-        "market_indicators": markets,
-        "sentiment_baseline": sentiment,
+        "kcna_summary": kcna_summary,
+        "kim_tracker_articles": results["kim_tracker"],
+        "market_indicators": results["markets"],
+        "sentiment_baseline": results["sentiment"],
     }
 
 

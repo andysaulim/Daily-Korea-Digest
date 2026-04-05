@@ -17,21 +17,25 @@ def send(html: str, re_line: Optional[str] = None, subject: Optional[str] = None
     """
     Send the digest HTML via Gmail SMTP.
     Required environment variables:
-      GMAIL_USER      — Gmail address
+      GMAIL_USER      — Gmail address (used for SMTP auth)
       GMAIL_APP_PASS  — 16-char Gmail App Password
       DIGEST_TO       — comma-separated recipient list
+    Optional:
+      GMAIL_FROM      — sending alias (defaults to GMAIL_USER)
     """
     gmail_user = os.environ.get("GMAIL_USER")
     gmail_pass = os.environ.get("GMAIL_APP_PASS")
     if not gmail_user or not gmail_pass:
         raise RuntimeError("Missing GMAIL_USER or GMAIL_APP_PASS environment variables")
+    from_addr = os.environ.get("GMAIL_FROM", gmail_user)
     to_str = os.environ.get("DIGEST_TO", gmail_user)
 
     if recipients is None:
         recipients = [r.strip() for r in to_str.split(",") if r.strip()]
 
     if subject is None:
-        date_str = datetime.now(timezone.utc).strftime("%m/%d/%Y")
+        from zoneinfo import ZoneInfo
+        date_str = datetime.now(ZoneInfo("America/New_York")).strftime("%m/%d/%Y")
         if re_line:
             # Truncate RE: line for subject (max ~120 chars total)
             max_re = 100
@@ -42,18 +46,20 @@ def send(html: str, re_line: Optional[str] = None, subject: Optional[str] = None
 
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
-    msg["From"] = f"CSIS Korea Chair <{gmail_user}>"
-    msg["To"] = ", ".join(recipients)
+    msg["From"] = f"CSIS Korea Chair <{from_addr}>"
+    msg["To"] = from_addr
+    # BCC recipients are NOT added as a header — they are passed only to
+    # sendmail() so they receive the email without being visible to others.
 
     plain = (
         "Korea Daily Brief — CSIS Korea Chair\n"
         "This digest is best viewed in an HTML-capable email client.\n"
-        f"Date: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}"
+        f"Date: {datetime.now(ZoneInfo('America/New_York')).strftime('%Y-%m-%d %-I:%M %p ET')}"
     )
     msg.attach(MIMEText(plain, "plain"))
     msg.attach(MIMEText(html, "html"))
 
-    print(f"\n📨  Sending digest to: {', '.join(recipients)}")
+    print(f"\n📨  Sending digest (BCC) to: {', '.join(recipients)}")
     max_retries = 3
     for attempt in range(max_retries):
         try:
