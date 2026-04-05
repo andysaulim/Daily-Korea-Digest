@@ -384,10 +384,7 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
     # ── Morning memo uniqueness check ───────────────────────────────────
     memo_items = digest.get("morning_memo") or []
     if len(memo_items) >= 2:
-        memo_texts = [
-            (m.get("headline") or m.get("title") or m.get("text") or "").strip()
-            for m in memo_items
-        ]
+        memo_texts = [str(m).strip() for m in memo_items]
         if len(set(memo_texts)) < len(memo_texts):
             warnings.append("MORNING MEMO: duplicate memo items detected — all 3 must be distinct")
 
