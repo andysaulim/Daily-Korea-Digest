@@ -358,7 +358,7 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
 
     # ── Section count checks (hard caps) ─────────────────────────────────
     SECTION_CAPS = {
-        "top_stories":       (3, 4),
+        "top_stories":       (2, 4),
         "overnight_items":   (3, 6),
         "business_economy":  (0, 6),
         "calendar_watch":    (4, 5),

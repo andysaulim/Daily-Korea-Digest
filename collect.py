@@ -215,16 +215,16 @@ MAX_WORKERS = 25  # Thread pool size for parallel fetching
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _parse_feed(url: str) -> list:
-    for attempt in range(2):
+    for attempt in range(3):
         try:
             resp = requests.get(url, timeout=REQUEST_TIMEOUT, headers=HEADERS)
             resp.raise_for_status()
             return feedparser.parse(resp.content).entries
         except (requests.ConnectionError, requests.Timeout) as e:
-            if attempt < 1:
-                time.sleep(2)
+            if attempt < 2:
+                time.sleep(2 * (attempt + 1))
                 continue
-            print(f"    ⚠  Feed error (after retry): {e}")
+            print(f"    ⚠  Feed error (after 3 tries): {e}")
             return []
         except Exception as e:
             print(f"    ⚠  Feed error: {e}")

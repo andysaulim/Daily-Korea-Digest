@@ -1234,6 +1234,9 @@ def render(digest: dict) -> str:
       <div style="font-size:10px;color:rgba(255,255,255,0.55);margin-top:12px;line-height:1.5;">
         CSIS &middot; 1616 Rhode Island Ave NW &middot; Washington, DC 20036
       </div>
+      <div style="font-size:9px;color:rgba(255,255,255,0.35);margin-top:8px;">
+        <a href="mailto:korea-brief@csis.org?subject=Unsubscribe%20Korea%20Daily%20Brief" style="color:rgba(255,255,255,0.4);text-decoration:underline;">Unsubscribe</a>
+      </div>
     </div>
     """)
 
