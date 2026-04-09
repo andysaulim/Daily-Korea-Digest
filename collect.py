@@ -543,67 +543,143 @@ def _collect_kim_tracker() -> list:
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _collect_markets() -> dict:
-    """Fetch KOSPI, Brent Crude, USD/KRW from Yahoo Finance API with validation."""
-    symbols = {
+    """Fetch KOSPI, Brent Crude, USD/KRW with Yahoo primary + Stooq fallback.
+
+    Data source chain per symbol:
+      1. Yahoo Finance query1 host
+      2. Yahoo Finance query2 host (Yahoo's load-balanced mirror)
+      3. Stooq CSV (stable free source, daily resolution)
+    Each result is validated for sanity range + staleness (>5 days = reject).
+    """
+    YAHOO_SYMBOLS = {
         "kospi": "^KS11",
         "brent": "BZ=F",
         "usd_krw": "KRW=X",
     }
-    # Sanity ranges — if price falls outside, the API likely returned stale/bad data
-    _SANITY_RANGES = {
-        "kospi": (1500, 4500),      # KOSPI reasonable range
-        "brent": (40, 200),         # Brent crude $/barrel
-        "usd_krw": (1000, 1700),    # USD/KRW rate
+    STOOQ_SYMBOLS = {
+        "kospi": "^kospi",
+        "brent": "cb.f",       # ICE Brent Crude continuous futures
+        "usd_krw": "usdkrw",
     }
-    def _fetch_symbol(key, symbol):
-        from datetime import timedelta
-        last_error = None
-        for retry in range(3):
+    # Sanity ranges — if price falls outside, the data is likely stale/garbage
+    _SANITY_RANGES = {
+        "kospi": (1500, 4500),
+        "brent": (40, 200),
+        "usd_krw": (1000, 1700),
+    }
+
+    def _format_value(key, price):
+        if key == "usd_krw" or key == "kospi":
+            return f"{price:,.2f}"
+        return f"{price:.2f}"
+
+    def _validate(key, price, mkt_time):
+        """Return (ok, reason). mkt_time is an aware datetime or None."""
+        lo, hi = _SANITY_RANGES.get(key, (0, float("inf")))
+        if not price or price < lo or price > hi:
+            return False, f"price {price} outside sanity range ({lo}-{hi})"
+        if mkt_time:
+            age_days = (datetime.now(timezone.utc) - mkt_time).days
+            if age_days > 5:
+                return False, f"data is {age_days} days old"
+        return True, ""
+
+    def _fetch_yahoo(key):
+        """Try Yahoo Finance — query1 then query2 as mirror fallback."""
+        symbol = YAHOO_SYMBOLS[key]
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                          "AppleWebKit/537.36 (KHTML, like Gecko) "
+                          "Chrome/120.0.0.0 Safari/537.36"
+        }
+        for host in ("query1.finance.yahoo.com", "query2.finance.yahoo.com"):
             try:
-                url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?range=2d&interval=1d"
-                resp = requests.get(url, timeout=10, headers={
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
-                })
+                url = f"https://{host}/v8/finance/chart/{symbol}?range=5d&interval=1d"
+                resp = requests.get(url, timeout=10, headers=headers)
                 resp.raise_for_status()
                 data = resp.json()
                 meta = data["chart"]["result"][0]["meta"]
                 price = meta.get("regularMarketPrice", 0)
-                prev_close = meta.get("chartPreviousClose", meta.get("previousClose", price))
-                # Validate the market timestamp — reject data older than 5 days
-                mkt_time = meta.get("regularMarketTime", 0)
-                if mkt_time:
-                    data_age = datetime.now(timezone.utc) - datetime.fromtimestamp(mkt_time, tz=timezone.utc)
-                    if data_age > timedelta(days=5):
-                        print(f"    ⚠  {key}: Yahoo data is {data_age.days} days old — rejecting")
-                        return key, {"value": "—", "change_pct": 0, "as_of": "", "stale": True}
-                # Sanity check price range
-                lo, hi = _SANITY_RANGES.get(key, (0, float("inf")))
-                if price and (price < lo or price > hi):
-                    print(f"    ⚠  {key}: price ${price} outside sanity range ({lo}-{hi}) — rejecting")
-                    return key, {"value": "—", "change_pct": 0, "as_of": "", "stale": True}
-                change_pct = ((price - prev_close) / prev_close * 100) if prev_close and prev_close != 0 else 0
-                as_of = ""
-                if mkt_time:
-                    as_of = datetime.fromtimestamp(mkt_time, tz=timezone.utc).strftime("%b %d")
-                if key == "usd_krw":
-                    value = f"{price:,.2f}"
-                elif key == "kospi":
-                    value = f"{price:,.2f}"
-                else:
-                    value = f"{price:.2f}"
-                return key, {"value": value, "change_pct": round(change_pct, 2), "as_of": as_of}
+                prev_close = meta.get("chartPreviousClose",
+                                      meta.get("previousClose", price))
+                mkt_ts = meta.get("regularMarketTime", 0)
+                mkt_time = (datetime.fromtimestamp(mkt_ts, tz=timezone.utc)
+                            if mkt_ts else None)
+                ok, reason = _validate(key, price, mkt_time)
+                if not ok:
+                    print(f"    ⚠  {key}: Yahoo {host} {reason}")
+                    continue
+                change_pct = (((price - prev_close) / prev_close * 100)
+                              if prev_close else 0)
+                return {
+                    "value": _format_value(key, price),
+                    "change_pct": round(change_pct, 2),
+                    "as_of": mkt_time.strftime("%b %d") if mkt_time else "",
+                }
             except (requests.RequestException, KeyError, ValueError, TypeError) as e:
-                last_error = e
-                if retry < 2:
-                    import time as _time
-                    _time.sleep(1 * (retry + 1))
-        print(f"    ⚠  Market data error ({key}) after 3 tries: {last_error}")
+                print(f"    ⚠  {key}: Yahoo {host} error: {e}")
+                continue
+        return None
+
+    def _fetch_stooq(key):
+        """Fallback: Stooq.com daily CSV. Free, no auth, very stable."""
+        import csv as _csv
+        import io as _io
+        symbol = STOOQ_SYMBOLS[key]
+        try:
+            url = f"https://stooq.com/q/d/l/?s={symbol}&i=d"
+            resp = requests.get(url, timeout=10,
+                                headers={"User-Agent": "Mozilla/5.0"})
+            resp.raise_for_status()
+            text = resp.text.strip()
+            if not text or "no data" in text.lower():
+                print(f"    ⚠  {key}: Stooq returned no data for {symbol}")
+                return None
+            reader = _csv.DictReader(_io.StringIO(text))
+            rows = [r for r in reader if r.get("Close")]
+            if len(rows) < 2:
+                print(f"    ⚠  {key}: Stooq returned <2 rows")
+                return None
+            latest = rows[-1]
+            prev = rows[-2]
+            price = float(latest["Close"])
+            prev_close = float(prev["Close"])
+            try:
+                latest_dt = datetime.strptime(
+                    latest["Date"], "%Y-%m-%d").replace(tzinfo=timezone.utc)
+            except (ValueError, KeyError):
+                latest_dt = None
+            ok, reason = _validate(key, price, latest_dt)
+            if not ok:
+                print(f"    ⚠  {key}: Stooq {reason}")
+                return None
+            change_pct = (((price - prev_close) / prev_close * 100)
+                          if prev_close else 0)
+            return {
+                "value": _format_value(key, price),
+                "change_pct": round(change_pct, 2),
+                "as_of": latest_dt.strftime("%b %d") if latest_dt else "",
+            }
+        except (requests.RequestException, KeyError, ValueError, TypeError) as e:
+            print(f"    ⚠  {key}: Stooq error: {e}")
+            return None
+
+    def _fetch_symbol(key):
+        """Chain: Yahoo → Stooq. Returns (key, result_dict)."""
+        result = _fetch_yahoo(key)
+        if result:
+            return key, result
+        print(f"    ↻  {key}: Yahoo failed/stale — falling back to Stooq")
+        result = _fetch_stooq(key)
+        if result:
+            return key, result
+        print(f"    ⚠  {key}: all data sources exhausted")
         return key, {"value": "—", "change_pct": 0, "as_of": ""}
 
     result = {}
     with ThreadPoolExecutor(max_workers=6) as pool:
-        # Market prices + economic indicators in one pool
-        symbol_futures = {pool.submit(_fetch_symbol, k, v): k for k, v in symbols.items()}
+        symbol_futures = {pool.submit(_fetch_symbol, k): k
+                          for k in YAHOO_SYMBOLS.keys()}
         bok_f = pool.submit(_fetch_bok_rate)
         cds_f = pool.submit(_fetch_korea_cds)
         gdp_f = pool.submit(_fetch_gdp_estimate)
@@ -616,7 +692,7 @@ def _collect_markets() -> dict:
     result["korea_cds"] = cds_f.result()
     result["gdp_estimate"] = gdp_f.result()
 
-    # Always return market data — even if Yahoo Finance fails, BOK indicators
+    # Always return market data — even if all fetches fail, BOK indicators
     # have hardcoded fallbacks so there's always something to show
     return result
 
