@@ -4,7 +4,41 @@ CSIS Korea Chair
 Takes structured digest JSON from Claude and renders a styled HTML email.
 Uses table-based layout for maximum email client compatibility.
 """
+import re as _re
 from datetime import datetime, timezone
+from urllib.parse import urlparse as _urlparse
+
+
+def _clean_src(raw: str) -> str:
+    """Strip raw URLs from source lines, keeping only human-readable text.
+
+    If the entire src_line is a URL, extract the domain as a label.
+    If it contains a mix of text and URLs, remove the URL portions."""
+    if not raw:
+        return raw
+    # If the whole string is a URL, extract domain
+    stripped = raw.strip()
+    if _re.match(r'^https?://', stripped) and ' ' not in stripped:
+        try:
+            host = _urlparse(stripped).hostname or ""
+            # Remove www. prefix
+            if host.startswith("www."):
+                host = host[4:]
+            return host if host else raw
+        except Exception:
+            return raw
+    # Remove inline URLs from mixed text
+    cleaned = _re.sub(r'https?://\S+', '', raw).strip()
+    # Collapse multiple spaces
+    cleaned = _re.sub(r'  +', ' ', cleaned)
+    return cleaned if cleaned else raw
+
+
+def _str(val) -> str:
+    """Coerce a value to str — handles lists returned by Claude API."""
+    if isinstance(val, list):
+        return val[0] if val else ""
+    return val if isinstance(val, str) else str(val) if val is not None else ""
 
 
 def _esc(text) -> str:
@@ -63,8 +97,22 @@ def _arrow(val) -> str:
 
 
 
-def _link_or_text(text: str, url: str, style: str = "color:#1B2A4A;text-decoration:none;") -> str:
-    """Render as <a> only if url is a real link, otherwise plain text."""
+def _cds_arrow(val) -> str:
+    """CDS arrow — up (wider spread) is red/risk, down (tighter) is green."""
+    try:
+        val = float(val)
+    except (TypeError, ValueError):
+        return '<span style="color:#7F8C8D;">—</span>'
+    if val > 0:
+        return f'<span style="color:#C0392B;">&#9650; +{val:.1f} bps</span>'
+    elif val < 0:
+        return f'<span style="color:#27AE60;">&#9660; {val:.1f} bps</span>'
+    return '<span style="color:#7F8C8D;">— flat</span>'
+
+
+def _link_or_text(text: str, url: str, style: str = "color:#1B2A4A;text-decoration:underline;") -> str:
+    """Render as <a> only if url is a real link, otherwise plain text.
+    NOTE: `text` should already be HTML-escaped by the caller via _esc()."""
     if url and url != "#" and url.startswith("http"):
         return f'<a href="{_esc(url)}" style="{style}">{text}</a>'
     return text
@@ -75,6 +123,20 @@ _SEC = 'style="padding:14px 32px;border-bottom:1px solid #E0E0E0;" class="sec"'
 _SEC_BG = lambda bg: f'style="padding:14px 32px;background:{bg};border-bottom:1px solid #E0E0E0;" class="sec"'
 _H2 = lambda color: f'style="margin:0 0 8px 0;font-size:12px;color:{color};text-transform:uppercase;letter-spacing:1px;font-family:Arial,sans-serif;"'
 _PILL = lambda bg: f'style="display:inline-block;background:{bg};color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;padding:4px 12px;border-radius:12px;font-family:Arial,sans-serif;margin-bottom:8px;"'
+
+
+def _item_block(cat: str, src: str, headline: str, body: str, url: str,
+                 bar_color: str = "#1B2A4A", extra_html: str = "") -> str:
+    """Render a standard border-left news item."""
+    return f"""
+            <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid {bar_color};">
+              <div style="font-size:11px;color:#888;text-transform:uppercase;">{cat} &middot; {src}</div>
+              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
+                {_link_or_text(headline, url)}
+              </div>
+              <div style="font-size:12px;line-height:1.4;color:#555;">{body}</div>
+              {extra_html}
+            </div>"""
 
 
 def _estimate_word_count(digest: dict) -> int:
@@ -97,9 +159,10 @@ def _estimate_word_count(digest: dict) -> int:
 
 
 def render(digest: dict) -> str:
-    now = datetime.now(timezone.utc)
-    date_str = now.strftime("%A, %d %B %Y")  # Thursday, 20 March 2026
-    gen_time = now.strftime("%H:%M UTC")
+    from zoneinfo import ZoneInfo
+    now = datetime.now(ZoneInfo("America/New_York"))
+    date_str = now.strftime("%A, %B %-d, %Y")  # Thursday, March 20, 2026
+    gen_time = now.strftime("%-I:%M %p ET")
     re_line = _esc(digest.get("re_line", ""))
     word_count = _estimate_word_count(digest)
     read_min = max(1, round(word_count / 250))
@@ -123,49 +186,19 @@ def render(digest: dict) -> str:
           <h1 style="margin:0;font-size:24px;font-weight:700;font-family:Georgia,serif;color:#fff;letter-spacing:0.5px;">
             Korea Daily Brief
           </h1>
-          <div style="margin-top:4px;font-size:11px;color:rgba(255,255,255,0.5);font-family:Arial,sans-serif;">By Andy Lim &middot; CSIS Korea Chair</div>
+          <div style="margin-top:4px;font-size:11px;color:rgba(255,255,255,0.7);font-family:Arial,sans-serif;">By Andy Lim &middot; CSIS Korea Chair</div>
           <div style="margin-top:6px;font-size:18px;font-weight:700;color:rgba(255,255,255,0.95);letter-spacing:0.5px;font-family:Georgia,serif;">{_esc(date_str)}</div>
         </td>
         <td style="vertical-align:top;text-align:right;">
-          <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.4);margin-bottom:2px;">{gen_time}</div>
-          <div style="font-size:10px;color:rgba(255,255,255,0.35);">{word_count:,} words &middot; {read_min} min read</div>
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.6);margin-bottom:2px;">{gen_time}</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.55);">{word_count:,} words &middot; {read_min} min read</div>
         </td>
       </tr></table>
-      {"<div style='margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.15);font-size:13px;color:rgba(255,255,255,0.85);font-family:Georgia,serif;'><strong style=" + '"' + "color:rgba(255,255,255,0.5);" + '"' + ">RE:</strong> " + re_line + "</div>" if re_line else ""}
+      {"<div style='margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.15);font-size:13px;color:rgba(255,255,255,0.85);font-family:Georgia,serif;'><strong style='color:rgba(255,255,255,0.5);'>RE:</strong> " + re_line + "</div>" if re_line else ""}
     </div>
     """)
 
-    # ── 1b. Table of Contents + Forward CTA ──────────────────────────────
-    toc_items = [
-        ("markets", "Markets", digest.get("market_indicators")),
-        ("memo", "Morning Memo", digest.get("morning_memo")),
-        ("top-stories", "Top Stories", digest.get("top_stories")),
-        ("overnight", "Overnight Flash", digest.get("overnight_items")),
-        ("key-stat", "Key Stat", digest.get("key_stat")),
-        ("kcna", "KCNA Watch", digest.get("kcna_delta")),
-        ("satellite", "Satellite Watch", (digest.get("bp_locations") or digest.get("imagery_report"))),
-        ("rok-gov", "ROK Government", digest.get("rok_government")),
-        ("trade", "Trade &amp; Investment", digest.get("us_korea_deals")),
-        ("business", "Business", digest.get("business_economy")),
-        ("nea", "NE Asia", digest.get("northeast_asia")),
-        ("sentiment", "Sentiment", digest.get("public_sentiment")),
-        ("wire", "The Wire", digest.get("also_today")),
-        ("analysis", "Analysis", (digest.get("social_statements") or digest.get("opeds_today") or digest.get("academic_today"))),
-    ]
-    toc_links = " &middot; ".join(
-        f'<a href="#{anchor}" style="color:#2980B9;text-decoration:none;font-size:11px;">{label}</a>'
-        for anchor, label, data in toc_items if data
-    )
-    if toc_links:
-        sections.append(f"""
-        <div style="padding:10px 32px;background:#F8F9FA;border-bottom:1px solid #E0E0E0;" class="sec">
-          <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:4px;font-family:Arial,sans-serif;">Jump to</div>
-          <div style="line-height:1.8;">{toc_links}</div>
-          <div style="margin-top:8px;font-size:11px;color:#888;font-family:Arial,sans-serif;">
-            Know someone who'd find this useful? <a href="mailto:?subject=Korea%20Daily%20Brief&amp;body=Check%20out%20the%20Korea%20Daily%20Brief%20from%20CSIS%20Korea%20Chair." style="color:#2980B9;text-decoration:none;font-weight:600;">Forward to a colleague &rarr;</a>
-          </div>
-        </div>
-        """)
+    # ── 1b. Forward CTA — removed (placeholder for future subscribe link) ──
 
     # ── 2. Market Indicators ───────────────────────────────────────────────
     markets = digest.get("market_indicators") or {}
@@ -174,7 +207,7 @@ def render(digest: dict) -> str:
         brent = markets.get("brent") or {}
         krw = markets.get("usd_krw") or {}
         bok_rate = markets.get("bok_rate") or {}
-        exports = markets.get("monthly_exports") or {}
+        korea_cds = markets.get("korea_cds") or {}
         gdp = markets.get("gdp_estimate") or {}
         # Top row: KOSPI, Brent, USD/KRW
         sections.append(f"""
@@ -185,39 +218,39 @@ def render(digest: dict) -> str:
               <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;">KOSPI</div>
               <div style="font-size:18px;font-weight:700;">{_esc(str(kospi.get("value", "—")))}</div>
               <div style="font-size:11px;">{_arrow(kospi.get("change_pct", 0))}</div>
-              {"<div style='font-size:8px;opacity:0.4;margin-top:2px;'>as of " + _esc(kospi.get("as_of", "")) + "</div>" if kospi.get("as_of") else ""}
+              {"<div style='font-size:10px;opacity:0.5;margin-top:2px;'>as of " + _esc(kospi.get("as_of", "")) + "</div>" if kospi.get("as_of") else ""}
             </td>
             <td width="34%" align="center" style="padding:10px 8px 12px;border-left:1px solid rgba(255,255,255,0.15);border-right:1px solid rgba(255,255,255,0.15);">
               <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;">Brent Crude</div>
               <div style="font-size:18px;font-weight:700;">${_esc(str(brent.get("value", "—")))}</div>
               <div style="font-size:11px;">{_arrow(brent.get("change_pct", 0))}</div>
-              {"<div style='font-size:8px;opacity:0.4;margin-top:2px;'>as of " + _esc(brent.get("as_of", "")) + "</div>" if brent.get("as_of") else ""}
+              {"<div style='font-size:10px;opacity:0.5;margin-top:2px;'>as of " + _esc(brent.get("as_of", "")) + "</div>" if brent.get("as_of") else ""}
             </td>
             <td width="33%" align="center" style="padding:10px 8px 12px;">
               <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;">USD/KRW</div>
               <div style="font-size:18px;font-weight:700;">{_esc(str(krw.get("value", "—")))}</div>
               <div style="font-size:11px;">{_arrow(krw.get("change_pct", 0))}</div>
-              {"<div style='font-size:8px;opacity:0.4;margin-top:2px;'>as of " + _esc(krw.get("as_of", "")) + "</div>" if krw.get("as_of") else ""}
+              {"<div style='font-size:10px;opacity:0.5;margin-top:2px;'>as of " + _esc(krw.get("as_of", "")) + "</div>" if krw.get("as_of") else ""}
             </td>
           </tr>
         </table>
         <table class="mkt-table" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#162340;color:#fff;border-bottom:1px solid rgba(255,255,255,0.08);">
           <tr>
             <td width="33%" align="center" style="padding:8px 8px 10px;">
-              <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;opacity:0.5;">BOK Rate</div>
+              <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;">BOK Rate</div>
               <div style="font-size:15px;font-weight:700;">{_esc(str(bok_rate.get("value", "—")))}</div>
               <div style="font-size:10px;opacity:0.6;">{_esc(str(bok_rate.get("last_change", "")))}</div>
             </td>
             <td width="34%" align="center" style="padding:8px 8px 10px;border-left:1px solid rgba(255,255,255,0.1);border-right:1px solid rgba(255,255,255,0.1);">
-              <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;opacity:0.5;">Exports{" (" + _esc(exports.get("month", "")) + ")" if exports.get("month") else " (Monthly)"}</div>
-              <div style="font-size:15px;font-weight:700;">{_esc(str(exports.get("value", "—")))}</div>
-              <div style="font-size:10px;">{_arrow(exports.get("change_pct", 0))}</div>
-              {"<div style='font-size:8px;opacity:0.4;margin-top:2px;'>as of " + _esc(exports.get("as_of", exports.get("month", ""))) + "</div>" if exports.get("as_of") or exports.get("month") else ""}
+              <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;">Korea 5Y CDS</div>
+              <div style="font-size:15px;font-weight:700;">{_esc(str(korea_cds.get("value", "—")))} bps</div>
+              <div style="font-size:10px;">{_cds_arrow(korea_cds.get("change_bps", 0))}</div>
+              {"<div style='font-size:10px;opacity:0.5;margin-top:2px;'>as of " + _esc(korea_cds.get("as_of", "")) + "</div>" if korea_cds.get("as_of") else ""}
             </td>
             <td width="33%" align="center" style="padding:8px 8px 10px;">
-              <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;opacity:0.5;">GDP Est. (QoQ)</div>
+              <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;">GDP Est.</div>
               <div style="font-size:15px;font-weight:700;">{_esc(str(gdp.get("value", "—")))}</div>
-              <div style="font-size:10px;opacity:0.6;">{_esc(str(gdp.get("period", "")))}</div>
+              <div style="font-size:10px;opacity:0.6;">{_esc(str(gdp.get("source", "BOK")))}{" · " + _esc(str(gdp.get("period", ""))) if gdp.get("period") else ""}</div>
             </td>
           </tr>
         </table>
@@ -245,12 +278,12 @@ def render(digest: dict) -> str:
     if top_stories:
         stories_html = ""
         for story in top_stories:
-            cat = _esc(story.get("category_tag", story.get("category", "")))
+            cat = _esc(_str(story.get("category_tag", story.get("category", ""))))
             headline = _esc(story.get("headline", ""))
             body = _esc(story.get("body", ""))
             so_what = _esc(story.get("so_what", ""))
             pattern = _esc(story.get("pattern_note", ""))
-            src_line = _esc(story.get("src_line", story.get("source", "")))
+            src_line = _esc(_clean_src(story.get("src_line", story.get("source", ""))))
             url = story.get("url", "")
             stories_html += f"""
             <div class="story-card" style="margin-bottom:12px;padding:10px 12px;background:#F8F9FA;border-radius:4px;border-left:4px solid #1B2A4A;">
@@ -277,12 +310,13 @@ def render(digest: dict) -> str:
                        "Japan-Korea": "#1B6A4A", "China-Korea": "#8B0000", "Trilateral": "#2E4057"}
         flash_html = ""
         for item in overnight:
-            cat = _esc(item.get("category", ""))
+            cat_raw = _str(item.get("category", ""))
+            cat = _esc(cat_raw)
             headline = _esc(item.get("headline", ""))
             body = _esc(item.get("body_text", ""))
-            src = _esc(item.get("source", ""))
+            src = _esc(_clean_src(item.get("source", "")))
             url = item.get("url", "")
-            bar_color = _cat_colors_flash.get(item.get("category", ""), "#1B2A4A")
+            bar_color = _cat_colors_flash.get(cat_raw, "#1B2A4A")
             flash_html += f"""
             <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid {bar_color};">
               <div style="font-size:11px;color:#C0392B;text-transform:uppercase;font-weight:600;">{cat} &middot; {src}</div>
@@ -329,57 +363,86 @@ def render(digest: dict) -> str:
         if doctrinal:
             doctrinal_html = f"<div style='margin:12px 0;padding:8px 14px;background:#8E44AD;color:#fff;border-radius:4px;font-size:12px;'><strong>Doctrinal shift:</strong> {doctrinal}</div>"
 
-        # Key quotes from KCNA — compact: single best quote only
+        # Key quotes from KCNA — featured quote block
         key_quotes = kcna.get("key_quotes") or []
         quotes_html = ""
         if key_quotes:
             q = key_quotes[0]
             qt = _esc(q.get("quote", ""))
             src_art = _esc(q.get("source_article", ""))
-            quotes_html = f"""<div class="kcna-quote" style='margin-top:8px;padding:6px 12px;background:rgba(255,255,255,0.05);border-radius:4px;border-left:2px solid #555;'>
-              <div style='font-size:12px;color:#D0D0D0;font-style:italic;line-height:1.4;'>&ldquo;{qt}&rdquo;</div>
-              <div style='font-size:10px;color:#888;margin-top:2px;'>{src_art}</div>
+            if qt:
+                src_line = f"<div style='font-size:10px;color:#888;margin-top:4px;'>— {src_art}</div>" if src_art else ""
+                quotes_html = f"""<div class="kcna-quote" style='margin-top:12px;padding:10px 14px;background:rgba(255,255,255,0.06);border-radius:4px;border-left:3px solid #27AE60;'>
+              <div style='font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:rgba(255,255,255,0.5);margin-bottom:4px;'>Key Quote</div>
+              <div style='font-size:13px;color:#E8E8E8;font-style:italic;line-height:1.5;'>&ldquo;{qt}&rdquo;</div>
+              {src_line}
             </div>"""
 
-        # Notable omissions + Senior officials — combined into compact inline
+        # Notable omissions — highlighted warning
         omissions = _esc(kcna.get("notable_omissions", "")) if kcna.get("notable_omissions") else ""
         omissions_html = ""
         if omissions:
-            omissions_html = f"<div style='margin-top:6px;font-size:11px;color:#E67E22;'><strong>Omission:</strong> {omissions}</div>"
+            omissions_html = f"<div style='margin-top:8px;padding:6px 12px;background:rgba(230,126,34,0.12);border-radius:4px;border-left:2px solid #E67E22;font-size:11px;color:#E67E22;line-height:1.4;'><strong>Notable omission:</strong> {omissions}</div>"
 
+        # Senior officials — individual cards
         senior = kcna.get("senior_officials") or []
         senior_html = ""
         if senior:
-            senior_parts = []
+            senior_cards = ""
             for s in senior[:2]:
                 name = _esc(s.get("name", ""))
+                if not name:
+                    continue
+                role = _esc(s.get("role", "")) if s.get("role") else ""
                 act = _esc(s.get("activity", ""))
-                senior_parts.append(f"<strong>{name}</strong>: {act}")
-            senior_html = f"<div style='margin-top:6px;font-size:11px;color:#BBB;'>" + " · ".join(senior_parts) + "</div>"
+                role_tag = f' <span style="font-size:9px;color:#888;font-weight:400;">({role})</span>' if role else ""
+                act_html = f"<br><span style='color:#AAA;'>{act}</span>" if act else ""
+                senior_cards += f"""<div style='display:inline-block;margin-right:10px;margin-top:6px;padding:4px 10px;background:rgba(255,255,255,0.04);border-radius:3px;border-left:2px solid #5DADE2;font-size:11px;'>
+                  <strong style="color:#D0D0D0;">{name}</strong>{role_tag}{act_html}
+                </div>"""
+            if senior_cards:
+                senior_html = f"<div style='margin-top:8px;'><div style='font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:rgba(255,255,255,0.5);margin-bottom:2px;'>Senior Officials</div>{senior_cards}</div>"
 
         # Kim Jong Un line
         kim_today = "Yes" if kcna.get("kim_appearance_today") else "No"
         kim_activity = _esc(kcna.get("kim_activity", "")) if kcna.get("kim_activity") else ""
         days_absent = kcna.get("days_since_last_appearance")
 
-        # Propaganda focus & Kim appearance as inline items
+        # Propaganda focus — pill-style tags
         prop_focus = kcna.get("propaganda_focus") or []
         prop_html = ""
         if prop_focus:
-            prop_html = "<div style='margin-top:8px;font-size:11px;color:#888;'><strong style=\"color:#BBB;\">Focus:</strong> " + " · ".join(_esc(str(p)) for p in prop_focus) + "</div>"
+            pills = ""
+            for p in prop_focus:
+                pills += f'<span style="display:inline-block;padding:2px 8px;margin:2px 4px 2px 0;background:rgba(255,255,255,0.08);border-radius:12px;font-size:10px;color:#BBB;letter-spacing:0.3px;">{_esc(str(p))}</span>'
+            prop_html = f"<div style='margin-top:10px;'><div style='font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:rgba(255,255,255,0.5);margin-bottom:4px;'>Propaganda Focus</div>{pills}</div>"
 
         kim_line = ""
+        kim_icon = ""
         if kim_today == "Yes":
-            kim_line = f"Kim Jong Un public appearance"
+            kim_icon = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#27AE60;margin-right:6px;vertical-align:middle;"></span>'
+            kim_line = f"Public appearance"
             if kim_activity:
                 kim_line += f" — {kim_activity}"
         else:
-            kim_line = "No Kim Jong Un appearance"
+            kim_icon = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#C0392B;margin-right:6px;vertical-align:middle;"></span>'
+            kim_line = "No appearance"
             if days_absent:
-                kim_line += f" ({days_absent} days since last)"
+                kim_line += f" ({days_absent}d since last)"
 
         kcna_baseline = _esc(kcna.get("baseline_period", ""))
         baseline_html = f"7-day baseline · {kcna_baseline}" if kcna_baseline else ""
+
+        # Tone shift card (full-width row below Kim/Volume)
+        tone_row_html = ""
+        if tone_shift:
+            tone_row_html = f"""
+              <tr><td colspan="2" style="padding-top:8px;">
+                <div style="padding:8px 12px;background:rgba(230,126,34,0.1);border-radius:4px;border-left:2px solid #E67E22;">
+                  <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.6);margin-bottom:4px;">Tone Shift</div>
+                  <div style="font-size:12px;color:#E67E22;font-weight:600;line-height:1.4;">&#8644; {tone_shift}</div>
+                </div>
+              </td></tr>"""
 
         # Key phrase changes table
         phrases = kcna.get("key_phrase_changes") or []
@@ -393,22 +456,25 @@ def render(digest: dict) -> str:
                 delta = _esc(p.get("delta_label", ""))
                 # Color delta based on direction
                 d_color = "#27AE60" if "↑" in delta else ("#C0392B" if "↓" in delta else "#888")
+                # Bar visualization (proportional to count)
+                bar_w = min(ct_w * 12, 60)
+                bar_html = f'<span style="display:inline-block;width:{bar_w}px;height:3px;background:{d_color};border-radius:2px;vertical-align:middle;margin-right:4px;"></span>' if bar_w > 0 else ""
                 phrase_rows += f"""
                 <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
-                  <td style="padding:4px 8px 4px 0;font-size:11px;color:#D0D0D0;">{ph}</td>
-                  <td style="padding:4px 6px;font-size:11px;color:#888;text-align:center;white-space:nowrap;">{ct_p}</td>
-                  <td style="padding:4px 6px;font-size:11px;color:#D0D0D0;text-align:center;white-space:nowrap;font-weight:600;">{ct_w}</td>
-                  <td style="padding:4px 0 4px 6px;font-size:10px;color:{d_color};white-space:nowrap;">{delta}</td>
+                  <td style="padding:5px 8px 5px 0;font-size:11px;color:#D0D0D0;">{ph}</td>
+                  <td style="padding:5px 6px;font-size:11px;color:#888;text-align:center;white-space:nowrap;">{ct_p}</td>
+                  <td style="padding:5px 6px;font-size:11px;color:#D0D0D0;text-align:center;white-space:nowrap;font-weight:600;">{bar_html}{ct_w}</td>
+                  <td style="padding:5px 0 5px 6px;font-size:10px;color:{d_color};white-space:nowrap;font-weight:600;">{delta}</td>
                 </tr>"""
             phrase_html = f"""
-            <div style="margin-top:12px;">
-              <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.4);margin-bottom:4px;">Phrase Frequency</div>
+            <div style="margin-top:14px;">
+              <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.6);margin-bottom:6px;">Phrase Frequency</div>
               <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                <tr style="border-bottom:1px solid rgba(255,255,255,0.1);">
-                  <td style="padding:3px 8px 3px 0;font-size:9px;color:rgba(255,255,255,0.3);text-transform:uppercase;">Phrase</td>
-                  <td style="padding:3px 6px;font-size:9px;color:rgba(255,255,255,0.3);text-align:center;">Prior</td>
-                  <td style="padding:3px 6px;font-size:9px;color:rgba(255,255,255,0.3);text-align:center;">This Wk</td>
-                  <td style="padding:3px 0 3px 6px;font-size:9px;color:rgba(255,255,255,0.3);">Delta</td>
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.12);">
+                  <td style="padding:4px 8px 4px 0;font-size:10px;color:rgba(255,255,255,0.5);text-transform:uppercase;">Phrase</td>
+                  <td style="padding:4px 6px;font-size:10px;color:rgba(255,255,255,0.5);text-align:center;">Prior</td>
+                  <td style="padding:4px 6px;font-size:10px;color:rgba(255,255,255,0.5);text-align:center;">Today</td>
+                  <td style="padding:4px 0 4px 6px;font-size:10px;color:rgba(255,255,255,0.5);">Delta</td>
                 </tr>
                 {phrase_rows}
               </table>
@@ -432,29 +498,29 @@ def render(digest: dict) -> str:
             {"<div style='margin-bottom:12px;padding:8px 14px;background:#C0392B;color:#fff;border-radius:4px;font-size:12px;font-weight:600;'>&#9888; Complete KCNA silence today</div>" if silence else ""}
             {"<div style='margin-bottom:12px;padding:8px 14px;background:#C0392B;color:#fff;border-radius:4px;font-size:12px;font-weight:600;'>&#9888; WATCH FLAG — Escalation-level rhetoric or unusual activity detected</div>" if watch and not silence else ""}
             {doctrinal_html}
-            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:10px;">
+            <table class="kcna-kv" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:10px;">
               <tr>
                 <td style="vertical-align:top;width:50%;padding-right:12px;">
                   <div style="padding:8px 12px;background:rgba(255,255,255,0.04);border-radius:4px;">
-                    <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.4);margin-bottom:4px;">Kim Jong Un</div>
-                    <div style="font-size:13px;color:#E0E0E0;font-weight:600;">{kim_line}</div>
+                    <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.6);margin-bottom:4px;">Kim Jong Un</div>
+                    <div style="font-size:13px;color:#E0E0E0;font-weight:600;">{kim_icon}{kim_line}</div>
                   </div>
                 </td>
                 <td style="vertical-align:top;width:50%;">
                   <div style="padding:8px 12px;background:rgba(255,255,255,0.04);border-radius:4px;">
-                    <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.4);margin-bottom:4px;">Output Volume</div>
+                    <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.6);margin-bottom:4px;">Output Volume</div>
                     <div style="font-size:13px;color:#E0E0E0;">{output_vol if output_vol else "—"}</div>
-                    {"<div style='margin-top:3px;font-size:11px;color:#E67E22;font-weight:600;'>&#8644; " + tone_shift + "</div>" if tone_shift else ""}
                   </div>
                 </td>
               </tr>
+              {tone_row_html}
             </table>
             {prop_html}
             {quotes_html}
             {phrase_html}
             {omissions_html}
             {senior_html}
-            {"<div style='margin-top:12px;padding:10px 14px;background:rgba(255,255,255,0.04);border-radius:4px;font-size:13px;line-height:1.6;color:#E0E0E0;font-family:Georgia,serif;'><strong style=" + chr(34) + "color:#E8DCC8;" + chr(34) + ">Bottom line:</strong> " + bottom_line + "</div>" if bottom_line else ""}
+            {"<div style='margin-top:14px;padding:10px 14px;background:rgba(255,255,255,0.06);border-radius:4px;border-left:3px solid #E8DCC8;font-size:13px;line-height:1.6;color:#E0E0E0;font-family:Georgia,serif;'><strong style='color:#E8DCC8;'>Bottom line:</strong> " + bottom_line + "</div>" if bottom_line else ""}
           </div>
         </div>
         """)
@@ -499,13 +565,21 @@ def render(digest: dict) -> str:
               {source_links_html}
             </div>"""
 
-        # BP Monitored Locations — 2-column card grid
+        # BP Monitored Locations — 2-column card grid with status context
         _badge_styles = {
             "normal": ("#27AE60", "#F0FAF0", "Normal"),
             "activity": ("#D4AC0D", "#FDF6E3", "Active"),
             "elevated": ("#E67E22", "#FFF3E0", "Elevated"),
             "alert": ("#C0392B", "#FBE9E7", "Alert"),
         }
+        # Count non-normal statuses for summary line
+        active_count = sum(1 for l in locations if l.get("status", "normal") != "normal")
+        summary_html = ""
+        if active_count:
+            summary_html = f'<div style="font-size:11px;color:#888;margin-top:6px;margin-bottom:12px;">{active_count} of {len(locations)} sites showing non-baseline activity</div>'
+        else:
+            summary_html = f'<div style="font-size:11px;color:#888;margin-top:6px;margin-bottom:12px;">All {len(locations)} monitored sites at baseline</div>'
+
         loc_cards = ""
         for i in range(0, len(locations), 2):
             row_cards = ""
@@ -514,7 +588,7 @@ def render(digest: dict) -> str:
                 name = _esc(loc.get("name", ""))
                 status = loc.get("status", "normal")
                 note = _esc(loc.get("note", ""))
-                last_report = _esc(loc.get("last_report", ""))
+                last_source_date = _esc(loc.get("last_source_date", ""))
                 direction = loc.get("direction", "")
                 b_color, b_bg, b_label = _badge_styles.get(status, ("#7F8C8D", "#F5F5F5", "Monitor"))
                 if direction == "up":
@@ -522,13 +596,21 @@ def render(digest: dict) -> str:
                 elif direction == "down":
                     b_label += " &#9660;"
                 status_badge = f'<span style="display:inline-block;padding:2px 8px;border-radius:3px;font-size:9px;font-weight:700;color:#fff;background:{b_color};letter-spacing:0.5px;">{b_label}</span>'
-                note_html = f'<div style="font-size:11px;line-height:1.4;color:#666;margin-top:4px;">{note}</div>' if note else ""
+                # Note rendering — style differently for carried-forward vs active
+                note_html = ""
+                if note and "no new reporting" in note.lower():
+                    note_html = f'<div style="font-size:10px;line-height:1.3;color:#999;margin-top:4px;font-style:italic;">{note}</div>'
+                elif note:
+                    note_html = f'<div style="font-size:11px;line-height:1.4;color:#555;margin-top:4px;">{note}</div>'
+                # Last report date — more prominent with clock icon
+                last_html = f'<div style="font-size:9px;color:#999;margin-top:3px;">&#9201; {last_source_date}</div>' if last_source_date and last_source_date != "unknown" else ""
                 row_cards += f"""
                 <td style="width:50%;padding:4px;vertical-align:top;">
-                  <div style="background:{b_bg};border-radius:4px;padding:10px 12px;border-left:3px solid {b_color};min-height:60px;">
-                    <div style="font-size:12px;font-weight:700;color:#1B2A4A;margin-bottom:3px;">{name}</div>
-                    <div style="margin-bottom:4px;">{status_badge} <span style="font-size:9px;color:#999;margin-left:4px;">{last_report}</span></div>
+                  <div style="background:{b_bg};border-radius:4px;padding:10px 12px;border-left:3px solid {b_color};">
+                    <div style="font-size:12px;font-weight:700;color:#1B2A4A;margin-bottom:4px;">{name}</div>
+                    <div style="margin-bottom:2px;">{status_badge}</div>
                     {note_html}
+                    {last_html}
                   </div>
                 </td>"""
             if len(locations) - i == 1:
@@ -538,6 +620,7 @@ def render(digest: dict) -> str:
         sections.append(f"""
         <div {_SEC}>
           <a name="satellite"></a><span {_PILL("#2C3E50")}>Satellite &amp; Location Watch</span>
+          {summary_html}
           {img_report_html}
           <table width="100%" cellpadding="0" cellspacing="0" border="0" class="loc-grid">
             {loc_cards}
@@ -607,7 +690,7 @@ def render(digest: dict) -> str:
                   <tr>
                     <td width="50" style="padding:10px 10px 10px 0;text-align:center;vertical-align:top;">
                       <div style="font-size:10px;text-transform:uppercase;color:#888;letter-spacing:0.5px;">{cal_month}</div>
-                      <div class="cal-date" style="font-size:18px;font-weight:300;color:#1B2A4A;line-height:1;">{cal_day}</div>
+                      <div class="cal-date" style="font-size:18px;font-weight:300;color:#1B2A4A;line-height:1.2;">{cal_day}</div>
                     </td>
                     <td style="padding:10px 0;vertical-align:top;">
                       <div style="font-size:13px;font-weight:600;color:#1B2A4A;margin-bottom:2px;">{cal_headline}</div>
@@ -619,7 +702,6 @@ def render(digest: dict) -> str:
             <div style="margin-top:20px;">
               <div style="padding:8px 0;border-bottom:1px solid #1B2A4A;margin-bottom:4px;">
                 <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#1B2A4A;">Upcoming</span>
-                <span style="font-size:11px;color:#888;margin-left:8px;">14 days</span>
               </div>
               {cal_items}
             </div>"""
@@ -741,9 +823,7 @@ def render(digest: dict) -> str:
               </div>
               <div style="font-size:11px;color:#555;line-height:1.4;margin-bottom:8px;">{h_note}</div>
               {s122_line}
-              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:8px;border-top:1px solid #F0E0E0;">
-                {sector_rows}
-              </table>
+              {'<table class="tariff-sector" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:8px;border-top:1px solid #F0E0E0;">' + sector_rows + '</table>' if sector_rows.strip() else ''}
               <div style="margin-top:8px;font-size:10px;color:#999;">{last_change}</div>
               {next_line}
             </div>"""
@@ -798,20 +878,22 @@ def render(digest: dict) -> str:
                 item_text = _esc(tr.get("item", ""))
                 detail_text = _esc(tr.get("detail", ""))
                 agency = _esc(tr.get("agency", ""))
+                item_url = tr.get("url", "")
                 st = tr.get("status", "MONITOR")
                 st_color = status_colors.get(st, "#7F8C8D")
                 status_badge = f'<span style="display:inline-block;padding:1px 6px;border-radius:3px;font-size:9px;font-weight:700;color:#fff;background:{st_color};letter-spacing:0.5px;">{_esc(st)}</span>'
                 agency_tag = f'<span style="font-size:9px;color:#888;font-weight:400;"> · {agency}</span>' if agency else ""
+                item_label = f'<a href="{_esc(item_url)}" style="color:#1B2A4A;text-decoration:underline;" target="_blank">{item_text}</a>' if item_url and item_url != "#" and item_url.startswith("http") else item_text
                 tracker_rows += f"""
                 <tr style="border-bottom:1px solid #F0F0F0;">
-                  <td style="padding:6px 8px 6px 0;vertical-align:top;font-size:12px;font-weight:600;color:#1B2A4A;width:30%;">{item_text}{agency_tag}</td>
+                  <td style="padding:6px 8px 6px 0;vertical-align:top;font-size:12px;font-weight:600;color:#1B2A4A;width:30%;">{item_label}{agency_tag}</td>
                   <td style="padding:6px 4px;vertical-align:top;font-size:11px;color:#555;line-height:1.4;">{detail_text}</td>
                   <td style="padding:6px 0 6px 4px;vertical-align:top;text-align:right;white-space:nowrap;">{status_badge}</td>
                 </tr>"""
             header_html += f"""
             <div style="margin-bottom:16px;">
               <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#888;font-weight:600;margin-bottom:6px;">US Trade Policy Tracker</div>
-              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #E8E8E8;">
+              <table class="trade-policy" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #E8E8E8;">
                 {tracker_rows}
               </table>
             </div>"""
@@ -865,12 +947,6 @@ def render(digest: dict) -> str:
             "real-estate": "#E67E22", "macro": "#C0392B",
         }
         for item in biz_econ:
-            cat = _esc(item.get("category", item.get("sector", "")))
-            headline = _esc(item.get("headline", ""))
-            body = _esc(item.get("body_text", ""))
-            src = _esc(item.get("source", ""))
-            url = item.get("url", "")
-            bar_color = biz_sector_colors.get(item.get("sector", ""), "#1B2A4A")
             companies = item.get("companies") or []
             company_tags = ""
             if companies:
@@ -879,15 +955,15 @@ def render(digest: dict) -> str:
                     for c in companies[:3]
                 )
                 company_tags = f'<div style="margin-top:3px;">{company_tags}</div>'
-            biz_html += f"""
-            <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid {bar_color};">
-              <div style="font-size:11px;color:#888;text-transform:uppercase;">{cat} &middot; {src}</div>
-              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
-                {_link_or_text(headline, url)}
-              </div>
-              <div style="font-size:12px;line-height:1.4;color:#555;">{body}</div>
-              {company_tags}
-            </div>"""
+            biz_html += _item_block(
+                cat=_esc(_str(item.get("category", item.get("sector", "")))),
+                src=_esc(_clean_src(item.get("source", ""))),
+                headline=_esc(item.get("headline", "")),
+                body=_esc(item.get("body_text", "")),
+                url=item.get("url", ""),
+                bar_color=biz_sector_colors.get(_str(item.get("sector", "")), "#1B2A4A"),
+                extra_html=company_tags,
+            )
         sections.append(f"""
         <div {_SEC}>
           <a name="business"></a><span {_PILL("#D4AC0D")}>Business &amp; Economy</span>
@@ -916,15 +992,16 @@ def render(digest: dict) -> str:
         region_colors = {"Japan-Korea": "#1B6A4A", "China-Korea": "#8B0000", "Trilateral": "#2E4057", "Russia-Korea": "#7B241C"}
         nea_html = ""
         for item in nea_items:
-            cat = _esc(item.get("category", ""))
+            cat_raw = _str(item.get("category", ""))
+            cat = _esc(cat_raw)
             headline = _esc(item.get("headline", ""))
             body = _esc(item.get("body_text", ""))
-            src = _esc(item.get("source", ""))
+            src = _esc(_clean_src(item.get("source", "")))
             url = item.get("url", "")
             sig = item.get("signal_type", "")
-            region = item.get("region_tag", "")
+            region = _str(item.get("region_tag", ""))
             is_reaction = item.get("is_reaction_source", False)
-            bar_color = nea_cat_colors.get(item.get("category", ""), region_colors.get(region, "#1B2A4A"))
+            bar_color = nea_cat_colors.get(cat_raw, region_colors.get(region, "#1B2A4A"))
             reaction_badge = ""
             if is_reaction:
                 badge_label = "PRC SOURCE" if "China" in region else "STATE MEDIA"
@@ -952,12 +1029,12 @@ def render(digest: dict) -> str:
     sentiment = digest.get("public_sentiment") or {}
     if sentiment and any(sentiment.values()):
         def _sentiment_cell(label, data, width="25%"):
-            if not data or not data.get("value"):
+            if not data or not data.get("value") or str(data.get("value")).strip().lower() in ("none", ""):
                 return f"""
                 <td width="{width}" align="center" style="padding:8px 6px;">
-                  <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;">{label}</div>
+                  <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;">{label}</div>
                   <div style="font-size:16px;font-weight:700;color:#888;">--</div>
-                  <div style="font-size:9px;opacity:0.5;">No recent data</div>
+                  <div style="font-size:10px;opacity:0.5;">No recent data</div>
                 </td>"""
             val = _esc(str(data.get("value", "")))
             trend = data.get("trend", "")
@@ -972,10 +1049,10 @@ def render(digest: dict) -> str:
                 trend_arrow = '<span style="color:#888;">&#8594;</span>'
             return f"""
             <td width="{width}" align="center" style="padding:8px 6px;">
-              <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;">{label}</div>
+              <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;">{label}</div>
               <div style="font-size:16px;font-weight:700;">{val} {trend_arrow}</div>
-              <div style="font-size:9px;opacity:0.5;">{source}</div>
-              <div style="font-size:8px;opacity:0.4;">{updated}</div>
+              <div style="font-size:10px;opacity:0.5;">{source}</div>
+              <div style="font-size:10px;opacity:0.5;">{updated}</div>
             </td>"""
 
         approval = sentiment.get("presidential_approval") or {}
@@ -1019,7 +1096,7 @@ def render(digest: dict) -> str:
                         continue
                 if poll_dt and (now - poll_dt).days > 7:
                     stale_html = f"""
-            <div style="margin-top:8px;font-size:9px;color:#999;text-align:center;">
+            <div style="margin-top:8px;font-size:10px;color:#999;text-align:center;">
               Data from {_esc(poll_updated)} — newer polling may be available
             </div>"""
             except Exception:
@@ -1047,20 +1124,14 @@ def render(digest: dict) -> str:
     if combined_also:
         wire_html = ""
         for item in combined_also:
-            cat = _esc(item.get("category", ""))
-            headline = _esc(item.get("headline", ""))
-            body = _esc(item.get("body_text", ""))
-            src = _esc(item.get("source", ""))
-            url = item.get("url", "")
-            bar_color = _color_bar(item.get("color_bar_class", ""))
-            wire_html += f"""
-            <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid {bar_color};">
-              <div style="font-size:11px;color:#888;text-transform:uppercase;">{cat} &middot; {src}</div>
-              <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
-                {_link_or_text(headline, url)}
-              </div>
-              <div style="font-size:12px;line-height:1.4;color:#555;">{body}</div>
-            </div>"""
+            wire_html += _item_block(
+                cat=_esc(_str(item.get("category", ""))),
+                src=_esc(_clean_src(item.get("source", ""))),
+                headline=_esc(item.get("headline", "")),
+                body=_esc(item.get("body_text", "")),
+                url=item.get("url", ""),
+                bar_color=_color_bar(_str(item.get("color_bar_class", ""))),
+            )
         sections.append(f"""
         <div {_SEC}>
           <a name="wire"></a><span {_PILL("#7F8C8D")}>The Wire</span>
@@ -1088,8 +1159,8 @@ def render(digest: dict) -> str:
             <div style="margin-bottom:12px;padding:12px;background:#F8F9FA;border-radius:6px;border-left:3px solid {badge_color};">
               <table cellpadding="0" cellspacing="0" border="0" style="margin-bottom:6px;">
                 <tr>
-                  <td width="28" style="vertical-align:middle;">
-                    <div style="width:28px;height:28px;border-radius:50%;background:{badge_color};color:#fff;text-align:center;line-height:28px;font-size:11px;font-weight:700;">{initials}</div>
+                  <td width="36" style="vertical-align:middle;">
+                    <div style="width:36px;height:36px;border-radius:50%;background:{badge_color};color:#fff;text-align:center;line-height:36px;font-size:13px;font-weight:700;">{initials}</div>
                   </td>
                   <td style="padding-left:8px;vertical-align:middle;">
                     <div style="font-size:12px;font-weight:600;color:#1B2A4A;">{who}</div>
@@ -1097,7 +1168,7 @@ def render(digest: dict) -> str:
                   </td>
                 </tr>
               </table>
-              <p style="margin:0 0 6px 0;font-size:12px;line-height:1.4;color:#333;font-style:italic;">&ldquo;{quote}&rdquo;</p>
+              <p style="margin:0 0 6px 0;font-size:13px;line-height:1.5;color:#333;font-style:italic;">&ldquo;{quote}&rdquo;</p>
               {"<p style='margin:0;font-size:11px;color:#2980B9;'><strong>Analyst:</strong> " + note + "</p>" if note else ""}
               {source_link}
             </div>"""
@@ -1158,11 +1229,13 @@ def render(digest: dict) -> str:
       {otd_footer}
       <div style="font-size:11px;color:rgba(255,255,255,0.6);line-height:1.5;">
         Korea Daily Brief &middot; By Andy Lim &middot; CSIS Korea Chair<br>
-        {_esc(date_str)} &middot; {gen_time}<br>
-        <span style="color:rgba(255,255,255,0.4);">Read alongside primary sources</span>
+        {_esc(date_str)} &middot; {gen_time}
       </div>
-      <div style="font-size:9px;color:rgba(255,255,255,0.35);margin-top:12px;line-height:1.5;">
+      <div style="font-size:10px;color:rgba(255,255,255,0.55);margin-top:12px;line-height:1.5;">
         CSIS &middot; 1616 Rhode Island Ave NW &middot; Washington, DC 20036
+      </div>
+      <div style="font-size:9px;color:rgba(255,255,255,0.35);margin-top:8px;">
+        <a href="mailto:korea-brief@csis.org?subject=Unsubscribe%20Korea%20Daily%20Brief" style="color:rgba(255,255,255,0.4);text-decoration:underline;">Unsubscribe</a>
       </div>
     </div>
     """)
@@ -1189,6 +1262,8 @@ def render(digest: dict) -> str:
       /* BP Facility tracker — stack on mobile */
       .loc-grid td {{ display:block !important; width:100% !important; padding:4px 0 !important; }}
       .loc-grid tr {{ display:block !important; }}
+      /* BP notes — bump font size for readability on mobile */
+      .loc-grid div[style*="font-size:11px"] {{ font-size:12px !important; }}
       /* Calendar watch tables — stack date beside text on narrow screens */
       .cal-table td[width="50"] {{ width:40px !important; padding:8px 6px 8px 0 !important; }}
       /* ROK Government grid — stack on mobile */
@@ -1197,11 +1272,14 @@ def render(digest: dict) -> str:
       .cal-date {{ font-size:18px !important; }}
       /* Deal / business cards — tighter on mobile */
       .deal-card {{ padding:10px !important; }}
-      /* Deal breakdown table — full width on mobile */
-      .deal-breakdown td {{ padding:3px 4px !important; font-size:10px !important; }}
-      /* Sentiment tracker — 2x2 grid on mobile */
-      .sentiment-table tr {{ display:flex !important; flex-wrap:wrap !important; }}
-      .sentiment-table td {{ display:block !important; width:50% !important; box-sizing:border-box !important; padding:10px 6px !important; text-align:center !important; }}
+      /* Deal breakdown table — stack on mobile so company/value/sector don't overflow */
+      .deal-breakdown td {{ display:block !important; width:100% !important; padding:2px 8px !important; font-size:11px !important; white-space:normal !important; }}
+      .deal-breakdown tr {{ display:block !important; border-bottom:1px solid #E8EDF3 !important; padding:4px 0 !important; }}
+      /* Sentiment tracker — 2x2 grid on mobile (no flexbox for Outlook) */
+      .sentiment-table td {{ display:inline-block !important; width:48% !important; box-sizing:border-box !important; padding:10px 4px !important; text-align:center !important; }}
+      /* Tariff sector table — stack on mobile */
+      .tariff-sector td {{ display:block !important; width:100% !important; padding:3px 8px !important; white-space:normal !important; }}
+      .tariff-sector tr {{ display:block !important; border-bottom:1px solid #F0E0E0 !important; padding:4px 0 !important; }}
       /* Typography */
       h1 {{ font-size:19px !important; }}
       h2 {{ font-size:12px !important; }}
@@ -1213,22 +1291,56 @@ def render(digest: dict) -> str:
       /* Tighter body text on mobile */
       p, div {{ word-wrap:break-word !important; overflow-wrap:break-word !important; }}
       /* Quote cards in KCNA */
-      .kcna-quote {{ padding:6px 10px !important; }}
+      .kcna-quote {{ padding:8px 10px !important; }}
+      /* KCNA — reduce side padding so nothing is clipped on mobile */
+      .kcna-dark td {{ padding-left:14px !important; padding-right:14px !important; }}
+      .kcna-dark > div {{ padding:16px 14px !important; }}
+      /* KCNA phrase table — prevent horizontal overflow */
+      .kcna-dark table {{ table-layout:fixed !important; }}
+      .kcna-dark table td {{ white-space:normal !important; word-break:break-word !important; }}
+      /* Stack Kim / Output volume / Tone shift cards vertically on phones */
+      .kcna-kv td {{ display:block !important; width:100% !important; padding-right:0 !important; padding-bottom:8px !important; }}
+      .kcna-kv td[colspan] {{ display:block !important; }}
+      /* KCNA senior official cards — stack vertically on mobile */
+      .kcna-dark div[style*="display:inline-block"][style*="border-left:2px solid #5DADE2"] {{ display:block !important; margin-right:0 !important; }}
+      /* KCNA phrase bar viz — cap width on mobile */
+      .kcna-dark span[style*="height:3px"] {{ max-width:40px !important; }}
+      /* Scale up tiny fonts for mobile readability */
+      .mkt-table div {{ font-size:11px !important; }}
+      .mkt-table div[style*="font-size:18px"], .mkt-table div[style*="font-size:15px"] {{ font-size:16px !important; }}
+      /* Trade policy tracker — stack on narrow screens */
+      .trade-policy td {{ display:block !important; width:100% !important; padding:4px 8px !important; }}
+      .trade-policy tr {{ display:block !important; border-bottom:1px solid #E8E8E8 !important; padding:6px 0 !important; }}
+    }}
+    /* Tablet breakpoint — tighten padding, keep grids side-by-side */
+    @media only screen and (min-width: 621px) and (max-width: 768px) {{
+      .wrapper {{ width:100% !important; }}
+      .sec, .footer {{ padding:14px 20px !important; }}
+      h1 {{ font-size:21px !important; }}
+      .deal-card {{ padding:12px !important; }}
+      .mkt-table div[style*="font-size:18px"], .mkt-table div[style*="font-size:15px"] {{ font-size:16px !important; }}
     }}
     /* Dark mode support */
     @media (prefers-color-scheme: dark) {{
+      body {{ background:#121212 !important; }}
       .wrapper {{ background:#1a1a1a !important; }}
       .wrapper .sec {{ background:#222 !important; border-bottom-color:#333 !important; }}
       .wrapper h1, .wrapper h2, .wrapper h3 {{ color:#E0E0E0 !important; }}
-      .wrapper p, .wrapper div {{ color:#CCC !important; }}
+      .wrapper p, .wrapper div, .wrapper td, .wrapper span {{ color:#CCC !important; }}
       .wrapper a {{ color:#5DADE2 !important; }}
       .wrapper .footer {{ background:#0F1A2E !important; }}
-      .wrapper .story-card {{ background:#2a2a2a !important; }}
+      .wrapper .story-card {{ background:#2a2a2a !important; border-color:#333 !important; }}
       .wrapper .kcna-dark {{ background:#1a2a1a !important; }}
       .wrapper .kcna-dark table {{ background:#1a2a1a !important; }}
       .wrapper .gov-grid div {{ background:#2a2a2a !important; }}
+      .wrapper .loc-grid div {{ background:#2a2a2a !important; border-color:#555 !important; }}
+      .wrapper .loc-grid div[style*="color:#1B2A4A"] {{ color:#D0D0D0 !important; }}
+      .wrapper .loc-grid div[style*="color:#555"] {{ color:#AAA !important; }}
+      .wrapper .loc-grid div[style*="color:#999"] {{ color:#888 !important; }}
       .wrapper .sentiment-spotlight {{ background:#1a2a3a !important; border-left-color:#2980B9 !important; color:#CCC !important; }}
       .wrapper .sentiment-discourse {{ background:#3a2a1a !important; border-left-color:#E67E22 !important; color:#CCC !important; }}
+      .wrapper .deal-card {{ background:#2a2a2a !important; border-color:#333 !important; }}
+      .wrapper .mkt-table td {{ border-color:#333 !important; }}
     }}
   </style>
   <!--[if mso]>

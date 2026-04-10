@@ -2,8 +2,10 @@ name: Daily Korea News Digest
 
 on:
   schedule:
-    # 6:00 AM ET = 11:00 AM UTC (EST) / 10:00 AM UTC (EDT)
-    - cron: '0 10 * * *'
+    # Primary: 7:00 AM ET = 12:00 PM UTC (EST) / 11:00 AM UTC (EDT)
+    - cron: '0 11 * * *'
+    # Fallback: 8:00 AM ET — gives primary run 1 hour to complete
+    - cron: '0 12 * * *'
   workflow_dispatch: # Allow manual trigger
 
 permissions:
@@ -14,17 +16,55 @@ jobs:
   send-digest:
     runs-on: ubuntu-latest
     steps:
+      # Guard: for fallback cron, skip if primary already succeeded today
+      - name: Check if already sent today
+        id: guard
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          if [ "${{ github.event_name }}" != "schedule" ]; then
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          today=$(date -u +%Y-%m-%d)
+          # Check for successful OR in-progress runs today
+          success_count=$(gh run list --repo ${{ github.repository }} \
+            --workflow "Daily Korea News Digest" \
+            --status success --created "$today" \
+            --json conclusion -q 'length' 2>/dev/null || echo "0")
+          inprogress_count=$(gh run list --repo ${{ github.repository }} \
+            --workflow "Daily Korea News Digest" \
+            --status in_progress --created "$today" \
+            --json conclusion -q 'length' 2>/dev/null || echo "0")
+          total=$((success_count + inprogress_count))
+          is_fallback="${{ github.event.schedule }}"
+          if [ "$total" -gt "1" ] && [ "$is_fallback" = "0 12 * * *" ]; then
+            echo "Primary run already succeeded or is in progress — skipping fallback"
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+          elif [ "$success_count" -gt "0" ] && [ "$is_fallback" = "0 12 * * *" ]; then
+            echo "Primary run already succeeded today — skipping fallback"
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/checkout@v4
+        if: steps.guard.outputs.should_run == 'true'
 
       - name: Set up Python
+        if: steps.guard.outputs.should_run == 'true'
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+          cache: 'pip'
 
       - name: Install dependencies
+        if: steps.guard.outputs.should_run == 'true'
         run: pip install -r requirements.txt
 
       - name: Generate and send digest
+        if: steps.guard.outputs.should_run == 'true'
+        id: send
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
@@ -32,11 +72,34 @@ jobs:
           DIGEST_TO: ${{ secrets.DIGEST_TO }}
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
           WEB_URL: https://andysaulim.github.io/Daily-Korea-Digest
-        run: python run.py
+        run: |
+          python run.py
+          echo "success=true" >> "$GITHUB_OUTPUT"
+
+      # Post-email steps use continue-on-error so a Pages/README failure
+      # doesn't mark the workflow as "failed" and trigger a duplicate
+      # email from the fallback cron.
+      - name: Update README with run stats
+        if: steps.guard.outputs.should_run == 'true'
+        continue-on-error: true
+        run: python update_readme.py
 
       - name: Deploy to GitHub Pages
+        if: steps.guard.outputs.should_run == 'true'
+        continue-on-error: true
         uses: peaceiris/actions-gh-pages@v4
         with:
           personal_token: ${{ secrets.GH_PAT }}
           publish_dir: ./public
           keep_files: true
+
+      - name: Commit updated README
+        if: steps.guard.outputs.should_run == 'true'
+        continue-on-error: true
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add README.md
+          if ! git diff --cached --quiet; then
+            git commit -m "Update README stats [skip ci]" && git push
+          fi

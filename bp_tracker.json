@@ -1,0 +1,82 @@
+{
+  "locations": {
+    "Yongbyon Nuclear Complex": {
+      "name": "Yongbyon Nuclear Complex",
+      "status": "activity",
+      "note": "Jan 2026: 5 MWe reactor and IRT-2000 research reactor both operating. Thermal cladding discovered on centrifuge enrichment facility roof (first observed late 2025). Suspected new enrichment building under construction nearby.",
+      "last_source_date": "2026-01",
+      "direction": "up"
+    },
+    "Sinpo South Shipyard": {
+      "name": "Sinpo South Shipyard",
+      "status": "activity",
+      "note": "Feb 2025: Hero Kim Kun Ok SLBM submarine exited drydock after 2+ years of fitting-out but still not operational as of May 2025. New submarine construction begun in separate bay.",
+      "last_source_date": "2025-05",
+      "direction": "up"
+    },
+    "THAAD Site \u2014 Seongju County": {
+      "name": "THAAD Site \u2014 Seongju County",
+      "status": "activity",
+      "note": "Mar 2026: All 6 THAAD launchers redeployed to Middle East amid Iran tensions. At least 2 launchers may have returned to Seongju by late Mar 2026. Battery operational status uncertain.",
+      "last_source_date": "2026-03",
+      "direction": "down"
+    },
+    "Sohae Satellite Launch Station": {
+      "name": "Sohae Satellite Launch Station",
+      "status": "activity",
+      "note": "Sep-Oct 2025: Small engine test detected at Sohae vertical engine test stand. New seaport facility and large assembly building construction progressing on site.",
+      "last_source_date": "2025-10",
+      "direction": "up"
+    },
+    "Punggye-ri Nuclear Test Site": {
+      "name": "Punggye-ri Nuclear Test Site",
+      "status": "activity",
+      "note": "Nov 2025: ROK DIA assessed Tunnel No. 3 is test-ready and a nuclear test can be conducted at any time upon political decision. Site maintained at high readiness since mid-2024.",
+      "last_source_date": "2025-11",
+      "direction": "up"
+    },
+    "Tumangang\u2013Khasan (NK-Russia border)": {
+      "name": "Tumangang\u2013Khasan (NK-Russia border)",
+      "status": "activity",
+      "note": "2025-2026: New road bridge under construction at Tumangang-Khasan crossing (target completion Dec 2026). Passenger rail service resumed mid-2025. Ore and tank car traffic increasing.",
+      "last_source_date": "2026-01",
+      "direction": "up"
+    },
+    "Sinuiju\u2013Dandong (NK-China border)": {
+      "name": "Sinuiju\u2013Dandong (NK-China border)",
+      "status": "activity",
+      "note": "Mar 12, 2026: Cross-border passenger train service resumed between Sinuiju and Dandong after COVID-era suspension. New Yalu River Bridge may open in 2026.",
+      "last_source_date": "2026-03-12",
+      "direction": "up"
+    },
+    "Rason SEZ": {
+      "name": "Rason SEZ",
+      "status": "activity",
+      "note": "Nov 2025: Chinese businesspeople re-entry to Rason SEZ expanded. Coal exports through Rason at highest levels in years throughout 2025. Arms export berth also active (see Vostochny entry).",
+      "last_source_date": "2025-11",
+      "direction": "up"
+    },
+    "Yellow Sea NLL": {
+      "name": "Yellow Sea NLL",
+      "status": "normal",
+      "note": "Sep 26, 2025: 140m DPRK merchant vessel Toksong crossed NLL near Baengnyeong Island, advanced 5km south. ROK Navy fired ~60 warning shots; vessel retreated after 1 hour. Ship switched AIS nationality to China and flew Chinese flag. First NLL intrusion in three years.",
+      "last_source_date": "2025-09-26",
+      "direction": ""
+    },
+    "Yellow Sea PMZ": {
+      "name": "Yellow Sea PMZ",
+      "status": "activity",
+      "note": "Atlantic Amsterdam (converted oil rig, Chinese aquaculture platform) relocated out of PMZ Jan 27-28, 2026 to Weihai shipyard following Lee Jae-myung Beijing state visit. Two giant aquaculture cages (Shen Lan 1, Shen Lan 2) and 13 buoys remain in the PMZ.",
+      "last_source_date": "2026-01-28",
+      "direction": "down"
+    },
+    "Vostochny/Dunai (Russian Far East)": {
+      "name": "Vostochny/Dunai (Russian Far East)",
+      "status": "activity",
+      "note": "Jan 2026: Arms shipments slowed due to ice \u2014 one Russian vessel (likely Angara or Lady R) visited Rason, docked Jan 14 at arms export berth. Cargo routed to Vostochny. Since Sep 2023: 64 voyages by 4 vessels (Angara, Maria, Maya-1, Lady R) delivered ~15,800 containers (~4.2-5.8M munitions) from Rajin to Vostochny/Dunai.",
+      "last_source_date": "2026-01",
+      "direction": "up"
+    }
+  },
+  "last_updated": "2026-03-27T12:00:00.000000+00:00"
+}
