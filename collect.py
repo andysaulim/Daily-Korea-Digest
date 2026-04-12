@@ -557,13 +557,15 @@ def _collect_markets() -> dict:
         "usd_krw": "KRW=X",
     }
     STOOQ_SYMBOLS = {
-        "kospi": "^kospi",
+        "kospi": "^ks11",      # Stooq ticker for KOSPI Composite
         "brent": "cb.f",       # ICE Brent Crude continuous futures
         "usd_krw": "usdkrw",
     }
-    # Sanity ranges — if price falls outside, the data is likely stale/garbage
+    # Sanity ranges — if price falls outside, the data is likely stale/garbage.
+    # KOSPI upper bound set generously (2026+ headroom); tighten only if
+    # scraped data starts drifting wildly above 10k.
     _SANITY_RANGES = {
-        "kospi": (1500, 4500),
+        "kospi": (1500, 10000),
         "brent": (40, 200),
         "usd_krw": (1000, 1700),
     }

@@ -598,9 +598,95 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
     return warnings
 
 
-def _postprocess_digest(digest_data: dict) -> tuple[dict, list[str]]:
-    """Run dedup, deal filter, and source diversity on digest. Returns (digest, all_log_messages)."""
+def _headline_tokens(text: str) -> set[str]:
+    """Tokenize a headline for fuzzy matching: drop stopwords and short words."""
+    if not text:
+        return set()
+    return {w for w in re.split(r"\W+", text.lower())
+            if len(w) > 2 and w not in _STOP_WORDS}
+
+
+def _repair_digest_urls(digest: dict, payload: dict) -> list[str]:
+    """Fix digest URLs that don't exactly match any input-feed URL.
+
+    Claude sometimes outputs Google News RSS URLs with slightly altered query
+    strings, or drops/adds parameters, so `url not in input_urls` false-positive
+    fires during validation. This repair pass matches digest items to input
+    articles by headline token overlap and rewrites the URL to the verbatim
+    input value before validation runs.
+
+    Mutates digest in place. Returns a list of log messages.
+    """
+    log: list[str] = []
+    if not payload:
+        return log
+
+    # Index every input article: canonical URL -> (url, title, tokens)
+    input_articles: list[tuple[str, str, set[str]]] = []
+    input_urls: set[str] = set()
+    for tier_key in ("tier1", "tier2", "tier3", "tier4"):
+        for a in (payload.get(tier_key) or []):
+            u = (a.get("url") or "").strip()
+            if not u or not u.startswith("http"):
+                continue
+            input_urls.add(u)
+            title = (a.get("title") or a.get("headline") or "").strip()
+            input_articles.append((u, title, _headline_tokens(title)))
+
+    if not input_urls:
+        return log
+
+    for section_key in _ALL_ITEM_SECTIONS:
+        items = digest.get(section_key)
+        if not items or not isinstance(items, list):
+            continue
+        for item in items:
+            url = (item.get("url") or "").strip()
+            if not url or not url.startswith("http"):
+                continue
+            if url in input_urls:
+                continue  # already matches verbatim
+
+            headline = (item.get("headline") or item.get("translated_title")
+                        or item.get("title") or "").strip()
+            tokens = _headline_tokens(headline)
+            if len(tokens) < 3:
+                continue  # not enough signal for a reliable match
+
+            best_url = None
+            best_score = 0
+            for in_url, in_title, in_tokens in input_articles:
+                if not in_tokens:
+                    continue
+                overlap = tokens & in_tokens
+                # Need at least 3 shared non-stopword tokens and >=50% of the
+                # shorter headline's tokens to overlap.
+                min_len = min(len(tokens), len(in_tokens))
+                if len(overlap) >= 3 and len(overlap) / min_len >= 0.5:
+                    if len(overlap) > best_score:
+                        best_score = len(overlap)
+                        best_url = in_url
+            if best_url:
+                log.append(
+                    f"  Repaired URL in {section_key}: '{headline[:60]}' "
+                    f"({best_score} token match)")
+                item["url"] = best_url
+
+    return log
+
+
+def _postprocess_digest(digest_data: dict, payload: dict | None = None) -> tuple[dict, list[str]]:
+    """Run dedup, deal filter, source diversity, and URL repair. Returns (digest, all_log_messages)."""
     log = []
+
+    # Repair first — so dedup sees the canonical URLs and can detect dupes
+    # between sections that previously had mangled URLs
+    if payload:
+        repair_log = _repair_digest_urls(digest_data, payload)
+        if repair_log:
+            log.append(f"\n🔧  URL repair: fixed {len(repair_log)} mismatched URL(s) by headline match:")
+            log.extend(repair_log)
+
     digest_data, dedup_log = _dedup_digest(digest_data)
     if dedup_log:
         log.append(f"\n🧹  Auto-dedup removed {len(dedup_log)} duplicate(s):")
@@ -660,8 +746,8 @@ def main():
     MAX_VALIDATION_RETRIES = 2
     digest_data = generate_digest(payload, db_context=db_context)
 
-    # Auto-strip duplicates, filter deals, enforce source diversity
-    digest_data, pp_log = _postprocess_digest(digest_data)
+    # Auto-strip duplicates, filter deals, enforce source diversity, repair URLs
+    digest_data, pp_log = _postprocess_digest(digest_data, payload=payload)
     for msg in pp_log:
         print(msg)
 
@@ -715,8 +801,8 @@ def main():
                 payload, digest_data, retryable_warnings, db_context=db_context,
                 attempt=validation_attempt
             )
-            # Post-process again after regeneration
-            digest_data, pp_log = _postprocess_digest(digest_data)
+            # Post-process again after regeneration (incl. URL repair)
+            digest_data, pp_log = _postprocess_digest(digest_data, payload=payload)
             for msg in pp_log:
                 print(f"  {msg}")
             Path("digest.json").write_text(json.dumps(digest_data, ensure_ascii=False, indent=2))
