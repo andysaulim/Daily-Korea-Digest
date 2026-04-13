@@ -393,10 +393,13 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
     if not re_line or len(str(re_line).strip()) < 10:
         warnings.append("RE: LINE CRITICAL: missing or too short")
 
-    # ── Word count check (hard minimum 1000, target 1200-1400) ──────────
+    # ── Word count check (hard minimum 850, target 1200-1400) ──────────
+    # Hard floor lowered from 1000: legitimate slow-news-day digests were
+    # landing at ~900-980 words and blocking sending. 850 catches genuinely
+    # truncated outputs without false-positive on slim days.
     word_count = _count_digest_words(digest)
-    if word_count < 1000:
-        warnings.append(f"WORD COUNT CRITICAL: ~{word_count} words (HARD MINIMUM 1000 — newsletter is too short)")
+    if word_count < 850:
+        warnings.append(f"WORD COUNT CRITICAL: ~{word_count} words (HARD MINIMUM 850 — newsletter is too short)")
     elif word_count < 1200:
         warnings.append(f"WORD COUNT: ~{word_count} words (target 1200-1400 for 5-min read)")
 
@@ -607,13 +610,23 @@ def _headline_tokens(text: str) -> set[str]:
 
 
 def _repair_digest_urls(digest: dict, payload: dict) -> list[str]:
-    """Fix digest URLs that don't exactly match any input-feed URL.
+    """Repair or drop digest items whose URLs don't match any input-feed URL.
 
     Claude sometimes outputs Google News RSS URLs with slightly altered query
-    strings, or drops/adds parameters, so `url not in input_urls` false-positive
-    fires during validation. This repair pass matches digest items to input
-    articles by headline token overlap and rewrites the URL to the verbatim
-    input value before validation runs.
+    strings (repairable by headline match) or outright fabricates items that
+    have no input backing (unrepairable — must be dropped so validation can
+    pass).
+
+    Two-pass behavior per digest item whose URL isn't in the input set:
+      1. Fuzzy-match by headline token overlap (>=3 shared non-stopword tokens
+         AND >=50% of the shorter headline). If found, rewrite URL to verbatim.
+      2. Otherwise mark for drop. After processing a section, drop all marked
+         items subject to section floors (top_stories >= 2, overnight_items >= 3).
+         If a section would fall below its floor, restore the minimum number
+         of items from the end of the drop list (least likely to be real news
+         since they're last in priority order).
+
+    Also drops items with empty headline AND empty body (garbage entries).
 
     Mutates digest in place. Returns a list of log messages.
     """
@@ -621,7 +634,7 @@ def _repair_digest_urls(digest: dict, payload: dict) -> list[str]:
     if not payload:
         return log
 
-    # Index every input article: canonical URL -> (url, title, tokens)
+    # Index every input article: (url, title, tokens)
     input_articles: list[tuple[str, str, set[str]]] = []
     input_urls: set[str] = set()
     for tier_key in ("tier1", "tier2", "tier3", "tier4"):
@@ -636,41 +649,88 @@ def _repair_digest_urls(digest: dict, payload: dict) -> list[str]:
     if not input_urls:
         return log
 
+    # Section floors — emergency minimums when dropping fabricated items.
+    # These are deliberately 1 lower than the strict digest floors so we can
+    # still drop obvious hallucinations without starving the section.
+    _DROP_FLOORS = {"top_stories": 2, "overnight_items": 3}
+
     for section_key in _ALL_ITEM_SECTIONS:
         items = digest.get(section_key)
         if not items or not isinstance(items, list):
             continue
+
+        kept: list = []
+        # Split drop reasons so floor protection can restore fabricated items
+        # (which have real content) but never restores empty garbage.
+        always_drop: list[tuple[dict, str]] = []      # empty/broken — never restore
+        restorable_drop: list[tuple[dict, str]] = []  # unmatched URL but has content
+
         for item in items:
             url = (item.get("url") or "").strip()
-            if not url or not url.startswith("http"):
-                continue
-            if url in input_urls:
-                continue  # already matches verbatim
-
             headline = (item.get("headline") or item.get("translated_title")
                         or item.get("title") or "").strip()
-            tokens = _headline_tokens(headline)
-            if len(tokens) < 3:
-                continue  # not enough signal for a reliable match
+            body = (item.get("body") or item.get("body_text")
+                    or item.get("summary") or item.get("detail") or "").strip()
 
+            # Drop garbage: no headline AND no body — never restore this
+            if not headline and len(body) < 20:
+                always_drop.append((item, "empty headline and body"))
+                continue
+
+            # URL missing/invalid or already matches input → keep as-is
+            if not url or not url.startswith("http"):
+                kept.append(item)
+                continue
+            if url in input_urls:
+                kept.append(item)
+                continue
+
+            # Try to repair via headline token match
+            tokens = _headline_tokens(headline)
             best_url = None
             best_score = 0
-            for in_url, in_title, in_tokens in input_articles:
-                if not in_tokens:
-                    continue
-                overlap = tokens & in_tokens
-                # Need at least 3 shared non-stopword tokens and >=50% of the
-                # shorter headline's tokens to overlap.
-                min_len = min(len(tokens), len(in_tokens))
-                if len(overlap) >= 3 and len(overlap) / min_len >= 0.5:
-                    if len(overlap) > best_score:
+            if len(tokens) >= 3:
+                for in_url, _in_title, in_tokens in input_articles:
+                    if not in_tokens:
+                        continue
+                    overlap = tokens & in_tokens
+                    min_len = min(len(tokens), len(in_tokens))
+                    if (len(overlap) >= 3
+                            and len(overlap) / min_len >= 0.5
+                            and len(overlap) > best_score):
                         best_score = len(overlap)
                         best_url = in_url
+
             if best_url:
                 log.append(
                     f"  Repaired URL in {section_key}: '{headline[:60]}' "
                     f"({best_score} token match)")
                 item["url"] = best_url
+                kept.append(item)
+            else:
+                reason = (f"headline too short ({len(tokens)} tokens)"
+                          if len(tokens) < 3 else "no headline match in input")
+                restorable_drop.append((item, reason))
+
+        # Enforce floor: restore from restorable_drop only (never empty garbage)
+        floor = _DROP_FLOORS.get(section_key, 0)
+        if restorable_drop and len(kept) < floor:
+            need = floor - len(kept)
+            restored = restorable_drop[-need:]
+            restorable_drop = restorable_drop[:-need]
+            for item, _reason in restored:
+                log.append(
+                    f"  ⚠ Kept fabricated item in {section_key} to protect "
+                    f"floor (min {floor}): '{(item.get('headline') or '')[:60]}'")
+                kept.append(item)
+
+        for item, reason in (always_drop + restorable_drop):
+            hl = (item.get("headline") or item.get("translated_title")
+                  or item.get("title") or "(no headline)")[:60]
+            log.append(
+                f"  Dropped unrepairable {section_key} item ({reason}): '{hl}'")
+
+        digest[section_key] = kept
 
     return log
 
