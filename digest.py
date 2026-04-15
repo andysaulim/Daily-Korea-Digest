@@ -229,8 +229,8 @@ PUBLIC SENTIMENT BASELINE (pre-collected polling data)
 {json.dumps(sentiment, indent=1)}
 Use these as baseline values for the public_sentiment field. If today's articles contain newer polling data from Gallup Korea or Realmeter, update the values. Otherwise carry these forward.
 IMPORTANT VALIDATION: The scraped baseline may contain errors. Cross-check:
-- Presidential approval should be in the 60-75% range (as of March 2026, trending up)
-- The known CONFIRMED baseline is: 67% approval, DP 46%, PPP 20%, independents 27% (Gallup Korea, Mar 3rd week 2026, surveyed Mar 17-19)
+- Presidential approval should be in the 60-75% range (as of April 2026, at record high)
+- The known CONFIRMED baseline is: 67% approval, DP 48%, PPP 20%, independents 25% (Gallup Korea, Apr 2nd week 2026, surveyed Apr 7-9)
 - If the scraped baseline shows presidential approval outside the 50-80% range, or if it looks like a party rating was misidentified as presidential approval, IGNORE the scraped values and use the confirmed baseline above
 - ALL 4 metrics MUST come from the SAME poll (same source, same date) — never mix"""
 
