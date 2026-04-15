@@ -1294,33 +1294,34 @@ def _collect_sentiment() -> dict:
     # These are the most recent known values from Gallup Korea weekly polls.
     # They ensure the sentiment tracker always renders with data.
     fallback_used = []
-    # Fallback: Gallup Korea 제656호, 3rd week of March 2026 (surveyed Mar 17-19)
-    # Source: multiple Korean news outlets reporting same Gallup Korea weekly poll
+    # Fallback: Gallup Korea weekly poll, surveyed Apr 7-9 2026 (n=1,002, ±3.1pt)
+    # Lee approval at record-high 67% for 2nd consecutive week.
+    # Source: Korean news outlets reporting same Gallup Korea weekly poll
     if not sentiment["presidential_approval"]:
         fallback_used.append("presidential_approval")
         sentiment["presidential_approval"] = {
             "value": "67%", "trend": "up",
-            "source": "Gallup Korea", "last_updated": "Mar 3rd week, 2026",
+            "source": "Gallup Korea", "last_updated": "Apr 2nd week, 2026",
         }
     if not sentiment["party_ruling"]:
         fallback_used.append("party_ruling")
         sentiment["party_ruling"] = {
-            "value": "46%", "party": "Democratic Party",
-            "party_kr": "더불어민주당", "trend": "stable",
-            "source": "Gallup Korea", "last_updated": "Mar 3rd week, 2026",
+            "value": "48%", "party": "Democratic Party",
+            "party_kr": "더불어민주당", "trend": "up",
+            "source": "Gallup Korea", "last_updated": "Apr 2nd week, 2026",
         }
     if not sentiment["party_opposition"]:
         fallback_used.append("party_opposition")
         sentiment["party_opposition"] = {
             "value": "20%", "party": "People Power Party",
             "party_kr": "국민의힘", "trend": "stable",
-            "source": "Gallup Korea", "last_updated": "Mar 3rd week, 2026",
+            "source": "Gallup Korea", "last_updated": "Apr 2nd week, 2026",
         }
     if not sentiment["party_independent"]:
         fallback_used.append("party_independent")
         sentiment["party_independent"] = {
-            "value": "27%", "trend": "stable",
-            "source": "Gallup Korea", "last_updated": "Mar 3rd week, 2026",
+            "value": "25%", "trend": "down",
+            "source": "Gallup Korea", "last_updated": "Apr 2nd week, 2026",
         }
     if fallback_used:
         print(f"    ⚠  Sentiment: using fallbacks for {', '.join(fallback_used)}")
