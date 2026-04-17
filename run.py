@@ -569,7 +569,17 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
                     u = (item.get("url") or "").strip()
                     if u:
                         story_urls.add(u)
-            if not any(link in story_urls for link in source_links):
+            # source_links is an array of {label, url} dicts (per digest schema).
+            # Be defensive: accept either dicts or bare URL strings.
+            link_urls = []
+            for link in source_links:
+                if isinstance(link, dict):
+                    u = (link.get("url") or "").strip()
+                    if u:
+                        link_urls.append(u)
+                elif isinstance(link, str):
+                    link_urls.append(link.strip())
+            if link_urls and not any(u in story_urls for u in link_urls):
                 warnings.append(
                     "IMAGERY DUAL PLACEMENT: imagery_report exists but no matching story in top_stories/overnight_items")
 
