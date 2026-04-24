@@ -407,6 +407,8 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
     kcna = digest.get("kcna_delta")
     if not kcna or not isinstance(kcna, dict):
         warnings.append("KCNA DELTA CRITICAL: missing kcna_delta section")
+    elif kcna.get("silence_today") and "scraper" in str(kcna.get("output_volume", "")).lower():
+        pass  # no-data stub is valid — scrapers returned 0 articles
 
     # ── Single pass over all items: URLs, headlines, sources, body checks ─
     seen_urls = {}

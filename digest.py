@@ -113,6 +113,47 @@ Return ONLY valid JSON. No markdown, no preamble, no commentary outside the JSON
 # USER PROMPT BUILDER
 # ─────────────────────────────────────────────────────────────────────────────
 
+def _has_kcna_data(payload: dict) -> bool:
+    """Check whether any KCNA/Tier 4 data was actually collected."""
+    summary = payload.get("kcna_summary")
+    has_summary = summary and summary.get("total_articles", 0) > 0
+    has_tier4 = bool(payload.get("tier4"))
+    return has_summary or has_tier4
+
+
+_KCNA_NO_DATA_STUB = (
+    "NO KCNA DATA COLLECTED TODAY — scrapers returned 0 articles.\n"
+    "Do NOT fabricate KCNA content. Return a minimal kcna_delta with:\n"
+    "  silence_today: true, output_volume: \"Unavailable — 0 articles collected (scraper failure)\",\n"
+    "  kim_appearance_today: false (unless KIM JONG UN APPEARANCE REPORTS above confirm otherwise),\n"
+    "  days_since_last_appearance: use tracker data above,\n"
+    "  propaganda_focus: null, notable_omissions: null, tone_shift: null,\n"
+    "  key_phrase_changes: [], key_quotes: [], doctrinal_shift: null,\n"
+    "  senior_officials: [], baseline_period: null,\n"
+    "  watch_flag: false, bottom_line: \"No KCNA data collected — scraper issue, not a blackout.\""
+)
+
+_KCNA_FULL_INSTRUCTIONS = (
+    "Return a SINGLE kcna_delta object:\n"
+    "- kim_appearance_today: boolean — cross-reference KCNA articles AND the KIM JONG UN APPEARANCE REPORTS section above (scraped from NK Leadership Watch, Daily NK, KCNA Watch, and general news). If ANY credible source reports a Kim appearance in the last 24h, set to true.\n"
+    "- kim_activity: if appeared, 1 sentence on what he did (inspection, meeting, guidance, etc.), else null\n"
+    "- days_since_last_appearance: integer — use the CONFIRMED KIM JONG UN APPEARANCES tracker data above as ground truth. Only override if today's articles confirm a more recent appearance than the tracker shows.\n"
+    "- senior_officials: array of notable non-Kim appearances/activities (e.g. Choe Son Hui, Kim Yo Jong, Ri Pyong Chol). Each: name, role (title), activity (1 sentence). Max 2. Keep very brief — name and what they did, nothing more.\n"
+    "- (tone quadrants removed — do NOT include us_tone, rok_tone, russia_tone, china_tone or related qualifier/description fields)\n"
+    "- baseline_period: string describing the comparison baseline (e.g. \"Mar 13-19\")\n"
+    "- tone_shift: any tone that changed from yesterday's baseline, e.g. \"US tone shifted from Neutral to Hostile\". null if no change detected.\n"
+    "- propaganda_focus: top 2-3 topics KCNA is prioritizing today (e.g. \"self-reliance economy\", \"nuclear deterrent\", \"anti-US imperialism\")\n"
+    "- notable_omissions: anything conspicuously absent that was previously regular. ONLY cite specific day counts (e.g. \"3rd day\") if the KCNA RHETORIC HISTORY tracker data supports it — otherwise just note the absence without a count (e.g. \"No mention of Russia today\" instead of \"No mention of Russia for 3rd day\"). null if nothing notable.\n"
+    "- key_phrase_changes: array of phrase frequency objects. IMPORTANT: Use the KCNA RHETORIC HISTORY tracker data provided in this prompt as ground truth for count_prior values. If no tracker history is available, set count_prior to 0 and delta_label to \"no baseline\" — do NOT invent prior counts. Each: phrase (the exact phrase, e.g. \"nuclear war deterrent\"), count_this_week (integer — count from TODAY's KCNA articles only), count_prior (integer from tracker history — use AGGREGATE PHRASE COUNTS if available, otherwise 0), delta_label (human-readable delta string, e.g. \"↑ from ×0\", \"↑ new phrase\", \"→ stable\", \"no baseline\"). Also include Kim Jong Un appearance tracking as the last item: phrase=\"Kim Jong Un public appearance\", count_this_week=count, delta_label based on tracker data. MAX 5 phrases — only include phrases that actually changed or are analytically significant. Do not pad with stable/routine phrases.\n"
+    "- doctrinal_shift: if any phrase represents a new doctrinal position (e.g. new weapons designation, revised nuclear posture language, novel alliance framing), describe in 1-2 sentences. These shifts historically precede hardware developments by 12-18 months. null if routine rhetoric.\n"
+    "- key_quotes: 1 direct quote from KCNA that is most analytically significant today (the single most important quote only). Each: quote (exact text, translated to English), source_article (KCNA article title). Empty array if nothing notable.\n"
+    "- output_volume: string assessment of today's KCNA output volume vs. normal (e.g. \"Heavy — 23 articles (avg: 15)\", \"Light — 8 articles\", \"Normal — 14 articles\"). Use the KCNA OUTPUT SUMMARY above for the actual article count — do NOT guess the number. Unusually high or low volume is a signal.\n"
+    "- silence_today: boolean (complete KCNA blackout)\n"
+    "- watch_flag: boolean — true if KCNA output contains ESCALATION-level rhetoric, silence after regular output, unusual Kim absence (7+ days), or nuclear/ICBM-related content\n"
+    "- bottom_line: 1-2 sentences MAX. State the single most important KCNA takeaway and what to watch next. Be ruthlessly concise. Example: \"First use of 'sacred nuclear deterrent force' coincides with Yongbyon activity (Mar 19). Monitor Sohae through Apr 15.\""
+)
+
+
 def _build_kcna_summary_block(payload: dict) -> str:
     """Format the pre-collected KCNA summary into a prompt block."""
     summary = payload.get("kcna_summary")
@@ -218,6 +259,16 @@ Cross-reference these reports with KCNA Tier 4 data to determine kim_appearance_
 {bp_history}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"""
 
+    # KCNA Tier 4 section — gate on actual data presence
+    if _has_kcna_data(payload):
+        tier4_block = (
+            f"{_build_kcna_summary_block(payload)}\n"
+            f"{tier_json(payload.get('tier4', []), max_items=30)}\n"
+            f"{_KCNA_FULL_INSTRUCTIONS}"
+        )
+    else:
+        tier4_block = _KCNA_NO_DATA_STUB
+
     # Sentiment baseline from collector
     sentiment_block = ""
     sentiment = payload.get("sentiment_baseline")
@@ -278,25 +329,7 @@ Inclusion: score >= 6 (A+ journals: score >= 4).
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 TIER 4: KCNA / RODONG SINMUN (last 24h)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-{_build_kcna_summary_block(payload)}
-{tier_json(payload.get("tier4", []), max_items=30)}
-Return a SINGLE kcna_delta object:
-- kim_appearance_today: boolean — cross-reference KCNA articles AND the KIM JONG UN APPEARANCE REPORTS section above (scraped from NK Leadership Watch, Daily NK, KCNA Watch, and general news). If ANY credible source reports a Kim appearance in the last 24h, set to true.
-- kim_activity: if appeared, 1 sentence on what he did (inspection, meeting, guidance, etc.), else null
-- days_since_last_appearance: integer — use the CONFIRMED KIM JONG UN APPEARANCES tracker data above as ground truth. Only override if today's articles confirm a more recent appearance than the tracker shows.
-- senior_officials: array of notable non-Kim appearances/activities (e.g. Choe Son Hui, Kim Yo Jong, Ri Pyong Chol). Each: name, role (title), activity (1 sentence). Max 2. Keep very brief — name and what they did, nothing more.
-- (tone quadrants removed — do NOT include us_tone, rok_tone, russia_tone, china_tone or related qualifier/description fields)
-- baseline_period: string describing the comparison baseline (e.g. "Mar 13-19")
-- tone_shift: any tone that changed from yesterday's baseline, e.g. "US tone shifted from Neutral to Hostile". null if no change detected.
-- propaganda_focus: top 2-3 topics KCNA is prioritizing today (e.g. "self-reliance economy", "nuclear deterrent", "anti-US imperialism")
-- notable_omissions: anything conspicuously absent that was previously regular. ONLY cite specific day counts (e.g. "3rd day") if the KCNA RHETORIC HISTORY tracker data supports it — otherwise just note the absence without a count (e.g. "No mention of Russia today" instead of "No mention of Russia for 3rd day"). null if nothing notable.
-- key_phrase_changes: array of phrase frequency objects. IMPORTANT: Use the KCNA RHETORIC HISTORY tracker data provided in this prompt as ground truth for count_prior values. If no tracker history is available, set count_prior to 0 and delta_label to "no baseline" — do NOT invent prior counts. Each: phrase (the exact phrase, e.g. "nuclear war deterrent"), count_this_week (integer — count from TODAY's KCNA articles only), count_prior (integer from tracker history — use AGGREGATE PHRASE COUNTS if available, otherwise 0), delta_label (human-readable delta string, e.g. "↑ from ×0", "↑ new phrase", "→ stable", "no baseline"). Also include Kim Jong Un appearance tracking as the last item: phrase="Kim Jong Un public appearance", count_this_week=count, delta_label based on tracker data. MAX 5 phrases — only include phrases that actually changed or are analytically significant. Do not pad with stable/routine phrases.
-- doctrinal_shift: if any phrase represents a new doctrinal position (e.g. new weapons designation, revised nuclear posture language, novel alliance framing), describe in 1-2 sentences. These shifts historically precede hardware developments by 12-18 months. null if routine rhetoric.
-- key_quotes: 1 direct quote from KCNA that is most analytically significant today (the single most important quote only). Each: quote (exact text, translated to English), source_article (KCNA article title). Empty array if nothing notable.
-- output_volume: string assessment of today's KCNA output volume vs. normal (e.g. "Heavy — 23 articles (avg: 15)", "Light — 8 articles", "Normal — 14 articles"). Use the KCNA OUTPUT SUMMARY above for the actual article count — do NOT guess the number. Unusually high or low volume is a signal.
-- silence_today: boolean (complete KCNA blackout)
-- watch_flag: boolean — true if KCNA output contains ESCALATION-level rhetoric, silence after regular output, unusual Kim absence (7+ days), or nuclear/ICBM-related content
-- bottom_line: 1-2 sentences MAX. State the single most important KCNA takeaway and what to watch next. Be ruthlessly concise. Example: "First use of 'sacred nuclear deterrent force' coincides with Yongbyon activity (Mar 19). Monitor Sohae through Apr 15."
+{tier4_block}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 DIGEST SYNTHESIS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -405,7 +438,7 @@ Return a digest object with:
 - business_economy: array of up to 6 Korea-related business and economic news items from today (MAX 6 — pick the most policy-relevant). Focus on: major conglomerates (Samsung, SK, Hyundai, LG, Hanwha, Lotte, POSCO, Doosan), earnings/revenue, M&A, factory openings/closures, supply chain moves, export/import data, GDP/inflation/employment figures, BOK rate decisions, stock market moves, real estate, startup/venture capital. TOPIC DIVERSITY — MANDATORY: Each business_economy item MUST cover a DIFFERENT topic. If multiple articles cover the same company announcement, earnings report, or economic data release from different sources, pick the BEST one and drop the duplicate. Same company + same subject = same topic (e.g. "Hyundai EV sales up 30%" and "Hyundai reports record EV deliveries" are the SAME topic). Each: url, source, headline, body_text (1-2 sentences — state the facts with specific numbers, then add one factual connection to a policy context if obvious: e.g. "Second US plant; cumulative ROK EV investment in US now $12.4B"), companies (array of company names involved, e.g. ["Samsung Electronics", "SK Hynix"]), sector (tech/auto/energy/finance/manufacturing/real-estate/macro). Prioritize stories with policy implications over routine earnings — if you have more than 6 qualifying stories, drop the least policy-relevant ones.
 - northeast_asia: array of 3-6 items (MAX 6; always include at least one Japan-Korea, one China-Korea, and one Russia-Korea or Trilateral item even on slow news days) covering Japan-Korea, China-Korea, Russia-Korea, and US-ROK-Japan trilateral developments from today's news. Combine Japan-, China-, and Russia-related Korea stories into this single section. Each: url, source, headline, body_text (1-2 sentences — facts first, then one beat of context), category (one of: japan-history, trilateral, gsomia, japan-trade, japan-diplomatic, japan-defense, territorial, thaad-retaliation, china-coercion, rare-earth, china-diplomatic, china-military, china-trade, china-opinion, russia-weapons, russia-diplomatic, russia-labor, russia-sanctions, russia-military), signal_type (ESCALATION/ANOMALY/DEVELOPMENT/CONFIRMATION/CONTEXT), is_reaction_source (boolean — true if from Global Times, Xinhua, People's Daily, China Daily, TASS; false otherwise), region_tag ("Japan-Korea" or "China-Korea" or "Trilateral" or "Russia-Korea" — used for visual grouping). Russia-Korea items here are for bilateral diplomatic/economic stories; NK-Russia weapons/cooperation stories belong in top_stories or overnight_items with NK-Russia-China category. Empty array if no relevant stories today. Do NOT duplicate items already in top_stories or overnight_items.
 - public_sentiment: standing dashboard of Korean public opinion polling — ALL metrics MUST come from the SAME Gallup Korea weekly poll (same survey date). Do NOT mix dates across metrics. Object with:
-  - presidential_approval: object with value (percentage as string, e.g. "67%"), trend (up/down/stable), source (polling firm name, e.g. "Gallup Korea"), last_updated (date string, e.g. "Mar 17-19, 2026"). IMPORTANT — HARD BASELINE: As of March 3rd week 2026 the latest confirmed Gallup Korea figures are: 67% approval, DP 46%, PPP 20%, independents 27% (surveyed Mar 17-19). Use these EXACT numbers. Do NOT change ANY polling number unless a TODAY's source article explicitly reports a NEW Gallup Korea weekly poll with different figures AND you can cite the specific article. Changing a polling number without a sourced article is a fabrication. When in doubt, carry forward 67%/46%/20%/27%. Never mix poll dates.
+  - presidential_approval: object with value (percentage as string, e.g. "67%"), trend (up/down/stable), source (polling firm name, e.g. "Gallup Korea"), last_updated (date string, e.g. "Mar 17-19, 2026"). IMPORTANT — HARD BASELINE: As of April 2nd week 2026 the latest confirmed Gallup Korea figures are: 67% approval, DP 48%, PPP 20%, independents 25% (surveyed Apr 7-9). Use these EXACT numbers. Do NOT change ANY polling number unless a TODAY's source article explicitly reports a NEW Gallup Korea weekly poll with different figures AND you can cite the specific article. Changing a polling number without a sourced article is a fabrication. When in doubt, carry forward 67%/48%/20%/25%. Never mix poll dates.
   - party_ruling: object with value (percentage as string, e.g. "46%"), party (English name, e.g. "Democratic Party"), party_kr (Korean name, e.g. "더불어민주당"), trend (up/down/stable), source, last_updated. MUST use the same Gallup Korea poll date as presidential_approval.
   - party_opposition: object with value (percentage as string, e.g. "20%"), party (English name, e.g. "People Power Party"), party_kr (Korean name, e.g. "국민의힘"), trend (up/down/stable), source, last_updated. MUST use the same Gallup Korea poll date as presidential_approval.
   - party_independent: object with value (percentage as string, e.g. "27%"), trend (up/down/stable), source, last_updated. No party preference / independents (무당층) from the same Gallup Korea weekly poll. MUST use the same poll date. This is the swing voter share — when it spikes, it signals disillusionment with both major parties.
