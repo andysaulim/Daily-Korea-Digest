@@ -100,6 +100,75 @@ DEDUPLICATION — CRITICAL (ZERO TOLERANCE):
 Return ONLY valid JSON. No markdown, no preamble, no commentary outside the JSON structure."""
 
 # ─────────────────────────────────────────────────────────────────────────────
+# REFERENCE BASELINES (injected into user prompt for independent updating)
+# ─────────────────────────────────────────────────────────────────────────────
+
+_POLITICAL_LEADERS = """\
+CURRENT POLITICAL LEADERS — REFERENCE (as of April 2026, update from today's articles if changed):
+- ROK President: Lee Jae-myung (이재명), Democratic Party, inaugurated Feb 25 2026
+- ROK PM: update from today's articles if a new PM is named; check against latest reporting
+- Japan PM: Takaichi Sanae (高市早苗), LDP, took office Nov 2025 (NOT Kishida, NOT Ishiba — both are former PMs)
+- US President: Donald Trump (2nd term, inaugurated Jan 2025)
+- US SecState: Marco Rubio; US SecDef: Pete Hegseth; US NSA: Mike Waltz
+- DPRK: Kim Jong Un (Chairman, State Affairs Commission)
+- PRC: Xi Jinping (President); PRC FM: Wang Yi
+- UN Secretary-General: Antonio Guterres
+- USFK Commander: Gen. Paul LaCamera (update if rotated)
+If today's articles name a different officeholder for any position, use the name from the article."""
+
+_TRADE_BASELINES = """\
+BASELINE TRADE POLICY ENTRIES (as of Mar 2026 — carry forward unless today's articles report a change):
+  * Section 301 Investigation — USTR — Launched Mar 11 2026 against 16 trading partners including South Korea; could provide new legal authority for tariffs post-Section 122 expiry (Jul 24 2026). ACTIVE.
+  * BIS Semiconductor Export Controls — Commerce/BIS — Samsung and SK Hynix China fabs operating under annual BIS export licenses (renewed Dec 30 2025 for 2026). Maintenance/incremental upgrades only, no expansion. Shifted from indefinite VEU waivers to restrictive annual licenses Jan 2026. ACTIVE.
+  * IRA Battery Sourcing Rules (FEOC) — Treasury/IRS — Foreign Entity of Concern rules affect Korean EV battery makers (LG Energy Solution, SK On, Samsung SDI) sourcing from China. Phase-in: battery components Dec 2024, critical minerals Dec 2025. ACTIVE.
+  * Section 232 Steel & Aluminum — Commerce — All country exemptions/TRQs eliminated Mar 2025; 50% tariff now applies universally to Korean steel and aluminum exports with no quota arrangement. ACTIVE.
+  * CHIPS Act Guardrails — Commerce/NIST — Samsung received preliminary $6.4B CHIPS award (Apr 2024) for Taylor TX fabs. 10-year restriction on materially expanding semiconductor manufacturing in countries of concern (China). Samsung Xi'an NAND fab limited to legacy production under guardrails. ACTIVE.
+Use these entries EXACTLY unless today's articles report a NEW policy action or a status change to an existing one. Do NOT invent trade policy items from memory. If today's news adds a new action (e.g. a CFIUS review, ITC case, outbound investment screening), add it to the list. If an entry status changes (e.g. RESOLVED), update it.
+CRITICAL ACCURACY NOTE — CHIPS Act vs Export Controls: Do NOT conflate the CHIPS Act with semiconductor export controls. They are SEPARATE policy instruments:
+  (1) CHIPS Act guardrails = conditions on receiving US manufacturing subsidies (limits expansion in "countries of concern" for 10 years). Administered by Commerce/NIST.
+  (2) Export controls = BIS Entity List, Validated End User (VEU) program, export licenses restricting US-origin technology to China. These apply regardless of CHIPS funding.
+Samsung and SK Hynix China fab licenses are EXPORT CONTROL licenses (BIS), NOT "CHIPS Act" provisions. Do NOT describe these as "CHIPS Act exclusions" or "CHIPS restrictions." Use "BIS export licenses" or "semiconductor export controls."
+
+TARIFF BASELINE REFERENCE (as of Mar 2026 — update from today's articles if anything changes):
+The US-Korea Strategic Trade and Investment Deal (framework Jul 30 2025, reaffirmed at Trump-Lee Oct 29 2025 summit, USTR implementation Dec 3 2025) set a 15% reciprocal tariff rate under IEEPA/EO 14257. On Feb 20 2026 the Supreme Court struck down ALL IEEPA tariffs (6-3 ruling). The White House immediately imposed a 10% Section 122 surcharge on ALL countries (effective Feb 24 2026, expires Jul 24 2026 unless Congress extends). On Jan 27 2026 Trump threatened to raise Korea tariffs to 25% over delayed National Assembly ratification, but NO executive order was issued. On Mar 12 2026 the National Assembly passed the Special Investment Act (226-8-8) creating the Korea-US Strategic Investment Corporation to implement the $350B pledge. On Mar 11 2026 USTR launched Section 301 investigations into 16 trading partners including South Korea — these could provide new legal grounds for tariffs post-Section 122 expiry.
+Use 10% (Section 122) as the headline_rate unless today's articles report an official change.
+
+BASELINE SECTOR RATES (update from today's articles if changed):
+  * Steel & Aluminum: 50%, Section 232, ACTIVE — no exemption in US-Korea deal; all country exemptions eliminated Mar 2025
+  * Copper: 50%, Section 232, ACTIVE — included in Mar 2025 Section 232 expansion
+  * Automobiles & Auto Parts: 15%, Section 232 (reduced under US-Korea deal from 25%), REDUCED — retroactive to Nov 1 2025 per USTR Dec 3 2025 implementation notice
+  * Timber / Lumber / Wood Derivatives: 15%, Section 232 (reduced under US-Korea deal), REDUCED — same USTR implementation
+  * Semiconductors (narrow — advanced logic): 25%, Section 232 (Proclamation 11002), ACTIVE — effective Jan 15 2026; broader semiconductor tariffs TBD by Apr 14 2026 (Commerce/USTR report deadline); deal promises Korea terms "no less favorable" than comparable trading partners
+  * Pharmaceuticals: up to 15%, Section 232 (per deal terms), PENDING — rate cap agreed in deal but specific Section 232 action not yet issued
+  * Civil Aircraft & Parts: 0%, exempted under US-Korea deal, RESOLVED — tariffs removed per USTR Dec 3 2025 notice
+  * Generic Pharma / Precursors / Rare Natural Resources: 0%, exempted under Aligned Partners list, RESOLVED — tariffs eliminated per deal
+
+SECTION 122 SURCHARGE BASELINE: "10% global surcharge (Section 122, effective Feb 24 2026, expires Jul 24 2026)" — update if today's articles report a change (Trump signaled possible increase to 15% statutory max but no formal action taken).
+NEXT TRIGGER BASELINE: "Jul 24 2026 — Section 122 surcharge expiry (150-day statutory limit); Apr 14 2026 — Commerce/USTR semiconductor tariff report due; Section 301 investigations ongoing"."""
+
+_INVESTMENT_TRACKER = """\
+REFERENCE — White House Investment Tracker (whitehouse.gov/investments, Trump 2nd term only).
+$350B pledge timeline: framework agreed Jul 30 2025; Trump-Lee summit Aug 25 2025 (Washington); Trump state visit to Korea Oct 29 2025 (Gyeongju); National Assembly passed Special Investment Act Mar 12 2026 (226-8-8), creating Korea-US Strategic Investment Corporation.
+Investment structure: $150B shipbuilding (MASGA), $200B strategic sectors (capped $20B/yr), $100B US energy purchases.
+VERIFIED WH TRACKER ENTRIES (Trump 2nd term announcements only — do NOT add Biden-era deals):
+  Hyundai Motor Group: $26B (Manufacturing — Georgia EV, Louisiana steel $5.8B, robotics hub; announced at WH Mar 2025, raised from $21B to $26B Aug 2025)
+  Korean Air: $36.2B (Boeing aircraft purchase — 103 aircraft; Oct 2025 summit fact sheet)
+  Korean Air / GE Aerospace: $13.7B (Engines + maintenance for Boeing fleet; Oct 2025 summit fact sheet)
+  HD Hyundai / Cerberus Maritime: $5B (Shipbuilding — US shipyard modernization/acquisition; Oct 2025 summit fact sheet)
+  Hanwha Ocean: $5B (Shipbuilding — Philly Shipyard expansion, 10x capacity increase; Oct 2025 summit fact sheet)
+  LS Group: $3B by 2030 (Power grid infrastructure — undersea cables, power equipment; Oct 2025 summit fact sheet. Includes LS Cable $681M VA facility)
+  Korea Zinc (Crucible Metals): $7.4B (Critical Minerals — Tennessee smelter, 13 minerals incl zinc/copper/rare earths; Dec 2025, Pentagon 40% stake in JV, Commerce CHIPS award $210M)
+  L3Harris / Korean Air: $2.3B (Defense — 4 AEW&C aircraft for ROK Air Force; Oct 2025 summit fact sheet)
+  Samsung Biologics: $280M (Pharma — GSK Rockville MD acquisition; WH running list)
+  Paris Baguette: $200M (Food & Beverage — Burleson TX plant; WH running list at $160M, updated to $200M+ per later reporting)
+  POSCO International / ReElement: undisclosed (Critical Minerals — US rare earth separation/refining; Oct 2025 summit fact sheet)
+  Samsung Heavy Industries / Vigor Marine Group: undisclosed (Shipbuilding MRO — naval vessel maintenance; Oct 2025 summit fact sheet)
+  KOGAS: 3.3 mtpa US LNG annually (Energy purchases — part of $100B energy bucket; Oct 2025 summit)
+*** PRE-CALCULATED TOTAL: $99.1B of $350B pledged (28% fulfilled). Use announced_to_date="$99.1B" and pct_fulfilled=28 EXACTLY. Only change if today's articles report a NEW WH-verified deal. ***
+NOTE: Samsung Electronics $37B Taylor TX fabs and SK Group $22B are Biden-era CHIPS Act commitments (2022-2024) and are NOT counted in the Trump-era $350B tracker. Do NOT add them to known_deals.
+All verified entries MUST appear in known_deals. Set wh_tracker=true for entries on the WH tracker."""
+
+# ─────────────────────────────────────────────────────────────────────────────
 # USER PROMPT BUILDER
 # ─────────────────────────────────────────────────────────────────────────────
 
