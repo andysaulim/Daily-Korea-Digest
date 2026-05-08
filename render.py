@@ -1381,6 +1381,25 @@ def render(digest: dict) -> str:
       /* Trade policy tracker — stack on narrow screens */
       .trade-policy td {{ display:block !important; width:100% !important; padding:4px 8px !important; }}
       .trade-policy tr {{ display:block !important; border-bottom:1px solid #E8E8E8 !important; padding:6px 0 !important; }}
+      /* === Mobile QoL: minimum font size for readability === */
+      body, td, div, p, span {{ font-size:14px !important; min-font-size:14px; -webkit-text-size-adjust:100%; }}
+      /* Preserve intentionally small labels (badges, footnotes) but floor at 11px */
+      div[style*="font-size:9px"], div[style*="font-size:10px"],
+      span[style*="font-size:9px"], span[style*="font-size:10px"] {{ font-size:11px !important; }}
+      /* === Mobile QoL: 44px minimum touch targets for links === */
+      a {{ min-height:44px; min-width:44px; display:inline-block; line-height:44px; }}
+      /* Links inside paragraphs should stay inline but padded for tap */
+      p a, div a, td a {{ min-height:auto; min-width:auto; display:inline; padding:6px 0; }}
+      /* === Mobile QoL: responsive images === */
+      img {{ max-width:100% !important; height:auto !important; }}
+      /* === Mobile QoL: BP location grid single column === */
+      .loc-grid table {{ width:100% !important; }}
+      .loc-grid td {{ display:block !important; width:100% !important; padding:6px 0 !important; }}
+      .loc-grid tr {{ display:block !important; }}
+      /* === Mobile QoL: market indicator cells stack vertically === */
+      .mkt-table {{ width:100% !important; }}
+      .mkt-table tr {{ display:block !important; }}
+      .mkt-table td {{ display:block !important; width:100% !important; padding:10px 14px !important; text-align:left !important; border-left:0 !important; border-right:0 !important; border-bottom:1px solid rgba(255,255,255,0.1) !important; }}
     }}
     /* Tablet breakpoint — tighten padding, keep grids side-by-side */
     @media only screen and (min-width: 621px) and (max-width: 768px) {{

@@ -216,6 +216,13 @@ REQUEST_TIMEOUT = 8
 HEADERS = {"User-Agent": "CSISKoreaDigest/1.0"}
 MAX_WORKERS = 25  # Thread pool size for parallel fetching
 
+# ─────────────────────────────────────────────────────────────────────────────
+# SOURCE HEALTH TRACKING (per-run, not persistent)
+# ─────────────────────────────────────────────────────────────────────────────
+_source_health = {}  # {feed_name: {articles: int, success: bool, error_msg: str|None}}
+
+MAJOR_FEEDS = {"Yonhap English", "Korea Herald", "Reuters Korea", "AP Korea"}
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # HELPERS
@@ -328,7 +335,8 @@ def _dedup(articles: list) -> list:
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _fetch_feeds_parallel(feed_dict: dict, is_tiered: bool = False) -> dict:
-    """Fetch all feeds in parallel. Returns {source: (entries, extra_info)}."""
+    """Fetch all feeds in parallel. Returns {source: (entries, extra_info)}.
+    Also records per-source health data in the module-level _source_health dict."""
     results = {}
 
     def _fetch_one(source, url_or_tuple):
@@ -344,11 +352,22 @@ def _fetch_feeds_parallel(feed_dict: dict, is_tiered: bool = False) -> dict:
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as pool:
         futures = {pool.submit(_fetch_one, src, val): src for src, val in items}
         for future in as_completed(futures):
+            src = futures[future]
             try:
                 source, entries, tier_val = future.result()
                 results[source] = (entries, tier_val)
+                _source_health[source] = {
+                    "articles": len(entries),
+                    "success": len(entries) > 0,
+                    "error_msg": None,
+                }
             except Exception as e:
                 print(f"    ⚠  Thread error: {e}")
+                _source_health[src] = {
+                    "articles": 0,
+                    "success": False,
+                    "error_msg": str(e),
+                }
     return results
 
 
@@ -486,12 +505,24 @@ def _scrape_kcna_watch() -> list:
     return articles
 
 
+_DIRECT_KCNA_SOURCES = {"KCNA Watch", "KCNA", "Rodong Sinmun", "KCNA (Yonhap)"}
+
+_KCNA_TITLE_PATTERNS = re.compile(
+    r"KCNA|Korean Central News Agency|Rodong Sinmun|"
+    r"Pyongyang\s+(said|says|reported|reports|announced|announces|claims|claimed)|"
+    r"North Korea\s+(said|says)\s+.*(state media|official media)",
+    re.IGNORECASE,
+)
+
+
 def _build_kcna_summary(tier4_articles: list, scraped_articles: list) -> dict:
     """Build a structured summary of today's KCNA output for the digest prompt."""
     # Combine sources for article count
     all_titles = set()
     categories = {}
     sources = {}
+    direct_count = 0
+    indirect_count = 0
 
     for art in tier4_articles:
         title = art.get("title", "").strip()
@@ -499,13 +530,25 @@ def _build_kcna_summary(tier4_articles: list, scraped_articles: list) -> dict:
             all_titles.add(title.lower())
         src = art.get("source", "Unknown")
         sources[src] = sources.get(src, 0) + 1
+        # Track direct vs indirect
+        if src in _DIRECT_KCNA_SOURCES:
+            direct_count += 1
+        else:
+            indirect_count += 1
         for tag in art.get("tags", []):
             categories[tag] = categories.get(tag, 0) + 1
+        # For indirect-source articles, check if title/summary mentions KCNA
+        # and add a synthetic category so they're visible in the category breakdown
+        if src not in _DIRECT_KCNA_SOURCES:
+            text = f"{title} {art.get('summary', '')}".lower()
+            if _KCNA_TITLE_PATTERNS.search(text):
+                categories["KCNA-cited"] = categories.get("KCNA-cited", 0) + 1
 
     for art in scraped_articles:
         title = art.get("title", "").strip()
         if title and title.lower() not in all_titles:
             all_titles.add(title.lower())
+            direct_count += 1  # scraped articles are always direct KCNA
         cat = art.get("category", "Uncategorized")
         if cat:
             categories[cat] = categories.get(cat, 0) + 1
@@ -518,17 +561,25 @@ def _build_kcna_summary(tier4_articles: list, scraped_articles: list) -> dict:
         if entry:
             headlines.append(f"[{cat}] {entry}" if cat else entry)
 
-    # Also add tier4 RSS headlines not already covered
+    # Also add tier4 RSS headlines not already covered — include indirect sources
     scraped_titles = {a.get("title", "").lower() for a in scraped_articles}
     for art in tier4_articles:
         title = art.get("title", "")
         if title and title.lower() not in scraped_titles:
+            src = art.get("source", "")
             tags = art.get("tags", [])
-            tag_str = tags[0] if tags else art.get("source", "")
+            # For indirect sources, label with "via <outlet>" so the LLM
+            # knows this is a secondary report citing KCNA
+            if src not in _DIRECT_KCNA_SOURCES and src:
+                tag_str = f"via {src}"
+            else:
+                tag_str = tags[0] if tags else src
             headlines.append(f"[{tag_str}] {title}")
 
     return {
         "total_articles": len(all_titles),
+        "direct_count": direct_count,
+        "indirect_count": indirect_count,
         "categories": dict(sorted(categories.items(), key=lambda x: -x[1])),
         "sources": sources,
         "headlines": headlines[:50],  # Cap at 50 headlines
@@ -1420,6 +1471,7 @@ def _collect_sentiment() -> dict:
 
 def collect() -> dict:
     """Run all tier collectors + market data and return combined payload."""
+    _source_health.clear()  # Reset health tracking for this run
     print("\n📡  Collecting Korea news from 100+ sources (parallel)...")
 
     # Run all collectors concurrently — each already uses internal thread pools
@@ -1470,6 +1522,21 @@ def collect() -> dict:
     if kcna_summary["total_articles"]:
         print(f"  📡  KCNA summary: {kcna_summary['total_articles']} unique articles, {len(kcna_summary.get('categories', {}))} categories")
 
+    # ── Source health summary ────────────────────────────────────────────
+    total_feeds = len(_source_health)
+    feeds_with_data = sum(1 for h in _source_health.values() if h["success"])
+    feeds_failed = total_feeds - feeds_with_data
+    print(f"\n  Source health: {feeds_with_data}/{total_feeds} feeds returned data, {feeds_failed} blocked/failed")
+
+    # Warn if any major feed returned 0 articles
+    for major in MAJOR_FEEDS:
+        health = _source_health.get(major)
+        if health and not health["success"]:
+            err = health.get("error_msg") or "0 articles"
+            print(f"  ⚠  MAJOR FEED WARNING: {major} returned no data ({err})")
+        elif not health:
+            print(f"  ⚠  MAJOR FEED WARNING: {major} was not fetched")
+
     return {
         "tier1": tier1,
         "tier2": tier2,
@@ -1479,6 +1546,12 @@ def collect() -> dict:
         "kim_tracker_articles": results["kim_tracker"],
         "market_indicators": results["markets"],
         "sentiment_baseline": results["sentiment"],
+        "source_health": {
+            "total_feeds": total_feeds,
+            "feeds_with_data": feeds_with_data,
+            "feeds_failed": feeds_failed,
+            "per_source": dict(_source_health),
+        },
     }
 
 

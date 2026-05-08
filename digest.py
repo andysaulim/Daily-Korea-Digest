@@ -4,6 +4,7 @@ Sends collected articles to Claude and returns a structured digest JSON.
 """
 import json
 import os
+import re
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -31,17 +32,6 @@ SOURCE-OR-SKIP PRINCIPLE: For EVERY factual claim you write, you must be able to
 - DATES: For calendar_watch and on_this_day, only use dates that appear in (a) today's source articles, (b) the VERIFIED KOREA DATES list, or (c) the baseline references in this prompt. Do NOT generate dates from memory — wrong dates destroy credibility.
 - EVERY ARTICLE MUST EXIST IN THE INPUT: Every item in top_stories, overnight_items, opeds_today, also_today, business_economy, northeast_asia, and social_statements MUST correspond to an actual article from the input data above — with a real URL from that input. Do NOT generate articles from your training data. Do NOT present old events (e.g. a 2022 NATO summit) as today's news. Do NOT fabricate generic think tank analyses (e.g. "CFR examines South Korea's security challenges") when no such article exists in today's feed. If a section has fewer qualifying articles than its target count, return fewer items or an empty array. An empty section is ALWAYS better than a fabricated entry.
 - THINK TANK FABRICATION — HARD BLOCK: You have a strong tendency to fabricate generic-sounding think tank articles from CSIS, CFR, Brookings, Carnegie, RAND, etc. when the feed is thin. These fabrications follow a telltale pattern: vague titles ("examines evolving security environment", "argues for alliance modernization", "analyzes expanding dimensions"), no specific data points, and no real URL. STOP. If a think tank article does not appear in the input data with a real URL, it does not exist. Do NOT create it. This applies to ALL sections — opeds_today, overnight_items, top_stories, also_today. Violating this rule destroys the digest's credibility with expert readers who will immediately recognize a fabricated entry.
-CURRENT POLITICAL LEADERS — REFERENCE (as of April 2026, update from today's articles if changed):
-- ROK President: Lee Jae-myung (이재명), Democratic Party, inaugurated Feb 25 2026
-- ROK PM: update from today's articles if a new PM is named; check against latest reporting
-- Japan PM: Takaichi Sanae (高市早苗), LDP, took office Nov 2025 (NOT Kishida, NOT Ishiba — both are former PMs)
-- US President: Donald Trump (2nd term, inaugurated Jan 2025)
-- US SecState: Marco Rubio; US SecDef: Pete Hegseth; US NSA: Mike Waltz
-- DPRK: Kim Jong Un (Chairman, State Affairs Commission)
-- PRC: Xi Jinping (President); PRC FM: Wang Yi
-- UN Secretary-General: Antonio Guterres
-- USFK Commander: Gen. Paul LaCamera (update if rotated)
-If today's articles name a different officeholder for any position, use the name from the article.
 QUALITY STANDARD — THE EXPERT TEST: Every entry must pass these tests:
 1. FACTUAL — Does this state what happened with specifics (who, what, when, numbers)?
 2. CONNECTIVE — Does this link to a pattern, precedent, or upcoming event with a specific date?
@@ -159,10 +149,17 @@ def _build_kcna_summary_block(payload: dict) -> str:
     summary = payload.get("kcna_summary")
     if not summary or not summary.get("total_articles"):
         return ""
+    direct = summary.get("direct_count", 0)
+    indirect = summary.get("indirect_count", 0)
     lines = [
         f"KCNA OUTPUT SUMMARY (scraped today — use for output_volume and propaganda_focus):",
-        f"Total articles collected: {summary['total_articles']}",
+        f"Total articles collected: {summary['total_articles']} (direct KCNA: {direct}, indirect/citing KCNA: {indirect})",
     ]
+    # Source-by-source breakdown
+    sources = summary.get("sources", {})
+    if sources:
+        src_strs = [f"{src}: {count}" for src, count in sorted(sources.items(), key=lambda x: -x[1])]
+        lines.append(f"Sources: {', '.join(src_strs)}")
     cats = summary.get("categories", {})
     if cats:
         cat_strs = [f"{cat} ({count})" for cat, count in list(cats.items())[:15]]
@@ -261,8 +258,25 @@ Cross-reference these reports with KCNA Tier 4 data to determine kim_appearance_
 
     # KCNA Tier 4 section — gate on actual data presence
     if _has_kcna_data(payload):
+        summary = payload.get("kcna_summary", {})
+        direct = summary.get("direct_count", 0)
+        indirect = summary.get("indirect_count", 0)
+        # Determine if we need to add an indirect-source advisory
+        indirect_advisory = ""
+        if indirect > 0 and direct <= 2:
+            indirect_advisory = (
+                "\nIMPORTANT — INDIRECT KCNA DATA: Most articles below are from "
+                "Western/regional outlets (Reuters, AP, 38 North, etc.) citing or "
+                "paraphrasing KCNA, not direct KCNA scrapes. Treat these as "
+                "SECONDARY REPORTS of KCNA content. You CAN and SHOULD still perform "
+                "rhetoric analysis from them — extract quoted KCNA phrases, identify "
+                "propaganda themes, assess tone, and note key quotes attributed to KCNA. "
+                "Do NOT treat this as a scraper failure or blackout. These outlets "
+                "reliably relay KCNA content. Analyze what is available.\n"
+            )
         tier4_block = (
             f"{_build_kcna_summary_block(payload)}\n"
+            f"{indirect_advisory}"
             f"{tier_json(payload.get('tier4', []), max_items=30)}\n"
             f"{_KCNA_FULL_INSTRUCTIONS}"
         )
@@ -510,7 +524,6 @@ def _strip_fences(raw: str) -> str:
     Handles: ```json ... ```, nested fences, multiple fence blocks,
     text before/after the fenced region, and partial/unclosed fences.
     """
-    import re
     text = raw.strip()
     # Remove all ``` fence lines (opening with optional language tag, and closing)
     # This handles nested fences and multiple fence blocks
