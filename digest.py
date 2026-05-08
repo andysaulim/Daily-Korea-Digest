@@ -505,28 +505,91 @@ def _check_content_minimums(digest: dict) -> list[str]:
 
 
 def _strip_fences(raw: str) -> str:
-    """Remove markdown code fences if present."""
+    """Remove markdown code fences if present.
+
+    Handles: ```json ... ```, nested fences, multiple fence blocks,
+    text before/after the fenced region, and partial/unclosed fences.
+    """
+    import re
     text = raw.strip()
+    # Remove all ``` fence lines (opening with optional language tag, and closing)
+    # This handles nested fences and multiple fence blocks
+    text = re.sub(r'^```\w*\s*$', '', text, flags=re.MULTILINE)
+    text = text.strip()
+    # If there's still a leading ``` (inline, no newline), strip it
     if text.startswith("```"):
-        parts = text.split("\n", 1)
-        text = parts[1] if len(parts) > 1 else text[3:]  # handle "```" with no newline
-        if text.endswith("```"):
-            text = text.rsplit("```", 1)[0]
-    return text
+        text = re.sub(r'^```\w*', '', text, count=1)
+    # Strip trailing ``` if present
+    if text.endswith("```"):
+        text = text[:-3]
+    return text.strip()
+
+
+def _robust_json_parse(raw: str) -> dict:
+    """Try multiple strategies to extract valid JSON from Claude's response.
+
+    Strategies (in order):
+    1. Direct json.loads on stripped text
+    2. Strip markdown fences and retry
+    3. Find the first '{' and last '}' and parse that substring
+    4. Raise with a clear error showing the first 200 chars
+    """
+    text = raw.strip()
+
+    # Strategy 1: direct parse
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
+
+    # Strategy 2: strip markdown fences
+    stripped = _strip_fences(text)
+    try:
+        return json.loads(stripped)
+    except json.JSONDecodeError:
+        pass
+
+    # Strategy 3: find outermost { ... } substring
+    first_brace = text.find("{")
+    last_brace = text.rfind("}")
+    if first_brace != -1 and last_brace > first_brace:
+        candidate = text[first_brace:last_brace + 1]
+        try:
+            return json.loads(candidate)
+        except json.JSONDecodeError:
+            pass
+
+    # All strategies failed — raise with diagnostic info
+    preview = text[:200]
+    raise json.JSONDecodeError(
+        f"All JSON extraction strategies failed. Response starts with: {preview!r}",
+        text, 0
+    )
 
 
 FAST_MODEL = "claude-sonnet-4-20250514"
 PRIMARY_MODEL = "claude-opus-4-20250514"
 
 
+_JSON_PREFILL = '{"'
+
+
 def _stream_claude(client, messages: list, max_tokens: int = 16000,
                     _retries: int = 3, model: str | None = None) -> dict:
     """Stream a Claude API call and return parsed digest dict.
 
+    Uses assistant prefilling ('{"') to force Claude to start with JSON,
+    then prepends the prefill to the collected response before parsing.
     Retries on transient connection errors (e.g. peer dropped mid-stream).
     """
     use_model = model or PRIMARY_MODEL
     model_label = use_model.split("-")[1]  # "opus" or "sonnet"
+
+    # Add assistant prefill to force JSON output
+    prefilled_messages = list(messages) + [
+        {"role": "assistant", "content": _JSON_PREFILL}
+    ]
+
     for attempt in range(_retries):
         try:
             t0 = time.time()
@@ -539,7 +602,7 @@ def _stream_claude(client, messages: list, max_tokens: int = 16000,
                     "text": SYSTEM_PROMPT,
                     "cache_control": {"type": "ephemeral"},
                 }],
-                messages=messages,
+                messages=prefilled_messages,
             ) as stream:
                 for text in stream.text_stream:
                     collected.append(text)
@@ -547,7 +610,8 @@ def _stream_claude(client, messages: list, max_tokens: int = 16000,
             if response.stop_reason == "max_tokens":
                 print(f"  ⚠  Response truncated (hit {response.usage.output_tokens} tokens)")
             elapsed = time.time() - t0
-            raw_text = "".join(collected)
+            # Prepend the prefill to reconstruct the full JSON
+            raw_text = _JSON_PREFILL + "".join(collected)
             if not raw_text.strip():
                 raise ValueError("Empty response from Claude API")
             cache_read = getattr(response.usage, 'cache_read_input_tokens', 0) or 0
@@ -559,7 +623,7 @@ def _stream_claude(client, messages: list, max_tokens: int = 16000,
                 cache_info = f" / {cache_create} cache-write"
             print(f"    ⏱  {model_label} call: {elapsed:.0f}s "
                   f"({response.usage.input_tokens} in / {response.usage.output_tokens} out{cache_info})")
-            return json.loads(_strip_fences(raw_text))
+            return _robust_json_parse(raw_text)
         except (httpx.RemoteProtocolError, httpx.ReadError, httpx.StreamError) as e:
             if attempt < _retries - 1:
                 wait = 5 * (attempt + 1)

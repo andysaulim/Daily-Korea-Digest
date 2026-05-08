@@ -15,6 +15,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Restore tracker data from cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            kim_tracker.json
+            kcna_tracker.json
+            bp_tracker.json
+            tension_tracker.json
+            metrics.jsonl
+          key: tracker-data-v1
+          restore-keys: |
+            tracker-data-
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -45,3 +58,15 @@ jobs:
           GMAIL_APP_PASS: ${{ secrets.GMAIL_APP_PASS }}
           DIGEST_TO: ${{ secrets.DIGEST_TO }}
         run: python weekly.py
+
+      - name: Save tracker data to cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            kim_tracker.json
+            kcna_tracker.json
+            bp_tracker.json
+            tension_tracker.json
+            metrics.jsonl
+          key: tracker-data-v1-${{ github.run_id }}
