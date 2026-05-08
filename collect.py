@@ -138,6 +138,11 @@ TIER2_FEEDS = {
     "NBR":               (_gnews("Korea+site:nbr.org"), "B"),
     "PIIE":              (_gnews("Korea+site:piie.com"), "B"),
     "USIP":              (_gnews("Korea+site:usip.org"), "B"),
+    # ── CRS / Congressional research ────────────────────────────────────────
+    "CRS Korea":         (_gnews("Korea+OR+DPRK+site:crsreports.congress.gov"), "B"),
+    "CRS North Korea":   (_gnews("North+Korea+site:everycrsreport.com"), "B"),
+    # ── DPRK-specialist direct feeds ────────────────────────────────────────
+    "Beyond Parallel":   (_gnews("site:beyondparallel.csis.org"), "A"),
 }
 
 # Tier 3: Use Google Scholar RSS and site-specific searches to reduce noise
