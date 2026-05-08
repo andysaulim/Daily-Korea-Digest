@@ -943,10 +943,11 @@ def main():
 
     Path("digest.json").write_text(json.dumps(digest_data, ensure_ascii=False, indent=2))
 
-    # ── Step 2+: Update Kim Jong Un appearance tracker + KCNA rhetoric tracker
+    # ── Step 2+: Update trackers (Kim, KCNA, BP, Tension) ──────────────────
     from kim_tracker import update_from_digest
     from kcna_tracker import update_from_digest as kcna_update_from_digest
     from bp_tracker import update_from_digest as bp_update_from_digest
+    from tension_scorer import update_from_digest as tension_update_from_digest
 
     validation_passed = False
     for validation_attempt in range(1 + MAX_VALIDATION_RETRIES):
@@ -1005,6 +1006,7 @@ def main():
         update_from_digest(digest_data)
         kcna_update_from_digest(digest_data)
         bp_update_from_digest(digest_data)
+        tension_update_from_digest(digest_data)
     else:
         print("  ⚠  Skipping tracker updates due to critical validation failures")
 
@@ -1040,6 +1042,11 @@ def main():
     archive_dir.mkdir(exist_ok=True)
     (archive_dir / "latest.html").write_text(html, encoding="utf-8")
     (archive_dir / f"digest_{date_slug}.html").write_text(html, encoding="utf-8")
+
+    # ── Save digest JSON for weekly summaries ──────────────────────────────
+    (archive_dir / f"digest_{date_slug}.json").write_text(
+        json.dumps(digest_data, ensure_ascii=False), encoding="utf-8"
+    )
 
     # ── Maintain archive manifest (archive.json) ────────────────────────────
     archive_json_path = archive_dir / "archive.json"

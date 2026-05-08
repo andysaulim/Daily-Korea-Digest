@@ -689,12 +689,13 @@ def _collect_markets() -> dict:
         return key, {"value": "—", "change_pct": 0, "as_of": ""}
 
     result = {}
-    with ThreadPoolExecutor(max_workers=6) as pool:
+    with ThreadPoolExecutor(max_workers=7) as pool:
         symbol_futures = {pool.submit(_fetch_symbol, k): k
                           for k in YAHOO_SYMBOLS.keys()}
         bok_f = pool.submit(_fetch_bok_rate)
         cds_f = pool.submit(_fetch_korea_cds)
         gdp_f = pool.submit(_fetch_gdp_estimate)
+        ecos_f = pool.submit(_fetch_bok_ecos)
 
         for future in as_completed(symbol_futures):
             k, v = future.result()
@@ -703,6 +704,11 @@ def _collect_markets() -> dict:
     result["bok_rate"] = bok_f.result()
     result["korea_cds"] = cds_f.result()
     result["gdp_estimate"] = gdp_f.result()
+
+    # BOK ECOS data — only include if API key was set and data returned
+    ecos_data = ecos_f.result()
+    if ecos_data:
+        result["bok_ecos"] = ecos_data
 
     # Always return market data — even if all fetches fail, BOK indicators
     # have hardcoded fallbacks so there's always something to show
@@ -730,6 +736,75 @@ def _fetch_bok_rate() -> dict:
     print("    ⚠  BOK rate: using fallback (2.50%)")
     fallback_date = datetime.now(timezone.utc).strftime("%b %Y")
     return {"value": "2.50%", "last_change": fallback_date}
+
+
+def _fetch_bok_ecos() -> dict | None:
+    """Fetch key economic indicators from Bank of Korea ECOS API.
+
+    Requires BOK_API_KEY environment variable. Returns None gracefully if
+    the key is not set or any request fails.
+
+    Stats fetched:
+      - CPI year-over-year % change
+      - Unemployment rate (%)
+      - Trade balance (million USD)
+      - Consumer Confidence Index (composite)
+    """
+    api_key = os.environ.get("BOK_API_KEY", "").strip()
+    if not api_key:
+        return None
+
+    now = datetime.now(timezone.utc)
+    # Use a 2-year lookback to ensure we get at least one data point
+    start = (now - timedelta(days=730)).strftime("%Y%m")
+    end = now.strftime("%Y%m")
+
+    STAT_SPECS = {
+        "cpi_yoy": ("722Y001", "M", "0101000"),
+        "unemployment": ("403Y001", "M", "0101000"),
+        "trade_balance": ("301Y013", "M", "101000"),
+        "consumer_confidence": ("732Y001", "M", "0101000"),
+    }
+
+    base_url = "https://ecos.bok.or.kr/api/StatisticSearch"
+    results = {}
+
+    for key, (stat_code, freq, item_code) in STAT_SPECS.items():
+        try:
+            url = (
+                f"{base_url}/{api_key}/json/kr/1/10/"
+                f"{stat_code}/{freq}/{start}/{end}/{item_code}"
+            )
+            resp = requests.get(url, timeout=5, headers={"User-Agent": "Mozilla/5.0"})
+            if not resp.ok:
+                continue
+            data = resp.json()
+            rows = data.get("StatisticSearch", {}).get("row", [])
+            if not rows:
+                continue
+            # Take the most recent data point (last row)
+            val_str = rows[-1].get("DATA_VALUE", "")
+            if not val_str:
+                continue
+            val = float(val_str)
+
+            # Format based on indicator type
+            if key == "cpi_yoy":
+                results[key] = f"{val:.1f}%"
+            elif key == "unemployment":
+                results[key] = f"{val:.1f}%"
+            elif key == "trade_balance":
+                # Value is in million USD; convert to billions for display
+                val_b = val / 1000.0
+                sign = "+" if val_b >= 0 else "-"
+                results[key] = f"{sign}${abs(val_b):.1f}B"
+            elif key == "consumer_confidence":
+                results[key] = f"{val:.1f}"
+        except Exception:
+            # Never crash the pipeline — skip this indicator
+            continue
+
+    return results if results else None
 
 
 def _fetch_korea_cds() -> dict:
