@@ -942,6 +942,32 @@ def main():
         re_line = digest_data.get("re_line")
         send(html, re_line=re_line)
 
+    # ── Step 5: Log quality metrics ────────────────────────────────────────
+    try:
+        metrics = {
+            "date": date_slug,
+            "word_count": _count_digest_words(digest_data),
+            "top_stories": len(digest_data.get("top_stories") or []),
+            "overnight_items": len(digest_data.get("overnight_items") or []),
+            "business_economy": len(digest_data.get("business_economy") or []),
+            "northeast_asia": len(digest_data.get("northeast_asia") or []),
+            "opeds": len(digest_data.get("opeds_today") or []),
+            "academic": len(digest_data.get("academic_today") or []),
+            "statements": len(digest_data.get("social_statements") or []),
+            "tier1_input": len(payload.get("tier1", [])),
+            "tier4_input": len(payload.get("tier4", [])),
+            "kcna_articles": (payload.get("kcna_summary") or {}).get("total_articles", 0),
+            "validation_warnings": len(warnings),
+            "validation_retries": validation_attempt,
+            "html_bytes": len(html),
+            "sent": not args.no_send and validation_passed,
+        }
+        metrics_path = Path("metrics.jsonl")
+        with open(metrics_path, "a") as f:
+            f.write(json.dumps(metrics) + "\n")
+    except Exception:
+        pass
+
     print("\n✅  Done.\n")
 
 

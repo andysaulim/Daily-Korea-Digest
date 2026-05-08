@@ -172,6 +172,13 @@ TIER4_FEEDS = {
     "KCNA":              _gnews("site:kcna.kp"),
     "Rodong Sinmun":     _gnews("site:rodong.rep.kp"),
     "KCNA (Yonhap)":     _gnews("KCNA+Yonhap"),
+    # Indirect KCNA sources — Western/regional outlets that cite KCNA daily
+    "KCNA (Reuters)":    _gnews("KCNA+site:reuters.com"),
+    "KCNA (AP)":         _gnews("KCNA+site:apnews.com"),
+    "KCNA (38 North)":   _gnews("KCNA+site:38north.org"),
+    "KCNA (Daily NK)":   _gnews("KCNA+site:dailynk.com"),
+    "KCNA (NK News)":    _gnews("KCNA+site:nknews.org"),
+    "KCNA (KCBS)":       _gnews("%22Korean+Central+Broadcasting%22+OR+%22KCNA+reported%22+OR+%22KCNA+said%22"),
 }
 
 # ── Kim Jong Un appearance tracking feeds ──────────────────────────────────
@@ -218,6 +225,9 @@ def _parse_feed(url: str) -> list:
     for attempt in range(3):
         try:
             resp = requests.get(url, timeout=REQUEST_TIMEOUT, headers=HEADERS)
+            if resp.status_code in (401, 403):
+                print(f"    ⚠  Feed blocked ({resp.status_code}): {url[:80]}")
+                return []
             resp.raise_for_status()
             return feedparser.parse(resp.content).entries
         except (requests.ConnectionError, requests.Timeout) as e:

@@ -534,7 +534,11 @@ def _stream_claude(client, messages: list, max_tokens: int = 16000,
             with client.messages.stream(
                 model=use_model,
                 max_tokens=max_tokens,
-                system=SYSTEM_PROMPT,
+                system=[{
+                    "type": "text",
+                    "text": SYSTEM_PROMPT,
+                    "cache_control": {"type": "ephemeral"},
+                }],
                 messages=messages,
             ) as stream:
                 for text in stream.text_stream:
@@ -546,8 +550,15 @@ def _stream_claude(client, messages: list, max_tokens: int = 16000,
             raw_text = "".join(collected)
             if not raw_text.strip():
                 raise ValueError("Empty response from Claude API")
+            cache_read = getattr(response.usage, 'cache_read_input_tokens', 0) or 0
+            cache_create = getattr(response.usage, 'cache_creation_input_tokens', 0) or 0
+            cache_info = ""
+            if cache_read:
+                cache_info = f" / {cache_read} cache-hit"
+            elif cache_create:
+                cache_info = f" / {cache_create} cache-write"
             print(f"    ⏱  {model_label} call: {elapsed:.0f}s "
-                  f"({response.usage.input_tokens} in / {response.usage.output_tokens} out)")
+                  f"({response.usage.input_tokens} in / {response.usage.output_tokens} out{cache_info})")
             return json.loads(_strip_fences(raw_text))
         except (httpx.RemoteProtocolError, httpx.ReadError, httpx.StreamError) as e:
             if attempt < _retries - 1:
