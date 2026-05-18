@@ -435,7 +435,7 @@ TIER 3: ACADEMIC JOURNALS
 For EACH: url, source, journal_tier, authors, korea_relevance_score, framework, summary (3 sentences), policy_implication, bp_link.
 Inclusion: score >= 6 (A+ journals: score >= 4).
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-TIER 4: KCNA / RODONG SINMUN (last 24h)
+TIER 4: KCNA / RODONG SINMUN (last 48h)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 {tier4_block}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

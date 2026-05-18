@@ -173,20 +173,28 @@ TIER3_FEEDS = {
 }
 
 TIER4_FEEDS = {
-    "KCNA Watch":        "https://kcnawatch.org/newstream/feed/",
-    "KCNA":              _gnews("site:kcna.kp"),
-    "Rodong Sinmun":     _gnews("site:rodong.rep.kp"),
-    "KCNA (Yonhap)":     _gnews("KCNA+Yonhap"),
-    # Indirect KCNA sources — Western/regional outlets that cite KCNA daily
-    "KCNA (Reuters)":    _gnews("KCNA+site:reuters.com"),
-    "KCNA (AP)":         _gnews("KCNA+site:apnews.com"),
-    "KCNA (38 North)":   _gnews("KCNA+site:38north.org"),
-    "KCNA (Daily NK)":   _gnews("KCNA+site:dailynk.com"),
-    "KCNA (NK News)":    _gnews("KCNA+site:nknews.org"),
-    "KCNA (KCBS)":       _gnews("%22Korean+Central+Broadcasting%22+OR+%22KCNA+reported%22+OR+%22KCNA+said%22"),
-    # Broader indirect — catches KCNA content even when direct feeds are blocked
-    "KCNA (state media)": _gnews("%22North+Korea+state+media%22+OR+%22KCNA+said%22+OR+%22Pyongyang+said%22"),
+    # Direct KCNA sources (often blocked — kept for when they work)
+    "KCNA Watch":         "https://kcnawatch.org/newstream/feed/",
+    "KCNA":               _gnews("site:kcna.kp"),
+    "Rodong Sinmun":      _gnews("site:rodong.rep.kp"),
+    # Wire services / outlets that relay KCNA content daily (primary indirect)
+    "KCNA (Yonhap)":      _gnews("KCNA+Yonhap"),
+    "KCNA (Reuters)":     _gnews("KCNA+site:reuters.com"),
+    "KCNA (AP)":          _gnews("KCNA+site:apnews.com"),
+    "KCNA (AFP)":         _gnews("KCNA+OR+%22North+Korea+state+media%22+site:france24.com"),
+    # NK-specialist outlets that cite KCNA
+    "KCNA (38 North)":    _gnews("KCNA+site:38north.org"),
+    "KCNA (Daily NK)":    _gnews("KCNA+site:dailynk.com"),
+    "KCNA (NK News)":     _gnews("KCNA+site:nknews.org"),
     "KCNA (NK Pro)":      _gnews("KCNA+site:korearisgroup.com"),
+    # Major newspapers that relay KCNA statements
+    "KCNA (BBC)":         _gnews("KCNA+OR+%22North+Korea+state+media%22+site:bbc.com"),
+    "KCNA (NYT)":         _gnews("KCNA+site:nytimes.com"),
+    "KCNA (WaPo)":        _gnews("KCNA+site:washingtonpost.com"),
+    # Broad catch-all queries (redundant by design — ensures coverage)
+    "KCNA (KCBS)":        _gnews("%22Korean+Central+Broadcasting%22+OR+%22KCNA+reported%22+OR+%22KCNA+said%22"),
+    "KCNA (state media)": _gnews("%22North+Korea+state+media%22+OR+%22KCNA+said%22+OR+%22Pyongyang+said%22"),
+    "KCNA (Kim stmt)":    _gnews("%22Kim+Jong+Un%22+%22KCNA%22+OR+%22state+media%22+statement+OR+message+OR+order"),
 }
 
 # ── Kim Jong Un appearance tracking feeds ──────────────────────────────────
@@ -624,10 +632,22 @@ def _build_kcna_summary(tier4_articles: list, scraped_articles: list) -> dict:
 
 
 SATELLITE_IMAGERY_FEEDS = {
-    "BP Imagery":    _gnews("satellite+imagery+site:beyondparallel.csis.org"),
-    "38N Imagery":   _gnews("satellite+imagery+site:38north.org"),
-    "AEI Imagery":   _gnews("North+Korea+satellite+imagery+site:aei.org"),
-    "NK Satellite":  _gnews("%22satellite+imagery%22+%22North+Korea%22+OR+%22DPRK%22+Yongbyon+OR+Sinpo+OR+Sohae+OR+Punggye"),
+    # Specialist sources (primary imagery analysts)
+    "BP Imagery":       _gnews("satellite+imagery+site:beyondparallel.csis.org"),
+    "38N Imagery":      _gnews("satellite+imagery+site:38north.org"),
+    "AEI Imagery":      _gnews("North+Korea+satellite+imagery+site:aei.org"),
+    "Middlebury MIIS":  _gnews("North+Korea+satellite+site:nonproliferation.org"),
+    # Major wire services / newspapers covering imagery reports
+    "Imagery Reuters":  _gnews("%22satellite+imagery%22+%22North+Korea%22+site:reuters.com"),
+    "Imagery AP":       _gnews("%22satellite+imagery%22+%22North+Korea%22+site:apnews.com"),
+    "Imagery BBC":      _gnews("%22satellite%22+%22North+Korea%22+site:bbc.com"),
+    "Imagery NYT":      _gnews("%22satellite%22+%22North+Korea%22+site:nytimes.com"),
+    "Imagery WaPo":     _gnews("%22satellite%22+%22North+Korea%22+site:washingtonpost.com"),
+    "Imagery WSJ":      _gnews("%22satellite%22+%22North+Korea%22+site:wsj.com"),
+    "Imagery CNN":      _gnews("%22satellite%22+%22North+Korea%22+site:cnn.com"),
+    # Broad catch-all for any outlet reporting DPRK imagery
+    "NK Imagery":       _gnews("%22satellite+imag%22+%22North+Korea%22+OR+%22DPRK%22+Yongbyon+OR+Sinpo+OR+Sohae+OR+Punggye+OR+%22nuclear+site%22"),
+    "NK Facility":      _gnews("%22North+Korea%22+%22imagery+shows%22+OR+%22images+show%22+OR+%22images+reveal%22+OR+%22imagery+reveals%22"),
 }
 
 

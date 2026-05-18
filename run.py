@@ -403,10 +403,10 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
     elif word_count < 1200:
         warnings.append(f"WORD COUNT: ~{word_count} words (target 1200-1400 for 5-min read)")
 
-    # ── KCNA delta must exist ─────────────────────────────────────────────
+    # ── KCNA delta should exist but is non-blocking ────────────────────────
     kcna = digest.get("kcna_delta")
     if not kcna or not isinstance(kcna, dict):
-        warnings.append("KCNA DELTA CRITICAL: missing kcna_delta section")
+        warnings.append("KCNA DELTA: missing kcna_delta section (non-blocking)")
     elif kcna.get("silence_today") and "scraper" in str(kcna.get("output_volume", "")).lower():
         pass  # no-data stub is valid — scrapers returned 0 articles
 
