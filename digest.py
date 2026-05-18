@@ -325,6 +325,18 @@ Cross-reference these reports with KCNA Tier 4 data to determine kim_appearance_
 {bp_history}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"""
 
+    # Satellite imagery articles (dedicated collector, 72h window)
+    satellite_block = ""
+    sat_articles = payload.get("satellite_imagery_articles", [])
+    if sat_articles:
+        satellite_block = f"""
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SATELLITE IMAGERY ANALYSIS (collected from Beyond Parallel, 38 North, AEI — 72h window)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{tier_json(sat_articles, max_items=10)}
+Use these to populate imagery_report and update relevant bp_locations entries.
+Cross-reference with the BP LOCATIONS HISTORY tracker above."""
+
     # KCNA Tier 4 section — gate on actual data presence
     if _has_kcna_data(payload):
         summary = payload.get("kcna_summary", {})
@@ -389,6 +401,7 @@ US-KOREA INVESTMENT TRACKER
 {kim_block}
 {kcna_block}
 {bp_block}
+{satellite_block}
 {db_block}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 TIER 1: NEWS ARTICLES (last 24h)

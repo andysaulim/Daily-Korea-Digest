@@ -184,6 +184,9 @@ TIER4_FEEDS = {
     "KCNA (Daily NK)":   _gnews("KCNA+site:dailynk.com"),
     "KCNA (NK News)":    _gnews("KCNA+site:nknews.org"),
     "KCNA (KCBS)":       _gnews("%22Korean+Central+Broadcasting%22+OR+%22KCNA+reported%22+OR+%22KCNA+said%22"),
+    # Broader indirect — catches KCNA content even when direct feeds are blocked
+    "KCNA (state media)": _gnews("%22North+Korea+state+media%22+OR+%22KCNA+said%22+OR+%22Pyongyang+said%22"),
+    "KCNA (NK Pro)":      _gnews("KCNA+site:korearisgroup.com"),
 }
 
 # ── Kim Jong Un appearance tracking feeds ──────────────────────────────────
@@ -442,7 +445,7 @@ def _collect_tier4() -> list:
     results = _fetch_feeds_parallel(TIER4_FEEDS)
     for source, (entries, _) in results.items():
         for entry in entries:
-            if not _is_recent(entry, hours=24):
+            if not _is_recent(entry, hours=48):
                 continue
             article = _entry_to_article(entry, source, lang="KO")
             articles.append(article)
@@ -451,61 +454,90 @@ def _collect_tier4() -> list:
 
 def _scrape_kcna_watch() -> list:
     """Scrape KCNA Watch newstream page for today's article headlines and categories.
-    Returns a list of dicts with title, url, category, pub_date."""
+    Falls back to Google cache / web search if direct scrape is blocked (403).
+    Returns a list of dicts with title, url, category."""
     articles = []
+
+    # Attempt 1: direct scrape
     try:
         resp = requests.get(
             "https://kcnawatch.org/newstream/",
             timeout=REQUEST_TIMEOUT,
             headers={**HEADERS, "Accept": "text/html"},
         )
-        resp.raise_for_status()
-        html = resp.text
-
-        # KCNA Watch uses article entries with titles and category tags
-        # Extract article blocks: <article ...> ... </article> or <h2><a href="...">title</a></h2>
-        # Pattern for newstream entries: links with titles and category spans
-        import re as _re
-
-        # Match article links: <a href="/newstream/..." ...>Title</a>
-        link_pattern = _re.compile(
-            r'<a\s+href="(https?://kcnawatch\.org/newstream/\d{4}/\d{2}/\d{2}/[^"]+)"[^>]*>\s*([^<]+?)\s*</a>',
-            _re.IGNORECASE,
-        )
-        # Match category badges near articles
-        cat_pattern = _re.compile(
-            r'<span[^>]*class="[^"]*category[^"]*"[^>]*>\s*([^<]+?)\s*</span>',
-            _re.IGNORECASE,
-        )
-
-        today_str = datetime.now(timezone.utc).strftime("%Y/%m/%d")
-        yesterday_str = (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y/%m/%d")
-
-        seen_urls = set()
-        for match in link_pattern.finditer(html):
-            url, title = match.group(1), match.group(2).strip()
-            if url in seen_urls:
-                continue
-            # Only include today's or yesterday's articles
-            if today_str not in url and yesterday_str not in url:
-                continue
-            seen_urls.add(url)
-
-            # Try to find a category near this link (within 500 chars before)
-            start = max(0, match.start() - 500)
-            context = html[start:match.end() + 200]
-            cat_match = cat_pattern.search(context)
-            category = cat_match.group(1).strip() if cat_match else "Uncategorized"
-
-            articles.append({
-                "title": re.sub(r"<[^>]+>", "", title).strip(),
-                "url": url,
-                "category": category,
-            })
-
-        print(f"  ── KCNA Watch scrape: {len(articles)} articles from newstream page")
+        if resp.status_code == 403:
+            print(f"  ── KCNA Watch scrape: blocked (403) — trying fallback")
+        else:
+            resp.raise_for_status()
+            articles = _parse_kcna_watch_html(resp.text)
+            if articles:
+                print(f"  ── KCNA Watch scrape: {len(articles)} articles from newstream page")
+                return articles
     except Exception as e:
-        print(f"  ── KCNA Watch scrape: ⚠ failed ({e})")
+        print(f"  ── KCNA Watch scrape: ⚠ direct failed ({e})")
+
+    # Attempt 2: Google News search for kcnawatch.org articles from today
+    try:
+        gnews_url = _gnews("site:kcnawatch.org/newstream/")
+        entries = _parse_feed(gnews_url)
+        for entry in entries:
+            if not _is_recent(entry, hours=48):
+                continue
+            title = entry.get("title", "").strip()
+            link = entry.get("link", "").strip()
+            if title and link:
+                articles.append({
+                    "title": re.sub(r"<[^>]+>", "", title).strip(),
+                    "url": link,
+                    "category": "Uncategorized",
+                })
+        if articles:
+            print(f"  ── KCNA Watch scrape: {len(articles)} articles via Google News fallback")
+    except Exception as e:
+        print(f"  ── KCNA Watch scrape: ⚠ Google fallback also failed ({e})")
+
+    if not articles:
+        print(f"  ── KCNA Watch scrape: 0 articles (all methods failed)")
+
+    return articles
+
+
+def _parse_kcna_watch_html(html: str) -> list:
+    """Parse KCNA Watch newstream HTML for article entries."""
+    articles = []
+    import re as _re
+
+    link_pattern = _re.compile(
+        r'<a\s+href="(https?://kcnawatch\.org/newstream/\d{4}/\d{2}/\d{2}/[^"]+)"[^>]*>\s*([^<]+?)\s*</a>',
+        _re.IGNORECASE,
+    )
+    cat_pattern = _re.compile(
+        r'<span[^>]*class="[^"]*category[^"]*"[^>]*>\s*([^<]+?)\s*</span>',
+        _re.IGNORECASE,
+    )
+
+    today_str = datetime.now(timezone.utc).strftime("%Y/%m/%d")
+    yesterday_str = (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y/%m/%d")
+
+    seen_urls = set()
+    for match in link_pattern.finditer(html):
+        url, title = match.group(1), match.group(2).strip()
+        if url in seen_urls:
+            continue
+        if today_str not in url and yesterday_str not in url:
+            continue
+        seen_urls.add(url)
+
+        start = max(0, match.start() - 500)
+        context = html[start:match.end() + 200]
+        cat_match = cat_pattern.search(context)
+        category = cat_match.group(1).strip() if cat_match else "Uncategorized"
+
+        articles.append({
+            "title": re.sub(r"<[^>]+>", "", title).strip(),
+            "url": url,
+            "category": category,
+        })
 
     return articles
 
@@ -589,6 +621,27 @@ def _build_kcna_summary(tier4_articles: list, scraped_articles: list) -> dict:
         "sources": sources,
         "headlines": headlines[:50],  # Cap at 50 headlines
     }
+
+
+SATELLITE_IMAGERY_FEEDS = {
+    "BP Imagery":    _gnews("satellite+imagery+site:beyondparallel.csis.org"),
+    "38N Imagery":   _gnews("satellite+imagery+site:38north.org"),
+    "AEI Imagery":   _gnews("North+Korea+satellite+imagery+site:aei.org"),
+    "NK Satellite":  _gnews("%22satellite+imagery%22+%22North+Korea%22+OR+%22DPRK%22+Yongbyon+OR+Sinpo+OR+Sohae+OR+Punggye"),
+}
+
+
+def _collect_satellite_imagery() -> list:
+    """Collect satellite imagery analysis articles (72h window — published sporadically)."""
+    articles = []
+    results = _fetch_feeds_parallel(SATELLITE_IMAGERY_FEEDS)
+    for source, (entries, _) in results.items():
+        for entry in entries:
+            if not _is_recent(entry, hours=72):
+                continue
+            article = _entry_to_article(entry, source, lang="EN")
+            articles.append(article)
+    return _dedup(articles)
 
 
 def _collect_kim_tracker() -> list:
@@ -1488,12 +1541,13 @@ def collect() -> dict:
         "tier4":        ("Tier 4: KCNA / Rodong Sinmun",  _collect_tier4),
         "kcna_scrape":  ("KCNA Watch scrape",             _scrape_kcna_watch),
         "kim_tracker":  ("Kim Jong Un appearance tracker", _collect_kim_tracker),
+        "satellite":    ("Satellite imagery analysis",     _collect_satellite_imagery),
         "markets":      ("Market data",                    _collect_markets),
         "sentiment":    ("Public sentiment polls",         _collect_sentiment),
     }
 
     results = {}
-    with ThreadPoolExecutor(max_workers=7) as pool:
+    with ThreadPoolExecutor(max_workers=9) as pool:
         futures = {pool.submit(fn): key for key, (_label, fn) in collectors.items()}
         for future in as_completed(futures):
             key = futures[future]
@@ -1506,7 +1560,7 @@ def collect() -> dict:
                 elif key == "sentiment":
                     found = sum(1 for v in data.values() if v) if data else 0
                     print(f"  ── {label}: {found} metric(s) found" if found else f"  ── {label}: no recent polls found")
-                elif key == "kim_tracker":
+                elif key in ("kim_tracker", "satellite"):
                     print(f"  ── {label}: {len(data)} articles (72h window)")
                 else:
                     print(f"  ── {label}: {len(data)} items")
@@ -1542,6 +1596,10 @@ def collect() -> dict:
         elif not health:
             print(f"  ⚠  MAJOR FEED WARNING: {major} was not fetched")
 
+    satellite = results.get("satellite", [])
+    if satellite:
+        print(f"  🛰  Satellite imagery: {len(satellite)} articles found (72h window)")
+
     return {
         "tier1": tier1,
         "tier2": tier2,
@@ -1549,6 +1607,7 @@ def collect() -> dict:
         "tier4": tier4,
         "kcna_summary": kcna_summary,
         "kim_tracker_articles": results["kim_tracker"],
+        "satellite_imagery_articles": satellite,
         "market_indicators": results["markets"],
         "sentiment_baseline": results["sentiment"],
         "source_health": {
