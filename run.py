@@ -403,10 +403,12 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
     elif word_count < 1200:
         warnings.append(f"WORD COUNT: ~{word_count} words (target 1200-1400 for 5-min read)")
 
-    # ── KCNA delta must exist ─────────────────────────────────────────────
+    # ── KCNA delta should exist but is non-blocking ────────────────────────
     kcna = digest.get("kcna_delta")
     if not kcna or not isinstance(kcna, dict):
-        warnings.append("KCNA DELTA CRITICAL: missing kcna_delta section")
+        warnings.append("KCNA DELTA: missing kcna_delta section (non-blocking)")
+    elif kcna.get("silence_today") and "scraper" in str(kcna.get("output_volume", "")).lower():
+        pass  # no-data stub is valid — scrapers returned 0 articles
 
     # ── Single pass over all items: URLs, headlines, sources, body checks ─
     seen_urls = {}
@@ -775,6 +777,124 @@ def _postprocess_digest(digest_data: dict, payload: dict | None = None) -> tuple
     return digest_data, log
 
 
+def _build_index_html() -> str:
+    """Generate a landing page for GitHub Pages with links to latest digest and archive."""
+    return """<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Korea Daily Brief — CSIS Korea Chair</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background: #f5f6f8;
+    color: #333;
+    min-height: 100vh;
+  }
+  header {
+    background: #1a1f36;
+    color: #fff;
+    padding: 40px 32px 36px;
+    text-align: center;
+  }
+  header .brand {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.8px;
+    color: #8a8fa8;
+    margin-bottom: 8px;
+  }
+  header h1 {
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    margin-bottom: 8px;
+  }
+  header .subtitle {
+    font-size: 15px;
+    color: #9ca0b8;
+    font-weight: 400;
+    max-width: 520px;
+    margin: 0 auto;
+    line-height: 1.5;
+  }
+  .container {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 40px 20px 60px;
+  }
+  .card-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .card {
+    background: #fff;
+    border: 1px solid #dce0e8;
+    border-radius: 10px;
+    padding: 28px 24px;
+    text-decoration: none;
+    color: inherit;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    transition: box-shadow 0.15s, border-color 0.15s, transform 0.15s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  .card:hover {
+    border-color: #4a7cf7;
+    box-shadow: 0 4px 14px rgba(74,124,247,0.12);
+    transform: translateY(-2px);
+  }
+  .card .icon {
+    font-size: 32px;
+    margin-bottom: 12px;
+  }
+  .card .card-title {
+    font-size: 17px;
+    font-weight: 600;
+    color: #1a1f36;
+    margin-bottom: 6px;
+  }
+  .card .card-desc {
+    font-size: 13px;
+    color: #777;
+    line-height: 1.45;
+  }
+  @media (max-width: 500px) {
+    .card-grid { grid-template-columns: 1fr; }
+    header { padding: 28px 16px 24px; }
+    header h1 { font-size: 24px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">CSIS Korea Chair</div>
+  <h1>Korea Daily Brief</h1>
+  <p class="subtitle">Daily intelligence digest covering security, diplomacy, trade, and technology on the Korean Peninsula.</p>
+</header>
+<div class="container">
+  <div class="card-grid">
+    <a class="card" href="latest.html">
+      <div class="icon">&#128240;</div>
+      <div class="card-title">Latest Digest</div>
+      <div class="card-desc">Read today's Korea Daily Brief with the latest developments.</div>
+    </a>
+    <a class="card" href="archive.html">
+      <div class="icon">&#128218;</div>
+      <div class="card-title">Archive &amp; Search</div>
+      <div class="card-desc">Browse and search all past digests by date or keyword.</div>
+    </a>
+  </div>
+</div>
+</body>
+</html>"""
+
+
 def main():
     parser = argparse.ArgumentParser(description="Korea Daily Brief pipeline")
     parser.add_argument("--no-send",    action="store_true", help="Render to file only, do not send email")
@@ -823,10 +943,11 @@ def main():
 
     Path("digest.json").write_text(json.dumps(digest_data, ensure_ascii=False, indent=2))
 
-    # ── Step 2+: Update Kim Jong Un appearance tracker + KCNA rhetoric tracker
+    # ── Step 2+: Update trackers (Kim, KCNA, BP, Tension) ──────────────────
     from kim_tracker import update_from_digest
     from kcna_tracker import update_from_digest as kcna_update_from_digest
     from bp_tracker import update_from_digest as bp_update_from_digest
+    from tension_scorer import update_from_digest as tension_update_from_digest
 
     validation_passed = False
     for validation_attempt in range(1 + MAX_VALIDATION_RETRIES):
@@ -885,6 +1006,7 @@ def main():
         update_from_digest(digest_data)
         kcna_update_from_digest(digest_data)
         bp_update_from_digest(digest_data)
+        tension_update_from_digest(digest_data)
     else:
         print("  ⚠  Skipping tracker updates due to critical validation failures")
 
@@ -920,11 +1042,40 @@ def main():
     archive_dir.mkdir(exist_ok=True)
     (archive_dir / "latest.html").write_text(html, encoding="utf-8")
     (archive_dir / f"digest_{date_slug}.html").write_text(html, encoding="utf-8")
-    # Index redirect so Pages root doesn't 404
-    (archive_dir / "index.html").write_text(
-        '<!DOCTYPE html><html><head><meta http-equiv="refresh" content="0;url=latest.html"></head></html>',
+
+    # ── Save digest JSON for weekly summaries ──────────────────────────────
+    (archive_dir / f"digest_{date_slug}.json").write_text(
+        json.dumps(digest_data, ensure_ascii=False), encoding="utf-8"
+    )
+
+    # ── Maintain archive manifest (archive.json) ────────────────────────────
+    archive_json_path = archive_dir / "archive.json"
+    try:
+        archive_entries = json.loads(archive_json_path.read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError):
+        archive_entries = []
+
+    # Remove any existing entry for today (idempotent re-runs)
+    archive_entries = [e for e in archive_entries if e.get("date") != date_slug]
+
+    archive_entries.append({
+        "date": date_slug,
+        "headline_re": digest_data.get("re_line", ""),
+        "top_stories_count": len(digest_data.get("top_stories") or []),
+        "word_count": _count_digest_words(digest_data),
+        "url": f"digest_{date_slug}.html",
+    })
+    archive_json_path.write_text(
+        json.dumps(archive_entries, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
+
+    # ── Landing page and archive page for GitHub Pages ─────────────────────
+    (archive_dir / "index.html").write_text(_build_index_html(), encoding="utf-8")
+    archive_template = Path(__file__).parent / "templates" / "archive.html"
+    if archive_template.exists():
+        import shutil
+        shutil.copy2(archive_template, archive_dir / "archive.html")
 
     # ── Step 4: Send email ───────────────────────────────────────────────────
     if not validation_passed:
@@ -939,6 +1090,32 @@ def main():
         from send_email import send
         re_line = digest_data.get("re_line")
         send(html, re_line=re_line)
+
+    # ── Step 5: Log quality metrics ────────────────────────────────────────
+    try:
+        metrics = {
+            "date": date_slug,
+            "word_count": _count_digest_words(digest_data),
+            "top_stories": len(digest_data.get("top_stories") or []),
+            "overnight_items": len(digest_data.get("overnight_items") or []),
+            "business_economy": len(digest_data.get("business_economy") or []),
+            "northeast_asia": len(digest_data.get("northeast_asia") or []),
+            "opeds": len(digest_data.get("opeds_today") or []),
+            "academic": len(digest_data.get("academic_today") or []),
+            "statements": len(digest_data.get("social_statements") or []),
+            "tier1_input": len(payload.get("tier1", [])),
+            "tier4_input": len(payload.get("tier4", [])),
+            "kcna_articles": (payload.get("kcna_summary") or {}).get("total_articles", 0),
+            "validation_warnings": len(warnings),
+            "validation_retries": validation_attempt,
+            "html_bytes": len(html),
+            "sent": not args.no_send and validation_passed,
+        }
+        metrics_path = Path("metrics.jsonl")
+        with open(metrics_path, "a") as f:
+            f.write(json.dumps(metrics) + "\n")
+    except Exception:
+        pass
 
     print("\n✅  Done.\n")
 

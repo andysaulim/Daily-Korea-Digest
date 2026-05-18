@@ -8,6 +8,8 @@ import re as _re
 from datetime import datetime, timezone
 from urllib.parse import urlparse as _urlparse
 
+from kim_tracker import build_dot_calendar
+
 
 def _clean_src(raw: str) -> str:
     """Strip raw URLs from source lines, keeping only human-readable text.
@@ -255,6 +257,73 @@ def render(digest: dict) -> str:
           </tr>
         </table>
         """)
+
+        # Third row: BOK ECOS indicators (only if data available)
+        bok_ecos = markets.get("bok_ecos") or {}
+        if bok_ecos:
+            cpi_yoy = _esc(str(bok_ecos.get("cpi_yoy", "—")))
+            unemployment = _esc(str(bok_ecos.get("unemployment", "—")))
+            trade_balance = _esc(str(bok_ecos.get("trade_balance", "—")))
+            consumer_conf = _esc(str(bok_ecos.get("consumer_confidence", "—")))
+            # Build cells — only show indicators that have data
+            ecos_cells = []
+            if bok_ecos.get("cpi_yoy"):
+                ecos_cells.append(("CPI (YoY)", cpi_yoy))
+            if bok_ecos.get("unemployment"):
+                ecos_cells.append(("Unemployment", unemployment))
+            if bok_ecos.get("trade_balance"):
+                ecos_cells.append(("Trade Bal.", trade_balance))
+            if bok_ecos.get("consumer_confidence"):
+                ecos_cells.append(("Consumer Conf.", consumer_conf))
+
+            if ecos_cells:
+                # Distribute widths evenly
+                cell_width = f"{100 // len(ecos_cells)}%"
+                cells_html = ""
+                for i, (label, value) in enumerate(ecos_cells):
+                    border = ' border-left:1px solid rgba(255,255,255,0.1);' if i > 0 else ''
+                    cells_html += f"""
+            <td width="{cell_width}" align="center" style="padding:8px 8px 10px;{border}">
+              <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;">{label}</div>
+              <div style="font-size:15px;font-weight:700;">{value}</div>
+              <div style="font-size:10px;opacity:0.5;">BOK ECOS</div>
+            </td>"""
+
+                sections.append(f"""
+        <table class="mkt-table" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#0F1B30;color:#fff;border-bottom:1px solid rgba(255,255,255,0.08);">
+          <tr>{cells_html}
+          </tr>
+        </table>
+        """)
+
+    # ── 2b. Peninsula Tension Index ──────────────────────────────────────────
+    try:
+        from tension_scorer import score_tension, build_sparkline, _load as _tension_load
+        tension = score_tension(digest)
+        tension_data = _tension_load()
+        history = [entry.get("score", 0) for entry in tension_data.get("history", [])[-14:]]
+        sparkline_svg = build_sparkline(history) if len(history) >= 2 else ""
+        score_val = tension["score"]
+        level = tension["level"]
+        level_colors = {"LOW": "#22c55e", "GUARDED": "#eab308", "ELEVATED": "#f97316", "HIGH": "#ef4444", "CRITICAL": "#dc2626"}
+        level_color = level_colors.get(level, "#888")
+        sections.append(f"""
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#0a0f1e;color:#fff;border-bottom:1px solid rgba(255,255,255,0.08);">
+          <tr>
+            <td style="padding:8px 16px; vertical-align:middle;">
+              <span style="font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;">Tension Index</span>
+              <span style="font-size:18px;font-weight:700;margin-left:8px;">{score_val:.1f}</span><span style="font-size:11px;opacity:0.7;">/10</span>
+              <span style="display:inline-block;background:{level_color};color:#fff;font-size:9px;font-weight:600;padding:2px 6px;border-radius:3px;margin-left:8px;vertical-align:middle;">{level}</span>
+            </td>
+            <td style="padding:8px 16px; text-align:right; vertical-align:middle;">
+              {sparkline_svg}
+              <span style="font-size:9px;opacity:0.5;margin-left:4px;">14d</span>
+            </td>
+          </tr>
+        </table>
+        """)
+    except Exception:
+        pass
 
     # ── 3. Morning Memo (top 3 at a glance) ─────────────────────────────────
     memo_items = digest.get("morning_memo") or []
@@ -515,6 +584,7 @@ def render(digest: dict) -> str:
               </tr>
               {tone_row_html}
             </table>
+            {build_dot_calendar(today_appeared=kcna.get("kim_appearance_today"))}
             {prop_html}
             {quotes_html}
             {phrase_html}
@@ -1311,6 +1381,25 @@ def render(digest: dict) -> str:
       /* Trade policy tracker — stack on narrow screens */
       .trade-policy td {{ display:block !important; width:100% !important; padding:4px 8px !important; }}
       .trade-policy tr {{ display:block !important; border-bottom:1px solid #E8E8E8 !important; padding:6px 0 !important; }}
+      /* === Mobile QoL: minimum font size for readability === */
+      body, td, div, p, span {{ font-size:14px !important; min-font-size:14px; -webkit-text-size-adjust:100%; }}
+      /* Preserve intentionally small labels (badges, footnotes) but floor at 11px */
+      div[style*="font-size:9px"], div[style*="font-size:10px"],
+      span[style*="font-size:9px"], span[style*="font-size:10px"] {{ font-size:11px !important; }}
+      /* === Mobile QoL: 44px minimum touch targets for links === */
+      a {{ min-height:44px; min-width:44px; display:inline-block; line-height:44px; }}
+      /* Links inside paragraphs should stay inline but padded for tap */
+      p a, div a, td a {{ min-height:auto; min-width:auto; display:inline; padding:6px 0; }}
+      /* === Mobile QoL: responsive images === */
+      img {{ max-width:100% !important; height:auto !important; }}
+      /* === Mobile QoL: BP location grid single column === */
+      .loc-grid table {{ width:100% !important; }}
+      .loc-grid td {{ display:block !important; width:100% !important; padding:6px 0 !important; }}
+      .loc-grid tr {{ display:block !important; }}
+      /* === Mobile QoL: market indicator cells stack vertically === */
+      .mkt-table {{ width:100% !important; }}
+      .mkt-table tr {{ display:block !important; }}
+      .mkt-table td {{ display:block !important; width:100% !important; padding:10px 14px !important; text-align:left !important; border-left:0 !important; border-right:0 !important; border-bottom:1px solid rgba(255,255,255,0.1) !important; }}
     }}
     /* Tablet breakpoint — tighten padding, keep grids side-by-side */
     @media only screen and (min-width: 621px) and (max-width: 768px) {{

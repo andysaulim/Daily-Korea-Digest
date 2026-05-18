@@ -138,6 +138,11 @@ TIER2_FEEDS = {
     "NBR":               (_gnews("Korea+site:nbr.org"), "B"),
     "PIIE":              (_gnews("Korea+site:piie.com"), "B"),
     "USIP":              (_gnews("Korea+site:usip.org"), "B"),
+    # ── CRS / Congressional research ────────────────────────────────────────
+    "CRS Korea":         (_gnews("Korea+OR+DPRK+site:crsreports.congress.gov"), "B"),
+    "CRS North Korea":   (_gnews("North+Korea+site:everycrsreport.com"), "B"),
+    # ── DPRK-specialist direct feeds ────────────────────────────────────────
+    "Beyond Parallel":   (_gnews("site:beyondparallel.csis.org"), "A"),
 }
 
 # Tier 3: Use Google Scholar RSS and site-specific searches to reduce noise
@@ -168,10 +173,28 @@ TIER3_FEEDS = {
 }
 
 TIER4_FEEDS = {
-    "KCNA Watch":        "https://kcnawatch.org/newstream/feed/",
-    "KCNA":              _gnews("site:kcna.kp"),
-    "Rodong Sinmun":     _gnews("site:rodong.rep.kp"),
-    "KCNA (Yonhap)":     _gnews("KCNA+Yonhap"),
+    # Direct KCNA sources (often blocked — kept for when they work)
+    "KCNA Watch":         "https://kcnawatch.org/newstream/feed/",
+    "KCNA":               _gnews("site:kcna.kp"),
+    "Rodong Sinmun":      _gnews("site:rodong.rep.kp"),
+    # Wire services / outlets that relay KCNA content daily (primary indirect)
+    "KCNA (Yonhap)":      _gnews("KCNA+Yonhap"),
+    "KCNA (Reuters)":     _gnews("KCNA+site:reuters.com"),
+    "KCNA (AP)":          _gnews("KCNA+site:apnews.com"),
+    "KCNA (AFP)":         _gnews("KCNA+OR+%22North+Korea+state+media%22+site:france24.com"),
+    # NK-specialist outlets that cite KCNA
+    "KCNA (38 North)":    _gnews("KCNA+site:38north.org"),
+    "KCNA (Daily NK)":    _gnews("KCNA+site:dailynk.com"),
+    "KCNA (NK News)":     _gnews("KCNA+site:nknews.org"),
+    "KCNA (NK Pro)":      _gnews("KCNA+site:korearisgroup.com"),
+    # Major newspapers that relay KCNA statements
+    "KCNA (BBC)":         _gnews("KCNA+OR+%22North+Korea+state+media%22+site:bbc.com"),
+    "KCNA (NYT)":         _gnews("KCNA+site:nytimes.com"),
+    "KCNA (WaPo)":        _gnews("KCNA+site:washingtonpost.com"),
+    # Broad catch-all queries (redundant by design — ensures coverage)
+    "KCNA (KCBS)":        _gnews("%22Korean+Central+Broadcasting%22+OR+%22KCNA+reported%22+OR+%22KCNA+said%22"),
+    "KCNA (state media)": _gnews("%22North+Korea+state+media%22+OR+%22KCNA+said%22+OR+%22Pyongyang+said%22"),
+    "KCNA (Kim stmt)":    _gnews("%22Kim+Jong+Un%22+%22KCNA%22+OR+%22state+media%22+statement+OR+message+OR+order"),
 }
 
 # ── Kim Jong Un appearance tracking feeds ──────────────────────────────────
@@ -209,6 +232,13 @@ REQUEST_TIMEOUT = 8
 HEADERS = {"User-Agent": "CSISKoreaDigest/1.0"}
 MAX_WORKERS = 25  # Thread pool size for parallel fetching
 
+# ─────────────────────────────────────────────────────────────────────────────
+# SOURCE HEALTH TRACKING (per-run, not persistent)
+# ─────────────────────────────────────────────────────────────────────────────
+_source_health = {}  # {feed_name: {articles: int, success: bool, error_msg: str|None}}
+
+MAJOR_FEEDS = {"Yonhap English", "Korea Herald", "Reuters Korea", "AP Korea"}
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # HELPERS
@@ -218,6 +248,9 @@ def _parse_feed(url: str) -> list:
     for attempt in range(3):
         try:
             resp = requests.get(url, timeout=REQUEST_TIMEOUT, headers=HEADERS)
+            if resp.status_code in (401, 403):
+                print(f"    ⚠  Feed blocked ({resp.status_code}): {url[:80]}")
+                return []
             resp.raise_for_status()
             return feedparser.parse(resp.content).entries
         except (requests.ConnectionError, requests.Timeout) as e:
@@ -318,7 +351,8 @@ def _dedup(articles: list) -> list:
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _fetch_feeds_parallel(feed_dict: dict, is_tiered: bool = False) -> dict:
-    """Fetch all feeds in parallel. Returns {source: (entries, extra_info)}."""
+    """Fetch all feeds in parallel. Returns {source: (entries, extra_info)}.
+    Also records per-source health data in the module-level _source_health dict."""
     results = {}
 
     def _fetch_one(source, url_or_tuple):
@@ -334,11 +368,22 @@ def _fetch_feeds_parallel(feed_dict: dict, is_tiered: bool = False) -> dict:
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as pool:
         futures = {pool.submit(_fetch_one, src, val): src for src, val in items}
         for future in as_completed(futures):
+            src = futures[future]
             try:
                 source, entries, tier_val = future.result()
                 results[source] = (entries, tier_val)
+                _source_health[source] = {
+                    "articles": len(entries),
+                    "success": len(entries) > 0,
+                    "error_msg": None,
+                }
             except Exception as e:
                 print(f"    ⚠  Thread error: {e}")
+                _source_health[src] = {
+                    "articles": 0,
+                    "success": False,
+                    "error_msg": str(e),
+                }
     return results
 
 
@@ -408,7 +453,7 @@ def _collect_tier4() -> list:
     results = _fetch_feeds_parallel(TIER4_FEEDS)
     for source, (entries, _) in results.items():
         for entry in entries:
-            if not _is_recent(entry, hours=24):
+            if not _is_recent(entry, hours=48):
                 continue
             article = _entry_to_article(entry, source, lang="KO")
             articles.append(article)
@@ -417,63 +462,102 @@ def _collect_tier4() -> list:
 
 def _scrape_kcna_watch() -> list:
     """Scrape KCNA Watch newstream page for today's article headlines and categories.
-    Returns a list of dicts with title, url, category, pub_date."""
+    Falls back to Google cache / web search if direct scrape is blocked (403).
+    Returns a list of dicts with title, url, category."""
     articles = []
+
+    # Attempt 1: direct scrape
     try:
         resp = requests.get(
             "https://kcnawatch.org/newstream/",
             timeout=REQUEST_TIMEOUT,
             headers={**HEADERS, "Accept": "text/html"},
         )
-        resp.raise_for_status()
-        html = resp.text
-
-        # KCNA Watch uses article entries with titles and category tags
-        # Extract article blocks: <article ...> ... </article> or <h2><a href="...">title</a></h2>
-        # Pattern for newstream entries: links with titles and category spans
-        import re as _re
-
-        # Match article links: <a href="/newstream/..." ...>Title</a>
-        link_pattern = _re.compile(
-            r'<a\s+href="(https?://kcnawatch\.org/newstream/\d{4}/\d{2}/\d{2}/[^"]+)"[^>]*>\s*([^<]+?)\s*</a>',
-            _re.IGNORECASE,
-        )
-        # Match category badges near articles
-        cat_pattern = _re.compile(
-            r'<span[^>]*class="[^"]*category[^"]*"[^>]*>\s*([^<]+?)\s*</span>',
-            _re.IGNORECASE,
-        )
-
-        today_str = datetime.now(timezone.utc).strftime("%Y/%m/%d")
-        yesterday_str = (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y/%m/%d")
-
-        seen_urls = set()
-        for match in link_pattern.finditer(html):
-            url, title = match.group(1), match.group(2).strip()
-            if url in seen_urls:
-                continue
-            # Only include today's or yesterday's articles
-            if today_str not in url and yesterday_str not in url:
-                continue
-            seen_urls.add(url)
-
-            # Try to find a category near this link (within 500 chars before)
-            start = max(0, match.start() - 500)
-            context = html[start:match.end() + 200]
-            cat_match = cat_pattern.search(context)
-            category = cat_match.group(1).strip() if cat_match else "Uncategorized"
-
-            articles.append({
-                "title": re.sub(r"<[^>]+>", "", title).strip(),
-                "url": url,
-                "category": category,
-            })
-
-        print(f"  ── KCNA Watch scrape: {len(articles)} articles from newstream page")
+        if resp.status_code == 403:
+            print(f"  ── KCNA Watch scrape: blocked (403) — trying fallback")
+        else:
+            resp.raise_for_status()
+            articles = _parse_kcna_watch_html(resp.text)
+            if articles:
+                print(f"  ── KCNA Watch scrape: {len(articles)} articles from newstream page")
+                return articles
     except Exception as e:
-        print(f"  ── KCNA Watch scrape: ⚠ failed ({e})")
+        print(f"  ── KCNA Watch scrape: ⚠ direct failed ({e})")
+
+    # Attempt 2: Google News search for kcnawatch.org articles from today
+    try:
+        gnews_url = _gnews("site:kcnawatch.org/newstream/")
+        entries = _parse_feed(gnews_url)
+        for entry in entries:
+            if not _is_recent(entry, hours=48):
+                continue
+            title = entry.get("title", "").strip()
+            link = entry.get("link", "").strip()
+            if title and link:
+                articles.append({
+                    "title": re.sub(r"<[^>]+>", "", title).strip(),
+                    "url": link,
+                    "category": "Uncategorized",
+                })
+        if articles:
+            print(f"  ── KCNA Watch scrape: {len(articles)} articles via Google News fallback")
+    except Exception as e:
+        print(f"  ── KCNA Watch scrape: ⚠ Google fallback also failed ({e})")
+
+    if not articles:
+        print(f"  ── KCNA Watch scrape: 0 articles (all methods failed)")
 
     return articles
+
+
+def _parse_kcna_watch_html(html: str) -> list:
+    """Parse KCNA Watch newstream HTML for article entries."""
+    articles = []
+    import re as _re
+
+    link_pattern = _re.compile(
+        r'<a\s+href="(https?://kcnawatch\.org/newstream/\d{4}/\d{2}/\d{2}/[^"]+)"[^>]*>\s*([^<]+?)\s*</a>',
+        _re.IGNORECASE,
+    )
+    cat_pattern = _re.compile(
+        r'<span[^>]*class="[^"]*category[^"]*"[^>]*>\s*([^<]+?)\s*</span>',
+        _re.IGNORECASE,
+    )
+
+    today_str = datetime.now(timezone.utc).strftime("%Y/%m/%d")
+    yesterday_str = (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y/%m/%d")
+
+    seen_urls = set()
+    for match in link_pattern.finditer(html):
+        url, title = match.group(1), match.group(2).strip()
+        if url in seen_urls:
+            continue
+        if today_str not in url and yesterday_str not in url:
+            continue
+        seen_urls.add(url)
+
+        start = max(0, match.start() - 500)
+        context = html[start:match.end() + 200]
+        cat_match = cat_pattern.search(context)
+        category = cat_match.group(1).strip() if cat_match else "Uncategorized"
+
+        articles.append({
+            "title": re.sub(r"<[^>]+>", "", title).strip(),
+            "url": url,
+            "category": category,
+        })
+
+    return articles
+
+
+_DIRECT_KCNA_SOURCES = {"KCNA Watch", "KCNA", "Rodong Sinmun", "KCNA (Yonhap)"}
+
+_KCNA_TITLE_PATTERNS = re.compile(
+    r"KCNA|Korean Central News Agency|Rodong Sinmun|"
+    r"Pyongyang\s+(said|says|reported|reports|announced|announces|claims|claimed)|"
+    r"North Korea\s+(said|says)\s+.*(state media|official media)",
+    re.IGNORECASE,
+)
 
 
 def _build_kcna_summary(tier4_articles: list, scraped_articles: list) -> dict:
@@ -482,6 +566,8 @@ def _build_kcna_summary(tier4_articles: list, scraped_articles: list) -> dict:
     all_titles = set()
     categories = {}
     sources = {}
+    direct_count = 0
+    indirect_count = 0
 
     for art in tier4_articles:
         title = art.get("title", "").strip()
@@ -489,13 +575,25 @@ def _build_kcna_summary(tier4_articles: list, scraped_articles: list) -> dict:
             all_titles.add(title.lower())
         src = art.get("source", "Unknown")
         sources[src] = sources.get(src, 0) + 1
+        # Track direct vs indirect
+        if src in _DIRECT_KCNA_SOURCES:
+            direct_count += 1
+        else:
+            indirect_count += 1
         for tag in art.get("tags", []):
             categories[tag] = categories.get(tag, 0) + 1
+        # For indirect-source articles, check if title/summary mentions KCNA
+        # and add a synthetic category so they're visible in the category breakdown
+        if src not in _DIRECT_KCNA_SOURCES:
+            text = f"{title} {art.get('summary', '')}".lower()
+            if _KCNA_TITLE_PATTERNS.search(text):
+                categories["KCNA-cited"] = categories.get("KCNA-cited", 0) + 1
 
     for art in scraped_articles:
         title = art.get("title", "").strip()
         if title and title.lower() not in all_titles:
             all_titles.add(title.lower())
+            direct_count += 1  # scraped articles are always direct KCNA
         cat = art.get("category", "Uncategorized")
         if cat:
             categories[cat] = categories.get(cat, 0) + 1
@@ -508,21 +606,62 @@ def _build_kcna_summary(tier4_articles: list, scraped_articles: list) -> dict:
         if entry:
             headlines.append(f"[{cat}] {entry}" if cat else entry)
 
-    # Also add tier4 RSS headlines not already covered
+    # Also add tier4 RSS headlines not already covered — include indirect sources
     scraped_titles = {a.get("title", "").lower() for a in scraped_articles}
     for art in tier4_articles:
         title = art.get("title", "")
         if title and title.lower() not in scraped_titles:
+            src = art.get("source", "")
             tags = art.get("tags", [])
-            tag_str = tags[0] if tags else art.get("source", "")
+            # For indirect sources, label with "via <outlet>" so the LLM
+            # knows this is a secondary report citing KCNA
+            if src not in _DIRECT_KCNA_SOURCES and src:
+                tag_str = f"via {src}"
+            else:
+                tag_str = tags[0] if tags else src
             headlines.append(f"[{tag_str}] {title}")
 
     return {
         "total_articles": len(all_titles),
+        "direct_count": direct_count,
+        "indirect_count": indirect_count,
         "categories": dict(sorted(categories.items(), key=lambda x: -x[1])),
         "sources": sources,
         "headlines": headlines[:50],  # Cap at 50 headlines
     }
+
+
+SATELLITE_IMAGERY_FEEDS = {
+    # Specialist sources (primary imagery analysts)
+    "BP Imagery":       _gnews("satellite+imagery+site:beyondparallel.csis.org"),
+    "38N Imagery":      _gnews("satellite+imagery+site:38north.org"),
+    "AEI Imagery":      _gnews("North+Korea+satellite+imagery+site:aei.org"),
+    "Middlebury MIIS":  _gnews("North+Korea+satellite+site:nonproliferation.org"),
+    # Major wire services / newspapers covering imagery reports
+    "Imagery Reuters":  _gnews("%22satellite+imagery%22+%22North+Korea%22+site:reuters.com"),
+    "Imagery AP":       _gnews("%22satellite+imagery%22+%22North+Korea%22+site:apnews.com"),
+    "Imagery BBC":      _gnews("%22satellite%22+%22North+Korea%22+site:bbc.com"),
+    "Imagery NYT":      _gnews("%22satellite%22+%22North+Korea%22+site:nytimes.com"),
+    "Imagery WaPo":     _gnews("%22satellite%22+%22North+Korea%22+site:washingtonpost.com"),
+    "Imagery WSJ":      _gnews("%22satellite%22+%22North+Korea%22+site:wsj.com"),
+    "Imagery CNN":      _gnews("%22satellite%22+%22North+Korea%22+site:cnn.com"),
+    # Broad catch-all for any outlet reporting DPRK imagery
+    "NK Imagery":       _gnews("%22satellite+imag%22+%22North+Korea%22+OR+%22DPRK%22+Yongbyon+OR+Sinpo+OR+Sohae+OR+Punggye+OR+%22nuclear+site%22"),
+    "NK Facility":      _gnews("%22North+Korea%22+%22imagery+shows%22+OR+%22images+show%22+OR+%22images+reveal%22+OR+%22imagery+reveals%22"),
+}
+
+
+def _collect_satellite_imagery() -> list:
+    """Collect satellite imagery analysis articles (72h window — published sporadically)."""
+    articles = []
+    results = _fetch_feeds_parallel(SATELLITE_IMAGERY_FEEDS)
+    for source, (entries, _) in results.items():
+        for entry in entries:
+            if not _is_recent(entry, hours=72):
+                continue
+            article = _entry_to_article(entry, source, lang="EN")
+            articles.append(article)
+    return _dedup(articles)
 
 
 def _collect_kim_tracker() -> list:
@@ -679,12 +818,13 @@ def _collect_markets() -> dict:
         return key, {"value": "—", "change_pct": 0, "as_of": ""}
 
     result = {}
-    with ThreadPoolExecutor(max_workers=6) as pool:
+    with ThreadPoolExecutor(max_workers=7) as pool:
         symbol_futures = {pool.submit(_fetch_symbol, k): k
                           for k in YAHOO_SYMBOLS.keys()}
         bok_f = pool.submit(_fetch_bok_rate)
         cds_f = pool.submit(_fetch_korea_cds)
         gdp_f = pool.submit(_fetch_gdp_estimate)
+        ecos_f = pool.submit(_fetch_bok_ecos)
 
         for future in as_completed(symbol_futures):
             k, v = future.result()
@@ -693,6 +833,11 @@ def _collect_markets() -> dict:
     result["bok_rate"] = bok_f.result()
     result["korea_cds"] = cds_f.result()
     result["gdp_estimate"] = gdp_f.result()
+
+    # BOK ECOS data — only include if API key was set and data returned
+    ecos_data = ecos_f.result()
+    if ecos_data:
+        result["bok_ecos"] = ecos_data
 
     # Always return market data — even if all fetches fail, BOK indicators
     # have hardcoded fallbacks so there's always something to show
@@ -720,6 +865,75 @@ def _fetch_bok_rate() -> dict:
     print("    ⚠  BOK rate: using fallback (2.50%)")
     fallback_date = datetime.now(timezone.utc).strftime("%b %Y")
     return {"value": "2.50%", "last_change": fallback_date}
+
+
+def _fetch_bok_ecos() -> dict | None:
+    """Fetch key economic indicators from Bank of Korea ECOS API.
+
+    Requires BOK_API_KEY environment variable. Returns None gracefully if
+    the key is not set or any request fails.
+
+    Stats fetched:
+      - CPI year-over-year % change
+      - Unemployment rate (%)
+      - Trade balance (million USD)
+      - Consumer Confidence Index (composite)
+    """
+    api_key = os.environ.get("BOK_API_KEY", "").strip()
+    if not api_key:
+        return None
+
+    now = datetime.now(timezone.utc)
+    # Use a 2-year lookback to ensure we get at least one data point
+    start = (now - timedelta(days=730)).strftime("%Y%m")
+    end = now.strftime("%Y%m")
+
+    STAT_SPECS = {
+        "cpi_yoy": ("722Y001", "M", "0101000"),
+        "unemployment": ("403Y001", "M", "0101000"),
+        "trade_balance": ("301Y013", "M", "101000"),
+        "consumer_confidence": ("732Y001", "M", "0101000"),
+    }
+
+    base_url = "https://ecos.bok.or.kr/api/StatisticSearch"
+    results = {}
+
+    for key, (stat_code, freq, item_code) in STAT_SPECS.items():
+        try:
+            url = (
+                f"{base_url}/{api_key}/json/kr/1/10/"
+                f"{stat_code}/{freq}/{start}/{end}/{item_code}"
+            )
+            resp = requests.get(url, timeout=5, headers={"User-Agent": "Mozilla/5.0"})
+            if not resp.ok:
+                continue
+            data = resp.json()
+            rows = data.get("StatisticSearch", {}).get("row", [])
+            if not rows:
+                continue
+            # Take the most recent data point (last row)
+            val_str = rows[-1].get("DATA_VALUE", "")
+            if not val_str:
+                continue
+            val = float(val_str)
+
+            # Format based on indicator type
+            if key == "cpi_yoy":
+                results[key] = f"{val:.1f}%"
+            elif key == "unemployment":
+                results[key] = f"{val:.1f}%"
+            elif key == "trade_balance":
+                # Value is in million USD; convert to billions for display
+                val_b = val / 1000.0
+                sign = "+" if val_b >= 0 else "-"
+                results[key] = f"{sign}${abs(val_b):.1f}B"
+            elif key == "consumer_confidence":
+                results[key] = f"{val:.1f}"
+        except Exception:
+            # Never crash the pipeline — skip this indicator
+            continue
+
+    return results if results else None
 
 
 def _fetch_korea_cds() -> dict:
@@ -1294,34 +1508,34 @@ def _collect_sentiment() -> dict:
     # These are the most recent known values from Gallup Korea weekly polls.
     # They ensure the sentiment tracker always renders with data.
     fallback_used = []
-    # Fallback: Gallup Korea weekly poll, surveyed Apr 7-9 2026 (n=1,002, ±3.1pt)
-    # Lee approval at record-high 67% for 2nd consecutive week.
-    # Source: Korean news outlets reporting same Gallup Korea weekly poll
+    # Fallback: Gallup Korea weekly poll, surveyed Apr 28-30 2026 (n=1,002, ±3.1pt)
+    # Lee approval at 64%, down 3pp from 67%. DP 46%, PPP 21%, indep ~27%.
+    # Source: Korean news outlets reporting Gallup Korea Daily Opinion No. 662
     if not sentiment["presidential_approval"]:
         fallback_used.append("presidential_approval")
         sentiment["presidential_approval"] = {
-            "value": "67%", "trend": "up",
-            "source": "Gallup Korea", "last_updated": "Apr 2nd week, 2026",
+            "value": "64%", "trend": "down",
+            "source": "Gallup Korea", "last_updated": "Apr 5th week, 2026",
         }
     if not sentiment["party_ruling"]:
         fallback_used.append("party_ruling")
         sentiment["party_ruling"] = {
-            "value": "48%", "party": "Democratic Party",
-            "party_kr": "더불어민주당", "trend": "up",
-            "source": "Gallup Korea", "last_updated": "Apr 2nd week, 2026",
+            "value": "46%", "party": "Democratic Party",
+            "party_kr": "더불어민주당", "trend": "down",
+            "source": "Gallup Korea", "last_updated": "Apr 5th week, 2026",
         }
     if not sentiment["party_opposition"]:
         fallback_used.append("party_opposition")
         sentiment["party_opposition"] = {
-            "value": "20%", "party": "People Power Party",
-            "party_kr": "국민의힘", "trend": "stable",
-            "source": "Gallup Korea", "last_updated": "Apr 2nd week, 2026",
+            "value": "21%", "party": "People Power Party",
+            "party_kr": "국민의힘", "trend": "up",
+            "source": "Gallup Korea", "last_updated": "Apr 5th week, 2026",
         }
     if not sentiment["party_independent"]:
         fallback_used.append("party_independent")
         sentiment["party_independent"] = {
-            "value": "25%", "trend": "down",
-            "source": "Gallup Korea", "last_updated": "Apr 2nd week, 2026",
+            "value": "27%", "trend": "up",
+            "source": "Gallup Korea", "last_updated": "Apr 5th week, 2026",
         }
     if fallback_used:
         print(f"    ⚠  Sentiment: using fallbacks for {', '.join(fallback_used)}")
@@ -1335,6 +1549,7 @@ def _collect_sentiment() -> dict:
 
 def collect() -> dict:
     """Run all tier collectors + market data and return combined payload."""
+    _source_health.clear()  # Reset health tracking for this run
     print("\n📡  Collecting Korea news from 100+ sources (parallel)...")
 
     # Run all collectors concurrently — each already uses internal thread pools
@@ -1346,12 +1561,13 @@ def collect() -> dict:
         "tier4":        ("Tier 4: KCNA / Rodong Sinmun",  _collect_tier4),
         "kcna_scrape":  ("KCNA Watch scrape",             _scrape_kcna_watch),
         "kim_tracker":  ("Kim Jong Un appearance tracker", _collect_kim_tracker),
+        "satellite":    ("Satellite imagery analysis",     _collect_satellite_imagery),
         "markets":      ("Market data",                    _collect_markets),
         "sentiment":    ("Public sentiment polls",         _collect_sentiment),
     }
 
     results = {}
-    with ThreadPoolExecutor(max_workers=7) as pool:
+    with ThreadPoolExecutor(max_workers=9) as pool:
         futures = {pool.submit(fn): key for key, (_label, fn) in collectors.items()}
         for future in as_completed(futures):
             key = futures[future]
@@ -1364,7 +1580,7 @@ def collect() -> dict:
                 elif key == "sentiment":
                     found = sum(1 for v in data.values() if v) if data else 0
                     print(f"  ── {label}: {found} metric(s) found" if found else f"  ── {label}: no recent polls found")
-                elif key == "kim_tracker":
+                elif key in ("kim_tracker", "satellite"):
                     print(f"  ── {label}: {len(data)} articles (72h window)")
                 else:
                     print(f"  ── {label}: {len(data)} items")
@@ -1385,6 +1601,25 @@ def collect() -> dict:
     if kcna_summary["total_articles"]:
         print(f"  📡  KCNA summary: {kcna_summary['total_articles']} unique articles, {len(kcna_summary.get('categories', {}))} categories")
 
+    # ── Source health summary ────────────────────────────────────────────
+    total_feeds = len(_source_health)
+    feeds_with_data = sum(1 for h in _source_health.values() if h["success"])
+    feeds_failed = total_feeds - feeds_with_data
+    print(f"\n  Source health: {feeds_with_data}/{total_feeds} feeds returned data, {feeds_failed} blocked/failed")
+
+    # Warn if any major feed returned 0 articles
+    for major in MAJOR_FEEDS:
+        health = _source_health.get(major)
+        if health and not health["success"]:
+            err = health.get("error_msg") or "0 articles"
+            print(f"  ⚠  MAJOR FEED WARNING: {major} returned no data ({err})")
+        elif not health:
+            print(f"  ⚠  MAJOR FEED WARNING: {major} was not fetched")
+
+    satellite = results.get("satellite", [])
+    if satellite:
+        print(f"  🛰  Satellite imagery: {len(satellite)} articles found (72h window)")
+
     return {
         "tier1": tier1,
         "tier2": tier2,
@@ -1392,8 +1627,15 @@ def collect() -> dict:
         "tier4": tier4,
         "kcna_summary": kcna_summary,
         "kim_tracker_articles": results["kim_tracker"],
+        "satellite_imagery_articles": satellite,
         "market_indicators": results["markets"],
         "sentiment_baseline": results["sentiment"],
+        "source_health": {
+            "total_feeds": total_feeds,
+            "feeds_with_data": feeds_with_data,
+            "feeds_failed": feeds_failed,
+            "per_source": dict(_source_health),
+        },
     }
 
 

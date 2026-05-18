@@ -1,0 +1,72 @@
+name: Weekly Korea Summary
+
+on:
+  schedule:
+    # Friday 9:00 AM ET = 13:00 UTC (EDT) / 14:00 UTC (EST)
+    - cron: '0 13 * * 5'
+  workflow_dispatch: # Allow manual trigger
+
+permissions:
+  contents: write
+
+jobs:
+  weekly-summary:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Restore tracker data from cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            kim_tracker.json
+            kcna_tracker.json
+            bp_tracker.json
+            tension_tracker.json
+            metrics.jsonl
+          key: tracker-data-v1
+          restore-keys: |
+            tracker-data-
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Download daily digest JSONs from Pages
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          mkdir -p public
+          # Fetch the last 7 days of digest JSONs from GitHub Pages
+          for i in $(seq 1 7); do
+            date=$(date -u -d "$i days ago" +%Y-%m-%d 2>/dev/null || date -u -v-${i}d +%Y-%m-%d)
+            url="https://andysaulim.github.io/Daily-Korea-Digest/digest_${date}.json"
+            curl -sf "$url" -o "public/digest_${date}.json" 2>/dev/null || true
+          done
+          ls -la public/digest_*.json 2>/dev/null || echo "No digest JSONs found"
+
+      - name: Generate weekly summary
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASS: ${{ secrets.GMAIL_APP_PASS }}
+          DIGEST_TO: ${{ secrets.DIGEST_TO }}
+        run: python weekly.py
+
+      - name: Save tracker data to cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            kim_tracker.json
+            kcna_tracker.json
+            bp_tracker.json
+            tension_tracker.json
+            metrics.jsonl
+          key: tracker-data-v1-${{ github.run_id }}

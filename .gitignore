@@ -11,3 +11,7 @@ public/
 kim_tracker.json
 kcna_tracker.json
 bp_tracker.json
+tension_tracker.json
+metrics.jsonl
+weekly_*.html
+weekly_*.json
