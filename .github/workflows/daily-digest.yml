@@ -2,10 +2,10 @@ name: Daily Korea News Digest
 
 on:
   schedule:
-    # Primary: 7:00 AM ET = 12:00 PM UTC (EST) / 11:00 AM UTC (EDT)
+    # Primary: 6:00 AM ET = 10:00 UTC (EDT) / 11:00 UTC (EST)
+    - cron: '0 10 * * *'
+    # Fallback: 7:00 AM ET — gives primary run 1 hour to complete
     - cron: '0 11 * * *'
-    # Fallback: 8:00 AM ET — gives primary run 1 hour to complete
-    - cron: '0 12 * * *'
   workflow_dispatch: # Allow manual trigger
 
 permissions:
