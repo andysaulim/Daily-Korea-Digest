@@ -4,7 +4,7 @@ on:
   schedule:
     # Primary: 6:00 AM ET = 10:00 UTC (EDT) / 11:00 UTC (EST)
     - cron: '0 10 * * *'
-    # Fallback: 7:00 AM ET — gives primary run 1 hour to complete
+    # Fallback: 7:00 AM ET — catches if primary was skipped/delayed
     - cron: '0 11 * * *'
   workflow_dispatch: # Allow manual trigger
 
