@@ -119,10 +119,25 @@ def _link_or_text(text: str, url: str, style: str = "color:#1B2A4A;text-decorati
 
 
 # ── Section padding helper (responsive via class) ────────────────────────
-_SEC = 'style="padding:18px 32px;border-bottom:1px solid #EAEAEA;" class="sec"'
-_SEC_BG = lambda bg: f'style="padding:18px 32px;background:{bg};border-bottom:1px solid #EAEAEA;" class="sec"'
+_SEC = 'style="padding:20px 32px;border-bottom:1px solid #EBEBEB;" class="sec"'
+_SEC_ALERT = 'style="padding:20px 32px;border-top:3px solid #C0392B;border-bottom:1px solid #EBEBEB;" class="sec"'
 _H2 = lambda color: f'style="margin:0 0 8px 0;font-size:11px;color:{color};text-transform:uppercase;letter-spacing:1.5px;font-family:Arial,sans-serif;font-weight:600;"'
-_PILL = lambda bg: f'style="display:inline-block;background:{bg};color:#fff;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;padding:5px 14px;border-radius:2px;font-family:Arial,sans-serif;margin-bottom:10px;"'
+
+
+def _sec_label(label: str, color: str = "#1B2A4A") -> str:
+    return (f'<div style="font-size:10px;font-weight:700;text-transform:uppercase;'
+            f'letter-spacing:2px;color:{color};font-family:Arial,sans-serif;'
+            f'margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid {color};">'
+            f'{label}</div>')
+
+
+def _chapter(label: str) -> str:
+    return f"""
+<div style="padding:12px 32px;background:#1B2A4A;text-align:center;" class="sec">
+<div style="height:1px;background:rgba(212,172,13,0.4);margin-bottom:10px;"></div>
+<span style="font-size:9px;font-family:Arial,sans-serif;color:rgba(255,255,255,0.65);text-transform:uppercase;letter-spacing:5px;font-weight:700;">{label}</span>
+<div style="height:1px;background:rgba(212,172,13,0.4);margin-top:10px;"></div>
+</div>"""
 
 
 def _item_block(cat: str, src: str, headline: str, body: str, url: str,
@@ -179,6 +194,7 @@ def render(digest: dict) -> str:
 
     # ── 1. Header ────────────────────────────────────────────────────────
     sections.append(f"""
+    <a name="top"></a>
     <div bgcolor="#0D1B2A" style="background-color:#0D1B2A;background:linear-gradient(135deg, #0D1B2A 0%, #1B2A4A 60%, #243B5C 100%);color:#fff;padding:20px 32px 16px;" class="sec">
       <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
         <td style="vertical-align:top;">
@@ -315,7 +331,7 @@ def render(digest: dict) -> str:
         sections.append(f"""
         <div style="padding:20px 32px;border-bottom:1px solid #EAEAEA;background:#FAFBFC;" class="sec">
           <a name="memo"></a>
-          <div style="font-size:10px;text-transform:uppercase;letter-spacing:2px;color:#C9A96E;font-weight:700;font-family:Arial,sans-serif;margin-bottom:14px;">Today at a Glance</div>
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#D4AC0D;font-family:Arial,sans-serif;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid #D4AC0D;">Today at a Glance</div>
           {memo_html}
         </div>
         """)
@@ -346,7 +362,7 @@ def render(digest: dict) -> str:
             </div>"""
         sections.append(f"""
         <div {_SEC}>
-          <a name="top-stories"></a><span {_PILL("#2980B9")}>Top Stories</span>
+          <a name="top-stories"></a>{_sec_label("Top Stories")}
           {stories_html}
         </div>
         """)
@@ -375,8 +391,8 @@ def render(digest: dict) -> str:
               <div style="font-size:12px;line-height:1.4;color:#555;">{body}</div>
             </div>"""
         sections.append(f"""
-        <div {_SEC_BG("#FFF8F0")}>
-          <a name="overnight"></a><span {_PILL("#C0392B")}>&#9889; Overnight Flash</span>
+        <div {_SEC_ALERT}>
+          <a name="overnight"></a>{_sec_label("&#9889; Overnight Flash", color="#C0392B")}
           {flash_html}
         </div>
         """)
@@ -573,7 +589,7 @@ def render(digest: dict) -> str:
 
         sections.append(f"""
         <div {_SEC}>
-          <a name="satellite"></a><span {_PILL("#2C3E50")}>Satellite &amp; Location Watch</span>
+          <a name="satellite"></a>{_sec_label("Satellite &amp; Location Watch", color="#2C3E50")}
           {summary_html}
           {img_report_html}
           <table width="100%" cellpadding="0" cellspacing="0" border="0" class="loc-grid">
@@ -710,7 +726,8 @@ def render(digest: dict) -> str:
         rok_date = _esc(str(digest.get("digest_date", "")))
         sections.append(f"""
         <div {_SEC}>
-          <a name="rok-gov"></a><span {_PILL("#1B6A4A")}>ROK Government</span> <span style="font-size:10px;color:#888;font-family:Arial,sans-serif;">President + Ministries &middot; {rok_date}</span>
+          <a name="rok-gov"></a>{_sec_label("ROK Government", color="#1B6A4A")}
+          <div style="font-size:10px;color:#888;font-family:Arial,sans-serif;margin-top:-10px;margin-bottom:10px;">President + Ministries &middot; {rok_date}</div>
           <div style="padding-top:4px;">
             {gov_grid_html}
             {pers_html}
@@ -762,8 +779,8 @@ def render(digest: dict) -> str:
 
         urgency_color = "#C0392B" if e_days <= 7 else ("#E67E22" if e_days <= 14 else "#2980B9")
         sections.append(f"""
-        <div style="padding:18px 32px;background:#F8F5FF;border-bottom:1px solid #EAEAEA;" class="sec">
-          <a name="election"></a><span {_PILL("#6C3483")}>Election Tracker</span>
+        <div {_SEC}>
+          <a name="election"></a>{_sec_label("Election Tracker", color="#6C3483")}
           <div style="margin-top:6px;">
             <span style="font-size:18px;font-weight:700;color:#1B2A4A;">{e_name}</span>
             <span style="display:inline-block;padding:2px 10px;border-radius:3px;font-size:11px;font-weight:700;color:#fff;background:{urgency_color};margin-left:10px;vertical-align:middle;">{e_days} days</span>
@@ -938,8 +955,8 @@ def render(digest: dict) -> str:
             </div>"""
 
         sections.append(f"""
-        <div style="padding:14px 32px;background:#F0F4F8;border-top:3px solid #1B2A4A;border-bottom:1px solid #E0E0E0;" class="sec">
-          <a name="trade"></a><span {_PILL("#1B2A4A")}>US-Korea Trade &amp; Investment</span>
+        <div {_SEC}>
+          <a name="trade"></a>{_sec_label("US-Korea Trade &amp; Investment")}
           {header_html}
           {deals_html}
         </div>
@@ -974,7 +991,7 @@ def render(digest: dict) -> str:
             )
         sections.append(f"""
         <div {_SEC}>
-          <a name="business"></a><span {_PILL("#D4AC0D")}>Business &amp; Economy</span>
+          <a name="business"></a>{_sec_label("Business &amp; Economy", color="#D4AC0D")}
           {biz_html}
         </div>
         """)
@@ -1026,7 +1043,7 @@ def render(digest: dict) -> str:
             </div>"""
         sections.append(f"""
         <div {_SEC}>
-          <a name="nea"></a><span {_PILL("#2C3E50")}>Northeast Asia Watch</span>
+          <a name="nea"></a>{_sec_label("Northeast Asia Watch", color="#2C3E50")}
           {nea_html}
         </div>
         """)
@@ -1109,8 +1126,8 @@ def render(digest: dict) -> str:
                 pass
 
         sections.append(f"""
-        <div style="padding:10px 32px;background:#F8F9FA;border-bottom:1px solid #E0E0E0;" class="sec">
-          <a name="sentiment"></a><span {_PILL("#8E44AD")}>Public Sentiment Tracker</span>
+        <div {_SEC}>
+          <a name="sentiment"></a>{_sec_label("Public Sentiment Tracker", color="#8E44AD")}
           <table width="100%" cellpadding="0" cellspacing="0" border="0" class="sentiment-table">
             <tr>
               {_sentiment_cell("Presidential Approval", approval)}
@@ -1140,7 +1157,7 @@ def render(digest: dict) -> str:
             )
         sections.append(f"""
         <div {_SEC}>
-          <a name="wire"></a><span {_PILL("#7F8C8D")}>The Wire</span>
+          <a name="wire"></a>{_sec_label("The Wire", color="#7F8C8D")}
           {wire_html}
         </div>
         """)
@@ -1214,7 +1231,7 @@ def render(digest: dict) -> str:
             </div>"""
         sections.append(f"""
         <div {_SEC}>
-          <a name="analysis"></a><span {_PILL("#1B2A4A")}>Statements &amp; Analysis</span>
+          <a name="analysis"></a>{_sec_label("Statements &amp; Analysis")}
           {sa_html}
         </div>
         """)
@@ -1234,22 +1251,12 @@ def render(digest: dict) -> str:
           <div style="font-size:11px;color:rgba(255,255,255,0.6);font-style:italic;margin-top:4px;line-height:1.4;">{otd_rel}</div>
         </div>"""
     sections.append(f"""
-    <div style="height:3px;background-color:#C9A96E;background:linear-gradient(90deg, #C9A96E 0%, #0D1B2A 100%);"></div>
-    <div style="padding:24px 32px;background:#0D1B2A;text-align:center;" class="sec footer">
+    <div style="padding:20px 32px;background:#1B2A4A;text-align:center;" class="sec footer">
       {otd_footer}
-      <div style="font-size:10px;text-transform:uppercase;letter-spacing:2px;color:#C9A96E;margin-bottom:8px;">Korea Daily Brief</div>
-      <div style="font-size:11px;color:rgba(255,255,255,0.5);line-height:1.6;">
-        By Andy Lim &middot; CSIS Korea Chair<br>
-        {_esc(date_str)} &middot; {gen_time}
+      <div style="font-size:9px;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,0.45);font-family:Arial,sans-serif;line-height:2;">
+        CSIS Korea Chair &nbsp;&middot;&nbsp; Korea Daily Brief &nbsp;&middot;&nbsp; Generated {gen_time}
       </div>
-      <div style="width:40px;height:1px;background:#C9A96E;margin:14px auto;opacity:0.4;"></div>
-      <div style="font-size:10px;color:rgba(255,255,255,0.35);line-height:1.5;">
-        Center for Strategic &amp; International Studies<br>
-        1616 Rhode Island Ave NW &middot; Washington, DC 20036
-      </div>
-      <div style="font-size:9px;color:rgba(255,255,255,0.25);margin-top:12px;">
-        <a href="mailto:korea-brief@csis.org?subject=Unsubscribe%20Korea%20Daily%20Brief" style="color:rgba(255,255,255,0.3);text-decoration:underline;">Unsubscribe</a>
-      </div>
+      <a href="#top" style="font-size:10px;color:rgba(255,255,255,0.4);text-decoration:none;letter-spacing:1px;">&#8593; Back to top</a>
     </div>
     """)
 
