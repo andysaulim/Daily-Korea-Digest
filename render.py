@@ -8,8 +8,6 @@ import re as _re
 from datetime import datetime, timezone
 from urllib.parse import urlparse as _urlparse
 
-from kim_tracker import build_dot_calendar
-
 
 def _clean_src(raw: str) -> str:
     """Strip raw URLs from source lines, keeping only human-readable text.
@@ -475,7 +473,6 @@ def render(digest: dict) -> str:
               <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.6);margin-bottom:4px;">Kim Jong Un</div>
               <div style="font-size:13px;color:#E0E0E0;font-weight:600;">{kim_icon}{kim_line}</div>
             </div>
-            {build_dot_calendar(today_appeared=kcna.get("kim_appearance_today"))}
             {quotes_html}
             {senior_html}
             {"<div style='margin-top:14px;padding:10px 14px;background:rgba(255,255,255,0.06);border-radius:4px;border-left:3px solid #E8DCC8;font-size:13px;line-height:1.6;color:#E0E0E0;font-family:Georgia,serif;'><strong style='color:#E8DCC8;'>Bottom line:</strong> " + bottom_line + "</div>" if bottom_line else ""}
