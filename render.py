@@ -182,7 +182,7 @@ def render(digest: dict) -> str:
 
     # ── 1. Header ────────────────────────────────────────────────────────
     sections.append(f"""
-    <div style="background:linear-gradient(135deg, #0D1B2A 0%, #1B2A4A 60%, #243B5C 100%);color:#fff;padding:20px 32px 16px;" class="sec">
+    <div bgcolor="#0D1B2A" style="background-color:#0D1B2A;background:linear-gradient(135deg, #0D1B2A 0%, #1B2A4A 60%, #243B5C 100%);color:#fff;padding:20px 32px 16px;" class="sec">
       <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
         <td style="vertical-align:top;">
           <div style="font-size:10px;text-transform:uppercase;letter-spacing:3px;color:#C9A96E;font-family:Arial,sans-serif;margin-bottom:6px;">CSIS Korea Chair</div>
@@ -198,7 +198,7 @@ def render(digest: dict) -> str:
       </tr></table>
       {"<div style='margin-top:12px;padding-top:12px;border-top:1px solid rgba(201,169,110,0.3);font-size:13px;color:rgba(255,255,255,0.85);font-family:Georgia,serif;line-height:1.5;'><strong style='color:#C9A96E;font-size:11px;letter-spacing:1px;'>RE:</strong>&nbsp; " + re_line + "</div>" if re_line else ""}
     </div>
-    <div style="height:3px;background:linear-gradient(90deg, #C9A96E 0%, #1B2A4A 100%);"></div>
+    <div style="height:3px;background-color:#C9A96E;background:linear-gradient(90deg, #C9A96E 0%, #1B2A4A 100%);"></div>
     """)
 
     # ── 1b. Forward CTA — removed (placeholder for future subscribe link) ──
@@ -420,7 +420,7 @@ def render(digest: dict) -> str:
     if key_stat and key_stat.get("number") is not None and key_stat.get("number") != "":
         sections.append(f"""
         <a name="key-stat"></a>
-        <div style="padding:16px 32px;background:linear-gradient(135deg, #0D1B2A 0%, #1B3A5C 100%);color:#fff;border-bottom:1px solid #EAEAEA;text-align:center;" class="sec">
+        <div bgcolor="#0D1B2A" style="padding:16px 32px;background-color:#0D1B2A;background:linear-gradient(135deg, #0D1B2A 0%, #1B3A5C 100%);color:#fff;border-bottom:1px solid #EAEAEA;text-align:center;" class="sec">
           <div style="font-size:9px;text-transform:uppercase;letter-spacing:2.5px;color:#C9A96E;margin-bottom:6px;font-weight:600;">Stat of the Day</div>
           <div class="key-stat-num" style="font-size:36px;font-weight:700;font-family:Georgia,serif;color:#fff;letter-spacing:-0.5px;">{_esc(str(key_stat.get("number", "")))}</div>
           <div style="font-size:12px;color:rgba(255,255,255,0.85);margin-top:4px;font-family:Georgia,serif;">{_esc(key_stat.get("label", ""))}</div>
@@ -847,6 +847,60 @@ def render(digest: dict) -> str:
         </div>
         """)
 
+    # ── 9b. Election Tracker ─────────────────────────────────────────────
+    election = digest.get("election_tracker") or {}
+    if election and election.get("election_name"):
+        e_name = _esc(election.get("election_name", ""))
+        e_date = _esc(election.get("election_date", ""))
+        e_days = election.get("days_until", 0)
+        e_summary = _esc(election.get("summary", ""))
+        key_races = election.get("key_races") or []
+
+        races_html = ""
+        if key_races:
+            race_rows = ""
+            for r in key_races[:6]:
+                region = _esc(r.get("region", ""))
+                inc = _esc(r.get("incumbent_party", ""))
+                chal = _esc(r.get("challenger_party", ""))
+                status = _esc(r.get("status", ""))
+                note = _esc(r.get("note", ""))
+                inc_color = "#2980B9" if "Democratic" in inc or "DP" in inc else "#C0392B"
+                chal_color = "#C0392B" if "People Power" in chal or "PPP" in chal else "#2980B9"
+                race_rows += f"""
+                <tr style="border-bottom:1px solid #E8E8E8;">
+                  <td style="padding:6px 8px 6px 0;font-size:12px;font-weight:600;color:#1B2A4A;width:30%;">{region}</td>
+                  <td style="padding:6px 4px;font-size:11px;vertical-align:middle;">
+                    <span style="color:{inc_color};font-weight:600;">{inc}</span> vs <span style="color:{chal_color};font-weight:600;">{chal}</span>
+                  </td>
+                  <td style="padding:6px 4px;font-size:11px;font-weight:600;color:#1B2A4A;text-align:center;">{status}</td>
+                  <td style="padding:6px 0 6px 4px;font-size:10px;color:#888;">{note}</td>
+                </tr>"""
+            races_html = f"""
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:10px;border-top:1px solid #E8E8E8;">
+              <tr style="border-bottom:1px solid #E8E8E8;">
+                <td style="padding:4px 8px 4px 0;font-size:10px;color:#888;text-transform:uppercase;">Race</td>
+                <td style="padding:4px 4px;font-size:10px;color:#888;text-transform:uppercase;">Parties</td>
+                <td style="padding:4px 4px;font-size:10px;color:#888;text-transform:uppercase;text-align:center;">Status</td>
+                <td style="padding:4px 0 4px 4px;font-size:10px;color:#888;text-transform:uppercase;">Note</td>
+              </tr>
+              {race_rows}
+            </table>"""
+
+        urgency_color = "#C0392B" if e_days <= 7 else ("#E67E22" if e_days <= 14 else "#2980B9")
+        sections.append(f"""
+        <div style="padding:18px 32px;background:#F8F5FF;border-bottom:1px solid #EAEAEA;" class="sec">
+          <a name="election"></a><span {_PILL("#6C3483")}>Election Tracker</span>
+          <div style="margin-top:6px;">
+            <span style="font-size:18px;font-weight:700;color:#1B2A4A;">{e_name}</span>
+            <span style="display:inline-block;padding:2px 10px;border-radius:3px;font-size:11px;font-weight:700;color:#fff;background:{urgency_color};margin-left:10px;vertical-align:middle;">{e_days} days</span>
+          </div>
+          <div style="font-size:11px;color:#888;margin-top:4px;">{e_date}</div>
+          <div style="font-size:13px;line-height:1.6;color:#444;margin-top:8px;">{e_summary}</div>
+          {races_html}
+        </div>
+        """)
+
     # ── 10. US-Korea Trade & Investment Deals ───────────────────────────────
     us_korea = digest.get("us_korea_deals") or {}
     if isinstance(us_korea, list):
@@ -1079,7 +1133,6 @@ def render(digest: dict) -> str:
             body = _esc(item.get("body_text", ""))
             src = _esc(_clean_src(item.get("source", "")))
             url = item.get("url", "")
-            sig = item.get("signal_type", "")
             region = _str(item.get("region_tag", ""))
             is_reaction = item.get("is_reaction_source", False)
             bar_color = nea_cat_colors.get(cat_raw, region_colors.get(region, "#1B2A4A"))
@@ -1092,7 +1145,6 @@ def render(digest: dict) -> str:
             <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid {bar_color};">
               <div style="font-size:11px;color:#888;text-transform:uppercase;">
                 {region_label}{cat} &middot; {src}{reaction_badge}
-                {"&nbsp;" + _signal_badge(sig) if sig else ""}
               </div>
               <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
                 {_link_or_text(headline, url)}
@@ -1256,7 +1308,7 @@ def render(digest: dict) -> str:
         # Op-Eds
         for op in opeds:
             src = _esc(op.get("source", ""))
-            arg = _esc(op.get("central_argument", ""))
+            title = _esc(op.get("headline", op.get("title", op.get("central_argument", ""))))
             summary = _esc(op.get("summary", ""))
             so_what = _esc(op.get("policy_so_what", ""))
             url = op.get("url", "")
@@ -1264,7 +1316,7 @@ def render(digest: dict) -> str:
             <div style="margin-bottom:12px;padding-left:12px;border-left:3px solid #D4AC0D;">
               <div style="font-size:11px;color:#888;">{src}</div>
               <div style="font-size:13px;font-weight:600;color:#1B2A4A;">
-                {_link_or_text(arg, url)}
+                {_link_or_text(title, url)}
               </div>
               <div style="font-size:12px;line-height:1.4;color:#555;">{summary}</div>
               {"<div style='font-size:11px;color:#2980B9;margin-top:3px;'><strong>So what:</strong> " + so_what + "</div>" if so_what else ""}
@@ -1273,13 +1325,16 @@ def render(digest: dict) -> str:
         for a in academic:
             src = _esc(a.get("source", ""))
             tier = _esc(a.get("journal_tier", ""))
+            title = _esc(a.get("headline", a.get("title", "")))
             summary = _esc(a.get("summary", ""))
             implication = _esc(a.get("policy_implication", ""))
             url = a.get("url", "")
             read_link = f'<a href="{_esc(url)}" style="font-size:11px;color:#2980B9;">Read &#8594;</a>' if url and url != "#" and url.startswith("http") else ""
+            title_html = f'<div style="font-size:13px;font-weight:600;color:#1B2A4A;margin-bottom:4px;">{_link_or_text(title, url)}</div>' if title else ""
             sa_html += f"""
             <div style="margin-bottom:12px;padding-left:12px;border-left:3px solid #8E44AD;">
               <div style="font-size:11px;color:#888;">{src} &middot; {tier}</div>
+              {title_html}
               <div style="font-size:12px;line-height:1.4;color:#555;">{summary}</div>
               {"<div style='font-size:11px;color:#8E44AD;margin-top:3px;'><strong>Implication:</strong> " + implication + "</div>" if implication else ""}
               {read_link}
@@ -1306,7 +1361,7 @@ def render(digest: dict) -> str:
           <div style="font-size:11px;color:rgba(255,255,255,0.6);font-style:italic;margin-top:4px;line-height:1.4;">{otd_rel}</div>
         </div>"""
     sections.append(f"""
-    <div style="height:3px;background:linear-gradient(90deg, #C9A96E 0%, #0D1B2A 100%);"></div>
+    <div style="height:3px;background-color:#C9A96E;background:linear-gradient(90deg, #C9A96E 0%, #0D1B2A 100%);"></div>
     <div style="padding:24px 32px;background:#0D1B2A;text-align:center;" class="sec footer">
       {otd_footer}
       <div style="font-size:10px;text-transform:uppercase;letter-spacing:2px;color:#C9A96E;margin-bottom:8px;">Korea Daily Brief</div>
