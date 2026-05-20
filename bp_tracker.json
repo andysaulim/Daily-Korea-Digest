@@ -2,9 +2,9 @@
   "locations": {
     "Yongbyon Nuclear Complex": {
       "name": "Yongbyon Nuclear Complex",
-      "status": "activity",
-      "note": "Jan 2026: 5 MWe reactor and IRT-2000 research reactor both operating. Thermal cladding discovered on centrifuge enrichment facility roof (first observed late 2025). Suspected new enrichment building under construction nearby.",
-      "last_source_date": "2026-01",
+      "status": "elevated",
+      "note": "Apr 2026: Enrichment building expansion complete, new centrifuge hall operational. 5 MWe reactor and IRT-2000 both running. Thermal signatures consistent with increased plutonium/HEU production.",
+      "last_source_date": "2026-04",
       "direction": "up"
     },
     "Sinpo South Shipyard": {
@@ -23,9 +23,9 @@
     },
     "Sohae Satellite Launch Station": {
       "name": "Sohae Satellite Launch Station",
-      "status": "activity",
-      "note": "Sep-Oct 2025: Small engine test detected at Sohae vertical engine test stand. New seaport facility and large assembly building construction progressing on site.",
-      "last_source_date": "2025-10",
+      "status": "elevated",
+      "note": "Mar 2026: 2,500 kN engine test stand firing observed. Two villages razed for facility expansion. New seaport and large assembly building nearing completion.",
+      "last_source_date": "2026-03",
       "direction": "up"
     },
     "Punggye-ri Nuclear Test Site": {
@@ -38,8 +38,8 @@
     "Tumangang\u2013Khasan (NK-Russia border)": {
       "name": "Tumangang\u2013Khasan (NK-Russia border)",
       "status": "activity",
-      "note": "2025-2026: New road bridge under construction at Tumangang-Khasan crossing (target completion Dec 2026). Passenger rail service resumed mid-2025. Ore and tank car traffic increasing.",
-      "last_source_date": "2026-01",
+      "note": "Mar 2026: Road bridge construction accelerated, completion target moved to Summer 2026. Passenger rail service resumed mid-2025. Ore and tank car traffic at highest levels since project began.",
+      "last_source_date": "2026-03",
       "direction": "up"
     },
     "Sinuiju\u2013Dandong (NK-China border)": {
@@ -78,5 +78,5 @@
       "direction": "up"
     }
   },
-  "last_updated": "2026-03-27T12:00:00.000000+00:00"
+  "last_updated": "2026-05-20T12:00:00.000000+00:00"
 }

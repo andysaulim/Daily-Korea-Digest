@@ -183,33 +183,27 @@ def _has_kcna_data(payload: dict) -> bool:
 _KCNA_NO_DATA_STUB = (
     "NO KCNA DATA COLLECTED TODAY — scrapers returned 0 articles.\n"
     "Do NOT fabricate KCNA content. Return a minimal kcna_delta with:\n"
-    "  silence_today: true, output_volume: \"Unavailable — 0 articles collected (scraper failure)\",\n"
+    "  silence_today: true,\n"
     "  kim_appearance_today: false (unless KIM JONG UN APPEARANCE REPORTS above confirm otherwise),\n"
     "  days_since_last_appearance: use tracker data above,\n"
-    "  propaganda_focus: null, notable_omissions: null, tone_shift: null,\n"
-    "  key_phrase_changes: [], key_quotes: [], doctrinal_shift: null,\n"
-    "  senior_officials: [], baseline_period: null,\n"
+    "  key_quotes: [], senior_officials: [],\n"
     "  watch_flag: false, bottom_line: \"No KCNA data collected — scraper issue, not a blackout.\""
 )
 
 _KCNA_FULL_INSTRUCTIONS = (
-    "Return a SINGLE kcna_delta object:\n"
+    "Return a SINGLE kcna_delta object focused on OFFICIAL STATEMENTS AND QUOTES:\n"
     "- kim_appearance_today: boolean — cross-reference KCNA articles AND the KIM JONG UN APPEARANCE REPORTS section above (scraped from NK Leadership Watch, Daily NK, KCNA Watch, and general news). If ANY credible source reports a Kim appearance in the last 24h, set to true.\n"
     "- kim_activity: if appeared, 1 sentence on what he did (inspection, meeting, guidance, etc.), else null\n"
     "- days_since_last_appearance: integer — use the CONFIRMED KIM JONG UN APPEARANCES tracker data above as ground truth. Only override if today's articles confirm a more recent appearance than the tracker shows.\n"
-    "- senior_officials: array of notable non-Kim appearances/activities (e.g. Choe Son Hui, Kim Yo Jong, Ri Pyong Chol). Each: name, role (title), activity (1 sentence). Max 2. Keep very brief — name and what they did, nothing more.\n"
-    "- (tone quadrants removed — do NOT include us_tone, rok_tone, russia_tone, china_tone or related qualifier/description fields)\n"
-    "- baseline_period: string describing the comparison baseline (e.g. \"Mar 13-19\")\n"
-    "- tone_shift: any tone that changed from yesterday's baseline, e.g. \"US tone shifted from Neutral to Hostile\". null if no change detected.\n"
-    "- propaganda_focus: top 2-3 topics KCNA is prioritizing today (e.g. \"self-reliance economy\", \"nuclear deterrent\", \"anti-US imperialism\")\n"
-    "- notable_omissions: anything conspicuously absent that was previously regular. ONLY cite specific day counts (e.g. \"3rd day\") if the KCNA RHETORIC HISTORY tracker data supports it — otherwise just note the absence without a count (e.g. \"No mention of Russia today\" instead of \"No mention of Russia for 3rd day\"). null if nothing notable.\n"
-    "- key_phrase_changes: array of phrase frequency objects. IMPORTANT: Use the KCNA RHETORIC HISTORY tracker data provided in this prompt as ground truth for count_prior values. If no tracker history is available, set count_prior to 0 and delta_label to \"no baseline\" — do NOT invent prior counts. Each: phrase (the exact phrase, e.g. \"nuclear war deterrent\"), count_this_week (integer — count from TODAY's KCNA articles only), count_prior (integer from tracker history — use AGGREGATE PHRASE COUNTS if available, otherwise 0), delta_label (human-readable delta string, e.g. \"↑ from ×0\", \"↑ new phrase\", \"→ stable\", \"no baseline\"). Also include Kim Jong Un appearance tracking as the last item: phrase=\"Kim Jong Un public appearance\", count_this_week=count, delta_label based on tracker data. MAX 5 phrases — only include phrases that actually changed or are analytically significant. Do not pad with stable/routine phrases.\n"
-    "- doctrinal_shift: if any phrase represents a new doctrinal position (e.g. new weapons designation, revised nuclear posture language, novel alliance framing), describe in 1-2 sentences. These shifts historically precede hardware developments by 12-18 months. null if routine rhetoric.\n"
-    "- key_quotes: 1 direct quote from KCNA that is most analytically significant today (the single most important quote only). Each: quote (exact text, translated to English), source_article (KCNA article title). Empty array if nothing notable.\n"
-    "- output_volume: string assessment of today's KCNA output volume vs. normal (e.g. \"Heavy — 23 articles (avg: 15)\", \"Light — 8 articles\", \"Normal — 14 articles\"). Use the KCNA OUTPUT SUMMARY above for the actual article count — do NOT guess the number. Unusually high or low volume is a signal.\n"
+    "- key_quotes: Up to 4 direct quotes from DPRK officials today, prioritized by analytical significance. "
+    "Include Kim Jong Un quotes first, then Kim Yo Jong, then other senior officials (Choe Son Hui, Ri Pyong Chol, etc.). "
+    "Each object: speaker (full name), quote (exact text translated to English), source_article (KCNA article title or wire source). "
+    "Only include quotes that are analytically meaningful — policy signals, threats, diplomatic overtures, doctrinal language. "
+    "Skip routine congratulatory messages or boilerplate. Empty array if no notable quotes today.\n"
+    "- senior_officials: array of notable non-Kim official appearances/activities mentioned in KCNA (e.g. Choe Son Hui, Kim Yo Jong, Ri Pyong Chol). Each: name, role (title), activity (1 sentence). Max 3.\n"
     "- silence_today: boolean (complete KCNA blackout)\n"
-    "- watch_flag: boolean — true if KCNA output contains ESCALATION-level rhetoric, silence after regular output, unusual Kim absence (7+ days), or nuclear/ICBM-related content\n"
-    "- bottom_line: 1-2 sentences MAX. State the single most important KCNA takeaway and what to watch next. Be ruthlessly concise. Example: \"First use of 'sacred nuclear deterrent force' coincides with Yongbyon activity (Mar 19). Monitor Sohae through Apr 15.\""
+    "- watch_flag: boolean — true if any official statement contains ESCALATION-level rhetoric, silence after regular output, unusual Kim absence (7+ days), or nuclear/ICBM-related content\n"
+    "- bottom_line: 1-2 sentences MAX. State the single most important official statement takeaway and what to watch next. Be ruthlessly concise."
 )
 
 
@@ -221,7 +215,7 @@ def _build_kcna_summary_block(payload: dict) -> str:
     direct = summary.get("direct_count", 0)
     indirect = summary.get("indirect_count", 0)
     lines = [
-        f"KCNA OUTPUT SUMMARY (scraped today — use for output_volume and propaganda_focus):",
+        f"KCNA OUTPUT SUMMARY (scraped today — use for official quotes and statements):",
         f"Total articles collected: {summary['total_articles']} (direct KCNA: {direct}, indirect/citing KCNA: {indirect})",
     ]
     # Source-by-source breakdown
@@ -377,6 +371,7 @@ Use these as baseline values for the public_sentiment field. If today's articles
 IMPORTANT VALIDATION: The scraped baseline may contain errors. Cross-check:
 - Presidential approval should be in the 55-75% range (as of late April 2026, down from record high)
 - The known CONFIRMED baseline is: 64% approval, DP 46%, PPP 21%, independents 27% (Gallup Korea, Apr 5th week 2026, surveyed Apr 28-30)
+- This baseline is STALE — it is from late April and today is mid-May. ACTIVELY look for newer Gallup Korea or Realmeter polling data in today's articles. Korean news outlets report weekly polling every Friday/Monday. If you find a newer poll in today's articles, use those numbers and update last_updated.
 - If the scraped baseline shows presidential approval outside the 50-80% range, or if it looks like a party rating was misidentified as presidential approval, IGNORE the scraped values and use the confirmed baseline above
 - ALL 4 metrics MUST come from the SAME poll (same source, same date) — never mix"""
 
@@ -475,6 +470,7 @@ Return a digest object with:
   Recurring: IAEA Board of Governors meets Mar, Jun, Sep, Nov — DPRK nuclear agenda item.
   Recurring: UN General Assembly First Committee (disarmament) meets Oct-Nov annually.
   Recurring: Freedom Shield exercise typically held in spring (Mar-Apr); Ulchi Freedom Shield in August.
+- election_tracker: object or null — INCLUDE ONLY when a major ROK election is within 30 days. Currently: Jun 3 2026 nationwide local elections (governors, mayors, metropolitan/provincial councils, district councils). Object with: election_name (e.g. "2026 ROK Local Elections"), election_date ("Jun 3, 2026"), days_until (integer), summary (1-2 sentences on overall race dynamics), key_races (array of up to 6 competitive races, each: region (e.g. "Seoul Mayor", "Gyeonggi Governor", "Busan Mayor"), incumbent_party (e.g. "Democratic Party"), challenger_party, status (e.g. "DP leads by 8pts", "Toss-up", "PPP favored"), note (1 sentence on why this race matters)). Only populate from TODAY's articles about election polling, campaigns, or candidate announcements. If no election articles today, still include the object with summary and days_until but set key_races to empty array. Set to null if no election is within 30 days.
 - rok_assembly: array of ROK National Assembly activity from today's news — committee hearings, bills, votes related to defense/foreign affairs/unification/intelligence. Each: committee, action (1 line), detail (1-2 sentences). Empty array if no relevant activity.
 - overnight_items: 6 highest-priority items (MAX 6). SOURCE DIVERSITY — MANDATORY: No single source may appear more than 3 times in overnight_items. If you have 6 Yonhap articles, pick the 3 best and replace the rest with stories from other sources (Reuters, AP, Korea Herald, Chosun Ilbo, JoongAng Daily, Nikkei Asia, WSJ, etc.). A healthy mix draws from at least 4-5 different sources. TOPIC DIVERSITY — MANDATORY: Each overnight item MUST cover a DIFFERENT topic. If multiple articles cover the same event, policy, or subject (e.g. two stories about the same sanctions action, or two stories about the same military exercise from different sources), pick the BEST one and drop the duplicate. Different angles on the same underlying news (e.g. "Samsung quarterly earnings" and "Samsung profit driven by AI chips") count as the SAME topic — include only one. Each: url, source, category, headline (under 100 chars), body_text (2-3 sentences — summarize the key facts, then add context or implication. Be substantive — thin one-liners waste the reader's time)
 - top_stories: 2-4 biggest HARD NEWS stories of the day — aim for 3 on a typical day, 2 on genuinely slow days, 4 when multiple major stories compete. the stories generating the most noise, traction, and attention in Korea policy circles. These must be original reporting from wire services (Reuters, AP, AFP), correspondents (WSJ, NYT, WaPo, FT), Korean dailies (Yonhap, Korea Herald, Chosun, JoongAng), or government sources — NOT op-eds, analysis, think tank commentary, or publications like The Diplomat, Foreign Affairs, Brookings, etc. Pick the stories a Korea desk officer would be briefing their boss on first thing in the morning.
@@ -547,10 +543,9 @@ def _count_digest_words(digest: dict) -> int:
                 if val:
                     words += len(str(val).split())
     kcna = digest.get("kcna_delta") or {}
-    for field in ("bottom_line", "doctrinal_shift"):
-        val = kcna.get(field, "")
-        if val:
-            words += len(str(val).split())
+    val = kcna.get("bottom_line", "")
+    if val:
+        words += len(str(val).split())
     return words
 
 
