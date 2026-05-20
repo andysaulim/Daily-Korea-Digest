@@ -206,5 +206,5 @@ def send(html: str, re_line: Optional[str] = None, subject: Optional[str] = None
 
 
 if __name__ == "__main__":
-    html = Path("digest.html").read_text(encoding="utf-8")
+    html = Path("latest.html").read_text(encoding="utf-8")
     send(html)

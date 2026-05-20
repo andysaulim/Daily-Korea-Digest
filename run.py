@@ -1106,7 +1106,7 @@ def main():
             "tier1_input": len(payload.get("tier1", [])),
             "tier4_input": len(payload.get("tier4", [])),
             "kcna_articles": (payload.get("kcna_summary") or {}).get("total_articles", 0),
-            "validation_warnings": len(warnings),
+            "validation_warnings": len(validation_warnings),
             "validation_retries": validation_attempt,
             "html_bytes": len(html),
             "sent": not args.no_send and validation_passed,

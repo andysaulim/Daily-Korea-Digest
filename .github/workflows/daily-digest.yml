@@ -38,10 +38,10 @@ jobs:
             --json conclusion -q 'length' 2>/dev/null || echo "0")
           total=$((success_count + inprogress_count))
           is_fallback="${{ github.event.schedule }}"
-          if [ "$total" -gt "1" ] && [ "$is_fallback" = "0 12 * * *" ]; then
+          if [ "$total" -gt "1" ] && [ "$is_fallback" = "0 11 * * *" ]; then
             echo "Primary run already succeeded or is in progress — skipping fallback"
             echo "should_run=false" >> "$GITHUB_OUTPUT"
-          elif [ "$success_count" -gt "0" ] && [ "$is_fallback" = "0 12 * * *" ]; then
+          elif [ "$success_count" -gt "0" ] && [ "$is_fallback" = "0 11 * * *" ]; then
             echo "Primary run already succeeded today — skipping fallback"
             echo "should_run=false" >> "$GITHUB_OUTPUT"
           else
