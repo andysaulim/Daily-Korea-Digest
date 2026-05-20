@@ -121,10 +121,10 @@ def _link_or_text(text: str, url: str, style: str = "color:#1B2A4A;text-decorati
 
 
 # ── Section padding helper (responsive via class) ────────────────────────
-_SEC = 'style="padding:14px 32px;border-bottom:1px solid #E0E0E0;" class="sec"'
-_SEC_BG = lambda bg: f'style="padding:14px 32px;background:{bg};border-bottom:1px solid #E0E0E0;" class="sec"'
-_H2 = lambda color: f'style="margin:0 0 8px 0;font-size:12px;color:{color};text-transform:uppercase;letter-spacing:1px;font-family:Arial,sans-serif;"'
-_PILL = lambda bg: f'style="display:inline-block;background:{bg};color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;padding:4px 12px;border-radius:12px;font-family:Arial,sans-serif;margin-bottom:8px;"'
+_SEC = 'style="padding:18px 32px;border-bottom:1px solid #EAEAEA;" class="sec"'
+_SEC_BG = lambda bg: f'style="padding:18px 32px;background:{bg};border-bottom:1px solid #EAEAEA;" class="sec"'
+_H2 = lambda color: f'style="margin:0 0 8px 0;font-size:11px;color:{color};text-transform:uppercase;letter-spacing:1.5px;font-family:Arial,sans-serif;font-weight:600;"'
+_PILL = lambda bg: f'style="display:inline-block;background:{bg};color:#fff;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;padding:5px 14px;border-radius:2px;font-family:Arial,sans-serif;margin-bottom:10px;"'
 
 
 def _item_block(cat: str, src: str, headline: str, body: str, url: str,
@@ -182,22 +182,23 @@ def render(digest: dict) -> str:
 
     # ── 1. Header ────────────────────────────────────────────────────────
     sections.append(f"""
-    <div style="background:#1B2A4A;color:#fff;padding:14px 32px 12px;" class="sec">
+    <div style="background:linear-gradient(135deg, #0D1B2A 0%, #1B2A4A 60%, #243B5C 100%);color:#fff;padding:20px 32px 16px;" class="sec">
       <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
         <td style="vertical-align:top;">
-          <h1 style="margin:0;font-size:24px;font-weight:700;font-family:Georgia,serif;color:#fff;letter-spacing:0.5px;">
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:3px;color:#C9A96E;font-family:Arial,sans-serif;margin-bottom:6px;">CSIS Korea Chair</div>
+          <h1 style="margin:0;font-size:26px;font-weight:700;font-family:Georgia,'Times New Roman',serif;color:#fff;letter-spacing:0.3px;">
             Korea Daily Brief
           </h1>
-          <div style="margin-top:4px;font-size:11px;color:rgba(255,255,255,0.7);font-family:Arial,sans-serif;">By Andy Lim &middot; CSIS Korea Chair</div>
-          <div style="margin-top:6px;font-size:18px;font-weight:700;color:rgba(255,255,255,0.95);letter-spacing:0.5px;font-family:Georgia,serif;">{_esc(date_str)}</div>
+          <div style="margin-top:8px;font-size:16px;font-weight:400;color:rgba(255,255,255,0.9);letter-spacing:0.3px;font-family:Georgia,serif;">{_esc(date_str)}</div>
         </td>
         <td style="vertical-align:top;text-align:right;">
-          <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.6);margin-bottom:2px;">{gen_time}</div>
-          <div style="font-size:10px;color:rgba(255,255,255,0.55);">{word_count:,} words &middot; {read_min} min read</div>
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,0.5);margin-bottom:4px;">{gen_time}</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.4);">{word_count:,} words &middot; {read_min} min read</div>
         </td>
       </tr></table>
-      {"<div style='margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.15);font-size:13px;color:rgba(255,255,255,0.85);font-family:Georgia,serif;'><strong style='color:rgba(255,255,255,0.5);'>RE:</strong> " + re_line + "</div>" if re_line else ""}
+      {"<div style='margin-top:12px;padding-top:12px;border-top:1px solid rgba(201,169,110,0.3);font-size:13px;color:rgba(255,255,255,0.85);font-family:Georgia,serif;line-height:1.5;'><strong style='color:#C9A96E;font-size:11px;letter-spacing:1px;'>RE:</strong>&nbsp; " + re_line + "</div>" if re_line else ""}
     </div>
+    <div style="height:3px;background:linear-gradient(90deg, #C9A96E 0%, #1B2A4A 100%);"></div>
     """)
 
     # ── 1b. Forward CTA — removed (placeholder for future subscribe link) ──
@@ -329,15 +330,24 @@ def render(digest: dict) -> str:
     memo_items = digest.get("morning_memo") or []
     if memo_items:
         memo_html = ""
-        for mi in memo_items[:3]:
+        for i, mi in enumerate(memo_items[:3]):
             memo_text = _esc(mi) if isinstance(mi, str) else _esc(mi.get("text", "") if isinstance(mi, dict) else str(mi or ""))
+            num = i + 1
             memo_html += f"""
-            <div style="margin-bottom:8px;padding-left:12px;border-left:3px solid #1B2A4A;">
-              <div style="font-size:14px;line-height:1.5;color:#333;font-family:Georgia,serif;">{memo_text}</div>
-            </div>"""
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:10px;">
+              <tr>
+                <td width="28" style="vertical-align:top;padding-top:2px;">
+                  <div style="width:24px;height:24px;border-radius:50%;background:#0D1B2A;color:#C9A96E;text-align:center;line-height:24px;font-size:12px;font-weight:700;font-family:Georgia,serif;">{num}</div>
+                </td>
+                <td style="padding-left:10px;vertical-align:top;">
+                  <div style="font-size:14px;line-height:1.6;color:#2C3E50;font-family:Georgia,serif;">{memo_text}</div>
+                </td>
+              </tr>
+            </table>"""
         sections.append(f"""
-        <div style="padding:14px 32px;border-bottom:2px solid #1B2A4A;" class="sec">
-          <a name="memo"></a><span {_PILL("#1B2A4A")}>Morning Memo</span>
+        <div style="padding:20px 32px;border-bottom:1px solid #EAEAEA;background:#FAFBFC;" class="sec">
+          <a name="memo"></a>
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:2px;color:#C9A96E;font-weight:700;font-family:Arial,sans-serif;margin-bottom:14px;">Today at a Glance</div>
           {memo_html}
         </div>
         """)
@@ -354,15 +364,17 @@ def render(digest: dict) -> str:
             pattern = _esc(story.get("pattern_note", ""))
             src_line = _esc(_clean_src(story.get("src_line", story.get("source", ""))))
             url = story.get("url", "")
+            cat_badge = f'<span style="display:inline-block;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#888;font-weight:600;margin-bottom:6px;">{cat}</span>' if cat else ""
             stories_html += f"""
-            <div class="story-card" style="margin-bottom:12px;padding:10px 12px;background:#F8F9FA;border-radius:4px;border-left:4px solid #1B2A4A;">
-              <h3 style="margin:0 0 6px 0;font-size:15px;color:#1B2A4A;font-family:Georgia,serif;">
-                {_link_or_text(headline, url)}
+            <div class="story-card" style="margin-bottom:14px;padding:14px 16px;background:#fff;border-radius:3px;border-left:4px solid #0D1B2A;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
+              {cat_badge}
+              <h3 style="margin:0 0 8px 0;font-size:16px;color:#0D1B2A;font-family:Georgia,serif;line-height:1.4;">
+                {_link_or_text(headline, url, style="color:#0D1B2A;text-decoration:none;")}
               </h3>
-              <p style="margin:0 0 8px 0;font-size:13px;line-height:1.5;color:#333;">{body}</p>
-              {"<p style='margin:0 0 6px 0;font-size:12px;line-height:1.4;color:#2980B9;'><strong>So what:</strong> " + so_what + "</p>" if so_what else ""}
-              {"<p style='margin:0 0 6px 0;font-size:12px;line-height:1.4;color:#8E44AD;'><strong>Pattern:</strong> " + pattern + "</p>" if pattern else ""}
-              <div style="font-size:11px;color:#999;">{src_line}</div>
+              <p style="margin:0 0 8px 0;font-size:13px;line-height:1.6;color:#444;">{body}</p>
+              {"<p style='margin:0 0 6px 0;font-size:12px;line-height:1.5;color:#2980B9;'><strong style='color:#1B6A8A;'>So what:</strong> " + so_what + "</p>" if so_what else ""}
+              {"<p style='margin:0 0 6px 0;font-size:12px;line-height:1.5;color:#7B5BA6;'><strong>Pattern:</strong> " + pattern + "</p>" if pattern else ""}
+              <div style="font-size:10px;color:#AAA;margin-top:6px;">{src_line}</div>
             </div>"""
         sections.append(f"""
         <div {_SEC}>
@@ -408,12 +420,12 @@ def render(digest: dict) -> str:
     if key_stat and key_stat.get("number") is not None and key_stat.get("number") != "":
         sections.append(f"""
         <a name="key-stat"></a>
-        <div style="padding:12px 32px;background:#1B2A4A;color:#fff;border-bottom:1px solid #E0E0E0;text-align:center;" class="sec">
-          <div style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;opacity:0.6;margin-bottom:2px;">Stat of the Day</div>
-          <div class="key-stat-num" style="font-size:32px;font-weight:700;font-family:Georgia,serif;">{_esc(str(key_stat.get("number", "")))}</div>
-          <div style="font-size:12px;opacity:0.85;margin-top:2px;">{_esc(key_stat.get("label", ""))}</div>
-          <div style="font-size:11px;opacity:0.65;margin-top:4px;font-style:italic;">{_esc(key_stat.get("context", ""))}</div>
-          {"<div style='font-size:10px;opacity:0.45;margin-top:4px;'>Source: " + _esc(key_stat.get("source", "")) + "</div>" if key_stat.get("source") else ""}
+        <div style="padding:16px 32px;background:linear-gradient(135deg, #0D1B2A 0%, #1B3A5C 100%);color:#fff;border-bottom:1px solid #EAEAEA;text-align:center;" class="sec">
+          <div style="font-size:9px;text-transform:uppercase;letter-spacing:2.5px;color:#C9A96E;margin-bottom:6px;font-weight:600;">Stat of the Day</div>
+          <div class="key-stat-num" style="font-size:36px;font-weight:700;font-family:Georgia,serif;color:#fff;letter-spacing:-0.5px;">{_esc(str(key_stat.get("number", "")))}</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.85);margin-top:4px;font-family:Georgia,serif;">{_esc(key_stat.get("label", ""))}</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.6);margin-top:6px;font-style:italic;max-width:480px;margin-left:auto;margin-right:auto;line-height:1.5;">{_esc(key_stat.get("context", ""))}</div>
+          {"<div style='font-size:9px;color:rgba(255,255,255,0.35);margin-top:6px;letter-spacing:0.5px;'>Source: " + _esc(key_stat.get("source", "")) + "</div>" if key_stat.get("source") else ""}
         </div>
         """)
 
@@ -552,18 +564,17 @@ def render(digest: dict) -> str:
         sections.append(f"""
         <a name="kcna"></a>
         <div style="padding:0;border-bottom:1px solid #333;" class="sec kcna-dark">
-          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#1a2a1a;">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#0F1A12;">
             <tr>
-              <td style="padding:10px 32px;">
-                <span style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:#E8DCC8;font-family:Arial,sans-serif;">KCNA Rhetoric Delta</span>
-                <span style="display:inline-block;width:60px;height:2px;background:#27AE60;vertical-align:middle;margin-left:10px;"></span>
+              <td style="padding:12px 32px;">
+                <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#C9A96E;font-family:Arial,sans-serif;">KCNA Rhetoric Delta</span>
               </td>
-              <td style="padding:10px 32px;text-align:right;">
-                <span style="font-size:11px;color:#8a8a8a;">{baseline_html}</span>
+              <td style="padding:12px 32px;text-align:right;">
+                <span style="font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:0.5px;">{baseline_html}</span>
               </td>
             </tr>
           </table>
-          <div style="padding:14px 32px;background:#1a2a1a;color:#E0E0E0;">
+          <div style="padding:16px 32px;background:#0F1A12;color:#E0E0E0;">
             {"<div style='margin-bottom:12px;padding:8px 14px;background:#C0392B;color:#fff;border-radius:4px;font-size:12px;font-weight:600;'>&#9888; Complete KCNA silence today</div>" if silence else ""}
             {"<div style='margin-bottom:12px;padding:8px 14px;background:#C0392B;color:#fff;border-radius:4px;font-size:12px;font-weight:600;'>&#9888; WATCH FLAG — Escalation-level rhetoric or unusual activity detected</div>" if watch and not silence else ""}
             {doctrinal_html}
@@ -1289,23 +1300,27 @@ def render(digest: dict) -> str:
         otd_event = _esc(item.get("event", ""))
         otd_rel = _esc(item.get("relevance", ""))
         otd_footer = f"""
-        <div style="text-align:left;margin-bottom:14px;padding:10px 14px;background:rgba(255,255,255,0.08);border-radius:4px;">
-          <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.5);margin-bottom:4px;">On This Day</div>
-          <div style="font-size:12px;color:rgba(255,255,255,0.85);"><strong>{otd_date}:</strong> {otd_event}</div>
-          <div style="font-size:11px;color:rgba(255,255,255,0.7);font-style:italic;">{otd_rel}</div>
+        <div style="text-align:left;margin-bottom:18px;padding:12px 16px;background:rgba(201,169,110,0.08);border-radius:3px;border-left:2px solid #C9A96E;">
+          <div style="font-size:9px;text-transform:uppercase;letter-spacing:2px;color:#C9A96E;margin-bottom:6px;font-weight:600;">On This Day</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.85);line-height:1.5;font-family:Georgia,serif;"><strong>{otd_date}:</strong> {otd_event}</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.6);font-style:italic;margin-top:4px;line-height:1.4;">{otd_rel}</div>
         </div>"""
     sections.append(f"""
-    <div style="padding:16px 32px;background:#1B2A4A;text-align:center;" class="sec footer">
+    <div style="height:3px;background:linear-gradient(90deg, #C9A96E 0%, #0D1B2A 100%);"></div>
+    <div style="padding:24px 32px;background:#0D1B2A;text-align:center;" class="sec footer">
       {otd_footer}
-      <div style="font-size:11px;color:rgba(255,255,255,0.6);line-height:1.5;">
-        Korea Daily Brief &middot; By Andy Lim &middot; CSIS Korea Chair<br>
+      <div style="font-size:10px;text-transform:uppercase;letter-spacing:2px;color:#C9A96E;margin-bottom:8px;">Korea Daily Brief</div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.5);line-height:1.6;">
+        By Andy Lim &middot; CSIS Korea Chair<br>
         {_esc(date_str)} &middot; {gen_time}
       </div>
-      <div style="font-size:10px;color:rgba(255,255,255,0.55);margin-top:12px;line-height:1.5;">
-        CSIS &middot; 1616 Rhode Island Ave NW &middot; Washington, DC 20036
+      <div style="width:40px;height:1px;background:#C9A96E;margin:14px auto;opacity:0.4;"></div>
+      <div style="font-size:10px;color:rgba(255,255,255,0.35);line-height:1.5;">
+        Center for Strategic &amp; International Studies<br>
+        1616 Rhode Island Ave NW &middot; Washington, DC 20036
       </div>
-      <div style="font-size:9px;color:rgba(255,255,255,0.35);margin-top:8px;">
-        <a href="mailto:korea-brief@csis.org?subject=Unsubscribe%20Korea%20Daily%20Brief" style="color:rgba(255,255,255,0.4);text-decoration:underline;">Unsubscribe</a>
+      <div style="font-size:9px;color:rgba(255,255,255,0.25);margin-top:12px;">
+        <a href="mailto:korea-brief@csis.org?subject=Unsubscribe%20Korea%20Daily%20Brief" style="color:rgba(255,255,255,0.3);text-decoration:underline;">Unsubscribe</a>
       </div>
     </div>
     """)
@@ -1439,9 +1454,9 @@ def render(digest: dict) -> str:
   </style>
   <![endif]-->
 </head>
-<body style="margin:0;padding:0;background:#E8E8E8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;">
+<body style="margin:0;padding:0;background:#F2F3F5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;">
   <!--[if mso]><table width="680" cellpadding="0" cellspacing="0" border="0" align="center"><tr><td><![endif]-->
-  <div class="wrapper" style="max-width:680px;width:100%;margin:0 auto;background:#FFFFFF;border-radius:6px;overflow:hidden;">
+  <div class="wrapper" style="max-width:680px;width:100%;margin:0 auto;background:#FFFFFF;overflow:hidden;box-shadow:0 2px 20px rgba(0,0,0,0.08);">
     {body}
   </div>
   <!--[if mso]></td></tr></table><![endif]-->
