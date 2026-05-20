@@ -407,7 +407,7 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
     kcna = digest.get("kcna_delta")
     if not kcna or not isinstance(kcna, dict):
         warnings.append("KCNA DELTA: missing kcna_delta section (non-blocking)")
-    elif kcna.get("silence_today") and "scraper" in str(kcna.get("output_volume", "")).lower():
+    elif kcna.get("silence_today") and "scraper" in str(kcna.get("bottom_line", "")).lower():
         pass  # no-data stub is valid — scrapers returned 0 articles
 
     # ── Single pass over all items: URLs, headlines, sources, body checks ─
@@ -947,7 +947,6 @@ def main():
     from kim_tracker import update_from_digest
     from kcna_tracker import update_from_digest as kcna_update_from_digest
     from bp_tracker import update_from_digest as bp_update_from_digest
-    from tension_scorer import update_from_digest as tension_update_from_digest
 
     validation_passed = False
     for validation_attempt in range(1 + MAX_VALIDATION_RETRIES):
@@ -1006,7 +1005,6 @@ def main():
         update_from_digest(digest_data)
         kcna_update_from_digest(digest_data)
         bp_update_from_digest(digest_data)
-        tension_update_from_digest(digest_data)
     else:
         print("  ⚠  Skipping tracker updates due to critical validation failures")
 
