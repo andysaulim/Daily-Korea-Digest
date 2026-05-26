@@ -2,12 +2,12 @@ name: Daily Korea News Digest
 
 on:
   schedule:
-    # Primary: 4:30 AM ET = 08:30 UTC (EDT) / 09:30 UTC (EST)
-    - cron: '30 8 * * *'
-    # Fallback 1: 6:00 AM ET — catches if primary was skipped/delayed
+    # Primary: 6:00 AM ET = 10:00 UTC (EDT) / 11:00 UTC (EST)
     - cron: '0 10 * * *'
-    # Fallback 2: 7:00 AM ET — last chance before 8 AM deadline
+    # Fallback 1: 7:00 AM ET — catches if primary was delayed/failed
     - cron: '0 11 * * *'
+    # Fallback 2: 7:30 AM ET — last chance before 8 AM deadline
+    - cron: '30 11 * * *'
   workflow_dispatch: # Allow manual trigger
 
 permissions:
@@ -30,7 +30,7 @@ jobs:
             exit 0
           fi
           is_primary="${{ github.event.schedule }}"
-          if [ "$is_primary" = "30 8 * * *" ]; then
+          if [ "$is_primary" = "0 10 * * *" ]; then
             echo "Primary cron — running"
             echo "should_run=true" >> "$GITHUB_OUTPUT"
             exit 0
