@@ -2,13 +2,11 @@ name: Daily Korea News Digest
 
 on:
   schedule:
-    # Primary: 6:00 AM ET = 10:00 UTC (EDT) / 11:00 UTC (EST)
-    - cron: '0 10 * * *'
-    # Fallback 1: 7:00 AM ET — catches if primary was delayed/failed
-    - cron: '0 11 * * *'
-    # Fallback 2: 7:30 AM ET — last chance before 8 AM deadline
-    - cron: '30 11 * * *'
-  workflow_dispatch: # Allow manual trigger
+    # Safety-net fallback only — primary trigger is external (cron-job.org)
+    # If external trigger already succeeded today, these skip automatically.
+    - cron: '30 11 * * *'  # 7:30 AM ET — fallback if external cron missed
+    - cron: '0 13 * * *'   # 9:00 AM ET — last resort
+  workflow_dispatch: # Primary trigger via external cron (cron-job.org)
 
 permissions:
   contents: write
@@ -19,19 +17,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
-      # Guard: for fallback crons, skip if primary already succeeded today
+      # Guard: for fallback crons, skip if dispatch already succeeded today
       - name: Check if already sent today
         id: guard
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           if [ "${{ github.event_name }}" != "schedule" ]; then
-            echo "should_run=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          is_primary="${{ github.event.schedule }}"
-          if [ "$is_primary" = "0 10 * * *" ]; then
-            echo "Primary cron — running"
+            echo "Dispatch trigger — running"
             echo "should_run=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -46,13 +39,13 @@ jobs:
             --json conclusion -q 'length' 2>/dev/null || echo "0")
           total=$((success_count + inprogress_count))
           if [ "$total" -gt "1" ]; then
-            echo "Earlier run already succeeded or is in progress — skipping fallback"
+            echo "Dispatch already succeeded or is running — skipping cron fallback"
             echo "should_run=false" >> "$GITHUB_OUTPUT"
           elif [ "$success_count" -gt "0" ]; then
-            echo "Earlier run already succeeded today — skipping fallback"
+            echo "Dispatch already succeeded today — skipping cron fallback"
             echo "should_run=false" >> "$GITHUB_OUTPUT"
           else
-            echo "No successful run yet today — running fallback"
+            echo "No successful run yet today — running cron fallback"
             echo "should_run=true" >> "$GITHUB_OUTPUT"
           fi
 
@@ -99,7 +92,7 @@ jobs:
 
       # Post-email steps use continue-on-error so a Pages/README failure
       # doesn't mark the workflow as "failed" and trigger a duplicate
-      # email from the fallback cron.
+      # from the cron fallback.
       - name: Update README with run stats
         if: steps.guard.outputs.should_run == 'true'
         continue-on-error: true
