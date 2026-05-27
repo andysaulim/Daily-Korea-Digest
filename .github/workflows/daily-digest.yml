@@ -2,11 +2,11 @@ name: Daily Korea News Digest
 
 on:
   schedule:
-    # Primary: 6:00 AM ET = 10:00 UTC (EDT) / 11:00 UTC (EST)
-    - cron: '0 10 * * *'
-    # Fallback: 7:00 AM ET — catches if primary was skipped/delayed
-    - cron: '0 11 * * *'
-  workflow_dispatch: # Allow manual trigger
+    # Safety-net fallback only — primary trigger is external (cron-job.org)
+    # If external trigger already succeeded today, these skip automatically.
+    - cron: '30 11 * * *'  # 7:30 AM ET — fallback if external cron missed
+    - cron: '0 13 * * *'   # 9:00 AM ET — last resort
+  workflow_dispatch: # Primary trigger via external cron (cron-job.org)
 
 permissions:
   contents: write
@@ -15,19 +15,20 @@ permissions:
 jobs:
   send-digest:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
-      # Guard: for fallback cron, skip if primary already succeeded today
+      # Guard: for fallback crons, skip if dispatch already succeeded today
       - name: Check if already sent today
         id: guard
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           if [ "${{ github.event_name }}" != "schedule" ]; then
+            echo "Dispatch trigger — running"
             echo "should_run=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           today=$(date -u +%Y-%m-%d)
-          # Check for successful OR in-progress runs today
           success_count=$(gh run list --repo ${{ github.repository }} \
             --workflow "Daily Korea News Digest" \
             --status success --created "$today" \
@@ -37,14 +38,14 @@ jobs:
             --status in_progress --created "$today" \
             --json conclusion -q 'length' 2>/dev/null || echo "0")
           total=$((success_count + inprogress_count))
-          is_fallback="${{ github.event.schedule }}"
-          if [ "$total" -gt "1" ] && [ "$is_fallback" = "0 11 * * *" ]; then
-            echo "Primary run already succeeded or is in progress — skipping fallback"
+          if [ "$total" -gt "1" ]; then
+            echo "Dispatch already succeeded or is running — skipping cron fallback"
             echo "should_run=false" >> "$GITHUB_OUTPUT"
-          elif [ "$success_count" -gt "0" ] && [ "$is_fallback" = "0 11 * * *" ]; then
-            echo "Primary run already succeeded today — skipping fallback"
+          elif [ "$success_count" -gt "0" ]; then
+            echo "Dispatch already succeeded today — skipping cron fallback"
             echo "should_run=false" >> "$GITHUB_OUTPUT"
           else
+            echo "No successful run yet today — running cron fallback"
             echo "should_run=true" >> "$GITHUB_OUTPUT"
           fi
 
@@ -59,7 +60,6 @@ jobs:
             kim_tracker.json
             kcna_tracker.json
             bp_tracker.json
-
             metrics.jsonl
           key: tracker-data-v1
           restore-keys: |
@@ -92,7 +92,7 @@ jobs:
 
       # Post-email steps use continue-on-error so a Pages/README failure
       # doesn't mark the workflow as "failed" and trigger a duplicate
-      # email from the fallback cron.
+      # from the cron fallback.
       - name: Update README with run stats
         if: steps.guard.outputs.should_run == 'true'
         continue-on-error: true
@@ -128,6 +128,29 @@ jobs:
             kim_tracker.json
             kcna_tracker.json
             bp_tracker.json
-
             metrics.jsonl
           key: tracker-data-v1-${{ github.run_id }}
+
+      - name: Send failure alert
+        if: failure() && steps.guard.outputs.should_run == 'true'
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASS: ${{ secrets.GMAIL_APP_PASS }}
+          DIGEST_TO: ${{ secrets.DIGEST_TO }}
+        run: |
+          python -c "
+          import smtplib, os
+          from email.mime.text import MIMEText
+          from datetime import datetime
+          from zoneinfo import ZoneInfo
+          now = datetime.now(ZoneInfo('America/New_York')).strftime('%Y-%m-%d %I:%M %p ET')
+          body = f'The Korea Daily Brief pipeline failed at {now}.\n\nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\n\nThe next fallback cron will retry automatically.'
+          msg = MIMEText(body)
+          msg['Subject'] = f'⚠ Korea Daily Brief FAILED — {now}'
+          msg['From'] = os.environ['GMAIL_USER']
+          msg['To'] = os.environ.get('DIGEST_TO', os.environ['GMAIL_USER'])
+          with smtplib.SMTP_SSL('smtp.gmail.com', 465, timeout=15) as s:
+              s.login(os.environ['GMAIL_USER'], os.environ['GMAIL_APP_PASS'])
+              s.sendmail(os.environ['GMAIL_USER'], msg['To'].split(','), msg.as_string())
+          print('Failure alert sent')
+          "

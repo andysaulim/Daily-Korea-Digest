@@ -1,8 +1,8 @@
 """
-Korea Daily Brief — Weekly Summary Generator
-Synthesizes the past 5-7 daily digests into a concise "Week in Review" edition.
+Korea Daily Brief — Week in Review
+Synthesizes Saturday-through-Friday daily digests into a "Top 10" weekly edition.
 Run: python weekly.py [--no-send]
-Designed to run Fridays via a separate cron or manual trigger.
+Triggered Fridays at 5:00 PM ET via GitHub Actions, or manually.
 """
 import json
 import os
@@ -26,20 +26,19 @@ RULES:
 - Return ONLY valid JSON. No markdown fences, no preamble."""
 
 
-WEEKLY_USER_PROMPT_TEMPLATE = """Today is {date_str} (Friday). Synthesize this week's daily digests into a Week in Review.
+WEEKLY_USER_PROMPT_TEMPLATE = """Today is {date_str} (Friday). Synthesize this week's daily digests (Saturday through Friday) into a Week in Review.
 
 DAILY DIGESTS THIS WEEK:
 {digests_json}
 
 Return a JSON object with:
-- week_label: string (e.g. "May 5-9, 2026")
+- week_label: string (e.g. "May 17-23, 2026")
 - re_line: 1-sentence summary of the week's most important development (under 80 chars)
-- top_5: array of the 5 most consequential stories this week. Each: headline, body (2-3 sentences synthesizing the week's coverage), first_reported (date string), category, significance (1 sentence — what decision or timeline this affects)
-- escalation_trend: object with score_start (Monday tension index), score_end (Friday), direction (up/down/stable), driver (1 sentence explaining what moved it)
-- kcna_weekly: object summarizing the week's KCNA output — total_articles (sum), dominant_themes (top 3 topics across the week), kim_appearances (count), notable_shifts (1-2 sentences on rhetoric changes from Monday to Friday), silence_days (count of days with 0 KCNA data)
-- bp_changes: array of facility status changes this week (only facilities whose status or note changed from Monday to Friday). Each: name, status_start, status_end, change_summary (1 sentence)
-- market_weekly: object with kospi_change (e.g. "+1.2%"), krw_change (e.g. "-0.3%"), bok_action (null or description of any rate decision)
-- deals_weekly: array of new US-Korea deals announced this week (empty if none). Each: company, value, sector
+- top_10: array of the 10 most consequential stories this week, ranked by significance. Each: rank (1-10), headline (concise, factual), body (2-3 sentences synthesizing the week's coverage of this story), first_reported (date string), category (e.g. "Security", "Diplomacy", "Economy", "DPRK", "US-ROK", "Trade"), sources (array of outlet names that covered this story). If fewer than 10 consequential stories occurred, return as many as the data supports — do not pad with trivial items.
+- dprk_statements: object summarizing the week's DPRK official statements — kim_appearances (count of days Kim appeared), notable_quotes (up to 3 most significant official quotes from the week, each with speaker and quote text), watch_flags (count of days with watch flag), silence_days (count of days with KCNA silence), summary (2-3 sentences on the week's official posture)
+- bp_changes: array of facility status changes this week (only facilities whose status or note changed). Each: name, status_start, status_end, change_summary (1 sentence)
+- market_weekly: object with kospi_open (Monday value), kospi_close (Friday value), kospi_change_pct (string e.g. "+1.2%"), krw_open (Monday), krw_close (Friday), krw_change_pct (string), bok_action (null or description of any rate decision)
+- sentiment_weekly: object with approval_start (Monday presidential approval %), approval_end (Friday), party_ruling (latest %), party_opposition (latest %), source (e.g. "Gallup Korea")
 - calendar_next_week: array of 3-5 key events in the coming 7 days. Each: date, headline, detail (1 sentence)
 - bottom_line: 2-3 sentences. The single most important takeaway from this week and what to watch next week. Be ruthlessly concise.
 - story_count_total: total Tier 1 articles processed across all daily digests this week
@@ -47,12 +46,19 @@ Return a JSON object with:
 
 
 def _load_week_digests() -> list[dict]:
-    """Load daily digest JSON files from the past 7 days."""
+    """Load daily digest JSON files from Saturday through Friday (today)."""
     tz = ZoneInfo("America/New_York")
     today = datetime.now(tz).date()
+    # Friday = weekday 4. Find the preceding Saturday (weekday 5).
+    # If today is Friday, last Saturday is 6 days ago.
+    days_since_saturday = (today.weekday() - 5) % 7
+    if days_since_saturday == 0:
+        days_since_saturday = 7
+    start_date = today - timedelta(days=days_since_saturday)
+
     digests = []
-    for days_back in range(7, 0, -1):
-        d = today - timedelta(days=days_back)
+    d = start_date
+    while d <= today:
         date_slug = d.strftime("%Y-%m-%d")
         for pattern in [f"digest_{date_slug}.json", f"public/digest_{date_slug}.json"]:
             path = Path(pattern)
@@ -64,29 +70,34 @@ def _load_week_digests() -> list[dict]:
                 except (json.JSONDecodeError, IOError):
                     continue
                 break
+        d += timedelta(days=1)
     return digests
 
 
 def _summarize_digest(d: dict) -> dict:
-    """Extract key fields from a daily digest for the weekly prompt (reduce token count)."""
+    """Extract key fields from a daily digest for the weekly prompt."""
     return {
         "date": d.get("_date", "unknown"),
         "re_line": d.get("re_line", ""),
         "top_stories": [
-            {"headline": s.get("headline", ""), "category": s.get("category_tag", ""), "source": s.get("source", "")}
+            {"headline": s.get("headline", ""), "category": s.get("category_tag", ""),
+             "source": s.get("source", ""), "body": s.get("body", s.get("body_text", ""))[:200]}
             for s in (d.get("top_stories") or [])
         ],
-        "overnight_headlines": [s.get("headline", "") for s in (d.get("overnight_items") or [])],
+        "overnight_headlines": [
+            {"headline": s.get("headline", ""), "source": s.get("source", "")}
+            for s in (d.get("overnight_items") or [])
+        ],
+        "also_today_headlines": [s.get("headline", "") for s in (d.get("also_today") or [])],
         "kcna_delta": {
             "silence_today": (d.get("kcna_delta") or {}).get("silence_today"),
             "watch_flag": (d.get("kcna_delta") or {}).get("watch_flag"),
-            "output_volume": (d.get("kcna_delta") or {}).get("output_volume"),
             "bottom_line": (d.get("kcna_delta") or {}).get("bottom_line"),
-            "propaganda_focus": (d.get("kcna_delta") or {}).get("propaganda_focus"),
             "kim_appearance_today": (d.get("kcna_delta") or {}).get("kim_appearance_today"),
+            "key_quotes": (d.get("kcna_delta") or {}).get("key_quotes") or [],
         },
-        "bp_changes": [
-            {"name": loc.get("name"), "status": loc.get("status")}
+        "bp_locations": [
+            {"name": loc.get("name"), "status": loc.get("status"), "note": loc.get("note", "")[:100]}
             for loc in (d.get("bp_locations") or [])
             if loc.get("status") in ("elevated", "alert")
         ],
@@ -94,9 +105,22 @@ def _summarize_digest(d: dict) -> dict:
             "kospi": (d.get("market_indicators") or {}).get("kospi"),
             "krw_usd": (d.get("market_indicators") or {}).get("krw_usd"),
         },
+        "sentiment": {
+            "presidential_approval": (d.get("sentiment") or {}).get("presidential_approval"),
+            "party_ruling": (d.get("sentiment") or {}).get("party_ruling"),
+            "party_opposition": (d.get("sentiment") or {}).get("party_opposition"),
+        },
         "deals": [
             {"company": deal.get("company"), "value": deal.get("value"), "sector": deal.get("sector")}
             for deal in ((d.get("us_korea_deals") or {}).get("investment_package") or {}).get("known_deals") or []
+        ],
+        "northeast_asia": [
+            {"headline": s.get("headline", ""), "source": s.get("source", "")}
+            for s in (d.get("northeast_asia") or [])[:3]
+        ],
+        "business_economy": [
+            {"headline": s.get("headline", "")}
+            for s in (d.get("business_economy") or [])[:3]
         ],
         "calendar_watch": d.get("calendar_watch") or [],
         "story_count": d.get("story_count", 0),
@@ -122,23 +146,26 @@ def generate_weekly(digests: list[dict]) -> dict:
     print(f"\n🤖  Generating weekly summary ({len(digests)} daily digests)...")
     t0 = time.time()
     collected = []
+    prefill = '{"'
     with client.messages.stream(
         model="claude-sonnet-4-20250514",
-        max_tokens=4000,
+        max_tokens=6000,
         system=[{
             "type": "text",
             "text": WEEKLY_SYSTEM_PROMPT,
             "cache_control": {"type": "ephemeral"},
         }],
-        messages=[{"role": "user", "content": user_prompt}],
+        messages=[
+            {"role": "user", "content": user_prompt},
+            {"role": "assistant", "content": prefill},
+        ],
     ) as stream:
         for text in stream.text_stream:
             collected.append(text)
     elapsed = time.time() - t0
-    raw_text = "".join(collected)
+    raw_text = prefill + "".join(collected)
     print(f"    ⏱  Weekly generation: {elapsed:.0f}s")
 
-    # Strip markdown fences
     text = raw_text.strip()
     if text.startswith("```"):
         text = text.split("\n", 1)[1] if "\n" in text else text[3:]
@@ -150,88 +177,178 @@ def generate_weekly(digests: list[dict]) -> dict:
 
 
 def render_weekly(weekly: dict) -> str:
-    """Render weekly summary as HTML email."""
-    week_label = weekly.get("week_label", "This Week")
-    re_line = weekly.get("re_line", "")
-    bottom_line = weekly.get("bottom_line", "")
+    """Render weekly summary as HTML email matching daily digest design."""
+    from html import escape as _esc
+    week_label = _esc(weekly.get("week_label", "This Week"))
+    re_line = _esc(weekly.get("re_line", ""))
+    bottom_line = _esc(weekly.get("bottom_line", ""))
 
-    top_5_html = ""
-    for i, story in enumerate(weekly.get("top_5") or [], 1):
-        top_5_html += f"""
-        <tr><td style="padding:12px 0; border-bottom:1px solid #eee;">
-            <span style="display:inline-block; background:#1a1f36; color:#fff; border-radius:50%; width:22px; height:22px; text-align:center; line-height:22px; font-size:12px; margin-right:8px;">{i}</span>
-            <strong>{story.get('headline', '')}</strong>
-            <span style="color:#888; font-size:12px; margin-left:8px;">{story.get('category', '')}</span>
-            <br><span style="color:#555; font-size:14px; line-height:1.5; display:block; margin-top:4px; padding-left:30px;">{story.get('body', '')}</span>
+    # Top 10 stories
+    top_html = ""
+    for story in (weekly.get("top_10") or []):
+        rank = story.get("rank", "")
+        headline = _esc(story.get("headline", ""))
+        body = _esc(story.get("body", ""))
+        category = _esc(story.get("category", ""))
+        sources = ", ".join(_esc(s) for s in (story.get("sources") or []))
+        top_html += f"""
+        <tr><td style="padding:14px 0;border-bottom:1px solid #EBEBEB;">
+            <table cellpadding="0" cellspacing="0" border="0"><tr>
+                <td style="vertical-align:top;padding-right:12px;">
+                    <div style="background:#1B2A4A;color:#fff;border-radius:50%;width:26px;height:26px;text-align:center;line-height:26px;font-size:12px;font-weight:700;">{rank}</div>
+                </td>
+                <td>
+                    <div style="font-size:14px;font-weight:700;color:#1B2A4A;line-height:1.3;">{headline}</div>
+                    <div style="font-size:10px;color:#D4AC0D;text-transform:uppercase;letter-spacing:1px;margin-top:2px;">{category}</div>
+                    <div style="font-size:13px;color:#555;line-height:1.5;margin-top:6px;">{body}</div>
+                    <div style="font-size:10px;color:#999;margin-top:4px;">{sources}</div>
+                </td>
+            </tr></table>
         </td></tr>"""
 
-    calendar_html = ""
-    for event in (weekly.get("calendar_next_week") or []):
-        calendar_html += f"""
-        <tr><td style="padding:6px 0; font-size:14px;">
-            <strong>{event.get('date', '')}</strong> — {event.get('headline', '')}
-        </td></tr>"""
-
-    kcna = weekly.get("kcna_weekly") or {}
-    kcna_html = ""
-    if kcna:
-        themes = ", ".join(kcna.get("dominant_themes") or [])
-        kcna_html = f"""
-        <table width="100%" style="margin:16px 0; background:#1a1f36; border-radius:8px; padding:16px;">
-            <tr><td style="color:#fff; font-weight:600; padding:8px 16px;">KCNA Weekly</td></tr>
-            <tr><td style="color:#ccc; padding:4px 16px; font-size:13px;">Articles: {kcna.get('total_articles', 'N/A')} | Kim appearances: {kcna.get('kim_appearances', 0)} | Silence days: {kcna.get('silence_days', 0)}</td></tr>
-            <tr><td style="color:#ccc; padding:4px 16px; font-size:13px;">Themes: {themes}</td></tr>
-            <tr><td style="color:#e2e8f0; padding:8px 16px; font-size:13px;">{kcna.get('notable_shifts', '')}</td></tr>
+    # DPRK statements summary
+    dprk = weekly.get("dprk_statements") or {}
+    dprk_html = ""
+    if dprk:
+        kim_ct = dprk.get("kim_appearances", 0)
+        watch_ct = dprk.get("watch_flags", 0)
+        silence_ct = dprk.get("silence_days", 0)
+        summary = _esc(dprk.get("summary", ""))
+        quotes_html = ""
+        for q in (dprk.get("notable_quotes") or [])[:3]:
+            speaker = _esc(q.get("speaker", ""))
+            quote = _esc(q.get("quote", ""))
+            if quote:
+                quotes_html += f"""
+                <div style="padding:8px 12px;background:rgba(255,255,255,0.04);border-radius:4px;border-left:3px solid #C9A96E;margin-top:8px;">
+                    <div style="font-size:12px;color:#E8E8E8;font-style:italic;">&ldquo;{quote}&rdquo;</div>
+                    <div style="font-size:10px;color:#C9A96E;margin-top:3px;">{speaker}</div>
+                </div>"""
+        dprk_html = f"""
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#0F1A12;border-radius:4px;margin-top:16px;">
+            <tr><td style="padding:14px 20px;">
+                <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#C9A96E;margin-bottom:10px;">DPRK Official Statements — Week Summary</div>
+                <div style="font-size:11px;color:#AAA;margin-bottom:8px;">Kim appearances: {kim_ct} &nbsp;·&nbsp; Watch flags: {watch_ct} &nbsp;·&nbsp; Silence days: {silence_ct}</div>
+                <div style="font-size:13px;color:#E0E0E0;line-height:1.5;">{summary}</div>
+                {quotes_html}
+            </td></tr>
         </table>"""
 
-    escalation = weekly.get("escalation_trend") or {}
-    esc_html = ""
-    if escalation:
-        direction_arrow = {"up": "↑", "down": "↓", "stable": "→"}.get(escalation.get("direction", ""), "→")
-        esc_html = f"""
-        <div style="background:#f8f9fa; border-left:4px solid #1a1f36; padding:12px 16px; margin:16px 0; border-radius:0 6px 6px 0;">
-            <strong>Tension Trend:</strong> {escalation.get('score_start', '?')}/10 → {escalation.get('score_end', '?')}/10 {direction_arrow}
-            <br><span style="color:#555; font-size:13px;">{escalation.get('driver', '')}</span>
-        </div>"""
+    # Calendar next week
+    cal_html = ""
+    for event in (weekly.get("calendar_next_week") or []):
+        date = _esc(event.get("date", ""))
+        headline = _esc(event.get("headline", ""))
+        detail = _esc(event.get("detail", ""))
+        cal_html += f"""
+        <tr><td style="padding:8px 0;border-bottom:1px solid #EBEBEB;font-size:13px;">
+            <strong style="color:#1B2A4A;">{date}</strong> — {headline}
+            <div style="font-size:11px;color:#888;margin-top:2px;">{detail}</div>
+        </td></tr>"""
+
+    # Market weekly
+    mkt = weekly.get("market_weekly") or {}
+    mkt_html = ""
+    if mkt:
+        kospi_chg = _esc(str(mkt.get("kospi_change_pct", "—")))
+        krw_chg = _esc(str(mkt.get("krw_change_pct", "—")))
+        bok = _esc(mkt.get("bok_action") or "No change")
+        mkt_html = f"""
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F8F9FA;border-radius:4px;margin-top:16px;">
+            <tr>
+                <td style="padding:12px 16px;text-align:center;width:33%;">
+                    <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#888;">KOSPI</div>
+                    <div style="font-size:16px;font-weight:700;color:#1B2A4A;">{kospi_chg}</div>
+                </td>
+                <td style="padding:12px 16px;text-align:center;width:33%;border-left:1px solid #EBEBEB;border-right:1px solid #EBEBEB;">
+                    <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#888;">KRW/USD</div>
+                    <div style="font-size:16px;font-weight:700;color:#1B2A4A;">{krw_chg}</div>
+                </td>
+                <td style="padding:12px 16px;text-align:center;width:33%;">
+                    <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#888;">BOK</div>
+                    <div style="font-size:13px;color:#1B2A4A;">{bok}</div>
+                </td>
+            </tr>
+        </table>"""
+
+    tz = ZoneInfo("America/New_York")
+    gen_time = datetime.now(tz).strftime("%-I:%M %p ET")
+    story_count = weekly.get("story_count_total", 0)
 
     return f"""<!DOCTYPE html>
-<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Korea Daily Brief — Week in Review</title></head>
-<body style="margin:0; padding:0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; background:#f5f6f8;">
-<table width="100%" cellpadding="0" cellspacing="0" style="max-width:640px; margin:0 auto; background:#fff;">
-    <tr><td style="background:#1a1f36; padding:32px 24px; text-align:center;">
-        <div style="font-size:11px; text-transform:uppercase; letter-spacing:1.8px; color:#8a8fa8;">CSIS Korea Chair</div>
-        <h1 style="color:#fff; font-size:26px; margin:8px 0 4px; font-weight:700;">Week in Review</h1>
-        <div style="color:#9ca0b8; font-size:15px;">{week_label}</div>
-    </td></tr>
-    <tr><td style="padding:24px;">
-        <div style="background:#f0f4ff; border-radius:8px; padding:16px; margin-bottom:24px;">
-            <strong style="color:#1a1f36;">RE:</strong> <span style="color:#333;">{re_line}</span>
-        </div>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Korea Daily Brief — Week in Review · {week_label}</title>
+<style type="text/css">
+@media screen and (max-width: 600px) {{
+    .wrapper {{ width: 100% !important; }}
+    .sec {{ padding: 16px 14px !important; }}
+}}
+</style>
+</head>
+<body style="margin:0;padding:0;background:#F0F0F0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F0F0F0;">
+<tr><td align="center" style="padding:20px 0;">
+<table class="wrapper" width="640" cellpadding="0" cellspacing="0" border="0" style="background:#FFFFFF;border-radius:4px;overflow:hidden;">
 
-        <h2 style="font-size:18px; color:#1a1f36; margin:24px 0 12px; border-bottom:2px solid #1a1f36; padding-bottom:8px;">Top 5 Stories</h2>
-        <table width="100%" cellpadding="0" cellspacing="0">{top_5_html}</table>
+<!-- Header -->
+<tr><td bgcolor="#0D1B2A" style="background-color:#0D1B2A;padding:28px 32px;text-align:center;">
+    <div style="font-size:9px;text-transform:uppercase;letter-spacing:3px;color:rgba(255,255,255,0.5);font-family:Arial,sans-serif;">CSIS Korea Chair</div>
+    <div style="font-size:24px;font-weight:700;color:#FFFFFF;margin:8px 0 4px;font-family:Georgia,serif;">Week in Review</div>
+    <div style="font-size:14px;color:rgba(255,255,255,0.6);">{week_label}</div>
+    <div style="height:2px;background:#C9A96E;width:60px;margin:14px auto 0;"></div>
+</td></tr>
 
-        {esc_html}
-        {kcna_html}
+<!-- RE: line -->
+<tr><td style="padding:20px 32px;border-bottom:1px solid #EBEBEB;">
+    <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#C9A96E;font-weight:700;margin-bottom:6px;">RE:</div>
+    <div style="font-size:15px;color:#1B2A4A;font-weight:600;line-height:1.4;">{re_line}</div>
+    <div style="font-size:10px;color:#999;margin-top:6px;">{story_count} articles processed this week</div>
+</td></tr>
 
-        <h2 style="font-size:18px; color:#1a1f36; margin:24px 0 12px; border-bottom:2px solid #1a1f36; padding-bottom:8px;">Next Week</h2>
-        <table width="100%" cellpadding="0" cellspacing="0">{calendar_html}</table>
+<!-- Top 10 -->
+<tr><td style="padding:20px 32px;border-bottom:1px solid #EBEBEB;">
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#1B2A4A;font-family:Arial,sans-serif;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid #1B2A4A;">Top 10 Stories</div>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0">{top_html}</table>
+</td></tr>
 
-        <div style="background:#1a1f36; border-radius:8px; padding:20px; margin-top:24px; color:#e2e8f0; font-size:14px; line-height:1.6;">
-            <strong style="color:#fff;">Bottom Line</strong><br>{bottom_line}
-        </div>
-    </td></tr>
-    <tr><td style="padding:16px 24px; text-align:center; color:#999; font-size:12px; border-top:1px solid #eee;">
-        Korea Daily Brief — CSIS Korea Chair | Week in Review Edition
-    </td></tr>
+<!-- DPRK + Markets -->
+<tr><td style="padding:20px 32px;border-bottom:1px solid #EBEBEB;">
+    {dprk_html}
+    {mkt_html}
+</td></tr>
+
+<!-- Next Week -->
+<tr><td style="padding:20px 32px;border-bottom:1px solid #EBEBEB;">
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#1B2A4A;font-family:Arial,sans-serif;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid #1B2A4A;">Next Week</div>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0">{cal_html}</table>
+</td></tr>
+
+<!-- Bottom Line -->
+<tr><td style="padding:20px 32px;border-bottom:1px solid #EBEBEB;">
+    <div style="padding:16px;background:#F8F9FA;border-radius:4px;border-left:3px solid #1B2A4A;">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#1B2A4A;margin-bottom:8px;">Bottom Line</div>
+        <div style="font-size:14px;color:#333;line-height:1.6;">{bottom_line}</div>
+    </div>
+</td></tr>
+
+<!-- Footer -->
+<tr><td style="padding:20px 32px;background:#1B2A4A;text-align:center;">
+    <div style="font-size:9px;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,0.45);font-family:Arial,sans-serif;line-height:2;">
+        CSIS Korea Chair &nbsp;&middot;&nbsp; Week in Review &nbsp;&middot;&nbsp; Generated {gen_time}
+    </div>
+</td></tr>
+
 </table>
+</td></tr></table>
 </body></html>"""
 
 
 def main():
     import argparse
-    parser = argparse.ArgumentParser(description="Korea Daily Brief — Weekly Summary")
+    parser = argparse.ArgumentParser(description="Korea Daily Brief — Week in Review")
     parser.add_argument("--no-send", action="store_true", help="Render only, no email")
     args = parser.parse_args()
 
@@ -240,38 +357,27 @@ def main():
         print("⚠  No daily digests found for this week. Run daily pipeline first.")
         return
 
-    print(f"📅  Found {len(digests)} daily digests for this week")
+    dates = [d.get("_date", "?") for d in digests]
+    print(f"📅  Found {len(digests)} daily digests: {', '.join(dates)}")
     weekly = generate_weekly(digests)
 
-    # Save JSON
     tz = ZoneInfo("America/New_York")
     date_slug = datetime.now(tz).strftime("%Y-%m-%d")
     json_path = Path(f"weekly_{date_slug}.json")
     json_path.write_text(json.dumps(weekly, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"📄  Weekly JSON: {json_path}")
 
-    # Render HTML
     html = render_weekly(weekly)
     html_path = Path(f"weekly_{date_slug}.html")
     html_path.write_text(html, encoding="utf-8")
     print(f"📄  Weekly HTML: {html_path}")
 
-    # Also save daily digest JSONs for next week's reference
-    for d in digests:
-        d_date = d.get("_date", "unknown")
-        d_path = Path(f"public/digest_{d_date}.json")
-        d_path.parent.mkdir(exist_ok=True)
-        if not d_path.exists():
-            d.pop("_date", None)
-            d_path.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
-
-    # Send
     if not args.no_send:
         if os.environ.get("DIGEST_TO"):
             from send_email import send
             week_label = weekly.get("week_label", date_slug)
             re_short = weekly.get("re_line", "")[:80]
-            subject = f"Korea Weekly Review · {week_label} — {re_short}"
+            subject = f"Korea Week in Review · {week_label} — {re_short}"
             send(html, subject=subject)
             print("📧  Weekly email sent")
         else:
@@ -279,7 +385,7 @@ def main():
     else:
         print("  --no-send: skipping email")
 
-    print("\n✅  Weekly summary done.\n")
+    print("\n✅  Week in Review done.\n")
 
 
 if __name__ == "__main__":
