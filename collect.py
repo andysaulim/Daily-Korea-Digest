@@ -1547,6 +1547,13 @@ def _collect_sentiment() -> dict:
         }
     if fallback_used:
         print(f"    ⚠  Sentiment: using fallbacks for {', '.join(fallback_used)}")
+    if not sentiment["gallup_spotlight"]:
+        fallback_used.append("gallup_spotlight")
+        sentiment["gallup_spotlight"] = {
+            "headline": "호르무즈 해협 파병 찬성 48%, 미군 지원 16% — 한국갤럽 5월 3주차",
+            "poll_date": "May 16, 2026",
+        }
+        print("    ⚠  Sentiment: using fallback for gallup_spotlight")
 
     return sentiment
 
