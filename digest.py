@@ -106,7 +106,7 @@ Return ONLY valid JSON. No markdown, no preamble, no commentary outside the JSON
 
 _POLITICAL_LEADERS = """\
 CURRENT POLITICAL LEADERS — REFERENCE (as of April 2026, update from today's articles if changed):
-- ROK President: Lee Jae-myung (이재명), Democratic Party, inaugurated Feb 25 2026
+- ROK President: Lee Jae-myung (이재명), Democratic Party, inaugurated Jun 3 2025 (snap election after Yoon impeachment)
 - ROK PM: update from today's articles if a new PM is named; check against latest reporting
 - Japan PM: Takaichi Sanae (高市早苗), LDP, took office Nov 2025 (NOT Kishida, NOT Ishiba — both are former PMs)
 - US President: Donald Trump (2nd term, inaugurated Jan 2025)
