@@ -1463,10 +1463,11 @@ def _collect_sentiment() -> dict:
         try:
             entries = _parse_feed(_gnews(query))
             for entry in entries[:5]:
+                if not _is_recent(entry, hours=168):
+                    continue
                 text = f"{entry.get('title', '')} {entry.get('summary', entry.get('description', ''))}"
-                # Skip entries that are only about presidential/party ratings
-                if re.search(r'(대통령|지지율|presidential|party\s*approval)', text, re.IGNORECASE) and \
-                   not re.search(r'(찬반|조사|survey|설문|여론|opinion|응답|percent)', text, re.IGNORECASE):
+                # Skip standard approval/party support headlines — spotlight is for special topics
+                if re.search(r'(대통령|지지율|presidential|party\s*approval|approval\s*rat)', text, re.IGNORECASE):
                     continue
                 # Look for poll-result-style content (percentages + survey language)
                 if re.search(r'갤럽|gallup', text, re.IGNORECASE) and \
