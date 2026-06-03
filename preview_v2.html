@@ -12,11 +12,13 @@
     body { padding:0; }
     .wrapper { width:100% !important; }
     .pad { padding-left:20px !important; padding-right:20px !important; }
-    .masthead-title { font-size:20px !important; letter-spacing:5px !important; }
+    .masthead-title { font-size:24px !important; letter-spacing:3px !important; }
+    .masthead-kr { font-size:12px !important; }
     .mkt td { display:block !important; width:100% !important; padding:8px 0 !important; border:none !important; border-bottom:1px solid rgba(255,255,255,0.1) !important; text-align:left !important; }
     .poll-grid td { display:inline-block !important; width:46% !important; }
     .stat-big { font-size:32px !important; }
     .story-hl { font-size:16px !important; }
+    .sec-banner td { padding:8px 20px !important; }
   }
 </style>
 </head>
@@ -25,35 +27,43 @@
 <div class="wrapper">
 
 <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-     MASTHEAD — CSIS Navy
+     MASTHEAD
      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
-<div style="background:#0A2240;padding:28px 40px 24px;" class="pad">
-  <div style="text-align:center;">
-    <div style="font-family:Arial,Helvetica,sans-serif;font-size:9px;letter-spacing:5px;text-transform:uppercase;color:rgba(255,255,255,0.4);font-weight:600;margin-bottom:10px;">CSIS Korea Chair</div>
-    <div style="margin:0 auto 10px;width:40px;height:1px;background:rgba(201,169,110,0.5);"></div>
-    <div style="font-family:Georgia,'Times New Roman',serif;font-size:28px;font-weight:700;color:#FFFFFF;letter-spacing:10px;text-transform:uppercase;" class="masthead-title">Korea Daily Brief</div>
-    <div style="margin:12px auto 0;width:40px;height:1px;background:rgba(201,169,110,0.5);"></div>
+<!-- Subtle crosshatch pattern via CSS on navy -->
+<div style="background:#0A2240;background-image:url(&quot;data:image/svg+xml,%3Csvg width='20' height='20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0l20 20M20 0L0 20' stroke='rgba(255,255,255,0.03)' stroke-width='1'/%3E%3C/svg%3E&quot;);padding:0;" class="pad">
+
+  <!-- Top thin gold rule -->
+  <div style="height:1px;background:linear-gradient(90deg, transparent 0%, #C9A96E 30%, #C9A96E 70%, transparent 100%);"></div>
+
+  <div style="padding:24px 40px 6px;text-align:center;">
+    <!-- Korean brand mark -->
+    <div style="font-family:Georgia,'Noto Serif KR',serif;font-size:16px;color:#C9A96E;letter-spacing:6px;margin-bottom:4px;" class="masthead-kr">&#54620;&#48152;&#46020;</div>
+    <div style="font-family:Georgia,'Times New Roman',serif;font-size:30px;font-weight:700;color:#FFFFFF;letter-spacing:6px;text-transform:uppercase;line-height:1.1;" class="masthead-title">Korea Daily Brief</div>
+  </div>
+
+  <!-- Divider with diamond -->
+  <div style="padding:10px 40px 4px;text-align:center;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+      <td style="border-bottom:1px solid rgba(201,169,110,0.35);"></td>
+      <td width="30" style="text-align:center;"><div style="font-size:8px;color:#C9A96E;line-height:1;">&#9670;</div></td>
+      <td style="border-bottom:1px solid rgba(201,169,110,0.35);"></td>
+    </tr></table>
+  </div>
+
+  <!-- CSIS + date row -->
+  <div style="padding:6px 40px 20px;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+      <td><div style="font-family:Arial,sans-serif;font-size:8px;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,0.4);font-weight:600;">CSIS Korea Chair</div></td>
+      <td style="text-align:right;"><div style="font-family:Arial,sans-serif;font-size:8px;letter-spacing:2px;color:rgba(255,255,255,0.35);text-transform:uppercase;">Tue, June 3, 2026 &middot; 6:14 AM ET</div></td>
+    </tr></table>
   </div>
 </div>
 
-<!-- Gold accent line -->
-<div style="height:3px;background:linear-gradient(90deg, #C9A96E 0%, #0A2240 100%);"></div>
-
-<!-- Date bar -->
-<div class="pad" style="padding:0 40px;">
-  <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
-    <td style="border-bottom:1px solid #E0DBD2;padding:9px 0;">
-      <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
-        <td><div style="font-family:Arial,sans-serif;font-size:9px;letter-spacing:1.5px;color:#999;text-transform:uppercase;">Tuesday, June 3, 2026</div></td>
-        <td style="text-align:center;"><div style="font-family:Georgia,serif;font-size:9px;color:#C9A96E;letter-spacing:1px;">No. 384</div></td>
-        <td style="text-align:right;"><div style="font-family:Arial,sans-serif;font-size:9px;letter-spacing:1.5px;color:#999;">6:14 AM ET &middot; 7 min read</div></td>
-      </tr></table>
-    </td>
-  </tr></table>
-</div>
+<!-- Gold accent bar -->
+<div style="height:3px;background:linear-gradient(90deg, #C9A96E 0%, #D4B876 50%, #0A2240 100%);"></div>
 
 <!-- RE: line -->
-<div class="pad" style="padding:16px 40px 18px;">
+<div class="pad" style="padding:16px 40px 18px;border-bottom:1px solid #E0DBD2;">
   <div style="font-family:Georgia,serif;font-size:14.5px;color:#2C2C2C;line-height:1.55;text-align:center;font-style:italic;">
     Local election early voting begins; Lee-Trump call previews Shangri-La;&nbsp;Samsung foundry wins Qualcomm order
   </div>
@@ -61,40 +71,40 @@
 
 
 <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-     MARKET STRIP — Navy background
+     MARKET STRIP
      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
-<div style="background:#0A2240;padding:14px 40px;" class="pad">
+<div style="background:#0E2847;padding:14px 40px;" class="pad">
   <table width="100%" cellpadding="0" cellspacing="0" border="0">
     <tr class="mkt">
       <td width="20%" style="padding:0 6px 0 0;">
-        <div style="font-family:Arial,sans-serif;font-size:8px;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,0.45);font-weight:700;">KOSPI</div>
+        <div style="font-family:Arial,sans-serif;font-size:8px;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,0.4);font-weight:700;">KOSPI</div>
         <div style="font-family:Georgia,serif;font-size:17px;font-weight:700;color:#fff;margin-top:2px;">2,684</div>
         <div style="font-family:Arial,sans-serif;font-size:10px;color:#6DBF8B;">&#9652; +0.8%</div>
       </td>
-      <td width="20%" style="padding:0 6px;border-left:1px solid rgba(255,255,255,0.12);">
+      <td width="20%" style="padding:0 6px;border-left:1px solid rgba(255,255,255,0.1);">
         <div style="padding-left:10px;">
-          <div style="font-family:Arial,sans-serif;font-size:8px;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,0.45);font-weight:700;">Brent</div>
+          <div style="font-family:Arial,sans-serif;font-size:8px;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,0.4);font-weight:700;">Brent</div>
           <div style="font-family:Georgia,serif;font-size:17px;font-weight:700;color:#fff;margin-top:2px;">$72.4</div>
           <div style="font-family:Arial,sans-serif;font-size:10px;color:#E07A7A;">&#9662; -1.2%</div>
         </div>
       </td>
-      <td width="20%" style="padding:0 6px;border-left:1px solid rgba(255,255,255,0.12);">
+      <td width="20%" style="padding:0 6px;border-left:1px solid rgba(255,255,255,0.1);">
         <div style="padding-left:10px;">
-          <div style="font-family:Arial,sans-serif;font-size:8px;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,0.45);font-weight:700;">USD/KRW</div>
+          <div style="font-family:Arial,sans-serif;font-size:8px;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,0.4);font-weight:700;">USD/KRW</div>
           <div style="font-family:Georgia,serif;font-size:17px;font-weight:700;color:#fff;margin-top:2px;">1,372</div>
           <div style="font-family:Arial,sans-serif;font-size:10px;color:#6DBF8B;">&#9652; +0.3%</div>
         </div>
       </td>
-      <td width="20%" style="padding:0 6px;border-left:1px solid rgba(255,255,255,0.12);">
+      <td width="20%" style="padding:0 6px;border-left:1px solid rgba(255,255,255,0.1);">
         <div style="padding-left:10px;">
-          <div style="font-family:Arial,sans-serif;font-size:8px;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,0.45);font-weight:700;">BOK</div>
+          <div style="font-family:Arial,sans-serif;font-size:8px;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,0.4);font-weight:700;">BOK</div>
           <div style="font-family:Georgia,serif;font-size:17px;font-weight:700;color:#fff;margin-top:2px;">2.75%</div>
-          <div style="font-family:Arial,sans-serif;font-size:10px;color:rgba(255,255,255,0.4);">-25bp May 22</div>
+          <div style="font-family:Arial,sans-serif;font-size:10px;color:rgba(255,255,255,0.35);">-25bp May 22</div>
         </div>
       </td>
-      <td width="20%" style="padding:0 0 0 6px;border-left:1px solid rgba(255,255,255,0.12);">
+      <td width="20%" style="padding:0 0 0 6px;border-left:1px solid rgba(255,255,255,0.1);">
         <div style="padding-left:10px;">
-          <div style="font-family:Arial,sans-serif;font-size:8px;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,0.45);font-weight:700;">CDS 5Y</div>
+          <div style="font-family:Arial,sans-serif;font-size:8px;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,0.4);font-weight:700;">CDS 5Y</div>
           <div style="font-family:Georgia,serif;font-size:17px;font-weight:700;color:#fff;margin-top:2px;">38bp</div>
           <div style="font-family:Arial,sans-serif;font-size:10px;color:#6DBF8B;">&#9662; -2.1</div>
         </div>
@@ -108,9 +118,11 @@
      TODAY AT A GLANCE
      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
 <div class="pad" style="padding:24px 40px 22px;">
+  <div style="font-family:Arial,sans-serif;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:4px;color:#C9A96E;margin-bottom:16px;">Today at a Glance</div>
+
   <table width="100%" cellpadding="0" cellspacing="0" border="0">
     <tr>
-      <td style="vertical-align:top;padding:0 0 16px;">
+      <td style="padding:0 0 14px;">
         <div style="font-family:Georgia,serif;font-size:13.5px;line-height:1.7;color:#2C2C2C;">
           <span style="font-family:Arial,sans-serif;font-weight:700;font-size:10px;color:#C9A96E;letter-spacing:1px;margin-right:4px;">01</span>
           Early voting for June 3 local elections begins today, with Seoul and Busan governorships as bellwether races for Lee&rsquo;s governing mandate.
@@ -118,16 +130,16 @@
       </td>
     </tr>
     <tr>
-      <td style="vertical-align:top;padding:0 0 16px;border-top:1px solid #EBE7E0;">
-        <div style="font-family:Georgia,serif;font-size:13.5px;line-height:1.7;color:#2C2C2C;padding-top:14px;">
+      <td style="padding:0 0 14px;border-top:1px solid #EBE7E0;">
+        <div style="font-family:Georgia,serif;font-size:13.5px;line-height:1.7;color:#2C2C2C;padding-top:12px;">
           <span style="font-family:Arial,sans-serif;font-weight:700;font-size:10px;color:#C9A96E;letter-spacing:1px;margin-right:4px;">02</span>
           President Lee and Trump held a 40-minute call ahead of the Shangri-La Dialogue; both agreed to meet bilaterally in Singapore on Saturday.
         </div>
       </td>
     </tr>
     <tr>
-      <td style="vertical-align:top;padding:0;border-top:1px solid #EBE7E0;">
-        <div style="font-family:Georgia,serif;font-size:13.5px;line-height:1.7;color:#2C2C2C;padding-top:14px;">
+      <td style="padding:0;border-top:1px solid #EBE7E0;">
+        <div style="font-family:Georgia,serif;font-size:13.5px;line-height:1.7;color:#2C2C2C;padding-top:12px;">
           <span style="font-family:Arial,sans-serif;font-weight:700;font-size:10px;color:#C9A96E;letter-spacing:1px;margin-right:4px;">03</span>
           Samsung Foundry wins Qualcomm&rsquo;s next-gen Snapdragon 9 Gen 4 contract, breaking TSMC&rsquo;s 3-year monopoly on premium mobile SoCs.
         </div>
@@ -138,15 +150,13 @@
 
 
 <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-     SECTION DIVIDER I
+     SECTION BANNER — Top Stories (navy with section-specific accent)
      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
-<div class="pad" style="padding:0 40px;">
+<div style="background:#0A2240;" class="sec-banner">
   <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
-    <td style="border-bottom:1px solid #2C2C2C;"></td>
-    <td width="1" style="padding:0 16px;">
-      <div style="font-family:Georgia,serif;font-size:11px;color:#C9A96E;font-style:italic;">I</div>
+    <td style="padding:9px 40px;border-left:4px solid #C9A96E;">
+      <div style="font-family:Arial,sans-serif;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:4px;color:#fff;">Top Stories</div>
     </td>
-    <td style="border-bottom:1px solid #2C2C2C;"></td>
   </tr></table>
 </div>
 
@@ -155,108 +165,96 @@
      TOP STORIES
      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
 <div class="pad" style="padding:22px 40px 6px;">
-  <div style="font-family:Arial,sans-serif;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:4px;color:#0A2240;margin-bottom:20px;">Top Stories</div>
 
   <!-- Story 1 — lead -->
   <div style="margin-bottom:26px;">
-    <div style="font-family:Arial,sans-serif;font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:#0A2240;margin-bottom:6px;font-weight:600;">ROK Politics</div>
+    <div style="font-family:Arial,sans-serif;font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:#0A2240;margin-bottom:6px;font-weight:600;">ROK Politics &middot; <span style="font-weight:400;color:#999;">Yonhap</span></div>
     <div style="font-family:Georgia,serif;font-size:20px;font-weight:700;color:#1C1C1C;line-height:1.25;margin-bottom:8px;" class="story-hl">
       <a href="#" style="text-decoration:none;color:#1C1C1C;">Early Voting Opens for Local Elections Across South Korea</a>
     </div>
-    <div style="font-family:Georgia,serif;font-size:13.5px;line-height:1.7;color:#444;margin-bottom:8px;">
+    <div style="font-family:Georgia,serif;font-size:13.5px;line-height:1.7;color:#444;margin-bottom:10px;">
       Polling stations opened at 6 AM for two days of early voting ahead of Wednesday&rsquo;s nationwide local elections. The National Election Commission reported 12.4% turnout by noon, tracking 2pp above the 2022 local election pace. Seoul and Busan gubernatorial races are seen as the key tests of Lee&rsquo;s first-year governing mandate.
     </div>
     <div style="font-family:Georgia,serif;font-size:12px;color:#7A6E5D;line-height:1.5;font-style:italic;padding-left:14px;border-left:2px solid #C9A96E;">
       High early turnout historically favors the ruling party. If DP sweeps both cities, Lee gains a mandate to push his economic reform package through the National Assembly.
     </div>
-    <div style="font-family:Arial,sans-serif;font-size:9px;color:#BBB;margin-top:8px;letter-spacing:0.5px;">Yonhap</div>
   </div>
 
   <div style="width:40px;height:1px;background:#DDD8CE;margin-bottom:22px;"></div>
 
   <!-- Story 2 -->
   <div style="margin-bottom:26px;">
-    <div style="font-family:Arial,sans-serif;font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:#0A2240;margin-bottom:6px;font-weight:600;">US-Korea</div>
+    <div style="font-family:Arial,sans-serif;font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:#0A2240;margin-bottom:6px;font-weight:600;">US-Korea &middot; <span style="font-weight:400;color:#999;">Reuters</span></div>
     <div style="font-family:Georgia,serif;font-size:18px;font-weight:700;color:#1C1C1C;line-height:1.28;margin-bottom:8px;" class="story-hl">
       <a href="#" style="text-decoration:none;color:#1C1C1C;">Lee, Trump Agree to Bilateral Meeting at Shangri-La Dialogue</a>
     </div>
     <div style="font-family:Georgia,serif;font-size:13px;line-height:1.7;color:#444;">
       The two leaders spoke by phone for 40 minutes on Monday evening, agreeing to meet on the sidelines of the Shangri-La Dialogue in Singapore on Saturday. The agenda includes the Section 122 surcharge extension, Samsung&rsquo;s expanded CHIPS Act commitment, and coordination on the stalled US-DPRK diplomatic track.
     </div>
-    <div style="font-family:Arial,sans-serif;font-size:9px;color:#BBB;margin-top:8px;letter-spacing:0.5px;">Reuters</div>
   </div>
 
   <div style="width:40px;height:1px;background:#DDD8CE;margin-bottom:22px;"></div>
 
   <!-- Story 3 -->
   <div style="margin-bottom:10px;">
-    <div style="font-family:Arial,sans-serif;font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:#0A2240;margin-bottom:6px;font-weight:600;">Technology</div>
+    <div style="font-family:Arial,sans-serif;font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:#0A2240;margin-bottom:6px;font-weight:600;">Technology &middot; <span style="font-weight:400;color:#999;">Korea Economic Daily</span></div>
     <div style="font-family:Georgia,serif;font-size:18px;font-weight:700;color:#1C1C1C;line-height:1.28;margin-bottom:8px;" class="story-hl">
       <a href="#" style="text-decoration:none;color:#1C1C1C;">Samsung Foundry Wins Qualcomm Snapdragon 9 Gen 4 Contract</a>
     </div>
     <div style="font-family:Georgia,serif;font-size:13px;line-height:1.7;color:#444;">
       Samsung&rsquo;s semiconductor division will manufacture Qualcomm&rsquo;s next-generation flagship mobile processor on its 2nm GAA process, ending TSMC&rsquo;s three-year exclusive hold on premium Snapdragon chips. The deal is valued at an estimated $1.8B over two years.
     </div>
-    <div style="font-family:Arial,sans-serif;font-size:9px;color:#BBB;margin-top:8px;letter-spacing:0.5px;">Korea Economic Daily</div>
   </div>
 </div>
 
 
 <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-     OVERNIGHT — dark band with red accent
+     OVERNIGHT — red accent banner
      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
-<div style="background:#1C1C1C;padding:22px 40px;border-top:3px solid #9B3D3D;" class="pad">
+<div style="background:#1C1C1C;border-top:3px solid #9B3D3D;" class="sec-banner">
   <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
-    <td>
-      <div style="font-family:Arial,sans-serif;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:3px;color:#E07A7A;margin-bottom:6px;">
-        &#9889; Overnight Flash
-      </div>
-      <div style="font-family:Arial,sans-serif;font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:#666;margin-bottom:5px;">
-        NK-Russia
-        <span style="display:inline-block;margin-left:6px;padding:2px 6px;background:#9B3D3D;color:#fff;font-size:8px;font-weight:700;letter-spacing:0.5px;border-radius:2px;">ESCALATION</span>
-      </div>
-      <div style="font-family:Georgia,serif;font-size:17px;font-weight:700;color:#F0EDE6;line-height:1.3;margin-bottom:8px;">Russia Transfers S-400 Air Defense Battery to North Korea</div>
-      <div style="font-family:Georgia,serif;font-size:12.5px;line-height:1.65;color:#999;">
-        Two senior US intelligence officials confirmed Russia delivered a complete S-400 battalion set to the DPRK in late May, the most advanced weapon system transferred between the two countries. The delivery violates multiple UN Security Council resolutions.
-      </div>
-      <div style="font-family:Arial,sans-serif;font-size:9px;color:#555;margin-top:8px;">TASS &middot; Jun 2</div>
+    <td style="padding:9px 40px;border-left:4px solid #E07A7A;">
+      <div style="font-family:Arial,sans-serif;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:4px;color:#E07A7A;">&#9889; Overnight Flash</div>
     </td>
   </tr></table>
+</div>
+
+<div style="background:#1C1C1C;padding:4px 40px 22px;" class="pad">
+  <div style="font-family:Arial,sans-serif;font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:#666;margin-bottom:5px;">
+    NK-Russia
+    <span style="display:inline-block;margin-left:6px;padding:2px 6px;background:#9B3D3D;color:#fff;font-size:8px;font-weight:700;letter-spacing:0.5px;border-radius:2px;">ESCALATION</span>
+  </div>
+  <div style="font-family:Georgia,serif;font-size:17px;font-weight:700;color:#F0EDE6;line-height:1.3;margin-bottom:8px;">Russia Transfers S-400 Air Defense Battery to North Korea</div>
+  <div style="font-family:Georgia,serif;font-size:12.5px;line-height:1.65;color:#999;">
+    Two senior US intelligence officials confirmed Russia delivered a complete S-400 battalion set to the DPRK in late May, the most advanced weapon system transferred between the two countries. The delivery violates multiple UN Security Council resolutions.
+  </div>
+  <div style="font-family:Arial,sans-serif;font-size:9px;color:#555;margin-top:8px;">TASS &middot; Jun 2</div>
 </div>
 
 
 <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
      KEY STAT
      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
-<div class="pad" style="padding:30px 40px;text-align:center;">
+<div class="pad" style="padding:28px 40px;text-align:center;">
   <div style="font-family:Arial,sans-serif;font-size:8px;text-transform:uppercase;letter-spacing:4px;color:#C9A96E;font-weight:700;">The Number</div>
   <div style="font-family:Georgia,serif;font-size:52px;font-weight:700;color:#0A2240;line-height:1;margin:8px 0 4px;" class="stat-big">12.4%</div>
   <div style="font-family:Arial,sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:2px;color:#888;">Early voting turnout by noon</div>
   <div style="font-family:Georgia,serif;font-size:12px;font-style:italic;color:#A0917B;margin-top:8px;">2pp above the same point in 2022</div>
-  <div style="margin:16px auto 0;width:30px;height:1px;background:#DDD8CE;"></div>
 </div>
 
 
 <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-     DIVIDER II
+     PYONGYANG WATCH — purple accent
      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
-<div class="pad" style="padding:0 40px;">
+<div style="background:#0A2240;" class="sec-banner">
   <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
-    <td style="border-bottom:1px solid #2C2C2C;"></td>
-    <td width="1" style="padding:0 16px;">
-      <div style="font-family:Georgia,serif;font-size:11px;color:#C9A96E;font-style:italic;">II</div>
+    <td style="padding:9px 40px;border-left:4px solid #8E6FBF;">
+      <div style="font-family:Arial,sans-serif;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:4px;color:#fff;">Pyongyang Watch</div>
     </td>
-    <td style="border-bottom:1px solid #2C2C2C;"></td>
   </tr></table>
 </div>
 
-
-<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-     DPRK
-     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
-<div class="pad" style="padding:22px 40px 24px;">
-  <div style="font-family:Arial,sans-serif;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:4px;color:#0A2240;margin-bottom:18px;">Pyongyang Watch</div>
-
+<div class="pad" style="padding:20px 40px 24px;">
   <!-- Kim status -->
   <div style="margin-bottom:18px;padding:10px 14px;background:#F5F3EE;border-left:3px solid #9B3D3D;">
     <table cellpadding="0" cellspacing="0" border="0"><tr>
@@ -272,7 +270,7 @@
   </div>
 
   <!-- Quote -->
-  <div style="margin:0 0 18px 20px;padding-left:18px;border-left:1px solid #C9A96E;">
+  <div style="margin:0 0 18px 20px;padding-left:18px;border-left:1px solid #8E6FBF;">
     <div style="font-family:Georgia,serif;font-size:14px;font-style:italic;color:#444;line-height:1.65;">
       &ldquo;The DPRK will never tolerate the reckless military provocations of the US and its followers. Our deterrent stands ready at all times.&rdquo;
     </div>
@@ -290,27 +288,19 @@
 
 
 <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-     DIVIDER III
+     TRADE & ECONOMY — teal accent
      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
-<div class="pad" style="padding:0 40px;">
+<div style="background:#0A2240;" class="sec-banner">
   <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
-    <td style="border-bottom:1px solid #2C2C2C;"></td>
-    <td width="1" style="padding:0 16px;">
-      <div style="font-family:Georgia,serif;font-size:11px;color:#C9A96E;font-style:italic;">III</div>
+    <td style="padding:9px 40px;border-left:4px solid #2E9E83;">
+      <div style="font-family:Arial,sans-serif;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:4px;color:#fff;">Trade &amp; Economy</div>
     </td>
-    <td style="border-bottom:1px solid #2C2C2C;"></td>
   </tr></table>
 </div>
 
-
-<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-     TRADE & ECONOMY
-     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
-<div class="pad" style="padding:22px 40px 24px;">
-  <div style="font-family:Arial,sans-serif;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:4px;color:#0A2240;margin-bottom:18px;">Trade &amp; Economy</div>
-
+<div class="pad" style="padding:20px 40px 24px;">
   <!-- Tariff -->
-  <div style="margin-bottom:22px;padding:16px;border:1px solid #DDD8CE;background:#FDFCF9;">
+  <div style="margin-bottom:22px;padding:16px;border:1px solid #DDD8CE;">
     <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
       <td>
         <div style="font-family:Arial,sans-serif;font-size:8px;text-transform:uppercase;letter-spacing:2px;color:#999;font-weight:700;">Effective Rate</div>
@@ -326,7 +316,7 @@
 
   <!-- Deal -->
   <div style="margin-bottom:22px;">
-    <div style="font-family:Arial,sans-serif;font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:#0A2240;margin-bottom:5px;font-weight:600;">Samsung &middot; Semiconductor</div>
+    <div style="font-family:Arial,sans-serif;font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:#0A2240;margin-bottom:5px;font-weight:600;">Samsung &middot; <span style="font-weight:400;color:#999;">Semiconductor</span></div>
     <div style="font-family:Georgia,serif;font-size:16px;font-weight:700;color:#1C1C1C;line-height:1.3;margin-bottom:6px;">
       Samsung Pledges Additional $6B for Taylor, TX Fab
       <span style="font-family:Arial,sans-serif;font-size:9px;font-weight:700;color:#4A7C59;vertical-align:3px;margin-left:4px;">$6.0B</span>
@@ -340,7 +330,7 @@
 
   <!-- Business -->
   <div style="margin-bottom:20px;">
-    <div style="font-family:Arial,sans-serif;font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:#0A2240;margin-bottom:5px;font-weight:600;">Auto &middot; Bloomberg</div>
+    <div style="font-family:Arial,sans-serif;font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:#0A2240;margin-bottom:5px;font-weight:600;">Auto &middot; <span style="font-weight:400;color:#999;">Bloomberg</span></div>
     <div style="font-family:Georgia,serif;font-size:16px;font-weight:700;color:#1C1C1C;line-height:1.3;margin-bottom:6px;">Hyundai Motor May EV Sales Jump 34% on Ioniq 7 Launch</div>
     <div style="font-family:Georgia,serif;font-size:13px;line-height:1.65;color:#444;">
       Hyundai sold 28,400 EVs globally in May, driven by strong Ioniq 7 orders in the US and EU.
@@ -350,7 +340,7 @@
   <div style="width:40px;height:1px;background:#DDD8CE;margin-bottom:22px;"></div>
 
   <div>
-    <div style="font-family:Arial,sans-serif;font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:#0A2240;margin-bottom:5px;font-weight:600;">Macro &middot; Korea Economic Daily</div>
+    <div style="font-family:Arial,sans-serif;font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:#0A2240;margin-bottom:5px;font-weight:600;">Macro &middot; <span style="font-weight:400;color:#999;">Korea Economic Daily</span></div>
     <div style="font-family:Georgia,serif;font-size:16px;font-weight:700;color:#1C1C1C;line-height:1.3;margin-bottom:6px;">BOK Governor Signals Pause After Back-to-Back Cuts</div>
     <div style="font-family:Georgia,serif;font-size:13px;line-height:1.65;color:#444;">
       Governor Rhee said the May 22 cut &ldquo;largely completes the current easing cycle,&rdquo; signaling a hold at July unless trade conditions deteriorate sharply.
@@ -360,25 +350,59 @@
 
 
 <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-     DIVIDER IV
+     NORTHEAST ASIA — dark teal accent
      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
-<div class="pad" style="padding:0 40px;">
+<div style="background:#0A2240;" class="sec-banner">
   <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
-    <td style="border-bottom:1px solid #2C2C2C;"></td>
-    <td width="1" style="padding:0 16px;">
-      <div style="font-family:Georgia,serif;font-size:11px;color:#C9A96E;font-style:italic;">IV</div>
+    <td style="padding:9px 40px;border-left:4px solid #D4AC0D;">
+      <div style="font-family:Arial,sans-serif;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:4px;color:#fff;">Northeast Asia Watch</div>
     </td>
-    <td style="border-bottom:1px solid #2C2C2C;"></td>
   </tr></table>
+</div>
+
+<div class="pad" style="padding:20px 40px 24px;">
+  <div style="margin-bottom:20px;">
+    <div style="font-family:Arial,sans-serif;font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:#0A2240;margin-bottom:5px;font-weight:600;">
+      Japan-Korea &middot; <span style="font-weight:400;color:#999;">Kyodo</span>
+      <span style="float:right;display:inline-block;padding:1px 6px;background:#16A085;color:#fff;font-size:8px;font-weight:700;letter-spacing:0.5px;border-radius:2px;">DEVELOPMENT</span>
+    </div>
+    <div style="font-family:Georgia,serif;font-size:16px;font-weight:700;color:#1C1C1C;line-height:1.3;margin-bottom:6px;">
+      Japan, Korea Foreign Ministers to Hold Bilateral at Shangri-La
+    </div>
+    <div style="font-family:Georgia,serif;font-size:13px;line-height:1.65;color:#444;">
+      FM Cho and Japan&rsquo;s Kamikawa will meet Friday to discuss renewed GSOMIA intelligence-sharing and a joint response to Russia&rsquo;s DPRK arms transfers.
+    </div>
+  </div>
+
+  <div style="width:40px;height:1px;background:#DDD8CE;margin-bottom:20px;"></div>
+
+  <div>
+    <div style="font-family:Arial,sans-serif;font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:#0A2240;margin-bottom:5px;font-weight:600;">
+      China-Korea &middot; <span style="font-weight:400;color:#999;">Global Times</span>
+      <span style="float:right;display:inline-block;padding:1px 6px;background:#7F8C8D;color:#fff;font-size:8px;font-weight:700;letter-spacing:0.5px;border-radius:2px;">PRC SOURCE</span>
+    </div>
+    <div style="font-family:Georgia,serif;font-size:16px;font-weight:700;color:#1C1C1C;line-height:1.3;margin-bottom:6px;">
+      Beijing Warns Seoul Against &ldquo;Cold War Bloc Mentality&rdquo; Ahead of Trilateral
+    </div>
+    <div style="font-family:Georgia,serif;font-size:13px;line-height:1.65;color:#444;">
+      Global Times editorial cautions South Korea that deepening US-Japan-ROK trilateral coordination risks &ldquo;destabilizing the regional order.&rdquo;
+    </div>
+  </div>
 </div>
 
 
 <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-     PUBLIC SENTIMENT
+     PUBLIC SENTIMENT — blue accent
      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
-<div class="pad" style="padding:22px 40px 24px;">
-  <div style="font-family:Arial,sans-serif;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:4px;color:#0A2240;margin-bottom:16px;">Public Sentiment</div>
+<div style="background:#0A2240;" class="sec-banner">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+    <td style="padding:9px 40px;border-left:4px solid #5DADE2;">
+      <div style="font-family:Arial,sans-serif;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:4px;color:#fff;">Public Sentiment</div>
+    </td>
+  </tr></table>
+</div>
 
+<div class="pad" style="padding:20px 40px 24px;">
   <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F5F3EE;">
     <tr class="poll-grid">
       <td width="25%" style="padding:16px 10px;text-align:center;border-right:1px solid #E0DBD2;">
@@ -403,7 +427,7 @@
       </td>
     </tr>
   </table>
-  <div style="font-family:Arial,sans-serif;font-size:9px;color:#BBB;margin-top:6px;letter-spacing:0.5px;">Gallup Korea &middot; May 3rd week, 2026</div>
+  <div style="font-family:Arial,sans-serif;font-size:9px;color:#BBB;margin-top:6px;">Gallup Korea &middot; May 3rd week, 2026</div>
 
   <!-- Spotlight -->
   <div style="margin-top:14px;padding:10px 14px;border-left:2px solid #C9A96E;background:#FAF8F4;">
@@ -416,14 +440,17 @@
 
 
 <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-     STATEMENTS
+     STATEMENTS — navy accent
      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
-<div class="pad" style="padding:0 40px;">
-  <div style="border-top:1px solid #DDD8CE;"></div>
+<div style="background:#0A2240;" class="sec-banner">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+    <td style="padding:9px 40px;border-left:4px solid #C9A96E;">
+      <div style="font-family:Arial,sans-serif;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:4px;color:#fff;">Statements &amp; Analysis</div>
+    </td>
+  </tr></table>
 </div>
-<div class="pad" style="padding:22px 40px 24px;">
-  <div style="font-family:Arial,sans-serif;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:4px;color:#0A2240;margin-bottom:18px;">Statements</div>
 
+<div class="pad" style="padding:20px 40px 24px;">
   <div style="margin-bottom:20px;">
     <table cellpadding="0" cellspacing="0" border="0"><tr>
       <td style="vertical-align:top;padding-right:14px;">
@@ -439,7 +466,6 @@
     </tr></table>
   </div>
 
-  <!-- Op-ed -->
   <div style="width:40px;height:1px;background:#DDD8CE;margin-bottom:20px;"></div>
 
   <div style="margin:0 0 0 20px;padding-left:18px;border-left:1px solid #C9A96E;">
@@ -456,9 +482,9 @@
 
 
 <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-     ON THIS DAY — Navy band
+     ON THIS DAY
      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
-<div style="background:#0A2240;padding:20px 40px;" class="pad">
+<div style="background:#0A2240;background-image:url(&quot;data:image/svg+xml,%3Csvg width='20' height='20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0l20 20M20 0L0 20' stroke='rgba(255,255,255,0.02)' stroke-width='1'/%3E%3C/svg%3E&quot;);padding:18px 40px;border-top:1px solid rgba(201,169,110,0.2);" class="pad">
   <div style="margin-left:20px;padding-left:18px;border-left:1px solid #C9A96E;">
     <div style="font-family:Arial,sans-serif;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:3px;color:#C9A96E;">On This Day</div>
     <div style="font-family:Georgia,serif;font-size:13px;color:rgba(255,255,255,0.85);line-height:1.55;margin-top:6px;">
@@ -470,13 +496,15 @@
 
 
 <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-     FOOTER — Navy
+     FOOTER
      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
-<div style="background:#071A33;padding:18px 40px;text-align:center;" class="pad">
-  <div style="font-family:Arial,sans-serif;font-size:8px;text-transform:uppercase;letter-spacing:4px;color:rgba(255,255,255,0.35);">
+<div style="background:#071A33;padding:16px 40px;text-align:center;" class="pad">
+  <!-- Korean mark + brand -->
+  <div style="font-family:Georgia,'Noto Serif KR',serif;font-size:12px;color:rgba(201,169,110,0.5);letter-spacing:4px;margin-bottom:4px;">&#54620;&#48152;&#46020;</div>
+  <div style="font-family:Arial,sans-serif;font-size:8px;text-transform:uppercase;letter-spacing:4px;color:rgba(255,255,255,0.3);">
     CSIS Korea Chair &middot; Korea Daily Brief
   </div>
-  <div style="font-family:Arial,sans-serif;font-size:9px;color:rgba(255,255,255,0.2);margin-top:5px;">
+  <div style="font-family:Arial,sans-serif;font-size:9px;color:rgba(255,255,255,0.15);margin-top:5px;">
     1,847 words &middot; 7 min &middot; Generated 6:14 AM ET
   </div>
   <div style="margin-top:8px;">
