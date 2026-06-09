@@ -1523,27 +1523,27 @@ def _collect_sentiment() -> dict:
         fallback_used.append("presidential_approval")
         sentiment["presidential_approval"] = {
             "value": "64%", "trend": "up",
-            "source": "Gallup Korea", "last_updated": "May 4th week, 2026",
+            "source": "Gallup Korea", "last_updated": "May 19-21, 2026",
         }
     if not sentiment["party_ruling"]:
         fallback_used.append("party_ruling")
         sentiment["party_ruling"] = {
             "value": "45%", "party": "Democratic Party",
             "party_kr": "더불어민주당", "trend": "stable",
-            "source": "Gallup Korea", "last_updated": "May 4th week, 2026",
+            "source": "Gallup Korea", "last_updated": "May 19-21, 2026",
         }
     if not sentiment["party_opposition"]:
         fallback_used.append("party_opposition")
         sentiment["party_opposition"] = {
             "value": "22%", "party": "People Power Party",
             "party_kr": "국민의힘", "trend": "down",
-            "source": "Gallup Korea", "last_updated": "May 4th week, 2026",
+            "source": "Gallup Korea", "last_updated": "May 19-21, 2026",
         }
     if not sentiment["party_independent"]:
         fallback_used.append("party_independent")
         sentiment["party_independent"] = {
             "value": "26%", "trend": "down",
-            "source": "Gallup Korea", "last_updated": "May 4th week, 2026",
+            "source": "Gallup Korea", "last_updated": "May 19-21, 2026",
         }
     if fallback_used:
         print(f"    ⚠  Sentiment: using fallbacks for {', '.join(fallback_used)}")
