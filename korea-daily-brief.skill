@@ -1,7 +1,7 @@
 name: Korea Daily Brief
 description: Automated intelligence briefing on Korean Peninsula affairs, delivered daily at 6 AM ET to senior policymakers and analysts.
 version: "1.0"
-author: Andy Saul Im
+author: Andy Sau Lim
 
 overview: |
   The Korea Daily Brief collects news from 140+ sources overnight, synthesizes it through Claude
