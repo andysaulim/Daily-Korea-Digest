@@ -634,7 +634,7 @@ FAST_MODEL = "claude-sonnet-4-6"
 PRIMARY_MODEL = "claude-opus-4-8"
 
 
-def _stream_claude(client, messages: list, max_tokens: int = 16000,
+def _stream_claude(client, messages: list, max_tokens: int = 32000,
                     _retries: int = 3, model: str | None = None) -> dict:
     """Stream a Claude API call and return parsed digest dict.
 
@@ -685,7 +685,7 @@ def _stream_claude(client, messages: list, max_tokens: int = 16000,
                 raise
 
 
-def _call_claude(client, user_prompt: str, max_tokens: int = 16000,
+def _call_claude(client, user_prompt: str, max_tokens: int = 32000,
                   model: str | None = None) -> dict:
     """Single Claude API call. Returns parsed digest dict."""
     return _stream_claude(client, [{"role": "user", "content": user_prompt}],
