@@ -630,28 +630,18 @@ def _robust_json_parse(raw: str) -> dict:
     )
 
 
-FAST_MODEL = "claude-sonnet-4-20250514"
-PRIMARY_MODEL = "claude-opus-4-20250514"
-
-
-_JSON_PREFILL = '{"'
+FAST_MODEL = "claude-sonnet-4-6"
+PRIMARY_MODEL = "claude-opus-4-8"
 
 
 def _stream_claude(client, messages: list, max_tokens: int = 16000,
                     _retries: int = 3, model: str | None = None) -> dict:
     """Stream a Claude API call and return parsed digest dict.
 
-    Uses assistant prefilling ('{"') to force Claude to start with JSON,
-    then prepends the prefill to the collected response before parsing.
     Retries on transient connection errors (e.g. peer dropped mid-stream).
     """
     use_model = model or PRIMARY_MODEL
     model_label = use_model.split("-")[1]  # "opus" or "sonnet"
-
-    # Add assistant prefill to force JSON output
-    prefilled_messages = list(messages) + [
-        {"role": "assistant", "content": _JSON_PREFILL}
-    ]
 
     for attempt in range(_retries):
         try:
@@ -665,7 +655,7 @@ def _stream_claude(client, messages: list, max_tokens: int = 16000,
                     "text": SYSTEM_PROMPT,
                     "cache_control": {"type": "ephemeral"},
                 }],
-                messages=prefilled_messages,
+                messages=messages,
             ) as stream:
                 for text in stream.text_stream:
                     collected.append(text)
@@ -673,8 +663,7 @@ def _stream_claude(client, messages: list, max_tokens: int = 16000,
             if response.stop_reason == "max_tokens":
                 print(f"  ⚠  Response truncated (hit {response.usage.output_tokens} tokens)")
             elapsed = time.time() - t0
-            # Prepend the prefill to reconstruct the full JSON
-            raw_text = _JSON_PREFILL + "".join(collected)
+            raw_text = "".join(collected)
             if not raw_text.strip():
                 raise ValueError("Empty response from Claude API")
             cache_read = getattr(response.usage, 'cache_read_input_tokens', 0) or 0
@@ -749,12 +738,9 @@ def generate_digest(payload: dict, db_context: str = "") -> dict:
                     "- MORNING MEMO: Include exactly 3 items.\n"
                     "Return ONLY valid JSON."
                 )
-                messages = [
-                    {"role": "user", "content": user_prompt},
-                    {"role": "assistant", "content": json.dumps(digest, ensure_ascii=False)[:4000]},
-                    {"role": "user", "content": expansion_prompt}
-                ]
-                digest = _stream_claude(client, messages, model=retry_model)
+                digest = _stream_claude(client, [
+                    {"role": "user", "content": user_prompt + "\n\n---\n\n" + expansion_prompt}
+                ], model=retry_model)
 
             # Ensure market data from collector is preserved
             if payload.get("market_indicators") and not digest.get("market_indicators"):
@@ -851,13 +837,13 @@ def regenerate_digest(payload: dict, previous_digest: dict,
         "- If morning_memo is too short: include exactly 3 items.\n"
         "- If KCNA delta is missing: generate the kcna_delta section from Tier 4 data.\n"
         "- If RE: line is missing: write a crisp one-liner RE: summary.\n"
-        "Return ONLY valid JSON."
+        "Return ONLY valid JSON.\n\n"
+        "Here is your previous output:\n"
+        + json.dumps(previous_digest, ensure_ascii=False)[:8000]
     )
 
     messages = [
-        {"role": "user", "content": user_prompt},
-        {"role": "assistant", "content": json.dumps(previous_digest, ensure_ascii=False)[:8000]},
-        {"role": "user", "content": fix_prompt},
+        {"role": "user", "content": user_prompt + "\n\n---\n\n" + fix_prompt},
     ]
 
     # First retry uses Sonnet (cost-efficient); subsequent retries
