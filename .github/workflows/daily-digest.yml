@@ -148,7 +148,7 @@ jobs:
           msg = MIMEText(body)
           msg['Subject'] = f'⚠ Korea Daily Brief FAILED — {now}'
           msg['From'] = os.environ['GMAIL_USER']
-          msg['To'] = os.environ.get('DIGEST_TO', os.environ['GMAIL_USER'])
+          msg['To'] = 'alim@csis.org'
           with smtplib.SMTP_SSL('smtp.gmail.com', 465, timeout=15) as s:
               s.login(os.environ['GMAIL_USER'], os.environ['GMAIL_APP_PASS'])
               s.sendmail(os.environ['GMAIL_USER'], msg['To'].split(','), msg.as_string())
