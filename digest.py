@@ -106,7 +106,7 @@ Return ONLY valid JSON. No markdown, no preamble, no commentary outside the JSON
 
 _POLITICAL_LEADERS = """\
 CURRENT POLITICAL LEADERS — REFERENCE (as of April 2026, update from today's articles if changed):
-- ROK President: Lee Jae-myung (이재명), Democratic Party, inaugurated Feb 25 2026
+- ROK President: Lee Jae-myung (이재명), Democratic Party, inaugurated Jun 3 2025 (snap election after Yoon impeachment)
 - ROK PM: update from today's articles if a new PM is named; check against latest reporting
 - Japan PM: Takaichi Sanae (高市早苗), LDP, took office Nov 2025 (NOT Kishida, NOT Ishiba — both are former PMs)
 - US President: Donald Trump (2nd term, inaugurated Jan 2025)
@@ -496,10 +496,10 @@ Return a digest object with:
 - business_economy: array of up to 6 Korea-related business and economic news items from today (MAX 6 — pick the most policy-relevant). Focus on: major conglomerates (Samsung, SK, Hyundai, LG, Hanwha, Lotte, POSCO, Doosan), earnings/revenue, M&A, factory openings/closures, supply chain moves, export/import data, GDP/inflation/employment figures, BOK rate decisions, stock market moves, real estate, startup/venture capital. TOPIC DIVERSITY — MANDATORY: Each business_economy item MUST cover a DIFFERENT topic. If multiple articles cover the same company announcement, earnings report, or economic data release from different sources, pick the BEST one and drop the duplicate. Same company + same subject = same topic (e.g. "Hyundai EV sales up 30%" and "Hyundai reports record EV deliveries" are the SAME topic). Each: url, source, headline, body_text (1-2 sentences — state the facts with specific numbers, then add one factual connection to a policy context if obvious: e.g. "Second US plant; cumulative ROK EV investment in US now $12.4B"), companies (array of company names involved, e.g. ["Samsung Electronics", "SK Hynix"]), sector (tech/auto/energy/finance/manufacturing/real-estate/macro). Prioritize stories with policy implications over routine earnings — if you have more than 6 qualifying stories, drop the least policy-relevant ones.
 - northeast_asia: array of 3-6 items (MAX 6; always include at least one Japan-Korea, one China-Korea, and one Russia-Korea or Trilateral item even on slow news days) covering Japan-Korea, China-Korea, Russia-Korea, and US-ROK-Japan trilateral developments from today's news. Combine Japan-, China-, and Russia-related Korea stories into this single section. Each: url, source, headline, body_text (1-2 sentences — facts first, then one beat of context), category (one of: japan-history, trilateral, gsomia, japan-trade, japan-diplomatic, japan-defense, territorial, thaad-retaliation, china-coercion, rare-earth, china-diplomatic, china-military, china-trade, china-opinion, russia-weapons, russia-diplomatic, russia-labor, russia-sanctions, russia-military), signal_type (ESCALATION/ANOMALY/DEVELOPMENT/CONFIRMATION/CONTEXT), is_reaction_source (boolean — true if from Global Times, Xinhua, People's Daily, China Daily, TASS; false otherwise), region_tag ("Japan-Korea" or "China-Korea" or "Trilateral" or "Russia-Korea" — used for visual grouping). Russia-Korea items here are for bilateral diplomatic/economic stories; NK-Russia weapons/cooperation stories belong in top_stories or overnight_items with NK-Russia-China category. Empty array if no relevant stories today. Do NOT duplicate items already in top_stories or overnight_items.
 - public_sentiment: standing dashboard of Korean public opinion polling — ALL metrics MUST come from the SAME Gallup Korea weekly poll (same survey date). Do NOT mix dates across metrics. Object with:
-  - presidential_approval: object with value (percentage as string, e.g. "64%"), trend (up/down/stable), source (polling firm name, e.g. "Gallup Korea"), last_updated (date string, e.g. "Apr 28-30, 2026"). IMPORTANT — HARD BASELINE: As of April 5th week 2026 the latest confirmed Gallup Korea figures are: 64% approval, DP 46%, PPP 21%, independents 27% (surveyed Apr 28-30). Use these EXACT numbers. Do NOT change ANY polling number unless a TODAY's source article explicitly reports a NEW Gallup Korea weekly poll with different figures AND you can cite the specific article. Changing a polling number without a sourced article is a fabrication. When in doubt, carry forward 64%/46%/21%/27%. Never mix poll dates.
-  - party_ruling: object with value (percentage as string, e.g. "46%"), party (English name, e.g. "Democratic Party"), party_kr (Korean name, e.g. "더불어민주당"), trend (up/down/stable), source, last_updated. MUST use the same Gallup Korea poll date as presidential_approval.
-  - party_opposition: object with value (percentage as string, e.g. "21%"), party (English name, e.g. "People Power Party"), party_kr (Korean name, e.g. "국민의힘"), trend (up/down/stable), source, last_updated. MUST use the same Gallup Korea poll date as presidential_approval.
-  - party_independent: object with value (percentage as string, e.g. "27%"), trend (up/down/stable), source, last_updated. No party preference / independents (무당층) from the same Gallup Korea weekly poll. MUST use the same poll date. This is the swing voter share — when it spikes, it signals disillusionment with both major parties.
+  - presidential_approval: object with value (percentage as string, e.g. "64%"), trend (up/down/stable), source (polling firm name, e.g. "Gallup Korea"), last_updated (date string, e.g. "May 19-21, 2026"). IMPORTANT — HARD BASELINE: The latest confirmed Gallup Korea figures are from poll #664, surveyed May 19-21 2026: 64% approval, DP 45%, PPP 22%, independents 26%. Use these EXACT numbers. Do NOT change ANY polling number unless a TODAY's source article explicitly reports a NEW Gallup Korea weekly poll with different figures AND you can cite the specific article. Changing a polling number without a sourced article is a fabrication. When in doubt, carry forward 64%/45%/22%/26%. Never mix poll dates. NOTE: Gallup Korea skipped the election-week poll; next poll (#665) expected Jun 12.
+  - party_ruling: object with value (percentage as string, e.g. "45%"), party (English name, e.g. "Democratic Party"), party_kr (Korean name, e.g. "더불어민주당"), trend (up/down/stable), source, last_updated. MUST use the same Gallup Korea poll date as presidential_approval.
+  - party_opposition: object with value (percentage as string, e.g. "22%"), party (English name, e.g. "People Power Party"), party_kr (Korean name, e.g. "국민의힘"), trend (up/down/stable), source, last_updated. MUST use the same Gallup Korea poll date as presidential_approval.
+  - party_independent: object with value (percentage as string, e.g. "26%"), trend (up/down/stable), source, last_updated. No party preference / independents (무당층) from the same Gallup Korea weekly poll. MUST use the same poll date. This is the swing voter share — when it spikes, it signals disillusionment with both major parties.
   - gallup_spotlight: object or null. The latest Gallup Korea weekly special-topic finding (each weekly poll covers a rotating social/policy issue beyond standard approval numbers). Object with: topic (short label, e.g. "Juvenile Crime Age Limit"), finding (1 sentence summarizing the key result with a number, e.g. "68% of respondents support lowering the juvenile offender age threshold from 14 to 12"), poll_date (date string). The collector provides a raw headline in gallup_spotlight.headline — rewrite it into a clean English topic + finding sentence. null if no special topic was collected.
   - discourse_flag: string or null. Flag any active protests, viral social media events, or public discourse spikes related to US-Korea, China-Korea, or Japan-Korea relations (e.g. "Anti-US protest at Yongsan — 3,000 attended", "Naver trending: #NoJapan revival over Fukushima water"). null if nothing notable.
   If no polling data is available in today's articles for any metric, set its value to null and note "No recent data" in last_updated.
@@ -630,28 +630,18 @@ def _robust_json_parse(raw: str) -> dict:
     )
 
 
-FAST_MODEL = "claude-sonnet-4-20250514"
-PRIMARY_MODEL = "claude-opus-4-20250514"
-
-
-_JSON_PREFILL = '{"'
+FAST_MODEL = "claude-sonnet-4-6"
+PRIMARY_MODEL = "claude-opus-4-8"
 
 
 def _stream_claude(client, messages: list, max_tokens: int = 16000,
                     _retries: int = 3, model: str | None = None) -> dict:
     """Stream a Claude API call and return parsed digest dict.
 
-    Uses assistant prefilling ('{"') to force Claude to start with JSON,
-    then prepends the prefill to the collected response before parsing.
     Retries on transient connection errors (e.g. peer dropped mid-stream).
     """
     use_model = model or PRIMARY_MODEL
     model_label = use_model.split("-")[1]  # "opus" or "sonnet"
-
-    # Add assistant prefill to force JSON output
-    prefilled_messages = list(messages) + [
-        {"role": "assistant", "content": _JSON_PREFILL}
-    ]
 
     for attempt in range(_retries):
         try:
@@ -665,7 +655,7 @@ def _stream_claude(client, messages: list, max_tokens: int = 16000,
                     "text": SYSTEM_PROMPT,
                     "cache_control": {"type": "ephemeral"},
                 }],
-                messages=prefilled_messages,
+                messages=messages,
             ) as stream:
                 for text in stream.text_stream:
                     collected.append(text)
@@ -673,8 +663,7 @@ def _stream_claude(client, messages: list, max_tokens: int = 16000,
             if response.stop_reason == "max_tokens":
                 print(f"  ⚠  Response truncated (hit {response.usage.output_tokens} tokens)")
             elapsed = time.time() - t0
-            # Prepend the prefill to reconstruct the full JSON
-            raw_text = _JSON_PREFILL + "".join(collected)
+            raw_text = "".join(collected)
             if not raw_text.strip():
                 raise ValueError("Empty response from Claude API")
             cache_read = getattr(response.usage, 'cache_read_input_tokens', 0) or 0
@@ -749,12 +738,9 @@ def generate_digest(payload: dict, db_context: str = "") -> dict:
                     "- MORNING MEMO: Include exactly 3 items.\n"
                     "Return ONLY valid JSON."
                 )
-                messages = [
-                    {"role": "user", "content": user_prompt},
-                    {"role": "assistant", "content": json.dumps(digest, ensure_ascii=False)[:4000]},
-                    {"role": "user", "content": expansion_prompt}
-                ]
-                digest = _stream_claude(client, messages, model=retry_model)
+                digest = _stream_claude(client, [
+                    {"role": "user", "content": user_prompt + "\n\n---\n\n" + expansion_prompt}
+                ], model=retry_model)
 
             # Ensure market data from collector is preserved
             if payload.get("market_indicators") and not digest.get("market_indicators"):
@@ -851,13 +837,13 @@ def regenerate_digest(payload: dict, previous_digest: dict,
         "- If morning_memo is too short: include exactly 3 items.\n"
         "- If KCNA delta is missing: generate the kcna_delta section from Tier 4 data.\n"
         "- If RE: line is missing: write a crisp one-liner RE: summary.\n"
-        "Return ONLY valid JSON."
+        "Return ONLY valid JSON.\n\n"
+        "Here is your previous output:\n"
+        + json.dumps(previous_digest, ensure_ascii=False)[:8000]
     )
 
     messages = [
-        {"role": "user", "content": user_prompt},
-        {"role": "assistant", "content": json.dumps(previous_digest, ensure_ascii=False)[:8000]},
-        {"role": "user", "content": fix_prompt},
+        {"role": "user", "content": user_prompt + "\n\n---\n\n" + fix_prompt},
     ]
 
     # First retry uses Sonnet (cost-efficient); subsequent retries

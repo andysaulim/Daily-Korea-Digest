@@ -146,9 +146,8 @@ def generate_weekly(digests: list[dict]) -> dict:
     print(f"\n🤖  Generating weekly summary ({len(digests)} daily digests)...")
     t0 = time.time()
     collected = []
-    prefill = '{"'
     with client.messages.stream(
-        model="claude-sonnet-4-20250514",
+        model="claude-sonnet-4-6",
         max_tokens=6000,
         system=[{
             "type": "text",
@@ -157,13 +156,12 @@ def generate_weekly(digests: list[dict]) -> dict:
         }],
         messages=[
             {"role": "user", "content": user_prompt},
-            {"role": "assistant", "content": prefill},
         ],
     ) as stream:
         for text in stream.text_stream:
             collected.append(text)
     elapsed = time.time() - t0
-    raw_text = prefill + "".join(collected)
+    raw_text = "".join(collected)
     print(f"    ⏱  Weekly generation: {elapsed:.0f}s")
 
     text = raw_text.strip()

@@ -1463,10 +1463,11 @@ def _collect_sentiment() -> dict:
         try:
             entries = _parse_feed(_gnews(query))
             for entry in entries[:5]:
+                if not _is_recent(entry, hours=168):
+                    continue
                 text = f"{entry.get('title', '')} {entry.get('summary', entry.get('description', ''))}"
-                # Skip entries that are only about presidential/party ratings
-                if re.search(r'(대통령|지지율|presidential|party\s*approval)', text, re.IGNORECASE) and \
-                   not re.search(r'(찬반|조사|survey|설문|여론|opinion|응답|percent)', text, re.IGNORECASE):
+                # Skip standard approval/party support headlines — spotlight is for special topics
+                if re.search(r'(대통령|지지율|presidential|party\s*approval|approval\s*rat)', text, re.IGNORECASE):
                     continue
                 # Look for poll-result-style content (percentages + survey language)
                 if re.search(r'갤럽|gallup', text, re.IGNORECASE) and \
@@ -1515,37 +1516,44 @@ def _collect_sentiment() -> dict:
     # These are the most recent known values from Gallup Korea weekly polls.
     # They ensure the sentiment tracker always renders with data.
     fallback_used = []
-    # Fallback: Gallup Korea weekly poll, surveyed May 12-14 2026
-    # Lee approval at 61% (down 3pp from 64%). DP 45%, PPP 23%.
-    # Source: Korean news outlets reporting Gallup Korea results
+    # Fallback: Gallup Korea weekly poll #664, surveyed May 19-21 2026
+    # Lee approval at 64% (up 3pp from 61%). DP 45%, PPP 22%, independents 26%.
+    # Source: Seoul Economic Daily, 경향신문, 머니투데이 reporting Gallup Korea
     if not sentiment["presidential_approval"]:
         fallback_used.append("presidential_approval")
         sentiment["presidential_approval"] = {
-            "value": "61%", "trend": "down",
-            "source": "Gallup Korea", "last_updated": "May 3rd week, 2026",
+            "value": "64%", "trend": "up",
+            "source": "Gallup Korea", "last_updated": "May 19-21, 2026",
         }
     if not sentiment["party_ruling"]:
         fallback_used.append("party_ruling")
         sentiment["party_ruling"] = {
             "value": "45%", "party": "Democratic Party",
-            "party_kr": "더불어민주당", "trend": "down",
-            "source": "Gallup Korea", "last_updated": "May 3rd week, 2026",
+            "party_kr": "더불어민주당", "trend": "stable",
+            "source": "Gallup Korea", "last_updated": "May 19-21, 2026",
         }
     if not sentiment["party_opposition"]:
         fallback_used.append("party_opposition")
         sentiment["party_opposition"] = {
-            "value": "23%", "party": "People Power Party",
-            "party_kr": "국민의힘", "trend": "up",
-            "source": "Gallup Korea", "last_updated": "May 3rd week, 2026",
+            "value": "22%", "party": "People Power Party",
+            "party_kr": "국민의힘", "trend": "down",
+            "source": "Gallup Korea", "last_updated": "May 19-21, 2026",
         }
     if not sentiment["party_independent"]:
         fallback_used.append("party_independent")
         sentiment["party_independent"] = {
-            "value": "27%", "trend": None,
-            "source": "Gallup Korea", "last_updated": "May 3rd week, 2026",
+            "value": "26%", "trend": "down",
+            "source": "Gallup Korea", "last_updated": "May 19-21, 2026",
         }
     if fallback_used:
         print(f"    ⚠  Sentiment: using fallbacks for {', '.join(fallback_used)}")
+    if not sentiment["gallup_spotlight"]:
+        fallback_used.append("gallup_spotlight")
+        sentiment["gallup_spotlight"] = {
+            "headline": "지방선거 여당 승리 전망 과반 — 한국갤럽 5월 4주차",
+            "poll_date": "May 22, 2026",
+        }
+        print("    ⚠  Sentiment: using fallback for gallup_spotlight")
 
     return sentiment
 

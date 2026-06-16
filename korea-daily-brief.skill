@@ -1,0 +1,291 @@
+name: Korea Daily Brief
+description: Automated intelligence briefing on Korean Peninsula affairs, delivered daily at 6 AM ET to senior policymakers and analysts.
+version: "1.0"
+author: Andy Sau Lim
+
+overview: |
+  The Korea Daily Brief collects news from 140+ sources overnight, synthesizes it through Claude
+  into a structured intelligence briefing, validates the output for accuracy, renders it as a
+  premium HTML email, and delivers it before the morning commute. The entire pipeline runs
+  unattended on GitHub Actions.
+
+  Recipients include analysts at CSIS, the State Department, Pentagon, and academic institutions
+  focused on Korean Peninsula affairs.
+
+architecture:
+  pipeline:
+    - stage: COLLECT
+      file: collect.py
+      description: 25 parallel threads scrape 140+ RSS feeds across 4 tiers, plus market data, Gallup Korea polling, and satellite imagery reports
+      duration: ~15 seconds
+      output: Structured JSON payload with every article scored and sorted by source prestige
+
+    - stage: DIGEST
+      file: digest.py
+      description: Sends collected payload to Claude Sonnet with an 80-line system prompt engineered for zero hallucination
+      output: Structured JSON with ~15 sections
+      retry: If validation fails, automatically retries and escalates to Claude Opus on second attempt
+
+    - stage: VALIDATE
+      file: run.py
+      description: Quality gates — dedup, URL repair, source diversity caps, prestige checks, sentiment completeness
+      retry: Critical failures trigger automatic regeneration (up to 2 retries)
+
+    - stage: RENDER
+      file: render.py
+      description: Converts validated JSON to a 1,400-line HTML email optimized for Gmail, Outlook, and Apple Mail
+      features:
+        - Table-based layout (no CSS grid)
+        - Inline styles throughout
+        - Color-coded section banners with category-specific accent colors
+        - Signal badges (ESCALATION, ANOMALY, DEVELOPMENT, CONFIRMATION)
+        - Market indicator strip with directional arrows
+        - 2x2 satellite facility grid with status badges
+        - Responsive mobile layout
+        - Dark mode support
+        - Plain-text fallback for legacy clients
+
+    - stage: SEND
+      file: send_email.py
+      description: Gmail SMTP (SSL, port 465) using app password
+      subject_line: The digest's RE line — a one-sentence summary of the day's top themes
+
+    - stage: ARCHIVE
+      description: Every digest saved to /public/ and deployed to GitHub Pages
+      outputs:
+        - latest.html (always the most recent issue)
+        - digest_YYYY-MM-DD.html (permanent archive)
+        - archive.json (manifest for search and weekly synthesis)
+
+feed_tiers:
+  tier_1_news:
+    window: 24 hours
+    count: 90+ feeds
+    examples:
+      - Korea Herald
+      - Reuters
+      - Wall Street Journal
+      - New York Times
+      - Bloomberg
+      - Yonhap
+      - JTBC
+      - Global Times
+      - Xinhua
+      - TASS
+
+  tier_2_analysis:
+    window: 36 hours
+    count: 25 feeds
+    examples:
+      - CSIS
+      - Brookings
+      - 38 North
+      - Foreign Affairs
+      - The Diplomat
+      - RAND
+
+  tier_3_academic:
+    window: 72 hours
+    count: 18 feeds
+    examples:
+      - International Security
+      - Asian Survey
+      - Pacific Affairs
+
+  tier_4_dprk:
+    window: 24 hours
+    count: 4-12 feeds
+    examples:
+      - KCNA Watch
+      - Rodong Sinmun (via relay)
+      - Daily NK
+      - NK News
+
+additional_data:
+  - source: Market data
+    metrics: [KOSPI, Brent crude, USD/KRW, BOK rate, CDS spreads, GDP estimates]
+  - source: Gallup Korea
+    metrics: [Presidential approval, Party support, Special-topic spotlight]
+  - source: Satellite imagery reports
+    metrics: Status of 11 monitored DPRK facilities
+
+digest_sections:
+  - Top Stories
+  - Overnight Flash
+  - Key Stat of the Day
+  - Pyongyang Watch (KCNA Analysis)
+  - Satellite & Location Watch (facility grid)
+  - ROK Government (ministry cards, personnel, calendar)
+  - Election Tracker (key races table)
+  - Trade & Economy (tariff dashboard)
+  - Northeast Asia Watch
+  - Public Sentiment Tracker (polling with full party names)
+  - The Wire (brief items)
+  - Statements & Analysis
+  - On This Day
+
+prompt_rules:
+  - name: SOURCE-OR-SKIP
+    rule: Every claim must trace to a collected article. No memory-based assertions.
+
+  - name: Same-poll-date rule
+    rule: All polling numbers must come from the same Gallup Korea survey. Never mix weeks.
+
+  - name: Prestige enforcement
+    rule: WSJ, NYT, FT, and specialist outlets (38 North, ArmsControlWonk) must appear if they published.
+
+  - name: Reference database injection
+    rule: NK-Russia bilateral timeline (270+ events), NK provocations history (540+ since 1958), 14-day KCNA rhetoric baseline, and Kim Jong Un appearance log are injected into every prompt.
+
+persistent_trackers:
+  - file: kim_tracker.json
+    purpose: Confirmed Kim Jong Un public appearances — computes "days since last seen"
+
+  - file: kcna_tracker.json
+    purpose: 14-day KCNA rhetoric baseline — phrase counts, tone, volume
+
+  - file: bp_tracker.json
+    purpose: 11 DPRK facility statuses (Yongbyon, Punggye-ri, Sohae, Sinpo, etc.)
+
+  - file: metrics.jsonl
+    purpose: Per-run metrics — word count, article counts, validation retries, send status
+
+reference_databases:
+  - file: databases.py
+    datasets:
+      - name: NK-Russia bilateral timeline
+        entries: 270+ events
+      - name: NK provocations history
+        entries: 540+ since 1958
+
+scheduling:
+  primary:
+    service: cron-job.org
+    trigger: GitHub Actions workflow_dispatch via GitHub REST API
+    time: 6:00 AM ET daily
+
+  fallback:
+    service: GitHub Actions cron
+    times:
+      - "7:30 AM ET"
+      - "9:00 AM ET"
+    guard: Checks if dispatch already succeeded today and skips to prevent duplicate emails
+
+  weekly:
+    time: Fridays at 9:00 AM ET
+    file: weekly.py
+    description: Fetches the week's 7 daily digests and synthesizes a "Week in Review" briefing
+
+  failure_alerts:
+    description: If the pipeline crashes, a separate email is sent to the operator with a link to the failed GitHub Actions run
+
+files:
+  - file: run.py
+    lines: 1122
+    role: Pipeline orchestrator
+
+  - file: collect.py
+    lines: 1661
+    role: Parallel RSS scraper + market data + Gallup Korea polling
+
+  - file: digest.py
+    lines: 889
+    role: Claude API integration + system prompt
+
+  - file: render.py
+    lines: 1408
+    role: HTML email renderer
+
+  - file: send_email.py
+    lines: 210
+    role: Gmail SMTP sender
+
+  - file: databases.py
+    lines: 746
+    role: NK-Russia + provocations reference databases
+
+  - file: kim_tracker.py
+    lines: 247
+    role: Kim Jong Un appearance tracker
+
+  - file: kcna_tracker.py
+    lines: 120
+    role: KCNA rhetoric baseline tracker
+
+  - file: bp_tracker.py
+    lines: 103
+    role: Satellite facility status tracker
+
+  - file: tension_scorer.py
+    lines: 404
+    role: Peninsula tension index (0-10 scale)
+
+  - file: weekly.py
+    lines: 392
+    role: Friday "Week in Review" synthesis
+
+  - file: update_readme.py
+    lines: 124
+    role: README stats updater
+
+stack:
+  language: Python 3.12
+  ai: Claude Sonnet (primary), Claude Opus (retry) via Anthropic API
+  email: Gmail SMTP with app password
+  hosting: GitHub Actions (compute), GitHub Pages (archive)
+  scheduling: cron-job.org (primary), GitHub Actions cron (fallback)
+  data: RSS/Atom feeds, Google News RSS relay, BOK ECOS API
+
+design_decisions:
+  - question: Why structured JSON, not free-form text?
+    answer: |
+      The AI outputs JSON, not prose. This lets us validate every field programmatically,
+      enforce section minimums, dedup across sections, and render with pixel-perfect control.
+      The HTML template is deterministic — only the data varies.
+
+  - question: Why Sonnet first, Opus on retry?
+    answer: |
+      Sonnet is faster and cheaper for the 90% of days when the output passes validation
+      on the first try. Opus is reserved for complex news days where Sonnet under-generates
+      or misses nuance.
+
+  - question: Why external cron instead of GitHub Actions cron?
+    answer: |
+      GitHub's cron scheduler has no SLA — jobs can be delayed 30 minutes to 4 hours
+      depending on runner availability. An external trigger via the GitHub API fires instantly.
+
+  - question: Why persistent trackers instead of asking the AI to remember?
+    answer: |
+      LLMs can't reliably track state across sessions. Kim Jong Un's last public appearance,
+      KCNA's rhetorical baseline, and satellite facility statuses are facts that change slowly —
+      storing them in JSON and injecting them into the prompt is more reliable than asking
+      the model to recall.
+
+maintenance:
+  gallup_baselines:
+    frequency: Weekly (when new Gallup Korea poll releases, typically Fridays)
+    steps:
+      - Update hard baseline in digest.py (~line 498) with new approval %, party support numbers, survey dates
+      - Update fallback values in collect.py (~line 1514) for presidential_approval, ruling_party_support, opposition_support, political_independents, gallup_spotlight
+      - Use explicit date ranges (e.g., "May 19-21, 2026") not week numbers
+
+  add_rss_feed:
+    steps:
+      - Add the feed URL to the appropriate tier list in collect.py
+      - Tier determines recency window (24h / 36h / 72h)
+
+  email_design:
+    steps:
+      - Edit render.py — all styles must be inline, use tables not CSS grid/flexbox
+      - Test in Gmail, Outlook, and Apple Mail
+      - Static preview mockup available in preview_v2.html
+
+  tracker_databases:
+    nk_russia: databases.py → NK_RUSSIA_DB
+    provocations: databases.py → PROVOCATIONS_DB
+    facilities: bp_tracker.py
+
+key_facts:
+  - Lee Jae-myung inaugurated June 3, 2025 (snap election after Yoon impeachment)
+  - Gallup Korea polls release weekly, typically Fridays
+  - Pipeline designed for zero hallucination — every claim must trace to a collected source
