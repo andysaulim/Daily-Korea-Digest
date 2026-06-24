@@ -370,10 +370,10 @@ PUBLIC SENTIMENT BASELINE (pre-collected polling data)
 {json.dumps(sentiment, indent=1)}
 Use these as baseline values for the public_sentiment field. If today's articles contain newer polling data from Gallup Korea or Realmeter, update the values. Otherwise carry these forward.
 IMPORTANT VALIDATION: The scraped baseline may contain errors. Cross-check:
-- Presidential approval should be in the 55-75% range (as of late April 2026, down from record high)
-- The known CONFIRMED baseline is: 64% approval, DP 46%, PPP 21%, independents 27% (Gallup Korea, Apr 5th week 2026, surveyed Apr 28-30)
-- This baseline is STALE — it is from late April and today is mid-May. ACTIVELY look for newer Gallup Korea or Realmeter polling data in today's articles. Korean news outlets report weekly polling every Friday/Monday. If you find a newer poll in today's articles, use those numbers and update last_updated.
-- If the scraped baseline shows presidential approval outside the 50-80% range, or if it looks like a party rating was misidentified as presidential approval, IGNORE the scraped values and use the confirmed baseline above
+- Presidential approval should be in the 50-65% range (as of mid-June 2026, down sharply after ballot shortage scandal)
+- The known CONFIRMED baseline is: 57% approval, DP 41%, PPP 29%, independents 21% (Gallup Korea #665, June 2nd week, surveyed June 9-11)
+- If the scraped baseline shows numbers close to these, trust them. ACTIVELY look for newer Gallup Korea or Realmeter polling data in today's articles. Korean news outlets report weekly polling every Friday/Monday. If you find a newer poll in today's articles, use those numbers and update last_updated.
+- If the scraped baseline shows presidential approval outside the 40-75% range, or if it looks like a party rating was misidentified as presidential approval, IGNORE the scraped values and use the confirmed baseline above
 - ALL 4 metrics MUST come from the SAME poll (same source, same date) — never mix"""
 
     return f"""Today's date: {date_str}
