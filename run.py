@@ -947,7 +947,6 @@ def main():
     from kim_tracker import update_from_digest
     from kcna_tracker import update_from_digest as kcna_update_from_digest
     from bp_tracker import update_from_digest as bp_update_from_digest
-    from tension_scorer import update_from_digest as tension_update_from_digest
 
     validation_passed = False
     for validation_attempt in range(1 + MAX_VALIDATION_RETRIES):
@@ -1006,12 +1005,6 @@ def main():
         update_from_digest(digest_data)
         kcna_update_from_digest(digest_data)
         bp_update_from_digest(digest_data)
-        try:
-            tension_result = tension_update_from_digest(digest_data)
-            print(f"  📈  Peninsula Tension Index: {tension_result['score']}/10 "
-                  f"({tension_result['level']}, trend {tension_result['trend']})")
-        except Exception as e:
-            print(f"  ⚠  Tension scoring failed: {e}")
     else:
         print("  ⚠  Skipping tracker updates due to critical validation failures")
 
