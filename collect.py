@@ -26,7 +26,7 @@ TIER1_FEEDS = {
     "Korea Herald":       "https://www.koreaherald.com/common/rss_xml.php?ct=102",
     "Korea Times":        "https://www.koreatimes.co.kr/www/rss/nation.xml",
     "Yonhap English":     "https://en.yna.co.kr/RSS/news.xml",
-    "JoongAng Daily":     "https://koreajoongangdaily.joins.com/section/rss",
+    "JoongAng Daily":     _gnews("Korea+site:koreajoongangdaily.joins.com"),
     "Chosun English":     _gnews("Korea+site:english.chosun.com"),
     "Hankyoreh English":  _gnews("Korea+site:english.hani.co.kr"),
     "Dong-A English":     _gnews("Korea+site:donga.com/en"),
@@ -45,7 +45,7 @@ TIER1_FEEDS = {
     "MBC":                _gnews("site:imnews.imbc.com"),
     "SBS":                _gnews("site:news.sbs.co.kr"),
     "YTN":                _gnews("site:ytn.co.kr"),
-    "Channel A":          _gnews("site:ichannela.com"),
+    "Channel A":          _gnews("Korea+site:channela.com"),
     "Arirang News":       _gnews("Korea+site:arirang.com"),
     # ── Korean business dailies ──────────────────────────────────────────
     "매일경제":            _gnews("site:mk.co.kr"),
@@ -62,7 +62,6 @@ TIER1_FEEDS = {
     "BBC Korea":          _gnews("Korea+site:bbc.com"),
     "CNN Korea":          _gnews("Korea+site:cnn.com"),
     "CNBC Korea":         _gnews("Korea+site:cnbc.com"),
-    "MSNBC Korea":        _gnews("Korea+site:msnbc.com"),
     "Guardian Korea":     _gnews("Korea+site:theguardian.com"),
     "Al Jazeera Korea":   _gnews("Korea+site:aljazeera.com"),
     # ── Regional Asia ─────────────────────────────────────────────────────
@@ -118,10 +117,10 @@ TIER2_FEEDS = {
     "38 North":          (_gnews("site:38north.org"), "A"),
     "AccessDPRK":        (_gnews("site:accessdprk.com"), "A"),
     "ArmsControlWonk":   (_gnews("site:armscontrolwonk.com"), "A"),
-    "Stimson":           ("https://www.stimson.org/feed/", "B"),
+    "Stimson":           (_gnews("Korea+site:stimson.org"), "B"),
     "IISS":              (_gnews("Korea+site:iiss.org"), "B"),
     "ASAN Institute":    (_gnews("Korea+site:asaninst.org"), "B"),
-    "EAI":               ("https://www.eai.or.kr/new/en/etc/rss.asp", "B"),
+    "EAI":               (_gnews("Korea+site:eai.or.kr"), "B"),
     "Sejong Institute":  (_gnews("Korea+site:sejong.org"), "B"),
     "SIPRI":             (_gnews("Korea+site:sipri.org"), "B"),
     "War on the Rocks":  ("https://warontherocks.com/feed/", "B"),
@@ -160,7 +159,6 @@ TIER3_FEEDS = {
     "J. Strategic Studies":   (_gnews("%22Journal+of+Strategic+Studies%22+%22Korea%22+OR+%22DPRK%22"), "A"),
     "Asian Survey":           (_gnews("%22Asian+Survey%22+%22Korea%22+OR+%22DPRK%22+OR+%22Korean+Peninsula%22"), "A"),
     "Pacific Review":         (_gnews("%22Pacific+Review%22+%22Korea%22+OR+%22DPRK%22"), "A"),
-    "Foreign Affairs":        (_gnews("%22Foreign+Affairs%22+%22Korea%22+OR+%22DPRK%22+OR+%22North+Korea%22"), "A"),
     "Survival":               (_gnews("%22Survival%22+IISS+%22Korea%22+OR+%22DPRK%22"), "A"),
     # B tier — specialized Korea/Asia journals
     "Korean J. Def. Analysis": (_gnews("%22Korean+Journal+of+Defense+Analysis%22"), "B"),
@@ -175,8 +173,6 @@ TIER3_FEEDS = {
 TIER4_FEEDS = {
     # Direct KCNA sources (often blocked — kept for when they work)
     "KCNA Watch":         "https://kcnawatch.org/newstream/feed/",
-    "KCNA":               _gnews("site:kcna.kp"),
-    "Rodong Sinmun":      _gnews("site:rodong.rep.kp"),
     # Wire services / outlets that relay KCNA content daily (primary indirect)
     "KCNA (Yonhap)":      _gnews("KCNA+Yonhap"),
     "KCNA (Reuters)":     _gnews("KCNA+site:reuters.com"),
@@ -186,7 +182,7 @@ TIER4_FEEDS = {
     "KCNA (38 North)":    _gnews("KCNA+site:38north.org"),
     "KCNA (Daily NK)":    _gnews("KCNA+site:dailynk.com"),
     "KCNA (NK News)":     _gnews("KCNA+site:nknews.org"),
-    "KCNA (NK Pro)":      _gnews("KCNA+site:korearisgroup.com"),
+    "KCNA (Korea Risk)":  _gnews("KCNA+site:koreariskgroup.com"),
     # Major newspapers that relay KCNA statements
     "KCNA (BBC)":         _gnews("KCNA+OR+%22North+Korea+state+media%22+site:bbc.com"),
     "KCNA (NYT)":         _gnews("KCNA+site:nytimes.com"),

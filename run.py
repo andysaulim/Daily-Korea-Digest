@@ -947,6 +947,7 @@ def main():
     from kim_tracker import update_from_digest
     from kcna_tracker import update_from_digest as kcna_update_from_digest
     from bp_tracker import update_from_digest as bp_update_from_digest
+    from tension_scorer import update_from_digest as tension_update_from_digest
 
     validation_passed = False
     for validation_attempt in range(1 + MAX_VALIDATION_RETRIES):
@@ -1005,6 +1006,12 @@ def main():
         update_from_digest(digest_data)
         kcna_update_from_digest(digest_data)
         bp_update_from_digest(digest_data)
+        try:
+            tension_result = tension_update_from_digest(digest_data)
+            print(f"  📈  Peninsula Tension Index: {tension_result['score']}/10 "
+                  f"({tension_result['level']}, trend {tension_result['trend']})")
+        except Exception as e:
+            print(f"  ⚠  Tension scoring failed: {e}")
     else:
         print("  ⚠  Skipping tracker updates due to critical validation failures")
 
@@ -1089,7 +1096,15 @@ def main():
         re_line = digest_data.get("re_line")
         send(html, re_line=re_line)
 
-    # ── Step 5: Log quality metrics ────────────────────────────────────────
+    # ── Step 5: Pipeline health checks ─────────────────────────────────────
+    health_report = {}
+    try:
+        from pipeline_health import run_health_checks
+        health_report = run_health_checks(digest_data, payload)
+    except Exception as e:
+        print(f"  ⚠  Health checks failed to run: {e}")
+
+    # ── Step 6: Log quality metrics ────────────────────────────────────────
     try:
         metrics = {
             "date": date_slug,
@@ -1108,6 +1123,8 @@ def main():
             "validation_retries": validation_attempt,
             "html_bytes": len(html),
             "sent": not args.no_send and validation_passed,
+            "health_alerts": len(health_report.get("alerts", [])),
+            "health_warnings": len(health_report.get("warnings", [])),
         }
         metrics_path = Path("metrics.jsonl")
         with open(metrics_path, "a") as f:
