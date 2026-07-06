@@ -261,12 +261,60 @@ def _parse_feed(url: str) -> list:
     return []
 
 
+_BOILERPLATE_PATTERNS = [
+    # Cookie/consent banners
+    r"\bwe use cookies\b", r"\bcookie policy\b", r"\baccept cookies\b",
+    r"\bcookie preferences\b", r"\bcookie consent\b",
+    # Subscribe / paywall
+    r"\bsubscribe to (read|continue|our newsletter)\b", r"\bsign in to read\b",
+    r"\bplease enable javascript\b", r"\byour browser is not supported\b",
+    r"\bcreate a free account\b", r"\bregister for free\b",
+    # Homepage marketing boilerplate (Coupang-style)
+    r"\bthe perfect (place|destination) (for|to)\b",
+    r"\byou name it\b", r"\bshop now\b", r"\bbrowse our\b",
+    r"\bfree (shipping|delivery)\b.*\bon (orders|all)\b",
+    # Category-list dumps ("Baby, Kids, Fashion, Beauty, Home & Kitchen and Electronics")
+    r"\b(baby|kids|fashion|beauty|home|electronics|kitchen|toys|grocery|apparel)\s*,\s*"
+    r"(baby|kids|fashion|beauty|home|electronics|kitchen|toys|grocery|apparel)\s*,\s*"
+    r"(baby|kids|fashion|beauty|home|electronics|kitchen|toys|grocery|apparel)\b",
+    # Site-nav / footer scrapes
+    r"\ball rights reserved\b", r"\bterms of (service|use)\b",
+    r"\bprivacy policy\b.*\b(cookie|terms)\b",
+    r"\bcopyright\s*©?\s*\d{4}\b",
+    # Session / login pages
+    r"\byour session (has )?expired\b", r"\bplease log in\b",
+]
+_BOILERPLATE_RE = re.compile("|".join(_BOILERPLATE_PATTERNS), re.IGNORECASE)
+
+
+def _clean_summary(summary: str, title: str) -> str:
+    """Strip boilerplate from RSS/Google News description fields.
+
+    Google News RSS occasionally returns the outlet's homepage meta description
+    or a cookie/paywall banner instead of an article snippet. Feeding that to
+    the AI as article body causes the model to paraphrase the boilerplate as
+    if it were the story (e.g. the Coupang regulatory-dispute story getting
+    summarized as "the perfect place for savvy shoppers"). Better to blank a
+    bad summary than to trust it — the AI will fall back to the title alone.
+    """
+    if not summary:
+        return ""
+    if _BOILERPLATE_RE.search(summary):
+        return ""
+    # If summary is suspiciously short or looks like just the source name
+    if len(summary) < 30:
+        return ""
+    # Title-only echo (source echoes title as description) — keep it, it's fine
+    return summary
+
+
 def _entry_to_article(entry, source: str, lang: str = "EN", extra: dict | None = None) -> dict:
     title = entry.get("title", "").strip()
     link = entry.get("link", "").strip()
     summary = entry.get("summary", entry.get("description", "")).strip()
     summary = re.sub(r"<[^>]+>", " ", summary)
     summary = re.sub(r"\s+", " ", summary).strip()
+    summary = _clean_summary(summary, title)
 
     pub_date = None
     for attr in ("published_parsed", "updated_parsed"):
