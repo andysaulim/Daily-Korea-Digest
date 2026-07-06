@@ -1,0 +1,995 @@
+<title>Korea Daily Brief — Mobile Audit</title>
+<style>
+  :root {
+    --ground: #FBFAF7;
+    --ink: #17202A;
+    --meta: #6B7280;
+    --hair: #E7E3DA;
+    --accent: #1B2A4A;
+    --accent-soft: #E5EAF2;
+    --gold: #C9A96E;
+    --warn: #B03A2E;
+    --warn-soft: #FBEAE7;
+    --ok: #1E7940;
+    --ok-soft: #E4EFE7;
+    --card: #FFFFFF;
+    --phone-bezel: #17202A;
+    --phone-screen: #F2F1EC;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground: #0E1218;
+      --ink: #ECEBE5;
+      --meta: #9AA1AA;
+      --hair: #262B33;
+      --accent: #C9A96E;
+      --accent-soft: #1E2531;
+      --gold: #C9A96E;
+      --warn: #E86A5D;
+      --warn-soft: #2A1414;
+      --ok: #4FA36E;
+      --ok-soft: #12241A;
+      --card: #171C24;
+      --phone-bezel: #05070A;
+      --phone-screen: #0E1218;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #0E1218;
+    --ink: #ECEBE5;
+    --meta: #9AA1AA;
+    --hair: #262B33;
+    --accent: #C9A96E;
+    --accent-soft: #1E2531;
+    --gold: #C9A96E;
+    --warn: #E86A5D;
+    --warn-soft: #2A1414;
+    --ok: #4FA36E;
+    --ok-soft: #12241A;
+    --card: #171C24;
+    --phone-bezel: #05070A;
+    --phone-screen: #0E1218;
+  }
+  :root[data-theme="light"] {
+    --ground: #FBFAF7;
+    --ink: #17202A;
+    --meta: #6B7280;
+    --hair: #E7E3DA;
+    --accent: #1B2A4A;
+    --accent-soft: #E5EAF2;
+    --gold: #C9A96E;
+    --warn: #B03A2E;
+    --warn-soft: #FBEAE7;
+    --ok: #1E7940;
+    --ok-soft: #E4EFE7;
+    --card: #FFFFFF;
+    --phone-bezel: #17202A;
+    --phone-screen: #F2F1EC;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.55;
+    margin: 0;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  .wrap {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 32px 28px 80px;
+  }
+  header.masthead {
+    border-bottom: 1px solid var(--hair);
+    padding-bottom: 24px;
+    margin-bottom: 32px;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .eyebrow {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 11px;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--gold);
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  h1 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: var(--ink);
+    margin: 0 0 4px;
+    text-wrap: balance;
+  }
+  .subtitle {
+    color: var(--meta);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .summary {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+  .stat {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-radius: 6px;
+    padding: 14px 16px;
+  }
+  .stat .num {
+    font-family: Georgia, serif;
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+  .stat .lbl {
+    font-size: 11px;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--meta);
+    margin-top: 6px;
+    font-weight: 600;
+  }
+  .stat .stripe {
+    height: 3px;
+    width: 24px;
+    margin-bottom: 10px;
+    border-radius: 2px;
+  }
+  .stat.critical .stripe { background: var(--warn); }
+  .stat.high .stripe { background: #D57A48; }
+  .stat.medium .stripe { background: var(--gold); }
+  .stat.low .stripe { background: var(--meta); }
+
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 440px;
+    gap: 40px;
+    align-items: start;
+  }
+  @media (max-width: 960px) {
+    .layout { grid-template-columns: 1fr; }
+    .summary { grid-template-columns: repeat(2, 1fr); }
+    h1 { font-size: 26px; }
+  }
+
+  .findings h2 {
+    font-family: Georgia, serif;
+    font-size: 18px;
+    margin: 0 0 16px;
+    color: var(--ink);
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--hair);
+  }
+  .finding {
+    background: var(--card);
+    border: 1px solid var(--hair);
+    border-left: 3px solid var(--meta);
+    border-radius: 4px;
+    padding: 18px 20px;
+    margin-bottom: 14px;
+  }
+  .finding.critical { border-left-color: var(--warn); }
+  .finding.high { border-left-color: #D57A48; }
+  .finding.medium { border-left-color: var(--gold); }
+  .finding.low { border-left-color: var(--meta); }
+  .finding-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
+  .chip {
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-family: -apple-system, sans-serif;
+  }
+  .chip.critical { background: var(--warn-soft); color: var(--warn); }
+  .chip.high { background: #FBECDF; color: #A6531C; }
+  .chip.medium { background: #F5EFDA; color: #7A5A16; }
+  .chip.low { background: var(--hair); color: var(--meta); }
+  .finding-title {
+    font-weight: 600;
+    color: var(--ink);
+    font-size: 15px;
+    line-height: 1.35;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .loc {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12px;
+    color: var(--meta);
+    background: var(--hair);
+    padding: 2px 6px;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+  .finding-body {
+    color: var(--ink);
+    font-size: 14px;
+    line-height: 1.55;
+    margin: 6px 0 10px;
+  }
+  .finding-body p { margin: 0 0 8px; }
+  .finding-fix {
+    background: var(--accent-soft);
+    padding: 10px 12px;
+    border-radius: 4px;
+    font-size: 13px;
+    color: var(--ink);
+    line-height: 1.5;
+  }
+  .finding-fix strong {
+    display: block;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 4px;
+    font-weight: 700;
+  }
+  :root[data-theme="dark"] .finding-fix strong,
+  @media (prefers-color-scheme: dark) {
+    .finding-fix strong { color: var(--gold); }
+  }
+  code {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12.5px;
+    background: var(--hair);
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: var(--ink);
+  }
+
+  /* Phone frame */
+  .preview {
+    position: sticky;
+    top: 24px;
+  }
+  .preview-lbl {
+    font-family: Georgia, serif;
+    font-size: 18px;
+    margin: 0 0 4px;
+    color: var(--ink);
+  }
+  .preview-meta {
+    color: var(--meta);
+    font-size: 12px;
+    margin-bottom: 16px;
+  }
+  .phone {
+    background: var(--phone-bezel);
+    padding: 14px 8px 14px;
+    border-radius: 32px;
+    box-shadow: 0 10px 40px -8px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(255,255,255,0.05);
+    max-width: 402px;
+    margin: 0 auto;
+  }
+  .phone-notch {
+    width: 92px;
+    height: 22px;
+    background: var(--phone-bezel);
+    border-radius: 0 0 14px 14px;
+    margin: -6px auto 6px;
+    position: relative;
+    z-index: 2;
+  }
+  .phone-screen {
+    background: var(--phone-screen);
+    border-radius: 20px;
+    overflow: hidden;
+    height: 720px;
+    position: relative;
+  }
+  .phone iframe {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    display: block;
+    background: #fff;
+  }
+  .phone-toolbar {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 12px;
+    padding: 0 4px;
+  }
+  .phone-toolbar button {
+    font: inherit;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    padding: 6px 10px;
+    background: var(--card);
+    color: var(--ink);
+    border: 1px solid var(--hair);
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .phone-toolbar button:hover { background: var(--accent-soft); }
+  .phone-toolbar button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+  :root[data-theme="dark"] .phone-toolbar button.on,
+  @media (prefers-color-scheme: dark) { .phone-toolbar button.on { color: var(--phone-bezel); } }
+
+  footer {
+    margin-top: 48px;
+    padding-top: 24px;
+    border-top: 1px solid var(--hair);
+    font-size: 12px;
+    color: var(--meta);
+    line-height: 1.55;
+  }
+  footer p { margin: 0 0 6px; }
+
+  .theme-toggle {
+    background: var(--card);
+    color: var(--ink);
+    border: 1px solid var(--hair);
+    padding: 6px 10px;
+    border-radius: 4px;
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .theme-toggle:hover { border-color: var(--accent); }
+</style>
+
+<div class="wrap">
+  <header class="masthead">
+    <div>
+      <div class="eyebrow">Q3 2026 · Design audit</div>
+      <h1>Mobile spacing &amp; usability audit</h1>
+      <div class="subtitle">Rendered from a live sample. 13 findings across responsive layout, typography, touch targets, and dark mode.</div>
+    </div>
+    <button class="theme-toggle" onclick="toggleTheme()">Toggle theme</button>
+  </header>
+
+  <div class="summary">
+    <div class="stat critical"><div class="stripe"></div><div class="num">2</div><div class="lbl">Critical</div></div>
+    <div class="stat high"><div class="stripe"></div><div class="num">3</div><div class="lbl">High</div></div>
+    <div class="stat medium"><div class="stripe"></div><div class="num">5</div><div class="lbl">Medium</div></div>
+    <div class="stat low"><div class="stripe"></div><div class="num">3</div><div class="lbl">Low</div></div>
+  </div>
+
+  <div class="layout">
+    <section class="findings">
+      <h2>Findings</h2>
+
+      <div class="finding critical">
+        <div class="finding-head">
+          <span class="chip critical">Critical</span>
+          <span class="finding-title"><code>line-height:44px</code> on every <code>&lt;a&gt;</code> bloats vertical rhythm</span>
+          <span class="loc">render.py:1340</span>
+        </div>
+        <div class="finding-body">
+          <p>The mobile touch-target rule sets <code>a { min-height:44px; min-width:44px; display:inline-block; line-height:44px; }</code> for <em>all</em> anchors. The override on the next line catches links inside <code>&lt;p&gt;</code>/<code>&lt;div&gt;</code>/<code>&lt;td&gt;</code>, but any bare <code>&lt;a&gt;</code> — section anchors, "see more" links in a heading, footer links — gets a 44px line-height that visually pushes surrounding text apart.</p>
+        </div>
+        <div class="finding-fix"><strong>Fix</strong>Drop <code>line-height:44px</code>, keep <code>min-height:44px</code>. The 44px height alone satisfies WCAG touch targets without breaking rhythm.</div>
+      </div>
+
+      <div class="finding critical">
+        <div class="finding-head">
+          <span class="chip critical">Critical</span>
+          <span class="finding-title"><code>min-font-size</code> is not a real CSS property</span>
+          <span class="loc">render.py:1335</span>
+        </div>
+        <div class="finding-body">
+          <p>The mobile block declares <code>min-font-size:14px</code>. This is not a valid CSS property — browsers silently drop it. The adjacent <code>font-size:14px !important</code> on the same selector is doing the actual work, but the intent was a floor, not an override.</p>
+        </div>
+        <div class="finding-fix"><strong>Fix</strong>Delete the <code>min-font-size</code> declaration. The rule below it already applies a 14px floor to body text; if you want an explicit floor pattern, use <code>font-size: clamp(14px, 3.5vw, 16px)</code> on a scoped selector.</div>
+      </div>
+
+      <div class="finding high">
+        <div class="finding-head">
+          <span class="chip high">High</span>
+          <span class="finding-title">No horizontal-scroll safety anywhere</span>
+          <span class="loc">render.py (global)</span>
+        </div>
+        <div class="finding-body">
+          <p>Zero <code>overflow-x:auto</code> declarations in the entire template. Long DPRK titles, Korean-language quotes, or wide numeric tables push the page body sideways on narrow screens. The market table and KCNA phrase table stack cleanly, but there is no fallback for anything not covered by an explicit stack rule.</p>
+        </div>
+        <div class="finding-fix"><strong>Fix</strong>Add a defensive wrapper — e.g. <code>&lt;div style="overflow-x:auto"&gt;</code> around any table that isn't explicitly stacked in the mobile media query.</div>
+      </div>
+
+      <div class="finding high">
+        <div class="finding-head">
+          <span class="chip high">High</span>
+          <span class="finding-title">Masthead H1 shrinks to 19px on mobile</span>
+          <span class="loc">render.py:1304</span>
+        </div>
+        <div class="finding-body">
+          <p>The <code>h1</code> steps from 26px desktop → 19px mobile. For a serif masthead titled "Korea Daily Brief" this is under-emphatic; the RE: line ends up nearly the same size (13px) as the title. Compare to Bloomberg/NYT mobile mastheads which stay 22–26px.</p>
+        </div>
+        <div class="finding-fix"><strong>Fix</strong>Raise mobile <code>h1</code> to <code>22px</code>; add <code>letter-spacing: -0.2px</code> for Georgia to sit tighter at that size.</div>
+      </div>
+
+      <div class="finding high">
+        <div class="finding-head">
+          <span class="chip high">High</span>
+          <span class="finding-title">Section padding stays 20px 32px on 621–768px tablets</span>
+          <span class="loc">render.py:1355</span>
+        </div>
+        <div class="finding-body">
+          <p>The tablet media query only overrides <code>.sec, .footer { padding:14px 20px }</code>? Actually it does — but the mobile break at 620px means the 621–768px range gets a slightly different treatment. Look at the actual output at 700px (landscape phones, small tablets) — the market strip still has 3 columns while story bodies get 20px sides. Verify visually.</p>
+        </div>
+        <div class="finding-fix"><strong>Fix</strong>Add a shared <code>.mkt-table td { padding:10px 14px }</code> rule inside the tablet query so numbers don't collide at 621px.</div>
+      </div>
+
+      <div class="finding medium">
+        <div class="finding-head">
+          <span class="chip medium">Medium</span>
+          <span class="finding-title">Dark-mode color blanket is too aggressive</span>
+          <span class="loc">render.py:1368</span>
+        </div>
+        <div class="finding-body">
+          <p><code>.wrapper p, .wrapper div, .wrapper td, .wrapper span { color:#CCC !important; }</code> flips <em>every</em> element to #CCC. When a callout keeps its light background (dark-mode override missed it), the text becomes near-invisible. Follow-up overrides on lines 1376–1378 patch specific cases but this is playing whack-a-mole.</p>
+        </div>
+        <div class="finding-fix"><strong>Fix</strong>Scope the blanket to text-only containers: <code>.wrapper .story-card p, .wrapper .story-card div</code> etc. Or introduce a CSS custom property for text color and set it once at <code>.wrapper</code>.</div>
+      </div>
+
+      <div class="finding medium">
+        <div class="finding-head">
+          <span class="chip medium">Medium</span>
+          <span class="finding-title">Sentiment table 48% × 2 can wrap</span>
+          <span class="loc">render.py:1299</span>
+        </div>
+        <div class="finding-body">
+          <p><code>.sentiment-table td { display:inline-block; width:48%; }</code> totals 96%. Any cell padding, border, or whitespace between cells pushes total over 100% and the second card wraps to a new line. Fine visually but the intent is a 2×2 grid, not a 1×4.</p>
+        </div>
+        <div class="finding-fix"><strong>Fix</strong>Set <code>width:47%</code> or use <code>box-sizing:border-box</code> plus <code>width:50%</code> — currently only the outer cell has box-sizing.</div>
+      </div>
+
+      <div class="finding medium">
+        <div class="finding-head">
+          <span class="chip medium">Medium</span>
+          <span class="finding-title">KCNA phrase table uses <code>table-layout:fixed</code> without column widths</span>
+          <span class="loc">render.py:1319</span>
+        </div>
+        <div class="finding-body">
+          <p><code>.kcna-dark table { table-layout:fixed }</code> with no explicit <code>&lt;col&gt;</code> or per-cell width causes columns to divide equally regardless of content — a short phrase gets the same width as a long one. Fine until a phrase like "irreversibly and permanently terminated" needs more room.</p>
+        </div>
+        <div class="finding-fix"><strong>Fix</strong>Set the count column to a fixed width in HTML (<code>width="60"</code>) so the phrase column absorbs remaining space.</div>
+      </div>
+
+      <div class="finding medium">
+        <div class="finding-head">
+          <span class="chip medium">Medium</span>
+          <span class="finding-title">Chapter divider letter-spacing:5px on 9px text</span>
+          <span class="loc">render.py:138</span>
+        </div>
+        <div class="finding-body">
+          <p>Extreme kerning at tiny size makes chapter labels harder to scan on phones. Mobile bumps font to 11px min but keeps the 5px letter-spacing — that's <em>proportionally</em> even more spread at the larger size.</p>
+        </div>
+        <div class="finding-fix"><strong>Fix</strong>Drop to <code>letter-spacing:3px</code> for the chapter divider; save 5px for the masthead eyebrow where it lands elegantly.</div>
+      </div>
+
+      <div class="finding medium">
+        <div class="finding-head">
+          <span class="chip medium">Medium</span>
+          <span class="finding-title">Market strip creates 6 stacked rows on mobile</span>
+          <span class="loc">render.py:1281 · 1350</span>
+        </div>
+        <div class="finding-body">
+          <p>Top mkt-table (KOSPI / Brent / KRW) and second row (BOK / CDS / GDP) both stack independently. That's six vertical rows of market data before the reader gets to Top Stories. On a 6-inch phone this is roughly two screen heights of numbers.</p>
+        </div>
+        <div class="finding-fix"><strong>Fix</strong>Keep 3-across on mobile with reduced font size (<code>font-size:14px, padding:8px 4px</code>). Numbers stay scannable and the section stays one screen tall.</div>
+      </div>
+
+      <div class="finding low">
+        <div class="finding-head">
+          <span class="chip low">Low</span>
+          <span class="finding-title">Duplicate rules in the mobile media query</span>
+          <span class="loc">render.py:1281/1352 · 1283/1347</span>
+        </div>
+        <div class="finding-body">
+          <p><code>.mkt-table td</code> and <code>.loc-grid td</code> each declared twice in the same block. Second declaration wins by source order, but the redundancy makes future edits fragile — an edit to the first block silently gets overridden.</p>
+        </div>
+        <div class="finding-fix"><strong>Fix</strong>Delete lines 1281 and 1283; keep the later declarations. Add a comment noting the deletion so future edits don't re-introduce them.</div>
+      </div>
+
+      <div class="finding low">
+        <div class="finding-head">
+          <span class="chip low">Low</span>
+          <span class="finding-title">41 uses of 10px, 8 uses of 9px in output</span>
+          <span class="loc">render.py (labels)</span>
+        </div>
+        <div class="finding-body">
+          <p>The mobile override bumps everything under 11px up to 11px, so legibility is fine. But the sheer volume of tiny-label declarations suggests the desktop design leans small — labels, eyebrows, "as of" timestamps, footnotes all sit at 9–10px, making the newsletter feel busier than it needs to.</p>
+        </div>
+        <div class="finding-fix"><strong>Fix</strong>Design pass: standardize on 11px minimum for all label text, 12px for meta/timestamps. Not a mobile bug, but the reason mobile needs so many overrides.</div>
+      </div>
+
+      <div class="finding low">
+        <div class="finding-head">
+          <span class="chip low">Low</span>
+          <span class="finding-title">RE: line at 13px next to a 19px H1</span>
+          <span class="loc">render.py:212</span>
+        </div>
+        <div class="finding-body">
+          <p>On mobile the H1 shrinks but the RE: line stays 13px. Hierarchy collapses — the two lines end up visually equal-weighted after the H1 fix.</p>
+        </div>
+        <div class="finding-fix"><strong>Fix</strong>Paired with the H1 fix above: set RE: line to <code>font-size:12px</code> on mobile so the type scale stays clean.</div>
+      </div>
+    </section>
+
+    <aside class="preview">
+      <div class="preview-lbl">Live mobile preview</div>
+      <div class="preview-meta">Sample digest rendered through <code>render.py</code>. Frame width = 390px (iPhone 14).</div>
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="phone-screen">
+          <iframe id="preview-frame" srcdoc="<!DOCTYPE html>
+<html lang=&quot;en&quot; xmlns=&quot;http://www.w3.org/1999/xhtml&quot;>
+<head>
+  <meta charset=&quot;utf-8&quot;>
+  <meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;>
+  <meta http-equiv=&quot;X-UA-Compatible&quot; content=&quot;IE=edge&quot;>
+  <title>Korea Daily Brief &amp;mdash; Monday, July 6, 2026</title>
+  <style type=&quot;text/css&quot;>
+    /* Reset */
+    body, table, td, div, p { margin:0; padding:0; }
+    img { border:0; display:block; }
+    /* Mobile responsive */
+    @media only screen and (max-width: 620px) {
+      .wrapper { width:100% !important; }
+      .sec, .footer { padding:16px 14px !important; }
+      /* Market indicator table — stack on mobile */
+      .mkt-table td { display:block !important; width:100% !important; padding:8px 14px !important; text-align:left !important; border-left:0 !important; border-right:0 !important; border-bottom:1px solid rgba(255,255,255,0.1) !important; }
+      /* BP Facility tracker — stack on mobile */
+      .loc-grid td { display:block !important; width:100% !important; padding:4px 0 !important; }
+      .loc-grid tr { display:block !important; }
+      /* BP notes — bump font size for readability on mobile */
+      .loc-grid div[style*=&quot;font-size:11px&quot;] { font-size:12px !important; }
+      /* Calendar watch tables — stack date beside text on narrow screens */
+      .cal-table td[width=&quot;50&quot;] { width:40px !important; padding:8px 6px 8px 0 !important; }
+      /* ROK Government grid — stack on mobile */
+      .gov-grid td { display:block !important; width:100% !important; padding:4px 0 !important; }
+      /* Calendar watch — reduce date font */
+      .cal-date { font-size:18px !important; }
+      /* Deal / business cards — tighter on mobile */
+      .deal-card { padding:10px !important; }
+      /* Deal breakdown table — stack on mobile so company/value/sector don't overflow */
+      .deal-breakdown td { display:block !important; width:100% !important; padding:2px 8px !important; font-size:11px !important; white-space:normal !important; }
+      .deal-breakdown tr { display:block !important; border-bottom:1px solid #E8EDF3 !important; padding:4px 0 !important; }
+      /* Sentiment tracker — 2x2 grid on mobile (no flexbox for Outlook) */
+      .sentiment-table td { display:inline-block !important; width:48% !important; box-sizing:border-box !important; padding:10px 4px !important; text-align:center !important; }
+      /* Tariff sector table — stack on mobile */
+      .tariff-sector td { display:block !important; width:100% !important; padding:3px 8px !important; white-space:normal !important; }
+      .tariff-sector tr { display:block !important; border-bottom:1px solid #F0E0E0 !important; padding:4px 0 !important; }
+      /* Typography */
+      h1 { font-size:19px !important; }
+      h2 { font-size:12px !important; }
+      h3 { font-size:14px !important; }
+      .key-stat-num { font-size:24px !important; }
+      img { max-width:100% !important; height:auto !important; }
+      /* Top story cards — reduce padding */
+      .story-card { padding:12px 10px !important; }
+      /* Tighter body text on mobile */
+      p, div { word-wrap:break-word !important; overflow-wrap:break-word !important; }
+      /* Quote cards in KCNA */
+      .kcna-quote { padding:8px 10px !important; }
+      /* KCNA — reduce side padding so nothing is clipped on mobile */
+      .kcna-dark td { padding-left:14px !important; padding-right:14px !important; }
+      .kcna-dark > div { padding:16px 14px !important; }
+      /* KCNA phrase table — prevent horizontal overflow */
+      .kcna-dark table { table-layout:fixed !important; }
+      .kcna-dark table td { white-space:normal !important; word-break:break-word !important; }
+      /* Stack Kim / Output volume / Tone shift cards vertically on phones */
+      .kcna-kv td { display:block !important; width:100% !important; padding-right:0 !important; padding-bottom:8px !important; }
+      .kcna-kv td[colspan] { display:block !important; }
+      /* KCNA senior official cards — stack vertically on mobile */
+      .kcna-dark div[style*=&quot;display:inline-block&quot;][style*=&quot;border-left:2px solid #5DADE2&quot;] { display:block !important; margin-right:0 !important; }
+      /* KCNA phrase bar viz — cap width on mobile */
+      .kcna-dark span[style*=&quot;height:3px&quot;] { max-width:40px !important; }
+      /* Scale up tiny fonts for mobile readability */
+      .mkt-table div { font-size:11px !important; }
+      .mkt-table div[style*=&quot;font-size:18px&quot;], .mkt-table div[style*=&quot;font-size:15px&quot;] { font-size:16px !important; }
+      /* Trade policy tracker — stack on narrow screens */
+      .trade-policy td { display:block !important; width:100% !important; padding:4px 8px !important; }
+      .trade-policy tr { display:block !important; border-bottom:1px solid #E8E8E8 !important; padding:6px 0 !important; }
+      /* === Mobile QoL: minimum font size for readability === */
+      body, td, div, p, span { font-size:14px !important; min-font-size:14px; -webkit-text-size-adjust:100%; }
+      /* Preserve intentionally small labels (badges, footnotes) but floor at 11px */
+      div[style*=&quot;font-size:9px&quot;], div[style*=&quot;font-size:10px&quot;],
+      span[style*=&quot;font-size:9px&quot;], span[style*=&quot;font-size:10px&quot;] { font-size:11px !important; }
+      /* === Mobile QoL: 44px minimum touch targets for links === */
+      a { min-height:44px; min-width:44px; display:inline-block; line-height:44px; }
+      /* Links inside paragraphs should stay inline but padded for tap */
+      p a, div a, td a { min-height:auto; min-width:auto; display:inline; padding:6px 0; }
+      /* === Mobile QoL: responsive images === */
+      img { max-width:100% !important; height:auto !important; }
+      /* === Mobile QoL: BP location grid single column === */
+      .loc-grid table { width:100% !important; }
+      .loc-grid td { display:block !important; width:100% !important; padding:6px 0 !important; }
+      .loc-grid tr { display:block !important; }
+      /* === Mobile QoL: market indicator cells stack vertically === */
+      .mkt-table { width:100% !important; }
+      .mkt-table tr { display:block !important; }
+      .mkt-table td { display:block !important; width:100% !important; padding:10px 14px !important; text-align:left !important; border-left:0 !important; border-right:0 !important; border-bottom:1px solid rgba(255,255,255,0.1) !important; }
+    }
+    /* Tablet breakpoint — tighten padding, keep grids side-by-side */
+    @media only screen and (min-width: 621px) and (max-width: 768px) {
+      .wrapper { width:100% !important; }
+      .sec, .footer { padding:14px 20px !important; }
+      h1 { font-size:21px !important; }
+      .deal-card { padding:12px !important; }
+      .mkt-table div[style*=&quot;font-size:18px&quot;], .mkt-table div[style*=&quot;font-size:15px&quot;] { font-size:16px !important; }
+    }
+    /* Dark mode support */
+    @media (prefers-color-scheme: dark) {
+      body { background:#121212 !important; }
+      .wrapper { background:#1a1a1a !important; }
+      .wrapper .sec { background:#222 !important; border-bottom-color:#333 !important; }
+      .wrapper h1, .wrapper h2, .wrapper h3 { color:#E0E0E0 !important; }
+      .wrapper p, .wrapper div, .wrapper td, .wrapper span { color:#CCC !important; }
+      .wrapper a { color:#5DADE2 !important; }
+      .wrapper .footer { background:#0F1A2E !important; }
+      .wrapper .story-card { background:#2a2a2a !important; border-color:#333 !important; }
+      .wrapper .kcna-dark { background:#1a2a1a !important; }
+      .wrapper .kcna-dark table { background:#1a2a1a !important; }
+      .wrapper .gov-grid div { background:#2a2a2a !important; }
+      .wrapper .loc-grid div { background:#2a2a2a !important; border-color:#555 !important; }
+      .wrapper .loc-grid div[style*=&quot;color:#1B2A4A&quot;] { color:#D0D0D0 !important; }
+      .wrapper .loc-grid div[style*=&quot;color:#555&quot;] { color:#AAA !important; }
+      .wrapper .loc-grid div[style*=&quot;color:#999&quot;] { color:#888 !important; }
+      .wrapper .sentiment-spotlight { background:#1a2a3a !important; border-left-color:#2980B9 !important; color:#CCC !important; }
+      .wrapper .sentiment-discourse { background:#3a2a1a !important; border-left-color:#E67E22 !important; color:#CCC !important; }
+      .wrapper .deal-card { background:#2a2a2a !important; border-color:#333 !important; }
+      .wrapper .mkt-table td { border-color:#333 !important; }
+    }
+  </style>
+  <!--[if mso]>
+  <style type=&quot;text/css&quot;>
+    table { border-collapse:collapse; }
+    .wrapper { width:680px; }
+  </style>
+  <![endif]-->
+</head>
+<body style=&quot;margin:0;padding:0;background:#F2F3F5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;&quot;>
+  <!--[if mso]><table width=&quot;680&quot; cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot; align=&quot;center&quot;><tr><td><![endif]-->
+  <div class=&quot;wrapper&quot; style=&quot;max-width:680px;width:100%;margin:0 auto;background:#FFFFFF;overflow:hidden;box-shadow:0 2px 20px rgba(0,0,0,0.08);&quot;>
+    
+    <a name=&quot;top&quot;></a>
+    <div bgcolor=&quot;#0D1B2A&quot; style=&quot;background-color:#0D1B2A;background:linear-gradient(135deg, #0D1B2A 0%, #1B2A4A 60%, #243B5C 100%);color:#fff;padding:20px 32px 16px;&quot; class=&quot;sec&quot;>
+      <table width=&quot;100%&quot; cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot;><tr>
+        <td style=&quot;vertical-align:top;&quot;>
+          <div style=&quot;font-size:10px;text-transform:uppercase;letter-spacing:3px;color:#C9A96E;font-family:Arial,sans-serif;margin-bottom:6px;&quot;>CSIS Korea Chair</div>
+          <h1 style=&quot;margin:0;font-size:26px;font-weight:700;font-family:Georgia,'Times New Roman',serif;color:#fff;letter-spacing:0.3px;&quot;>
+            Korea Daily Brief
+          </h1>
+          <div style=&quot;margin-top:8px;font-size:16px;font-weight:400;color:rgba(255,255,255,0.9);letter-spacing:0.3px;font-family:Georgia,serif;&quot;>Monday, July 6, 2026</div>
+        </td>
+        <td style=&quot;vertical-align:top;text-align:right;&quot;>
+          <div style=&quot;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,0.5);margin-bottom:4px;&quot;>10:20 AM ET</div>
+          <div style=&quot;font-size:10px;color:rgba(255,255,255,0.4);&quot;>231 words &amp;middot; 1 min read</div>
+        </td>
+      </tr></table>
+      <div style='margin-top:12px;padding-top:12px;border-top:1px solid rgba(201,169,110,0.3);font-size:13px;color:rgba(255,255,255,0.85);font-family:Georgia,serif;line-height:1.5;'><strong style='color:#C9A96E;font-size:11px;letter-spacing:1px;'>RE:</strong>&amp;nbsp; KF-21 airworthiness certified · NK denuclearization declared irreversibly terminated · JTBC receivership filing</div>
+    </div>
+    <div style=&quot;height:3px;background-color:#C9A96E;background:linear-gradient(90deg, #C9A96E 0%, #1B2A4A 100%);&quot;></div>
+    
+
+        <a name=&quot;markets&quot;></a>
+        <table class=&quot;mkt-table&quot; width=&quot;100%&quot; cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot; style=&quot;background:#1B2A4A;color:#fff;border-bottom:1px solid rgba(255,255,255,0.1);&quot;>
+          <tr>
+            <td width=&quot;33%&quot; align=&quot;center&quot; style=&quot;padding:10px 8px 12px;&quot;>
+              <div style=&quot;font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;&quot;>KOSPI</div>
+              <div style=&quot;font-size:18px;font-weight:700;&quot;>2,548.32</div>
+              <div style=&quot;font-size:11px;&quot;><span style=&quot;color:#C0392B;&quot;>&amp;#9660; -0.4%</span></div>
+              <div style='font-size:10px;opacity:0.5;margin-top:2px;'>as of Jun 17</div>
+            </td>
+            <td width=&quot;34%&quot; align=&quot;center&quot; style=&quot;padding:10px 8px 12px;border-left:1px solid rgba(255,255,255,0.15);border-right:1px solid rgba(255,255,255,0.15);&quot;>
+              <div style=&quot;font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;&quot;>Brent Crude</div>
+              <div style=&quot;font-size:18px;font-weight:700;&quot;>$68.15</div>
+              <div style=&quot;font-size:11px;&quot;><span style=&quot;color:#27AE60;&quot;>&amp;#9650; +0.3%</span></div>
+              <div style='font-size:10px;opacity:0.5;margin-top:2px;'>as of Jun 17</div>
+            </td>
+            <td width=&quot;33%&quot; align=&quot;center&quot; style=&quot;padding:10px 8px 12px;&quot;>
+              <div style=&quot;font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;&quot;>USD/KRW</div>
+              <div style=&quot;font-size:18px;font-weight:700;&quot;>1,378.50</div>
+              <div style=&quot;font-size:11px;&quot;><span style=&quot;color:#27AE60;&quot;>&amp;#9650; +0.1%</span></div>
+              <div style='font-size:10px;opacity:0.5;margin-top:2px;'>as of Jun 17</div>
+            </td>
+          </tr>
+        </table>
+        <table class=&quot;mkt-table&quot; width=&quot;100%&quot; cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot; style=&quot;background:#162340;color:#fff;border-bottom:1px solid rgba(255,255,255,0.08);&quot;>
+          <tr>
+            <td width=&quot;33%&quot; align=&quot;center&quot; style=&quot;padding:8px 8px 10px;&quot;>
+              <div style=&quot;font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;&quot;>BOK Rate</div>
+              <div style=&quot;font-size:15px;font-weight:700;&quot;>2.50%</div>
+              <div style=&quot;font-size:10px;opacity:0.6;&quot;></div>
+            </td>
+            <td width=&quot;34%&quot; align=&quot;center&quot; style=&quot;padding:8px 8px 10px;border-left:1px solid rgba(255,255,255,0.1);border-right:1px solid rgba(255,255,255,0.1);&quot;>
+              <div style=&quot;font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;&quot;>Korea 5Y CDS</div>
+              <div style=&quot;font-size:15px;font-weight:700;&quot;>— bps</div>
+              <div style=&quot;font-size:10px;&quot;><span style=&quot;color:#7F8C8D;&quot;>— flat</span></div>
+              
+            </td>
+            <td width=&quot;33%&quot; align=&quot;center&quot; style=&quot;padding:8px 8px 10px;&quot;>
+              <div style=&quot;font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;&quot;>GDP Est.</div>
+              <div style=&quot;font-size:15px;font-weight:700;&quot;>—</div>
+              <div style=&quot;font-size:10px;opacity:0.6;&quot;>BOK</div>
+            </td>
+          </tr>
+        </table>
+        
+
+        <div style=&quot;padding:20px 32px;border-bottom:1px solid #EBEBEB;&quot; class=&quot;sec&quot;>
+          <a name=&quot;top-stories&quot;></a><div style=&quot;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#1B2A4A;font-family:Arial,sans-serif;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid #1B2A4A;&quot;>Top Stories</div>
+          
+            <div class=&quot;story-card&quot; style=&quot;margin-bottom:14px;padding:14px 16px;background:#fff;border-radius:3px;border-left:4px solid #0D1B2A;box-shadow:0 1px 3px rgba(0,0,0,0.06);&quot;>
+              
+              <h3 style=&quot;margin:0 0 8px 0;font-size:16px;color:#0D1B2A;font-family:Georgia,serif;line-height:1.4;&quot;>
+                <a href=&quot;https://example.com/1&quot; style=&quot;color:#0D1B2A;text-decoration:none;&quot;>KF-21 fighter jet cleared for full airworthiness certification</a>
+              </h3>
+              <p style=&quot;margin:0 0 8px 0;font-size:13px;line-height:1.6;color:#444;&quot;>The Defense Acquisition Program Administration (DAPA) announced Thursday that KAI's KF-21 Boramae completed all flight-envelope testing and received full military airworthiness certification, clearing the path for Block 1 mass production beginning October. Poland and Indonesia — both prospective export customers — have observers embedded with the DAPA program office for the certification review.</p>
+              <p style='margin:0 0 6px 0;font-size:12px;line-height:1.5;color:#2980B9;'><strong style='color:#1B6A8A;'>So what:</strong> First operational deployment expected 1st ROKAF wing in Q3 2027; Indonesia stake dispute remains unresolved.</p>
+              
+              <div style=&quot;font-size:10px;color:#AAA;margin-top:6px;&quot;>Yonhap</div>
+            </div>
+            <div class=&quot;story-card&quot; style=&quot;margin-bottom:14px;padding:14px 16px;background:#fff;border-radius:3px;border-left:4px solid #0D1B2A;box-shadow:0 1px 3px rgba(0,0,0,0.06);&quot;>
+              
+              <h3 style=&quot;margin:0 0 8px 0;font-size:16px;color:#0D1B2A;font-family:Georgia,serif;line-height:1.4;&quot;>
+                <a href=&quot;https://example.com/2&quot; style=&quot;color:#0D1B2A;text-decoration:none;&quot;>DPRK declares denuclearization irreversibly terminated in KCNA commentary</a>
+              </h3>
+              <p style=&quot;margin:0 0 8px 0;font-size:13px;line-height:1.6;color:#444;&quot;>A KCNA political commentary released Wednesday declared any future denuclearization negotiations &amp;quot;irreversibly terminated,&amp;quot; describing the DPRK nuclear program as &amp;quot;permanently and eternally locked in.&amp;quot; The language echoes but exceeds prior formulations from October 2025.</p>
+              <p style='margin:0 0 6px 0;font-size:12px;line-height:1.5;color:#2980B9;'><strong style='color:#1B6A8A;'>So what:</strong> Signals hardening ahead of expected Kim-Xi meeting; complicates any US preconditions framework.</p>
+              
+              <div style=&quot;font-size:10px;color:#AAA;margin-top:6px;&quot;>KCNA Watch</div>
+            </div>
+        </div>
+        
+
+        <div style=&quot;padding:20px 32px;border-top:3px solid #C0392B;border-bottom:1px solid #EBEBEB;&quot; class=&quot;sec&quot;>
+          <a name=&quot;overnight&quot;></a><div style=&quot;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#C0392B;font-family:Arial,sans-serif;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid #C0392B;&quot;>&amp;#9889; Overnight Flash</div>
+          
+            <div style=&quot;margin-bottom:10px;padding-left:12px;border-left:3px solid #1B2A4A;&quot;>
+              <div style=&quot;font-size:11px;color:#C0392B;text-transform:uppercase;font-weight:600;&quot;> &amp;middot; Reuters</div>
+              <div style=&quot;font-size:13px;font-weight:600;color:#1B2A4A;&quot;>
+                <a href=&quot;https://example.com/3&quot; style=&quot;color:#1B2A4A;text-decoration:underline;&quot;>JTBC/JoongAng holding files for court receivership</a>
+              </div>
+              <div style=&quot;font-size:12px;line-height:1.4;color:#555;&quot;>JTBC parent JoongAng Holdings filed for court-supervised receivership Thursday, citing $1.2B in overdue debt tied to the K-content production build-out. Regulatory review begins Monday.</div>
+            </div>
+            <div style=&quot;margin-bottom:10px;padding-left:12px;border-left:3px solid #1B2A4A;&quot;>
+              <div style=&quot;font-size:11px;color:#C0392B;text-transform:uppercase;font-weight:600;&quot;> &amp;middot; Nikkei</div>
+              <div style=&quot;font-size:13px;font-weight:600;color:#1B2A4A;&quot;>
+                <a href=&quot;https://example.com/4&quot; style=&quot;color:#1B2A4A;text-decoration:underline;&quot;>ROK-Japan defense logistics pact talks resume</a>
+              </div>
+              <div style=&quot;font-size:12px;line-height:1.4;color:#555;&quot;>Seoul and Tokyo resumed working-level talks on a bilateral ACSA-style logistics support pact after a two-year suspension. The pact would allow Japanese vessels to refuel at ROK ports during joint exercises.</div>
+            </div>
+            <div style=&quot;margin-bottom:10px;padding-left:12px;border-left:3px solid #1B2A4A;&quot;>
+              <div style=&quot;font-size:11px;color:#C0392B;text-transform:uppercase;font-weight:600;&quot;> &amp;middot; KCNA</div>
+              <div style=&quot;font-size:13px;font-weight:600;color:#1B2A4A;&quot;>
+                <a href=&quot;https://example.com/5&quot; style=&quot;color:#1B2A4A;text-decoration:underline;&quot;>Kim Jong Un sends birthday greetings to Xi Jinping</a>
+              </div>
+              <div style=&quot;font-size:12px;line-height:1.4;color:#555;&quot;>KCNA reported Kim sent a personal message on Xi Jinping's birthday emphasizing &amp;quot;eternal friendship&amp;quot; — first such message since 2023.</div>
+            </div>
+        </div>
+        
+
+        <a name=&quot;kcna&quot;></a>
+        <div style=&quot;padding:0;border-bottom:1px solid #333;&quot; class=&quot;sec kcna-dark&quot;>
+          <table width=&quot;100%&quot; cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot; style=&quot;background:#0F1A12;&quot;>
+            <tr>
+              <td style=&quot;padding:12px 32px;&quot;>
+                <span style=&quot;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#C9A96E;font-family:Arial,sans-serif;&quot;>DPRK Official Statements</span>
+              </td>
+            </tr>
+          </table>
+          <div style=&quot;padding:16px 32px;background:#0F1A12;color:#E0E0E0;&quot;>
+            
+            
+            <div style=&quot;padding:8px 12px;background:rgba(255,255,255,0.04);border-radius:4px;margin-bottom:12px;&quot;>
+              <div style=&quot;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.6);margin-bottom:4px;&quot;>Kim Jong Un</div>
+              <div style=&quot;font-size:13px;color:#E0E0E0;font-weight:600;&quot;><span style=&quot;display:inline-block;width:8px;height:8px;border-radius:50%;background:#27AE60;margin-right:6px;vertical-align:middle;&quot;></span>Public appearance</div>
+            </div>
+            
+            
+            
+          </div>
+        </div>
+        
+
+        <div style=&quot;padding:20px 32px;border-bottom:1px solid #EBEBEB;&quot; class=&quot;sec&quot;>
+          <a name=&quot;satellite&quot;></a><div style=&quot;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#2C3E50;font-family:Arial,sans-serif;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid #2C3E50;&quot;>Satellite &amp;amp; Location Watch</div>
+          <div style=&quot;font-size:11px;color:#888;margin-top:6px;margin-bottom:12px;&quot;>4 monitored sites</div>
+          
+          <table width=&quot;100%&quot; cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot; class=&quot;loc-grid&quot;>
+            <tr>
+                <td style=&quot;width:50%;padding:4px;vertical-align:top;&quot;>
+                  <div style=&quot;background:#F5F5F5;border-radius:4px;padding:10px 12px;border-left:3px solid #7F8C8D;&quot;>
+                    <div style=&quot;font-size:12px;font-weight:700;color:#1B2A4A;margin-bottom:4px;&quot;></div>
+                    <div style=&quot;margin-bottom:2px;&quot;><span style=&quot;display:inline-block;padding:2px 8px;border-radius:3px;font-size:9px;font-weight:700;color:#fff;background:#7F8C8D;letter-spacing:0.5px;&quot;>Monitor</span></div>
+                    <div style=&quot;font-size:11px;line-height:1.4;color:#555;margin-top:4px;&quot;>Fuel fabrication line operational per 38 North Jun 10 imagery</div>
+                    
+                  </div>
+                </td>
+                <td style=&quot;width:50%;padding:4px;vertical-align:top;&quot;>
+                  <div style=&quot;background:#F5F5F5;border-radius:4px;padding:10px 12px;border-left:3px solid #7F8C8D;&quot;>
+                    <div style=&quot;font-size:12px;font-weight:700;color:#1B2A4A;margin-bottom:4px;&quot;></div>
+                    <div style=&quot;margin-bottom:2px;&quot;><span style=&quot;display:inline-block;padding:2px 8px;border-radius:3px;font-size:9px;font-weight:700;color:#fff;background:#7F8C8D;letter-spacing:0.5px;&quot;>Monitor</span></div>
+                    <div style=&quot;font-size:11px;line-height:1.4;color:#555;margin-top:4px;&quot;>No new tunnel activity observed since May</div>
+                    
+                  </div>
+                </td></tr><tr>
+                <td style=&quot;width:50%;padding:4px;vertical-align:top;&quot;>
+                  <div style=&quot;background:#F5F5F5;border-radius:4px;padding:10px 12px;border-left:3px solid #7F8C8D;&quot;>
+                    <div style=&quot;font-size:12px;font-weight:700;color:#1B2A4A;margin-bottom:4px;&quot;></div>
+                    <div style=&quot;margin-bottom:2px;&quot;><span style=&quot;display:inline-block;padding:2px 8px;border-radius:3px;font-size:9px;font-weight:700;color:#fff;background:#7F8C8D;letter-spacing:0.5px;&quot;>Monitor</span></div>
+                    <div style=&quot;font-size:11px;line-height:1.4;color:#555;margin-top:4px;&quot;>New gantry construction visible on Jun 12 imagery</div>
+                    
+                  </div>
+                </td>
+                <td style=&quot;width:50%;padding:4px;vertical-align:top;&quot;>
+                  <div style=&quot;background:#F5F5F5;border-radius:4px;padding:10px 12px;border-left:3px solid #7F8C8D;&quot;>
+                    <div style=&quot;font-size:12px;font-weight:700;color:#1B2A4A;margin-bottom:4px;&quot;></div>
+                    <div style=&quot;margin-bottom:2px;&quot;><span style=&quot;display:inline-block;padding:2px 8px;border-radius:3px;font-size:9px;font-weight:700;color:#fff;background:#7F8C8D;letter-spacing:0.5px;&quot;>Monitor</span></div>
+                    <div style=&quot;font-size:11px;line-height:1.4;color:#555;margin-top:4px;&quot;>SLBM sub still in dry dock</div>
+                    
+                  </div>
+                </td></tr>
+          </table>
+        </div>
+        
+
+        <div style=&quot;padding:20px 32px;border-bottom:1px solid #EBEBEB;&quot; class=&quot;sec&quot;>
+          <a name=&quot;business&quot;></a><div style=&quot;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#D4AC0D;font-family:Arial,sans-serif;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid #D4AC0D;&quot;>Business &amp;amp; Economy</div>
+          
+            <div style=&quot;margin-bottom:10px;padding-left:12px;border-left:3px solid #1B2A4A;&quot;>
+              <div style=&quot;font-size:11px;color:#888;text-transform:uppercase;&quot;> &amp;middot; Bloomberg</div>
+              <div style=&quot;font-size:13px;font-weight:600;color:#1B2A4A;&quot;>
+                <a href=&quot;https://example.com/8&quot; style=&quot;color:#1B2A4A;text-decoration:underline;&quot;>Samsung Electronics reports Q2 HBM3E orders</a>
+              </div>
+              <div style=&quot;font-size:12px;line-height:1.4;color:#555;&quot;></div>
+              
+            </div>
+        </div>
+        
+
+        <div style=&quot;padding:20px 32px;border-bottom:1px solid #EBEBEB;&quot; class=&quot;sec&quot;>
+          <a name=&quot;nea&quot;></a><div style=&quot;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#2C3E50;font-family:Arial,sans-serif;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid #2C3E50;&quot;>Northeast Asia Watch</div>
+          
+            <div style=&quot;margin-bottom:10px;padding-left:12px;border-left:3px solid #1B2A4A;&quot;>
+              <div style=&quot;font-size:11px;color:#888;text-transform:uppercase;&quot;>
+                 &amp;middot; Kyodo
+              </div>
+              <div style=&quot;font-size:13px;font-weight:600;color:#1B2A4A;&quot;>
+                <a href=&quot;https://example.com/9&quot; style=&quot;color:#1B2A4A;text-decoration:underline;&quot;>Japan PM addresses Diet on trilateral cooperation</a>
+              </div>
+              <div style=&quot;font-size:12px;line-height:1.4;color:#555;&quot;></div>
+            </div>
+        </div>
+        
+
+        <div style=&quot;padding:20px 32px;border-bottom:1px solid #EBEBEB;&quot; class=&quot;sec&quot;>
+          <a name=&quot;sentiment&quot;></a><div style=&quot;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#8E44AD;font-family:Arial,sans-serif;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid #8E44AD;&quot;>Public Sentiment Tracker</div>
+          <table width=&quot;100%&quot; cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot; class=&quot;sentiment-table&quot;>
+            <tr>
+              
+            <td width=&quot;25%&quot; align=&quot;center&quot; style=&quot;padding:8px 6px;&quot;>
+              <div style=&quot;font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;&quot;>Presidential Approval</div>
+              <div style=&quot;font-size:16px;font-weight:700;&quot;>57% <span style=&quot;color:#C0392B;&quot;>&amp;#9660;</span></div>
+              <div style=&quot;font-size:10px;opacity:0.5;&quot;>Gallup Korea</div>
+              <div style=&quot;font-size:10px;opacity:0.5;&quot;>June 9-11, 2026</div>
+            </td>
+              
+            <td width=&quot;25%&quot; align=&quot;center&quot; style=&quot;padding:8px 6px;&quot;>
+              <div style=&quot;font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;&quot;>Ruling (더불어민주당)</div>
+              <div style=&quot;font-size:16px;font-weight:700;&quot;>41% <span style=&quot;color:#C0392B;&quot;>&amp;#9660;</span></div>
+              <div style=&quot;font-size:10px;opacity:0.5;&quot;>Gallup Korea</div>
+              <div style=&quot;font-size:10px;opacity:0.5;&quot;>June 9-11, 2026</div>
+            </td>
+              
+            <td width=&quot;25%&quot; align=&quot;center&quot; style=&quot;padding:8px 6px;&quot;>
+              <div style=&quot;font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;&quot;>Opposition (국민의힘)</div>
+              <div style=&quot;font-size:16px;font-weight:700;&quot;>29% <span style=&quot;color:#27AE60;&quot;>&amp;#9650;</span></div>
+              <div style=&quot;font-size:10px;opacity:0.5;&quot;>Gallup Korea</div>
+              <div style=&quot;font-size:10px;opacity:0.5;&quot;>June 9-11, 2026</div>
+            </td>
+              
+            <td width=&quot;25%&quot; align=&quot;center&quot; style=&quot;padding:8px 6px;&quot;>
+              <div style=&quot;font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;&quot;>Independents (무당층)</div>
+              <div style=&quot;font-size:16px;font-weight:700;&quot;>21% <span style=&quot;color:#C0392B;&quot;>&amp;#9660;</span></div>
+              <div style=&quot;font-size:10px;opacity:0.5;&quot;>Gallup Korea</div>
+              <div style=&quot;font-size:10px;opacity:0.5;&quot;>June 9-11, 2026</div>
+            </td>
+            </tr>
+          </table>
+          
+          
+            <div class=&quot;sentiment-spotlight&quot; style=&quot;margin-top:10px;padding:8px 12px;background:#EBF5FB;border-radius:4px;border-left:3px solid #2980B9;font-size:11px;color:#444;line-height:1.5;&quot;>
+              <strong style=&quot;color:#2980B9;&quot;>Gallup Korea Spotlight</strong>
+              <span style=&quot;font-size:9px;opacity:0.5;margin-left:6px;&quot;>June 12, 2026</span><br>
+              <span style=&quot;font-weight:600;&quot;>:</span> 
+            </div>
+          
+        </div>
+        
+
+        <div style=&quot;padding:20px 32px;border-bottom:1px solid #EBEBEB;&quot; class=&quot;sec&quot;>
+          <a name=&quot;wire&quot;></a><div style=&quot;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#7F8C8D;font-family:Arial,sans-serif;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid #7F8C8D;&quot;>The Wire</div>
+          
+            <div style=&quot;margin-bottom:10px;padding-left:12px;border-left:3px solid #1B2A4A;&quot;>
+              <div style=&quot;font-size:11px;color:#888;text-transform:uppercase;&quot;> &amp;middot; CSIS</div>
+              <div style=&quot;font-size:13px;font-weight:600;color:#1B2A4A;&quot;>
+                <a href=&quot;https://example.com/6&quot; style=&quot;color:#1B2A4A;text-decoration:underline;&quot;>CSIS releases briefing on ROK export controls</a>
+              </div>
+              <div style=&quot;font-size:12px;line-height:1.4;color:#555;&quot;></div>
+              
+            </div>
+            <div style=&quot;margin-bottom:10px;padding-left:12px;border-left:3px solid #1B2A4A;&quot;>
+              <div style=&quot;font-size:11px;color:#888;text-transform:uppercase;&quot;> &amp;middot; 38 North</div>
+              <div style=&quot;font-size:13px;font-weight:600;color:#1B2A4A;&quot;>
+                <a href=&quot;https://example.com/7&quot; style=&quot;color:#1B2A4A;text-decoration:underline;&quot;>38 North satellite analysis of Sohae launch pad</a>
+              </div>
+              <div style=&quot;font-size:12px;line-height:1.4;color:#555;&quot;></div>
+              
+            </div>
+        </div>
+        
+
+    <div style=&quot;padding:20px 32px;background:#1B2A4A;text-align:center;&quot; class=&quot;sec footer&quot;>
+      
+      <div style=&quot;font-size:9px;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,0.45);font-family:Arial,sans-serif;line-height:2;&quot;>
+        CSIS Korea Chair &amp;nbsp;&amp;middot;&amp;nbsp; Korea Daily Brief &amp;nbsp;&amp;middot;&amp;nbsp; Generated 10:20 AM ET
+      </div>
+      <a href=&quot;#top&quot; style=&quot;font-size:10px;color:rgba(255,255,255,0.4);text-decoration:none;letter-spacing:1px;&quot;>&amp;#8593; Back to top</a>
+    </div>
+    
+  </div>
+  <!--[if mso]></td></tr></table><![endif]-->
+</body>
+</html>" title="Newsletter mobile preview"></iframe>
+        </div>
+      </div>
+      <div class="phone-toolbar">
+        <button class="on" data-w="390" onclick="setWidth(390, this)">iPhone 14 (390)</button>
+        <button data-w="360" onclick="setWidth(360, this)">Android (360)</button>
+        <button data-w="320" onclick="setWidth(320, this)">iPhone SE (320)</button>
+      </div>
+    </aside>
+  </div>
+
+  <footer>
+    <p>Audit method: rendered a synthetic digest through the live <code>render.py</code> pipeline; inspected the output HTML for fixed widths, small type, missing overflow safety, and cross-referenced against the mobile media query starting at <code>render.py:1277</code>.</p>
+    <p>Priority order: address the two Critical findings first (they misbehave with any content), then the High ones (visible but content-dependent), then Medium in a design pass alongside the Q4 new-section work.</p>
+  </footer>
+</div>
+
+<script>
+  const frame = document.getElementById('preview-frame');
+  const phone = document.querySelector('.phone');
+  function setWidth(w, btn) {
+    document.querySelectorAll('.phone-toolbar button').forEach(b => b.classList.remove('on'));
+    btn.classList.add('on');
+    // Adjust phone screen width by scaling the container
+    phone.style.maxWidth = (w + 20) + 'px';
+  }
+  function toggleTheme() {
+    const root = document.documentElement;
+    const current = root.getAttribute('data-theme');
+    const next = current === 'dark' ? 'light' : (current === 'light' ? 'dark' : (matchMedia('(prefers-color-scheme: dark)').matches ? 'light' : 'dark'));
+    root.setAttribute('data-theme', next);
+  }
+</script>
