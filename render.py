@@ -709,7 +709,15 @@ def render(digest: dict) -> str:
     if deal_list or trade_policy or investment_pkg or tariff_tracker:
         header_html = ""
 
-        # Tariff dashboard card
+        # ── Trade dashboard strip — the section's three key numbers in one
+        # row (tariff rate / investment fulfilled / next trigger), followed
+        # by compact detail tables. Replaces the old stacked cards.
+        dash_cells = []
+        sector_table = ""
+        s122_line = ""
+        meta_line = ""
+        deals_breakdown = ""
+
         if tariff_tracker and tariff_tracker.get("headline_rate"):
             h_rate = _esc(str(tariff_tracker.get("headline_rate", "")))
             h_status = tariff_tracker.get("headline_status", "ACTIVE")
@@ -719,13 +727,16 @@ def render(digest: dict) -> str:
             h_note = _esc(str(tariff_tracker.get("headline_note", "")))
             s122 = tariff_tracker.get("section_122_surcharge")
             last_change = _esc(str(tariff_tracker.get("last_change", "")))
-            next_trigger = _esc(str(tariff_tracker.get("next_trigger", ""))) if tariff_tracker.get("next_trigger") else ""
 
             _tariff_status_colors = {"ACTIVE": TAEGUK_RED, "PAUSED": "#7F8C8D", "NEGOTIATING": TAEGUK_BLUE, "REDUCED": UP_GREEN}
             h_color = _tariff_status_colors.get(h_status, TAEGUK_RED)
-            h_badge = f'<span style="display:inline-block;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:700;color:#fff;background:{h_color};letter-spacing:0.5px;vertical-align:middle;margin-left:8px;">{_esc(h_status)}</span>'
+            dash_cells.append((
+                "US Tariff on ROK",
+                f'<span style="font-family:{MONO};font-size:24px;font-weight:700;color:{TAEGUK_RED};">{h_rate}</span>',
+                f'<span style="font-family:{MONO};font-size:11px;font-weight:700;color:{h_color};">{_esc(h_status)}</span>',
+            ))
 
-            # Sector rate rows
+            # Sector rate rows — compact table under the strip
             sector_rows = ""
             for sr in (tariff_tracker.get("sector_rates") or []):
                 sr_sector = _esc(sr.get("sector", ""))
@@ -737,38 +748,38 @@ def render(digest: dict) -> str:
                 sr_color = _tariff_status_colors.get(sr_st, TAEGUK_RED)
                 sr_note = _esc(sr.get("note", ""))
                 sector_rows += f"""
-                <tr style="border-bottom:1px solid #F0E0E0;">
+                <tr style="border-bottom:1px solid #EDEFF2;">
                   <td style="padding:4px 6px 4px 0;font-size:11px;font-weight:600;color:{INK};">{sr_sector}</td>
                   <td style="padding:4px 6px;font-family:{MONO};font-size:13px;font-weight:700;color:{sr_color};text-align:center;white-space:nowrap;">{sr_rate}</td>
                   <td style="padding:4px 6px;font-size:10px;color:#888;text-transform:uppercase;white-space:nowrap;">{sr_auth}</td>
                   <td style="padding:4px 0 4px 6px;font-size:11px;color:#666;">{sr_note}</td>
                 </tr>"""
+            if sector_rows.strip():
+                sector_table = f"""
+                <div style="margin-top:12px;">
+                  <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#78828F;font-weight:600;margin-bottom:4px;">Sector Rates</div>
+                  <table class="tariff-sector" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #EDEFF2;">{sector_rows}
+                  </table>
+                </div>"""
 
-            s122_line = f'<div style="margin-top:6px;font-size:11px;color:{TAEGUK_RED};font-weight:600;">+ Section 122 global surcharge: {_esc(str(s122))}</div>' if s122 else ""
-            next_line = f'<div style="margin-top:4px;font-size:11px;color:{TAEGUK_BLUE};">Next trigger: {next_trigger}</div>' if next_trigger else ""
+            if s122:
+                s122_line = f'<div style="margin-top:8px;font-size:11px;color:{TAEGUK_RED};font-weight:600;">+ Section 122 global surcharge: {_esc(str(s122))}</div>'
+            note_bits = " &middot; ".join(b for b in (h_note, last_change) if b)
+            if note_bits:
+                meta_line = f'<div style="margin-top:4px;font-size:11px;color:#78828F;line-height:1.5;">{note_bits}</div>'
 
-            header_html += f"""
-            <div style="margin-bottom:16px;padding:12px 14px;background:#FBF0F1;border-radius:4px;border:1px solid #F0D5D8;">
-              <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:{TAEGUK_RED};font-weight:600;margin-bottom:6px;">US Tariff Rate on South Korea</div>
-              <div style="margin-bottom:6px;">
-                <span style="font-family:{MONO};font-size:26px;font-weight:700;color:{TAEGUK_RED};">{h_rate}</span>
-                {h_badge}
-              </div>
-              <div style="font-size:11px;color:#555;line-height:1.4;margin-bottom:8px;">{h_note}</div>
-              {s122_line}
-              {'<table class="tariff-sector" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:8px;border-top:1px solid #F0E0E0;">' + sector_rows + '</table>' if sector_rows.strip() else ''}
-              <div style="margin-top:8px;font-size:10px;color:#999;">{last_change}</div>
-              {next_line}
-            </div>"""
-
-        # Investment package progress bar + deal breakdown
         if investment_pkg and investment_pkg.get("total_pledged"):
             pct = investment_pkg.get("pct_fulfilled", 0)
-            bar_width = max(2, min(pct, 100))
+            announced = _esc(str(investment_pkg.get("announced_to_date", "")))
+            pledged = _esc(str(investment_pkg.get("total_pledged", "")))
+            dash_cells.append((
+                "Investment Fulfilled",
+                f'<span style="font-family:{MONO};font-size:24px;font-weight:700;color:{TAEGUK_BLUE};">{pct}%</span>',
+                f'{announced} of {pledged}',
+            ))
 
-            # Build deal breakdown list
+            # Deal breakdown — kept as a compact table
             known_deals = investment_pkg.get("known_deals") or []
-            deals_breakdown = ""
             if known_deals:
                 deal_rows = ""
                 for kd in known_deals:
@@ -782,26 +793,43 @@ def render(digest: dict) -> str:
                       <td style="padding:4px 0 4px 6px;font-size:10px;color:#888;">{sect}</td>
                     </tr>"""
                 deals_breakdown = f"""
-                <div style="margin-top:10px;">
-                  <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#888;font-weight:600;margin-bottom:4px;">Deal Breakdown</div>
+                <div style="margin-top:12px;">
+                  <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#78828F;font-weight:600;margin-bottom:4px;">Investment Deal Breakdown ({_esc(str(investment_pkg.get("latest_update", "")))})</div>
                   <table width="100%" cellpadding="0" cellspacing="0" border="0" class="deal-breakdown">
                     {deal_rows}
                   </table>
                 </div>"""
 
+        next_trigger = (_esc(str(tariff_tracker.get("next_trigger", "")))
+                        if tariff_tracker and tariff_tracker.get("next_trigger") else "")
+        if next_trigger:
+            dash_cells.append((
+                "Next Trigger",
+                f'<span style="font-family:{MONO};font-size:12px;font-weight:700;color:{INK};line-height:1.45;display:inline-block;padding-top:5px;">{next_trigger}</span>',
+                "",
+            ))
+
+        if dash_cells:
+            cell_width = f"{100 // len(dash_cells)}%"
+            cells_html = ""
+            for i, (label, value, sub) in enumerate(dash_cells):
+                border = "border-left:1px solid #E2E6EC;" if i else ""
+                cells_html += f"""
+                <td width="{cell_width}" align="center" style="padding:12px 10px 13px;vertical-align:top;{border}">
+                  <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#78828F;margin-bottom:4px;">{label}</div>
+                  <div>{value}</div>
+                  {"<div style='font-size:11px;color:#78828F;margin-top:3px;'>" + sub + "</div>" if sub else ""}
+                </td>"""
             header_html += f"""
-            <div style="margin-bottom:16px;padding:12px 14px;background:#F0F5FB;border-radius:4px;border:1px solid #D5E2F0;">
-              <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:{TAEGUK_BLUE};font-weight:600;margin-bottom:6px;">ROK-US Investment Commitment</div>
-              <div style="margin-bottom:4px;">
-                <span style="font-family:{MONO};font-size:22px;font-weight:700;color:{INK};">{_esc(str(investment_pkg.get("announced_to_date", "")))}</span>
-                <span style="font-size:13px;color:#888;"> of {_esc(str(investment_pkg.get("total_pledged", "")))} pledged</span>
-              </div>
-              <div style="background:#E0E0E0;border-radius:4px;height:8px;overflow:hidden;">
-                <div style="background:{TAEGUK_BLUE};width:{bar_width}%;height:100%;border-radius:4px;"></div>
-              </div>
-              <div style="font-family:{MONO};font-size:11px;color:#888;margin-top:4px;">{pct}% fulfilled &middot; {_esc(str(investment_pkg.get("latest_update", "")))}</div>
-              {deals_breakdown}
-            </div>"""
+            <table class="trade-dash" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F5F7FA;border:1px solid #E2E6EC;border-radius:4px;">
+              <tr>{cells_html}
+              </tr>
+            </table>
+            {s122_line}
+            {meta_line}
+            {sector_table}
+            {deals_breakdown}
+            <div style="margin-bottom:16px;"></div>"""
 
         # US Trade Policy Tracker (Section 301, USTR, Commerce Dept)
         if trade_policy:
@@ -1305,6 +1333,10 @@ def render(digest: dict) -> str:
       .deal-breakdown tr {{ display:block !important; border-bottom:1px solid #E8EDF3 !important; padding:4px 0 !important; }}
       /* (A7) Sentiment 2x2 — 47% leaves room for padding, no wrap */
       .sentiment-table td {{ display:inline-block !important; width:47% !important; box-sizing:border-box !important; padding:10px 4px !important; text-align:center !important; }}
+      /* Trade dashboard strip — stays 3-across like the market strip */
+      .trade-dash td {{ padding:9px 4px 10px !important; }}
+      .trade-dash span[style*="font-size:24px"] {{ font-size:18px !important; }}
+      .trade-dash span[style*="font-size:12px"] {{ font-size:11px !important; }}
       /* Tariff sector + trade policy tables — stack */
       .tariff-sector td, .trade-policy td {{ display:block !important; width:100% !important; padding:3px 8px !important; white-space:normal !important; }}
       .tariff-sector tr {{ display:block !important; border-bottom:1px solid #F0E0E0 !important; padding:4px 0 !important; }}
