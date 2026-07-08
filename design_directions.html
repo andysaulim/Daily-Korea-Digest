@@ -1,0 +1,324 @@
+<title>Korea Daily Brief — Three Design Directions</title>
+<style>
+  :root {
+    --ground: #FBFAF7;
+    --ink: #17202A;
+    --meta: #6B7280;
+    --hair: #E7E3DA;
+    --accent: #1B2A4A;
+    --gold: #C9A96E;
+    --card: #FFFFFF;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground: #0E1218; --ink: #ECEBE5; --meta: #9AA1AA;
+      --hair: #262B33; --accent: #C9A96E; --gold: #C9A96E; --card: #171C24;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #0E1218; --ink: #ECEBE5; --meta: #9AA1AA;
+    --hair: #262B33; --accent: #C9A96E; --gold: #C9A96E; --card: #171C24;
+  }
+  :root[data-theme="light"] {
+    --ground: #FBFAF7; --ink: #17202A; --meta: #6B7280;
+    --hair: #E7E3DA; --accent: #1B2A4A; --gold: #C9A96E; --card: #FFFFFF;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--ground); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
+    font-size: 16px; line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1420px; margin: 0 auto; padding: 36px 28px 80px; }
+  header.top {
+    border-bottom: 1px solid var(--hair); padding-bottom: 24px; margin-bottom: 12px;
+    display: flex; justify-content: space-between; align-items: baseline; gap: 20px; flex-wrap: wrap;
+  }
+  .eyebrow {
+    font-family: Georgia, serif; font-size: 11px; letter-spacing: 2.5px;
+    text-transform: uppercase; color: var(--gold); font-weight: 700; margin-bottom: 6px;
+  }
+  h1 {
+    font-family: Georgia, serif; font-size: 30px; font-weight: 700;
+    margin: 0 0 4px; letter-spacing: -0.4px; text-wrap: balance;
+  }
+  .sub { color: var(--meta); font-size: 14px; max-width: 62ch; }
+  .theme-toggle {
+    background: var(--card); color: var(--ink); border: 1px solid var(--hair);
+    padding: 6px 12px; border-radius: 4px; font: inherit; font-size: 12px; cursor: pointer;
+  }
+  .note {
+    font-size: 13px; color: var(--meta); margin: 16px 0 32px; max-width: 78ch; line-height: 1.6;
+  }
+  .grid {
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; align-items: start;
+  }
+  @media (max-width: 1180px) { .grid { grid-template-columns: 1fr; max-width: 560px; margin: 0 auto; } }
+  .direction { min-width: 0; }
+  .d-head { margin-bottom: 14px; }
+  .d-tag {
+    display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+    text-transform: uppercase; padding: 3px 9px; border-radius: 3px; margin-bottom: 8px;
+  }
+  .d-a .d-tag { background: #E5EAF2; color: #1B2A4A; }
+  .d-b .d-tag { background: #EFE9DA; color: #6B5518; }
+  .d-c .d-tag { background: #14211A; color: #58D68D; }
+  :root[data-theme="dark"] .d-a .d-tag { background: #1E2531; color: #9FB4D8; }
+  :root[data-theme="dark"] .d-b .d-tag { background: #2A2416; color: #D8C08A; }
+  .d-name { font-family: Georgia, serif; font-size: 20px; font-weight: 700; margin: 0 0 4px; }
+  .d-thesis { font-size: 13px; color: var(--meta); line-height: 1.5; min-height: 60px; }
+  .frame {
+    border: 1px solid var(--hair); border-radius: 10px; overflow: hidden;
+    box-shadow: 0 6px 28px -10px rgba(0,0,0,0.25); background: #fff;
+  }
+  .d-notes { margin-top: 14px; font-size: 13px; line-height: 1.55; }
+  .d-notes dt { font-weight: 700; font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--meta); margin-top: 10px; }
+  .d-notes dd { margin: 3px 0 0; color: var(--ink); }
+  .verdict {
+    margin-top: 48px; padding: 24px 28px; background: var(--card);
+    border: 1px solid var(--hair); border-left: 3px solid var(--gold); border-radius: 6px;
+  }
+  .verdict h2 { font-family: Georgia, serif; font-size: 18px; margin: 0 0 10px; }
+  .verdict p { margin: 0 0 10px; font-size: 14px; line-height: 1.6; }
+  .verdict p:last-child { margin: 0; }
+
+  /* ============ Direction frames use email-safe idioms only:
+     tables, inline-ish utility classes, Georgia/Arial/Courier,
+     no grid/flex inside frames, fixed 100% width tables ============ */
+  .frame table { border-collapse: collapse; width: 100%; }
+  .frame td { vertical-align: top; }
+
+  /* —— A. Refined editorial —— */
+  .fa-mast { background: #1B2A4A; padding: 22px 26px 18px; }
+  .fa-kicker { font-family: Arial, sans-serif; font-size: 10px; letter-spacing: 3px; color: #C9A96E; text-transform: uppercase; margin-bottom: 7px; }
+  .fa-title { font-family: Georgia, serif; font-size: 25px; font-weight: 700; color: #fff; letter-spacing: 0.2px; }
+  .fa-date { font-family: Georgia, serif; font-size: 14px; color: rgba(255,255,255,0.85); margin-top: 6px; }
+  .fa-re { border-top: 1px solid rgba(201,169,110,0.35); margin-top: 14px; padding-top: 12px; font-family: Georgia, serif; font-size: 13px; color: rgba(255,255,255,0.9); line-height: 1.5; }
+  .fa-re b { color: #C9A96E; font-size: 10px; letter-spacing: 1.5px; font-family: Arial, sans-serif; }
+  .fa-mkt { background: #142138; }
+  .fa-mkt td { padding: 10px 8px 12px; text-align: center; border-left: 1px solid rgba(255,255,255,0.08); }
+  .fa-mkt td:first-child { border-left: 0; }
+  .fa-mkt .l { font-family: Arial, sans-serif; font-size: 10px; letter-spacing: 1px; color: rgba(255,255,255,0.55); text-transform: uppercase; }
+  .fa-mkt .v { font-family: Georgia, serif; font-size: 17px; font-weight: 700; color: #fff; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .fa-mkt .c { font-family: Arial, sans-serif; font-size: 11px; margin-top: 2px; }
+  .up { color: #58D68D; } .dn { color: #EC7063; }
+  .fa-sec { padding: 20px 26px 6px; }
+  .fa-label { font-family: Arial, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 1.8px; text-transform: uppercase; color: #1B2A4A; padding-bottom: 6px; border-bottom: 2px solid #1B2A4A; display: inline-block; }
+  .fa-story { padding: 14px 26px 18px; border-bottom: 1px solid #ECECEC; }
+  .fa-cat { font-family: Arial, sans-serif; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: #8A94A6; margin-bottom: 5px; }
+  .fa-h { font-family: Georgia, serif; font-size: 17px; font-weight: 700; color: #17202A; line-height: 1.3; margin-bottom: 7px; }
+  .fa-b { font-family: Georgia, serif; font-size: 13.5px; color: #3D4451; line-height: 1.55; margin-bottom: 8px; }
+  .fa-so { background: #F4F1EA00; border-left: 2px solid #C9A96E; padding: 6px 12px; font-family: Arial, sans-serif; font-size: 12px; color: #55524A; line-height: 1.5; }
+  .fa-so b { font-size: 9.5px; letter-spacing: 1.2px; text-transform: uppercase; color: #A0824E; }
+  .fa-wire { padding: 12px 26px 20px; }
+  .fa-wire-item { padding: 9px 0; border-bottom: 1px solid #F0F0F0; font-family: Georgia, serif; font-size: 13.5px; line-height: 1.45; }
+  .fa-wire-item .src { font-family: Arial, sans-serif; font-size: 10px; letter-spacing: 0.5px; text-transform: uppercase; color: #8A94A6; }
+
+  /* —— B. Briefing book —— */
+  .fb { background: #F6F2E8; }
+  .fb-bar { background: #2C2A24; text-align: center; padding: 7px 10px; font-family: Arial, sans-serif; font-size: 9.5px; letter-spacing: 3px; color: #D8C08A; text-transform: uppercase; }
+  .fb-mast { padding: 26px 30px 20px; text-align: center; border-bottom: 3px double #2C2A24; margin: 0 22px; }
+  .fb-kicker { font-family: Georgia, serif; font-size: 11px; letter-spacing: 4px; color: #6B5518; text-transform: uppercase; margin-bottom: 10px; }
+  .fb-title { font-family: Georgia, serif; font-size: 27px; font-weight: 700; color: #1F1D18; letter-spacing: 0.5px; }
+  .fb-date { font-family: Georgia, serif; font-style: italic; font-size: 13px; color: #5A554A; margin-top: 8px; }
+  .fb-re { margin: 14px 22px 0; padding: 12px 16px; background: #EFE9DA; font-family: Georgia, serif; font-size: 13px; color: #3A362C; line-height: 1.55; }
+  .fb-re b { font-style: normal; font-size: 10px; letter-spacing: 2px; color: #6B5518; font-family: Georgia, serif; }
+  .fb-mkt { margin: 16px 22px 0; border-top: 1px solid #C9C2AF; border-bottom: 1px solid #C9C2AF; }
+  .fb-mkt td { padding: 10px 6px; text-align: center; }
+  .fb-mkt .l { font-family: Georgia, serif; font-size: 10px; letter-spacing: 1.5px; color: #77705E; text-transform: uppercase; }
+  .fb-mkt .v { font-family: Georgia, serif; font-size: 16px; font-weight: 700; color: #1F1D18; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .fb-mkt .c { font-family: Georgia, serif; font-size: 11px; margin-top: 1px; }
+  .fb-mkt .up { color: #3E6B45; } .fb-mkt .dn { color: #93372B; }
+  .fb-sec { margin: 22px 22px 0; text-align: center; }
+  .fb-label { font-family: Georgia, serif; font-size: 12px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: #1F1D18; }
+  .fb-rule { border: 0; border-top: 1px solid #C9C2AF; width: 60px; margin: 8px auto 0; }
+  .fb-story { padding: 16px 30px 4px; }
+  .fb-num { font-family: Georgia, serif; font-size: 13px; font-weight: 700; color: #6B5518; }
+  .fb-h { font-family: Georgia, serif; font-size: 17.5px; font-weight: 700; color: #1F1D18; line-height: 1.32; margin: 4px 0 8px; }
+  .fb-b { font-family: Georgia, serif; font-size: 13.5px; color: #3A362C; line-height: 1.6; margin-bottom: 8px; }
+  .fb-so { font-family: Georgia, serif; font-style: italic; font-size: 12.5px; color: #5A554A; line-height: 1.5; padding-bottom: 14px; border-bottom: 1px solid #DED8C6; }
+  .fb-so b { font-style: normal; font-size: 10px; letter-spacing: 1.5px; color: #6B5518; }
+  .fb-wire { padding: 12px 30px 24px; }
+  .fb-wire-item { padding: 8px 0; border-bottom: 1px dotted #C9C2AF; font-family: Georgia, serif; font-size: 13px; line-height: 1.5; color: #3A362C; }
+  .fb-wire-item .src { font-size: 10.5px; letter-spacing: 1px; text-transform: uppercase; color: #77705E; }
+
+  /* —— C. Data terminal —— */
+  .fc { background: #0B0E14; }
+  .fc-mast { padding: 20px 24px 16px; border-bottom: 1px solid #1C2330; }
+  .fc-kicker { font-family: "Courier New", Courier, monospace; font-size: 10px; letter-spacing: 2px; color: #E8A33D; text-transform: uppercase; margin-bottom: 8px; }
+  .fc-title { font-family: Arial, sans-serif; font-size: 22px; font-weight: 700; color: #F2F4F8; letter-spacing: 0.5px; }
+  .fc-date { font-family: "Courier New", Courier, monospace; font-size: 12px; color: #7C8797; margin-top: 6px; }
+  .fc-re { margin-top: 12px; padding: 10px 12px; background: #10141D; border-left: 3px solid #E8A33D; font-family: Arial, sans-serif; font-size: 12.5px; color: #C7CEDA; line-height: 1.5; }
+  .fc-re b { color: #E8A33D; font-family: "Courier New", monospace; font-size: 10px; letter-spacing: 1px; }
+  .fc-mkt td { padding: 10px 8px; text-align: center; border-left: 1px solid #1C2330; background: #10141D; }
+  .fc-mkt td:first-child { border-left: 0; }
+  .fc-mkt .l { font-family: "Courier New", monospace; font-size: 10px; letter-spacing: 1px; color: #7C8797; text-transform: uppercase; }
+  .fc-mkt .v { font-family: "Courier New", monospace; font-size: 16px; font-weight: 700; color: #F2F4F8; margin-top: 3px; }
+  .fc-mkt .c { font-family: "Courier New", monospace; font-size: 11px; margin-top: 2px; }
+  .fc-mkt .up { color: #58D68D; } .fc-mkt .dn { color: #EC7063; }
+  .fc-sec { padding: 18px 24px 4px; }
+  .fc-label { font-family: "Courier New", monospace; font-size: 11px; font-weight: 700; letter-spacing: 2px; color: #E8A33D; text-transform: uppercase; }
+  .fc-label::before { content: "// "; color: #3D485A; }
+  .fc-story { padding: 12px 24px 16px; border-bottom: 1px solid #1C2330; }
+  .fc-cat { font-family: "Courier New", monospace; font-size: 10px; letter-spacing: 1px; color: #58A6FF; text-transform: uppercase; margin-bottom: 5px; }
+  .fc-h { font-family: Arial, sans-serif; font-size: 16px; font-weight: 700; color: #F2F4F8; line-height: 1.35; margin-bottom: 7px; }
+  .fc-b { font-family: Arial, sans-serif; font-size: 13px; color: #A8B2C0; line-height: 1.55; margin-bottom: 8px; }
+  .fc-so { background: #10141D; padding: 8px 12px; font-family: Arial, sans-serif; font-size: 12px; color: #8E99A8; line-height: 1.5; }
+  .fc-so b { color: #E8A33D; font-family: "Courier New", monospace; font-size: 10px; letter-spacing: 1px; }
+  .fc-wire { padding: 10px 24px 20px; }
+  .fc-wire-item { padding: 8px 0; border-bottom: 1px solid #151A24; font-family: Arial, sans-serif; font-size: 13px; line-height: 1.45; color: #C7CEDA; }
+  .fc-wire-item .src { font-family: "Courier New", monospace; font-size: 10px; color: #58A6FF; text-transform: uppercase; }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="eyebrow">Q3 2026 · Visual redesign</div>
+      <h1>Three design directions, same content</h1>
+      <div class="sub">Masthead, market strip, one top story, and two Wire items — rendered identically in each direction so the comparison is purely visual.</div>
+    </div>
+    <button class="theme-toggle" onclick="toggleTheme()">Toggle theme</button>
+  </header>
+  <p class="note">Every frame below uses only email-safe construction — tables, Georgia/Arial/Courier system fonts, no grid or flexbox, no web fonts — so what you approve is what Gmail and Outlook can actually render. The frames deliberately ignore this page's dark/light toggle: each shows its own fixed palette exactly as it would arrive in the inbox.</p>
+
+  <div class="grid">
+
+    <!-- ═══════════ A. REFINED EDITORIAL ═══════════ -->
+    <div class="direction d-a">
+      <div class="d-head">
+        <span class="d-tag">Direction A</span>
+        <h2 class="d-name">Refined editorial</h2>
+        <p class="d-thesis">The current identity, disciplined. Same navy and gold, but a strict 4-size type scale, one accent per block, and section labels that whisper instead of shout.</p>
+      </div>
+      <div class="frame">
+        <div class="fa-mast">
+          <div class="fa-kicker">CSIS Korea Chair</div>
+          <div class="fa-title">Korea Daily Brief</div>
+          <div class="fa-date">Thursday, June 18, 2026 · 6:00 AM ET</div>
+          <div class="fa-re"><b>RE:</b>&nbsp; KF-21 airworthiness certified · NK declares denuclearization terminated · JTBC receivership filing</div>
+        </div>
+        <table class="fa-mkt"><tr>
+          <td><div class="l">KOSPI</div><div class="v">2,548.32</div><div class="c dn">▼ 0.42%</div></td>
+          <td><div class="l">Brent</div><div class="v">$68.15</div><div class="c up">▲ 0.31%</div></td>
+          <td><div class="l">USD/KRW</div><div class="v">1,378.50</div><div class="c up">▲ 0.08%</div></td>
+        </tr></table>
+        <div class="fa-sec"><span class="fa-label">Top Stories</span></div>
+        <div class="fa-story">
+          <div class="fa-cat">Defense · Yonhap</div>
+          <div class="fa-h">KF-21 fighter jet cleared for full airworthiness certification</div>
+          <div class="fa-b">DAPA announced Thursday that KAI's KF-21 Boramae completed all flight-envelope testing and received full military airworthiness certification, clearing the path for Block 1 mass production beginning October.</div>
+          <div class="fa-so"><b>So what</b> — First operational deployment expected 1st ROKAF wing in Q3 2027; Indonesia stake dispute remains unresolved.</div>
+        </div>
+        <div class="fa-sec"><span class="fa-label">The Wire</span></div>
+        <div class="fa-wire">
+          <div class="fa-wire-item"><span class="src">CSIS</span> &nbsp;Briefing released on ROK export controls</div>
+          <div class="fa-wire-item"><span class="src">38 North</span> &nbsp;Satellite analysis of Sohae launch pad construction</div>
+        </div>
+      </div>
+      <dl class="d-notes">
+        <dt>Why it works</dt>
+        <dd>Zero re-learning for readers; every fix from the mobile audit folds in naturally; safest cross-client rendering.</dd>
+        <dt>Risk</dt>
+        <dd>It's an evolution, not a statement — nobody forwards it because of how it looks.</dd>
+      </dl>
+    </div>
+
+    <!-- ═══════════ B. BRIEFING BOOK ═══════════ -->
+    <div class="direction d-b">
+      <div class="d-head">
+        <span class="d-tag">Direction B</span>
+        <h2 class="d-name">Briefing book</h2>
+        <p class="d-thesis">Leans fully into the PDB identity: cream paper, centered serif masthead over a double rule, numbered stories, dotted leaders. Reads like a printed morning book, not an email.</p>
+      </div>
+      <div class="frame fb">
+        <div class="fb-bar">Daily Intelligence Product · Korea Chair</div>
+        <div class="fb-mast">
+          <div class="fb-kicker">Center for Strategic &amp; International Studies</div>
+          <div class="fb-title">KOREA DAILY BRIEF</div>
+          <div class="fb-date">Thursday, June 18, 2026 — Edition No. 412</div>
+        </div>
+        <div class="fb-re"><b>RE:</b>&nbsp; KF-21 airworthiness certified · NK declares denuclearization terminated · JTBC receivership filing</div>
+        <table class="fb-mkt"><tr>
+          <td><div class="l">KOSPI</div><div class="v">2,548.32</div><div class="c dn">▼ 0.42</div></td>
+          <td><div class="l">Brent</div><div class="v">$68.15</div><div class="c up">▲ 0.31</div></td>
+          <td><div class="l">USD/KRW</div><div class="v">1,378.50</div><div class="c up">▲ 0.08</div></td>
+        </tr></table>
+        <div class="fb-sec"><span class="fb-label">Top Stories</span><hr class="fb-rule"></div>
+        <div class="fb-story">
+          <span class="fb-num">1.</span>
+          <div class="fb-h">KF-21 fighter jet cleared for full airworthiness certification</div>
+          <div class="fb-b">DAPA announced Thursday that KAI's KF-21 Boramae completed all flight-envelope testing and received full military airworthiness certification, clearing the path for Block 1 mass production beginning October.</div>
+          <div class="fb-so"><b>ANALYST NOTE</b> — First operational deployment expected 1st ROKAF wing in Q3 2027; Indonesia stake dispute remains unresolved. <span style="color:#77705E;">(Yonhap)</span></div>
+        </div>
+        <div class="fb-sec"><span class="fb-label">The Wire</span><hr class="fb-rule"></div>
+        <div class="fb-wire">
+          <div class="fb-wire-item"><span class="src">CSIS</span> — Briefing released on ROK export controls</div>
+          <div class="fb-wire-item"><span class="src">38 North</span> — Satellite analysis of Sohae launch pad construction</div>
+        </div>
+      </div>
+      <dl class="d-notes">
+        <dt>Why it works</dt>
+        <dd>Unmistakable identity that matches how this audience already reads (PDB, morning books). The cream ground survives Gmail's dark-mode inversion better than white.</dd>
+        <dt>Risk</dt>
+        <dd>Bigger departure — regular readers notice the change day one. Centered mastheads eat vertical space on phones.</dd>
+      </dl>
+    </div>
+
+    <!-- ═══════════ C. DATA TERMINAL ═══════════ -->
+    <div class="direction d-c">
+      <div class="d-head">
+        <span class="d-tag">Direction C</span>
+        <h2 class="d-name">Data terminal</h2>
+        <p class="d-thesis">Bloomberg-terminal energy: near-black ground, monospace numerals, amber accents, comment-style section markers. The digest as a trading screen for peninsula risk.</p>
+      </div>
+      <div class="frame fc">
+        <div class="fc-mast">
+          <div class="fc-kicker">CSIS Korea Chair / Daily</div>
+          <div class="fc-title">KOREA DAILY BRIEF</div>
+          <div class="fc-date">2026-06-18 · 06:00 ET · 1,214 words · 6 min</div>
+          <div class="fc-re"><b>RE:</b>&nbsp; KF-21 airworthiness certified · NK declares denuclearization terminated · JTBC receivership filing</div>
+        </div>
+        <table class="fc-mkt"><tr>
+          <td><div class="l">KOSPI</div><div class="v">2548.32</div><div class="c dn">-0.42%</div></td>
+          <td><div class="l">BRENT</div><div class="v">68.15</div><div class="c up">+0.31%</div></td>
+          <td><div class="l">USDKRW</div><div class="v">1378.50</div><div class="c up">+0.08%</div></td>
+        </tr></table>
+        <div class="fc-sec"><span class="fc-label">Top Stories</span></div>
+        <div class="fc-story">
+          <div class="fc-cat">DEFENSE / YONHAP</div>
+          <div class="fc-h">KF-21 fighter jet cleared for full airworthiness certification</div>
+          <div class="fc-b">DAPA announced Thursday that KAI's KF-21 Boramae completed all flight-envelope testing and received full military airworthiness certification, clearing the path for Block 1 mass production beginning October.</div>
+          <div class="fc-so"><b>&gt;&gt; SO WHAT</b> — First operational deployment expected 1st ROKAF wing Q3 2027; Indonesia stake dispute unresolved.</div>
+        </div>
+        <div class="fc-sec"><span class="fc-label">The Wire</span></div>
+        <div class="fc-wire">
+          <div class="fc-wire-item"><span class="src">[CSIS]</span> Briefing released on ROK export controls</div>
+          <div class="fc-wire-item"><span class="src">[38N]</span> Satellite analysis of Sohae launch pad construction</div>
+        </div>
+      </div>
+      <dl class="d-notes">
+        <dt>Why it works</dt>
+        <dd>Most distinctive of the three; monospace numerals make the data displays (markets, polling, facility grid) genuinely better to scan.</dd>
+        <dt>Risk</dt>
+        <dd>Dark emails are the hardest to render reliably — Outlook and Gmail both meddle with dark backgrounds. Heavy over 15 sections; best borrowed as an accent, not the whole product.</dd>
+      </dl>
+    </div>
+  </div>
+
+  <div class="verdict">
+    <h2>Recommendation</h2>
+    <p><strong>Direction B (Briefing book), with C's monospace numerals in the data displays.</strong> Your product's entire framing — CSIS Korea Chair, PDB-style, expert audience — is already the briefing-book story; the visual identity should match the editorial identity. The cream ground is also the most robust choice technically: it degrades gracefully under Gmail's dark-mode color meddling, where both pure white and near-black get force-inverted unpredictably.</p>
+    <p>Direction A is the safe fallback if you want zero reader disruption. I'd take C's tabular monospace numerals into the market strip, polling dashboard, and facility grid regardless of direction — that's a pure win for scannability with no rendering risk.</p>
+    <p>Say the word and I'll build the full-length mockup of your chosen direction (every section, real sample data) as <code>preview_v3.html</code> before touching <code>render.py</code>.</p>
+  </div>
+</div>
+
+<script>
+  function toggleTheme() {
+    const root = document.documentElement;
+    const cur = root.getAttribute('data-theme');
+    const next = cur === 'dark' ? 'light' : (cur === 'light' ? 'dark' : (matchMedia('(prefers-color-scheme: dark)').matches ? 'light' : 'dark'));
+    root.setAttribute('data-theme', next);
+  }
+</script>
