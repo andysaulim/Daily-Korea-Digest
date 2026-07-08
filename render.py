@@ -432,40 +432,50 @@ def render(digest: dict) -> str:
             if days_absent:
                 kim_line += f" ({days_absent}d since last)"
 
-        # Official quotes — the core of this section
+        # Kim Jong Un direct quotes — featured when he said something
         key_quotes = kcna.get("key_quotes") or []
         quotes_html = ""
-        for q in key_quotes[:4]:
+        for q in key_quotes[:2]:
             qt = _esc(q.get("quote", ""))
-            speaker = _esc(q.get("speaker", ""))
+            speaker = _esc(q.get("speaker", "Kim Jong Un"))
             src_art = _esc(q.get("source_article", ""))
             if not qt:
                 continue
-            speaker_line = f"<strong style='color:{RED_ON_NAVY};'>{speaker}</strong>" if speaker else ""
+            speaker_line = f"<strong style='color:{RED_ON_NAVY};'>{speaker}</strong>"
             src_line = f" <span style='color:#7B90AC;'>— {src_art}</span>" if src_art else ""
             quotes_html += f"""<div style='margin-bottom:10px;padding:10px 14px;background:rgba(255,255,255,0.04);border-radius:4px;border-left:3px solid {TAEGUK_RED};'>
               <div style='font-size:13px;color:#E8E8E8;font-style:italic;line-height:1.5;'>&ldquo;{qt}&rdquo;</div>
               <div style='font-size:10px;margin-top:4px;'>{speaker_line}{src_line}</div>
             </div>"""
 
-        # Senior officials — brief list
-        senior = kcna.get("senior_officials") or []
-        senior_html = ""
-        if senior:
-            senior_cards = ""
-            for s in senior[:3]:
-                name = _esc(s.get("name", ""))
-                if not name:
+        # Top 3 KCNA articles — Kim-related items ranked first by the prompt
+        top_articles = kcna.get("top_articles") or []
+        articles_html = ""
+        if top_articles:
+            art_items = ""
+            for i, art in enumerate(top_articles[:3], 1):
+                a_headline = _esc(art.get("headline", ""))
+                if not a_headline:
                     continue
-                role = _esc(s.get("role", "")) if s.get("role") else ""
-                act = _esc(s.get("activity", ""))
-                role_tag = f' <span style="font-size:9px;color:#888;font-weight:400;">({role})</span>' if role else ""
-                act_html = f"<br><span style='color:#AAA;'>{act}</span>" if act else ""
-                senior_cards += f"""<div style='margin-top:6px;padding:4px 10px;background:rgba(255,255,255,0.04);border-radius:3px;border-left:2px solid {BLUE_ON_NAVY};font-size:11px;'>
-                  <strong style="color:#D0D0D0;">{name}</strong>{role_tag}{act_html}
+                a_summary = _esc(art.get("summary", ""))
+                a_src = _esc(art.get("source", ""))
+                a_url = art.get("url", "")
+                kim_badge = (f' <span style="font-family:{MONO};font-size:10px;font-weight:700;'
+                             f'color:{RED_ON_NAVY};letter-spacing:0.5px;">KIM</span>'
+                             if art.get("kim_related") else "")
+                src_tag = f" <span style='color:#7B90AC;'>— {a_src}</span>" if a_src else ""
+                art_items += f"""<table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:8px;"><tr>
+                  <td width="24" style="vertical-align:top;font-family:{MONO};font-size:13px;font-weight:700;color:{BLUE_ON_NAVY};padding-top:1px;">{i}.</td>
+                  <td style="vertical-align:top;">
+                    <div style="font-size:13px;font-weight:600;color:#E8E8E8;line-height:1.4;">{_link_or_text(a_headline, a_url, style="color:#E8E8E8;text-decoration:underline;")}{kim_badge}</div>
+                    {"<div style='font-size:12px;color:#A8B6C8;line-height:1.5;margin-top:2px;'>" + a_summary + src_tag + "</div>" if a_summary else ""}
+                  </td>
+                </tr></table>"""
+            if art_items:
+                articles_html = f"""<div style="margin-top:4px;">
+                  <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#7B90AC;margin-bottom:8px;">Top KCNA Articles</div>
+                  {art_items}
                 </div>"""
-            if senior_cards:
-                senior_html = f"<div style='margin-top:10px;'>{senior_cards}</div>"
 
         sections.append(f"""
         <a name="kcna"></a>
@@ -473,7 +483,7 @@ def render(digest: dict) -> str:
           <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:{NAVY_PANEL};">
             <tr>
               <td style="padding:12px 32px;">
-                <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.8px;color:{BLUE_ON_NAVY};font-family:Arial,sans-serif;border-bottom:2px solid {TAEGUK_RED};padding-bottom:5px;display:inline-block;">DPRK Official Statements</span>
+                <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.8px;color:{BLUE_ON_NAVY};font-family:Arial,sans-serif;border-bottom:2px solid {TAEGUK_RED};padding-bottom:5px;display:inline-block;">Pyongyang Watch &middot; KCNA</span>
               </td>
             </tr>
           </table>
@@ -485,7 +495,7 @@ def render(digest: dict) -> str:
               <div style="font-size:13px;color:#E0E0E0;font-weight:600;">{kim_icon}{kim_line}</div>
             </div>
             {quotes_html}
-            {senior_html}
+            {articles_html}
             {"<div style='margin-top:14px;padding:10px 14px;background:rgba(255,255,255,0.06);border-radius:4px;border-left:3px solid " + BLUE_ON_NAVY + ";font-size:13px;line-height:1.6;color:#E0E0E0;font-family:Georgia,serif;'><strong style='color:" + BLUE_ON_NAVY + ";'>Bottom line:</strong> " + bottom_line + "</div>" if bottom_line else ""}
           </div>
         </div>

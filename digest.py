@@ -194,18 +194,20 @@ _KCNA_NO_DATA_STUB = (
 )
 
 _KCNA_FULL_INSTRUCTIONS = (
-    "Return a SINGLE kcna_delta object focused on OFFICIAL STATEMENTS AND QUOTES:\n"
+    "Return a SINGLE kcna_delta object focused on the TOP KCNA ARTICLES and KIM JONG UN'S OWN WORDS:\n"
     "- kim_appearance_today: boolean — cross-reference KCNA articles AND the KIM JONG UN APPEARANCE REPORTS section above (scraped from NK Leadership Watch, Daily NK, KCNA Watch, and general news). If ANY credible source reports a Kim appearance in the last 24h, set to true.\n"
     "- kim_activity: if appeared, 1 sentence on what he did (inspection, meeting, guidance, etc.), else null\n"
     "- days_since_last_appearance: integer — use the CONFIRMED KIM JONG UN APPEARANCES tracker data above as ground truth. Only override if today's articles confirm a more recent appearance than the tracker shows.\n"
-    "- key_quotes: Up to 4 direct quotes from DPRK officials today, prioritized by analytical significance. "
-    "Include Kim Jong Un quotes first, then Kim Yo Jong, then other senior officials (Choe Son Hui, Ri Pyong Chol, etc.). "
-    "Each object: speaker (full name), quote (exact text translated to English), source_article (KCNA article title or wire source). "
-    "Only include quotes that are analytically meaningful — policy signals, threats, diplomatic overtures, doctrinal language. "
-    "Skip routine congratulatory messages or boilerplate. Empty array if no notable quotes today.\n"
+    "- top_articles: the 3 most analytically significant KCNA/DPRK state media articles from today's collected articles (MAX 3, fewer if fewer exist, empty array if none). "
+    "RANKING RULE: any article containing a Kim Jong Un statement, order, message, or attributed activity MUST rank first. "
+    "Then rank by policy significance (nuclear/missile > diplomacy > military > economy > ideology/culture). "
+    "Each object: headline (English, translated if needed), summary (1 sentence — the key fact), url (from the input data — REQUIRED, omit the article if no real URL exists), source, kim_related (boolean — true if Kim Jong Un is the actor or speaker).\n"
+    "- key_quotes: Up to 2 direct quotes from Kim Jong Un ONLY, today. "
+    "Each object: speaker (\"Kim Jong Un\"), quote (exact text translated to English), source_article (KCNA article title or wire source). "
+    "Only direct, attributed quotes — no paraphrases, no other officials. Empty array if Kim said nothing quotable today.\n"
     "- senior_officials: array of notable non-Kim official appearances/activities mentioned in KCNA (e.g. Choe Son Hui, Kim Yo Jong, Ri Pyong Chol). Each: name, role (title), activity (1 sentence). Max 3.\n"
     "- silence_today: boolean (complete KCNA blackout)\n"
-    "- watch_flag: boolean — true if any official statement contains ESCALATION-level rhetoric, silence after regular output, unusual Kim absence (7+ days), or nuclear/ICBM-related content\n"
+    "- watch_flag: boolean — true if any official statement contains escalatory rhetoric, silence after regular output, unusual Kim absence (7+ days), or nuclear/ICBM-related content\n"
     "- bottom_line: 1-2 sentences MAX. State the single most important official statement takeaway and what to watch next. Be ruthlessly concise."
 )
 
