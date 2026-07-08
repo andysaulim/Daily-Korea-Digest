@@ -119,19 +119,29 @@ def _headline_key(item: dict) -> tuple[str, set, set, set]:
     return headline, words, topics, companies
 
 
-def _is_dup(words_a, topics_a, companies_a, words_b, topics_b, companies_b) -> str | None:
-    """Check if two items are duplicates. Returns reason string or None."""
+def _is_dup(words_a, topics_a, companies_a, words_b, topics_b, companies_b,
+            same_section: bool = False) -> str | None:
+    """Check if two items are duplicates. Returns reason string or None.
+
+    same_section relaxes the thresholds: two items on the same topic within
+    ONE section are almost always true dupes (the prompt mandates topic
+    diversity per section), whereas cross-section matches need more evidence
+    because sections legitimately revisit the same actors from new angles.
+    """
     if not words_a or not words_b:
         return None
     # Keyword overlap
     overlap = words_a & words_b
     min_len = min(len(words_a), len(words_b))
-    keyword_dup = min_len > 1 and len(overlap) >= 2 and len(overlap) / min_len >= 0.5
+    ratio_floor = 0.4 if same_section else 0.5
+    keyword_dup = min_len > 1 and len(overlap) >= 2 and len(overlap) / min_len >= ratio_floor
     if keyword_dup:
         return "keyword overlap"
     # Topic entity match — require keyword overlap too (just like companies).
     # On heavy news days a single figure (e.g. KJU) dominates many *distinct*
-    # stories; entity-only matching was wiping them all out.
+    # stories; entity-only matching was wiping them all out. Within one
+    # section a single extra shared word is enough (e.g. two "Kim Jong Un
+    # murals" items in The Wire).
     shared_topics = topics_a & topics_b
     if shared_topics:
         # Strip entity alias words from overlap to avoid self-matching
@@ -140,7 +150,8 @@ def _is_dup(words_a, topics_a, companies_a, words_b, topics_b, companies_b) -> s
             for alias in _TOPIC_ENTITIES.get(tag, set()):
                 entity_words.update(w for w in alias.split() if len(w) > 2)
         non_entity_overlap = overlap - entity_words
-        if len(non_entity_overlap) >= 2:
+        needed = 1 if same_section else 2
+        if len(non_entity_overlap) >= needed:
             return f"shared topic + keywords: {shared_topics}, {non_entity_overlap}"
     # Company entity match — need 2+ non-entity keyword overlaps
     # (company names alone aren't enough — Samsung has many unrelated stories)
@@ -196,7 +207,8 @@ def _dedup_digest(digest: dict) -> tuple[dict, list[str]]:
 
             is_duplicate = False
             for prev_section, prev_headline, prev_words, prev_topics, prev_companies in seen:
-                reason = _is_dup(words, topics, companies, prev_words, prev_topics, prev_companies)
+                reason = _is_dup(words, topics, companies, prev_words, prev_topics, prev_companies,
+                                 same_section=(prev_section == section_key))
                 if reason:
                     msg = (
                         f"  Removed from {section_key} ({reason}): "

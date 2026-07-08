@@ -206,7 +206,7 @@ def render(digest: dict) -> str:
           <div style="margin-top:7px;font-size:14px;font-weight:400;color:rgba(255,255,255,0.88);letter-spacing:0.3px;font-family:Georgia,serif;">{_esc(date_str)}</div>
         </td>
         <td style="vertical-align:top;text-align:right;">
-          <div style="font-family:{MONO};font-size:11px;color:rgba(255,255,255,0.55);white-space:nowrap;">{gen_time}<br>{word_count:,} wds &middot; {read_min} min</div>
+          <div style="font-family:{MONO};font-size:11px;color:rgba(255,255,255,0.55);white-space:nowrap;">{gen_time}<br>{word_count:,} words &middot; {read_min} min read</div>
         </td>
       </tr></table>
       {"<div style='margin-top:14px;padding-top:12px;border-top:1px solid rgba(205,46,58,0.45);font-size:13px;color:rgba(255,255,255,0.92);font-family:Georgia,serif;line-height:1.55;'><strong style='color:" + RED_ON_NAVY + ";font-size:11px;letter-spacing:1.5px;font-family:Arial,sans-serif;'>RE:</strong>&nbsp; " + re_line + "</div>" if re_line else ""}
@@ -498,107 +498,6 @@ def render(digest: dict) -> str:
             {articles_html}
             {"<div style='margin-top:14px;padding:10px 14px;background:rgba(255,255,255,0.06);border-radius:4px;border-left:3px solid " + BLUE_ON_NAVY + ";font-size:13px;line-height:1.6;color:#E0E0E0;font-family:Georgia,serif;'><strong style='color:" + BLUE_ON_NAVY + ";'>Bottom line:</strong> " + bottom_line + "</div>" if bottom_line else ""}
           </div>
-        </div>
-        """)
-
-    # ── 8. Satellite & Location Watch ────────────────────────────────────
-    locations = digest.get("bp_locations") or []
-    imagery_report = digest.get("imagery_report") or {}
-    if locations or imagery_report:
-        # Featured imagery report (e.g., AEI / 38North analysis)
-        img_report_html = ""
-        if imagery_report:
-            ir_source = _esc(imagery_report.get("source", ""))
-            ir_date = _esc(imagery_report.get("date", ""))
-            ir_label = _esc(imagery_report.get("label", "New imagery reports"))
-            ir_headline = _esc(imagery_report.get("headline", ""))
-            ir_body = _esc(imagery_report.get("body", ""))
-            ir_sources = imagery_report.get("source_links") or []
-            ir_bp_ids = imagery_report.get("bp_location_ids") or []
-            source_links_html = ""
-            if ir_sources:
-                _src_parts = []
-                for s in ir_sources:
-                    if isinstance(s, dict):
-                        s_label = _esc(s.get("label", s.get("source", "")))
-                        s_url = s.get("url", "")
-                        if s_url and s_url != "#" and s_url.startswith("http"):
-                            _src_parts.append(f'<a href="{_esc(s_url)}" style="font-size:11px;font-family:monospace;color:#888;text-decoration:none;">{s_label} ↗</a>')
-                        else:
-                            _src_parts.append(f'<span style="font-size:11px;font-family:monospace;color:#888;">{s_label} ↗</span>')
-                    else:
-                        _src_parts.append(f'<span style="font-size:11px;font-family:monospace;color:#888;">{_esc(str(s))} ↗</span>')
-                source_links_html = "<div style='margin-top:8px;'>" + " &middot; ".join(_src_parts) + "</div>"
-            bp_ids_html = ""
-            if ir_bp_ids:
-                bp_ids_html = "<div style='margin-top:6px;font-size:11px;color:#888;'>→ " + " · ".join(_esc(str(b)) for b in ir_bp_ids) + "</div>"
-            img_report_html = f"""
-            <div style="margin-bottom:20px;padding:16px;border-left:3px solid {TAEGUK_BLUE};">
-              <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:{TAEGUK_BLUE};font-weight:600;margin-bottom:6px;">{ir_source} · {ir_date} — {ir_label}</div>
-              <div style="font-size:17px;font-weight:700;color:{INK};line-height:1.3;margin-bottom:8px;">{ir_headline}</div>
-              <div style="font-size:13px;line-height:1.6;color:#444;">{ir_body}</div>
-              {bp_ids_html}
-              {source_links_html}
-            </div>"""
-
-        # BP Monitored Locations — 2-column card grid with status context
-        _badge_styles = {
-            "normal": ("#7F8C8D", "#F5F6F7", "MONITORING"),
-            "activity": ("#7F8C8D", "#F5F6F7", "MONITORING"),
-            "elevated": (TAEGUK_RED, "#FBF0F1", "ELEVATED"),
-            "alert": (TAEGUK_RED, "#FBE9EA", "ALERT"),
-        }
-        elevated_count = sum(1 for l in locations if l.get("status", "normal") in ("elevated", "alert"))
-        summary_html = ""
-        if elevated_count:
-            summary_html = f'<div style="font-size:11px;color:#888;margin-top:6px;margin-bottom:12px;">{elevated_count} of {len(locations)} sites at elevated or alert status</div>'
-        else:
-            summary_html = f'<div style="font-size:11px;color:#888;margin-top:6px;margin-bottom:12px;">{len(locations)} monitored sites</div>'
-
-        loc_cards = ""
-        for i in range(0, len(locations), 2):
-            row_cards = ""
-            for j in range(i, min(i + 2, len(locations))):
-                loc = locations[j]
-                name = _esc(loc.get("name", ""))
-                status = loc.get("status", "normal")
-                note = _esc(loc.get("note", ""))
-                last_source_date = _esc(loc.get("last_source_date", ""))
-                direction = loc.get("direction", "")
-                b_color, b_bg, b_label = _badge_styles.get(status, ("#7F8C8D", "#F5F6F7", "MONITOR"))
-                if direction == "up":
-                    b_label += " &#9650;"
-                elif direction == "down":
-                    b_label += " &#9660;"
-                status_badge = f'<span style="font-family:{MONO};font-size:11px;font-weight:700;color:{b_color};letter-spacing:0.5px;">{b_label}</span>'
-                # Note rendering — style differently for carried-forward vs active
-                note_html = ""
-                if note and "no new reporting" in note.lower():
-                    note_html = f'<div style="font-size:11px;line-height:1.4;color:#999;margin-top:4px;font-style:italic;">{note}</div>'
-                elif note:
-                    note_html = f'<div style="font-size:11px;line-height:1.4;color:#555;margin-top:4px;">{note}</div>'
-                # Last report date — mono, machine-measured
-                last_html = f'<div style="font-family:{MONO};font-size:11px;color:#999;margin-top:4px;">as of {last_source_date}</div>' if last_source_date and last_source_date != "unknown" else ""
-                row_cards += f"""
-                <td style="width:50%;padding:4px;vertical-align:top;">
-                  <div style="background:{b_bg};border-radius:4px;padding:10px 12px;border-left:3px solid {b_color};">
-                    <div style="font-size:12px;font-weight:700;color:{INK};margin-bottom:2px;">{name} &nbsp;{status_badge}</div>
-                    {note_html}
-                    {last_html}
-                  </div>
-                </td>"""
-            if len(locations) - i == 1:
-                row_cards += '<td style="width:50%;padding:4px;"></td>'
-            loc_cards += f"<tr>{row_cards}</tr>"
-
-        sections.append(f"""
-        <div {_SEC}>
-          <a name="satellite"></a>{_sec_label("Satellite &amp; Location Watch")}
-          {summary_html}
-          {img_report_html}
-          <table width="100%" cellpadding="0" cellspacing="0" border="0" class="loc-grid">
-            {loc_cards}
-          </table>
         </div>
         """)
 
@@ -1237,6 +1136,108 @@ def render(digest: dict) -> str:
           {sa_html}
         </div>
         """)
+
+    # ── 14b. Satellite & Location Watch (moved to end — slow-moving section) ─
+    locations = digest.get("bp_locations") or []
+    imagery_report = digest.get("imagery_report") or {}
+    if locations or imagery_report:
+        # Featured imagery report (e.g., AEI / 38North analysis)
+        img_report_html = ""
+        if imagery_report:
+            ir_source = _esc(imagery_report.get("source", ""))
+            ir_date = _esc(imagery_report.get("date", ""))
+            ir_label = _esc(imagery_report.get("label", "New imagery reports"))
+            ir_headline = _esc(imagery_report.get("headline", ""))
+            ir_body = _esc(imagery_report.get("body", ""))
+            ir_sources = imagery_report.get("source_links") or []
+            ir_bp_ids = imagery_report.get("bp_location_ids") or []
+            source_links_html = ""
+            if ir_sources:
+                _src_parts = []
+                for s in ir_sources:
+                    if isinstance(s, dict):
+                        s_label = _esc(s.get("label", s.get("source", "")))
+                        s_url = s.get("url", "")
+                        if s_url and s_url != "#" and s_url.startswith("http"):
+                            _src_parts.append(f'<a href="{_esc(s_url)}" style="font-size:11px;font-family:monospace;color:#888;text-decoration:none;">{s_label} ↗</a>')
+                        else:
+                            _src_parts.append(f'<span style="font-size:11px;font-family:monospace;color:#888;">{s_label} ↗</span>')
+                    else:
+                        _src_parts.append(f'<span style="font-size:11px;font-family:monospace;color:#888;">{_esc(str(s))} ↗</span>')
+                source_links_html = "<div style='margin-top:8px;'>" + " &middot; ".join(_src_parts) + "</div>"
+            bp_ids_html = ""
+            if ir_bp_ids:
+                bp_ids_html = "<div style='margin-top:6px;font-size:11px;color:#888;'>→ " + " · ".join(_esc(str(b)) for b in ir_bp_ids) + "</div>"
+            img_report_html = f"""
+            <div style="margin-bottom:20px;padding:16px;border-left:3px solid {TAEGUK_BLUE};">
+              <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:{TAEGUK_BLUE};font-weight:600;margin-bottom:6px;">{ir_source} · {ir_date} — {ir_label}</div>
+              <div style="font-size:17px;font-weight:700;color:{INK};line-height:1.3;margin-bottom:8px;">{ir_headline}</div>
+              <div style="font-size:13px;line-height:1.6;color:#444;">{ir_body}</div>
+              {bp_ids_html}
+              {source_links_html}
+            </div>"""
+
+        # BP Monitored Locations — 2-column card grid with status context
+        _badge_styles = {
+            "normal": ("#7F8C8D", "#F5F6F7", "MONITORING"),
+            "activity": ("#7F8C8D", "#F5F6F7", "MONITORING"),
+            "elevated": (TAEGUK_RED, "#FBF0F1", "ELEVATED"),
+            "alert": (TAEGUK_RED, "#FBE9EA", "ALERT"),
+        }
+        elevated_count = sum(1 for l in locations if l.get("status", "normal") in ("elevated", "alert"))
+        summary_html = ""
+        if elevated_count:
+            summary_html = f'<div style="font-size:11px;color:#888;margin-top:6px;margin-bottom:12px;">{elevated_count} of {len(locations)} sites at elevated or alert status</div>'
+        else:
+            summary_html = f'<div style="font-size:11px;color:#888;margin-top:6px;margin-bottom:12px;">{len(locations)} monitored sites</div>'
+
+        loc_cards = ""
+        for i in range(0, len(locations), 2):
+            row_cards = ""
+            for j in range(i, min(i + 2, len(locations))):
+                loc = locations[j]
+                name = _esc(loc.get("name", ""))
+                status = loc.get("status", "normal")
+                note = _esc(loc.get("note", ""))
+                last_source_date = _esc(loc.get("last_source_date", ""))
+                direction = loc.get("direction", "")
+                b_color, b_bg, b_label = _badge_styles.get(status, ("#7F8C8D", "#F5F6F7", "MONITOR"))
+                if direction == "up":
+                    b_label += " &#9650;"
+                elif direction == "down":
+                    b_label += " &#9660;"
+                status_badge = f'<span style="font-family:{MONO};font-size:11px;font-weight:700;color:{b_color};letter-spacing:0.5px;">{b_label}</span>'
+                # Note rendering — style differently for carried-forward vs active
+                note_html = ""
+                if note and "no new reporting" in note.lower():
+                    note_html = f'<div style="font-size:11px;line-height:1.4;color:#999;margin-top:4px;font-style:italic;">{note}</div>'
+                elif note:
+                    note_html = f'<div style="font-size:11px;line-height:1.4;color:#555;margin-top:4px;">{note}</div>'
+                # Last report date — mono, machine-measured
+                last_html = f'<div style="font-family:{MONO};font-size:11px;color:#999;margin-top:4px;">as of {last_source_date}</div>' if last_source_date and last_source_date != "unknown" else ""
+                row_cards += f"""
+                <td style="width:50%;padding:4px;vertical-align:top;">
+                  <div style="background:{b_bg};border-radius:4px;padding:10px 12px;border-left:3px solid {b_color};">
+                    <div style="font-size:12px;font-weight:700;color:{INK};margin-bottom:2px;">{name} &nbsp;{status_badge}</div>
+                    {note_html}
+                    {last_html}
+                  </div>
+                </td>"""
+            if len(locations) - i == 1:
+                row_cards += '<td style="width:50%;padding:4px;"></td>'
+            loc_cards += f"<tr>{row_cards}</tr>"
+
+        sections.append(f"""
+        <div {_SEC}>
+          <a name="satellite"></a>{_sec_label("Satellite &amp; Location Watch")}
+          {summary_html}
+          {img_report_html}
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" class="loc-grid">
+            {loc_cards}
+          </table>
+        </div>
+        """)
+
 
     # ── 15. Footer (with On This Day) ─────────────────────────────────────
     on_this_day = digest.get("on_this_day") or []

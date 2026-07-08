@@ -363,27 +363,30 @@ Cross-reference with the BP LOCATIONS HISTORY tracker above."""
     else:
         tier4_block = _KCNA_NO_DATA_STUB
 
+    # Confirmed Gallup baseline from gallup_baseline.json (refreshed weekly
+    # by gallup_update.py) — the single source for every baseline mention
+    # in this prompt, so nothing here can silently go stale.
+    bl_poll, bl_dates = "Gallup Korea #665", "June 9-11, 2026"
+    bl_appr, bl_dp, bl_ppp, bl_ind = "57%", "41%", "29%", "21%"
+    try:
+        _bl = json.loads((Path(__file__).parent / "gallup_baseline.json")
+                         .read_text(encoding="utf-8"))
+        bl_poll = _bl.get("poll", bl_poll)
+        bl_dates = _bl.get("survey_dates", bl_dates)
+        bl_appr = _bl["presidential_approval"]["value"]
+        bl_dp = _bl["party_ruling"]["value"]
+        bl_ppp = _bl["party_opposition"]["value"]
+        bl_ind = _bl["party_independent"]["value"]
+    except (OSError, json.JSONDecodeError, KeyError):
+        pass
+    confirmed_line = (f"- The known CONFIRMED baseline is: {bl_appr} approval, "
+                      f"DP {bl_dp}, PPP {bl_ppp}, independents {bl_ind} "
+                      f"({bl_poll}, surveyed {bl_dates})")
+
     # Sentiment baseline from collector
     sentiment_block = ""
     sentiment = payload.get("sentiment_baseline")
     if sentiment and any(v for v in sentiment.values()):
-        # Confirmed baseline comes from gallup_baseline.json (refreshed
-        # weekly by gallup_update.py) so the prompt never goes stale.
-        confirmed_line = ("- The known CONFIRMED baseline is: 57% approval, DP 41%, "
-                          "PPP 29%, independents 21% (Gallup Korea #665, surveyed June 9-11, 2026)")
-        try:
-            _bl = json.loads((Path(__file__).parent / "gallup_baseline.json")
-                             .read_text(encoding="utf-8"))
-            confirmed_line = (
-                f"- The known CONFIRMED baseline is: "
-                f"{_bl['presidential_approval']['value']} approval, "
-                f"DP {_bl['party_ruling']['value']}, "
-                f"PPP {_bl['party_opposition']['value']}, "
-                f"independents {_bl['party_independent']['value']} "
-                f"({_bl.get('poll', 'Gallup Korea')}, surveyed {_bl.get('survey_dates', 'recently')})"
-            )
-        except (OSError, json.JSONDecodeError, KeyError):
-            pass
         sentiment_block = f"""
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 PUBLIC SENTIMENT BASELINE (pre-collected polling data)
@@ -515,9 +518,10 @@ Return a digest object with:
     STRICT FILTER: Only include deals where BOTH parties are US and Korean entities, or where a Korean company is investing IN the United States, or where a US policy directly affects Korean trade. Do NOT include Korean company deals with non-US countries (e.g. Oceania, Middle East, EU, Japan). A Samsung Heavy order for an Oceanian shipper is NOT a US-Korea deal. A Hyundai contract with a German automaker is NOT a US-Korea deal. When in doubt, leave it out — this section is specifically for the US-Korea bilateral trade relationship.
     See US-KOREA INVESTMENT TRACKER section above for WH tracker entries and pre-calculated totals.
 - business_economy: array of up to 6 Korea-related business and economic news items from today (MAX 6 — pick the most policy-relevant). Focus on: major conglomerates (Samsung, SK, Hyundai, LG, Hanwha, Lotte, POSCO, Doosan), earnings/revenue, M&A, factory openings/closures, supply chain moves, export/import data, GDP/inflation/employment figures, BOK rate decisions, stock market moves, real estate, startup/venture capital. TOPIC DIVERSITY — MANDATORY: Each business_economy item MUST cover a DIFFERENT topic. If multiple articles cover the same company announcement, earnings report, or economic data release from different sources, pick the BEST one and drop the duplicate. Same company + same subject = same topic (e.g. "Hyundai EV sales up 30%" and "Hyundai reports record EV deliveries" are the SAME topic). Each: url, source, headline, body_text (1-2 sentences — state the facts with specific numbers, then add one factual connection to a policy context if obvious: e.g. "Second US plant; cumulative ROK EV investment in US now $12.4B"), companies (array of company names involved, e.g. ["Samsung Electronics", "SK Hynix"]), sector (tech/auto/energy/finance/manufacturing/real-estate/macro). Prioritize stories with policy implications over routine earnings — if you have more than 6 qualifying stories, drop the least policy-relevant ones.
-- northeast_asia: array of 3-6 items (MAX 6; always include at least one Japan-Korea, one China-Korea, and one Russia-Korea or Trilateral item even on slow news days) covering Japan-Korea, China-Korea, Russia-Korea, and US-ROK-Japan trilateral developments from today's news. Combine Japan-, China-, and Russia-related Korea stories into this single section. Each: url, source, headline, body_text (1-2 sentences — facts first, then one beat of context), category (one of: japan-history, trilateral, gsomia, japan-trade, japan-diplomatic, japan-defense, territorial, thaad-retaliation, china-coercion, rare-earth, china-diplomatic, china-military, china-trade, china-opinion, russia-weapons, russia-diplomatic, russia-labor, russia-sanctions, russia-military), signal_type (ESCALATION/ANOMALY/DEVELOPMENT/CONFIRMATION/CONTEXT), is_reaction_source (boolean — true if from Global Times, Xinhua, People's Daily, China Daily, TASS; false otherwise), region_tag ("Japan-Korea" or "China-Korea" or "Trilateral" or "Russia-Korea" — used for visual grouping). Russia-Korea items here are for bilateral diplomatic/economic stories; NK-Russia weapons/cooperation stories belong in top_stories or overnight_items with NK-Russia-China category. Empty array if no relevant stories today. Do NOT duplicate items already in top_stories or overnight_items.
+- northeast_asia: array of 3-6 items (MAX 6; always include at least one Japan-Korea, one China-Korea, and one Russia-Korea or Trilateral item even on slow news days) covering Japan-Korea, China-Korea, Russia-Korea, and US-ROK-Japan trilateral developments from today's news. Combine Japan-, China-, and Russia-related Korea stories into this single section.
+  GEOGRAPHIC SCOPE — STRICT: This section covers ONLY Korea's relations with Japan, China, Russia, Taiwan, and Mongolia, plus US-ROK-Japan trilateral items. Korea's relations with ANY other country or region (Malaysia, Vietnam, ASEAN, India, EU, Middle East, Africa, Latin America, Oceania) do NOT belong here — route those to also_today (The Wire), or business_economy if commercial. A Seoul–Kuala Lumpur nuclear cooperation story is NOT Northeast Asia. Never force a story into this section by mislabeling its category. Each: url, source, headline, body_text (1-2 sentences — facts first, then one beat of context), category (one of: japan-history, trilateral, gsomia, japan-trade, japan-diplomatic, japan-defense, territorial, thaad-retaliation, china-coercion, rare-earth, china-diplomatic, china-military, china-trade, china-opinion, russia-weapons, russia-diplomatic, russia-labor, russia-sanctions, russia-military), signal_type (ESCALATION/ANOMALY/DEVELOPMENT/CONFIRMATION/CONTEXT), is_reaction_source (boolean — true if from Global Times, Xinhua, People's Daily, China Daily, TASS; false otherwise), region_tag ("Japan-Korea" or "China-Korea" or "Trilateral" or "Russia-Korea" — used for visual grouping). Russia-Korea items here are for bilateral diplomatic/economic stories; NK-Russia weapons/cooperation stories belong in top_stories or overnight_items with NK-Russia-China category. Empty array if no relevant stories today. Do NOT duplicate items already in top_stories or overnight_items.
 - public_sentiment: standing dashboard of Korean public opinion polling — ALL metrics MUST come from the SAME Gallup Korea weekly poll (same survey date). Do NOT mix dates across metrics. Object with:
-  - presidential_approval: object with value (percentage as string, e.g. "64%"), trend (up/down/stable), source (polling firm name, e.g. "Gallup Korea"), last_updated (date string, e.g. "May 19-21, 2026"). IMPORTANT — HARD BASELINE: The latest confirmed Gallup Korea figures are from poll #664, surveyed May 19-21 2026: 64% approval, DP 45%, PPP 22%, independents 26%. Use these EXACT numbers. Do NOT change ANY polling number unless a TODAY's source article explicitly reports a NEW Gallup Korea weekly poll with different figures AND you can cite the specific article. Changing a polling number without a sourced article is a fabrication. When in doubt, carry forward 64%/45%/22%/26%. Never mix poll dates. NOTE: Gallup Korea skipped the election-week poll; next poll (#665) expected Jun 12.
+  - presidential_approval: object with value (percentage as string, e.g. "64%"), trend (up/down/stable), source (polling firm name, e.g. "Gallup Korea"), last_updated (date string, e.g. "May 19-21, 2026"). IMPORTANT — HARD BASELINE: The latest confirmed Gallup Korea figures are from {bl_poll}, surveyed {bl_dates}: {bl_appr} approval, DP {bl_dp}, PPP {bl_ppp}, independents {bl_ind}. Use these EXACT numbers. Do NOT change ANY polling number unless a TODAY's source article explicitly reports a NEWER Gallup Korea weekly poll with different figures AND you can cite the specific article. Changing a polling number without a sourced article is a fabrication. When in doubt, carry forward {bl_appr}/{bl_dp}/{bl_ppp}/{bl_ind}. Never mix poll dates. Gallup Korea releases weekly on Fridays — actively check today's articles for a newer poll.
   - party_ruling: object with value (percentage as string, e.g. "45%"), party (English name, e.g. "Democratic Party"), party_kr (Korean name, e.g. "더불어민주당"), trend (up/down/stable), source, last_updated. MUST use the same Gallup Korea poll date as presidential_approval.
   - party_opposition: object with value (percentage as string, e.g. "22%"), party (English name, e.g. "People Power Party"), party_kr (Korean name, e.g. "국민의힘"), trend (up/down/stable), source, last_updated. MUST use the same Gallup Korea poll date as presidential_approval.
   - party_independent: object with value (percentage as string, e.g. "26%"), trend (up/down/stable), source, last_updated. No party preference / independents (무당층) from the same Gallup Korea weekly poll. MUST use the same poll date. This is the swing voter share — when it spikes, it signals disillusionment with both major parties.
