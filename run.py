@@ -1119,6 +1119,16 @@ def main():
             "health_alerts": len(health_report.get("alerts", [])),
             "health_warnings": len(health_report.get("warnings", [])),
         }
+        try:
+            from digest import get_run_usage
+            usage = get_run_usage()
+            metrics.update(usage)
+            if usage["api_calls"]:
+                print(f"  💰  Est. API cost this run: ${usage['est_cost_usd']:.2f} "
+                      f"({usage['api_calls']} calls, {usage['input_tokens']:,} in / "
+                      f"{usage['output_tokens']:,} out)")
+        except Exception:
+            pass
         metrics_path = Path("metrics.jsonl")
         with open(metrics_path, "a") as f:
             f.write(json.dumps(metrics) + "\n")

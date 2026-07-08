@@ -635,6 +635,51 @@ def _robust_json_parse(raw: str) -> dict:
 FAST_MODEL = "claude-sonnet-4-6"
 PRIMARY_MODEL = "claude-opus-4-8"
 
+# $/M tokens (input, output). Cache writes bill at 1.25x the input rate,
+# cache reads at 0.10x. Update when models change.
+MODEL_PRICING = {
+    "claude-sonnet-4-6": (3.00, 15.00),
+    "claude-opus-4-8": (5.00, 25.00),
+}
+
+# Per-call usage accumulated across the run; run.py rolls this into
+# metrics.jsonl so cost_report.py can produce real monthly numbers.
+_RUN_USAGE: list[dict] = []
+
+
+def _record_usage(model: str, usage) -> float:
+    """Log one API call's token usage. Returns estimated cost in USD."""
+    in_rate, out_rate = MODEL_PRICING.get(model, (5.00, 25.00))
+    input_toks = usage.input_tokens
+    output_toks = usage.output_tokens
+    cache_read = getattr(usage, "cache_read_input_tokens", 0) or 0
+    cache_write = getattr(usage, "cache_creation_input_tokens", 0) or 0
+    cost = (input_toks * in_rate
+            + cache_write * in_rate * 1.25
+            + cache_read * in_rate * 0.10
+            + output_toks * out_rate) / 1_000_000
+    _RUN_USAGE.append({
+        "model": model,
+        "input_tokens": input_toks,
+        "output_tokens": output_toks,
+        "cache_write_tokens": cache_write,
+        "cache_read_tokens": cache_read,
+        "est_cost_usd": round(cost, 4),
+    })
+    return cost
+
+
+def get_run_usage() -> dict:
+    """Aggregate usage across all API calls this run, for metrics.jsonl."""
+    return {
+        "api_calls": len(_RUN_USAGE),
+        "input_tokens": sum(u["input_tokens"] for u in _RUN_USAGE),
+        "output_tokens": sum(u["output_tokens"] for u in _RUN_USAGE),
+        "cache_write_tokens": sum(u["cache_write_tokens"] for u in _RUN_USAGE),
+        "cache_read_tokens": sum(u["cache_read_tokens"] for u in _RUN_USAGE),
+        "est_cost_usd": round(sum(u["est_cost_usd"] for u in _RUN_USAGE), 4),
+    }
+
 
 def _stream_claude(client, messages: list, max_tokens: int = 32000,
                     _retries: int = 3, model: str | None = None) -> dict:
@@ -675,8 +720,10 @@ def _stream_claude(client, messages: list, max_tokens: int = 32000,
                 cache_info = f" / {cache_read} cache-hit"
             elif cache_create:
                 cache_info = f" / {cache_create} cache-write"
+            call_cost = _record_usage(use_model, response.usage)
             print(f"    ⏱  {model_label} call: {elapsed:.0f}s "
-                  f"({response.usage.input_tokens} in / {response.usage.output_tokens} out{cache_info})")
+                  f"({response.usage.input_tokens} in / {response.usage.output_tokens} out{cache_info}"
+                  f" / ${call_cost:.3f})")
             return _robust_json_parse(raw_text)
         except (httpx.RemoteProtocolError, httpx.ReadError, httpx.StreamError) as e:
             if attempt < _retries - 1:

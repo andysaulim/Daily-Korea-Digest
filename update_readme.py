@@ -70,6 +70,30 @@ def update_readme():
         except (json.JSONDecodeError, KeyError):
             pass
 
+    # From metrics.jsonl — API cost (fields recorded by run.py since Jun 2026)
+    metrics_path = Path("metrics.jsonl")
+    if metrics_path.exists():
+        try:
+            runs = []
+            for line in metrics_path.read_text().splitlines():
+                line = line.strip()
+                if line:
+                    runs.append(json.loads(line))
+            if runs:
+                last = runs[-1]
+                if "est_cost_usd" in last:
+                    stats["run_cost"] = f"${last['est_cost_usd']:.2f}"
+                month = str(last.get("date", ""))[:7]
+                if len(month) == 7:
+                    tracked = [r["est_cost_usd"] for r in runs
+                               if str(r.get("date", "")).startswith(month)
+                               and "est_cost_usd" in r]
+                    if tracked:
+                        stats["mtd_cost"] = (f"${sum(tracked):.2f} "
+                                             f"({len(tracked)} runs)")
+        except (json.JSONDecodeError, KeyError, ValueError):
+            pass
+
     # Build stats block
     stats_lines = [
         "<!-- STATS:START -->",
@@ -95,6 +119,10 @@ def update_readme():
         stats_lines.append(f"| Word count | ~{stats['word_count']:,} |")
     if "kim_appeared" in stats:
         stats_lines.append(f"| Kim Jong Un appeared | {stats['kim_appeared']} |")
+    if "run_cost" in stats:
+        stats_lines.append(f"| Est. API cost (this run) | {stats['run_cost']} |")
+    if "mtd_cost" in stats:
+        stats_lines.append(f"| Est. API cost (month to date) | {stats['mtd_cost']} |")
 
     stats_lines.append("")
     stats_lines.append("<!-- STATS:END -->")
