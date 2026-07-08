@@ -365,6 +365,23 @@ Cross-reference with the BP LOCATIONS HISTORY tracker above."""
     sentiment_block = ""
     sentiment = payload.get("sentiment_baseline")
     if sentiment and any(v for v in sentiment.values()):
+        # Confirmed baseline comes from gallup_baseline.json (refreshed
+        # weekly by gallup_update.py) so the prompt never goes stale.
+        confirmed_line = ("- The known CONFIRMED baseline is: 57% approval, DP 41%, "
+                          "PPP 29%, independents 21% (Gallup Korea #665, surveyed June 9-11, 2026)")
+        try:
+            _bl = json.loads((Path(__file__).parent / "gallup_baseline.json")
+                             .read_text(encoding="utf-8"))
+            confirmed_line = (
+                f"- The known CONFIRMED baseline is: "
+                f"{_bl['presidential_approval']['value']} approval, "
+                f"DP {_bl['party_ruling']['value']}, "
+                f"PPP {_bl['party_opposition']['value']}, "
+                f"independents {_bl['party_independent']['value']} "
+                f"({_bl.get('poll', 'Gallup Korea')}, surveyed {_bl.get('survey_dates', 'recently')})"
+            )
+        except (OSError, json.JSONDecodeError, KeyError):
+            pass
         sentiment_block = f"""
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 PUBLIC SENTIMENT BASELINE (pre-collected polling data)
@@ -372,10 +389,10 @@ PUBLIC SENTIMENT BASELINE (pre-collected polling data)
 {json.dumps(sentiment, indent=1)}
 Use these as baseline values for the public_sentiment field. If today's articles contain newer polling data from Gallup Korea or Realmeter, update the values. Otherwise carry these forward.
 IMPORTANT VALIDATION: The scraped baseline may contain errors. Cross-check:
-- Presidential approval should be in the 50-65% range (as of mid-June 2026, down sharply after ballot shortage scandal)
-- The known CONFIRMED baseline is: 57% approval, DP 41%, PPP 29%, independents 21% (Gallup Korea #665, June 2nd week, surveyed June 9-11)
-- If the scraped baseline shows numbers close to these, trust them. ACTIVELY look for newer Gallup Korea or Realmeter polling data in today's articles. Korean news outlets report weekly polling every Friday/Monday. If you find a newer poll in today's articles, use those numbers and update last_updated.
-- If the scraped baseline shows presidential approval outside the 40-75% range, or if it looks like a party rating was misidentified as presidential approval, IGNORE the scraped values and use the confirmed baseline above
+{confirmed_line}
+- Presidential approval should be within roughly 10 points of the confirmed baseline above. If the scraped baseline is close to the confirmed numbers, trust it.
+- ACTIVELY look for newer Gallup Korea or Realmeter polling data in today's articles. Korean news outlets report weekly polling every Friday/Monday. If you find a newer poll in today's articles, use those numbers and update last_updated.
+- If the scraped baseline is far outside that range, or if it looks like a party rating was misidentified as presidential approval, IGNORE the scraped values and use the confirmed baseline above
 - ALL 4 metrics MUST come from the SAME poll (same source, same date) — never mix"""
 
     return f"""Today's date: {date_str}

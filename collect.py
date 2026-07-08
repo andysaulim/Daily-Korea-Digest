@@ -21,6 +21,22 @@ def _gnews(query: str) -> str:
     return f"https://news.google.com/rss/search?q={query}&hl=en-US&gl=US&ceid=US:en"
 
 
+def load_gallup_baseline() -> dict:
+    """Load the shared Gallup baseline (gallup_baseline.json).
+
+    Single source of truth for polling fallbacks, used by collect.py,
+    digest.py, and refreshed weekly by gallup_update.py. Returns {} if
+    the file is missing or corrupt — callers keep hardcoded last-resorts.
+    """
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                        "gallup_baseline.json")
+    try:
+        with open(path, encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
 TIER1_FEEDS = {
     # ── Korean English-language dailies ────────────────────────────────────
     "Korea Herald":       "https://www.koreaherald.com/common/rss_xml.php?ct=102",
@@ -1557,46 +1573,48 @@ def _collect_sentiment() -> dict:
             continue
 
     # ── Fallback baselines (carry-forward when scraping fails) ─────────
-    # These are the most recent known values from Gallup Korea weekly polls.
-    # They ensure the sentiment tracker always renders with data.
+    # Read from gallup_baseline.json — updated weekly by gallup_update.py
+    # (Friday workflow) or manually. Hardcoded values below are the
+    # last-resort if the JSON is missing/corrupt.
+    baseline = load_gallup_baseline()
+    bl_date = baseline.get("survey_dates", "June 9-11, 2026")
+    bl_source = baseline.get("source", "Gallup Korea")
+
+    def _bl(key: str, defaults: dict) -> dict:
+        merged = dict(defaults)
+        merged.update(baseline.get(key) or {})
+        merged["source"] = bl_source
+        merged["last_updated"] = bl_date
+        return merged
+
     fallback_used = []
-    # Fallback: Gallup Korea weekly poll #665, surveyed June 9-11 2026
-    # Lee approval at 57% (down 7pp from 64%). DP 41%, PPP 29%, independents 21%.
-    # Source: MBC News, Newdaily, Eroun.net reporting Gallup Korea
     if not sentiment["presidential_approval"]:
         fallback_used.append("presidential_approval")
-        sentiment["presidential_approval"] = {
-            "value": "57%", "trend": "down",
-            "source": "Gallup Korea", "last_updated": "June 9-11, 2026",
-        }
+        sentiment["presidential_approval"] = _bl(
+            "presidential_approval", {"value": "57%", "trend": "down"})
     if not sentiment["party_ruling"]:
         fallback_used.append("party_ruling")
-        sentiment["party_ruling"] = {
-            "value": "41%", "party": "Democratic Party",
-            "party_kr": "더불어민주당", "trend": "down",
-            "source": "Gallup Korea", "last_updated": "June 9-11, 2026",
-        }
+        sentiment["party_ruling"] = _bl(
+            "party_ruling", {"value": "41%", "party": "Democratic Party",
+                             "party_kr": "더불어민주당", "trend": "down"})
     if not sentiment["party_opposition"]:
         fallback_used.append("party_opposition")
-        sentiment["party_opposition"] = {
-            "value": "29%", "party": "People Power Party",
-            "party_kr": "국민의힘", "trend": "up",
-            "source": "Gallup Korea", "last_updated": "June 9-11, 2026",
-        }
+        sentiment["party_opposition"] = _bl(
+            "party_opposition", {"value": "29%", "party": "People Power Party",
+                                 "party_kr": "국민의힘", "trend": "up"})
     if not sentiment["party_independent"]:
         fallback_used.append("party_independent")
-        sentiment["party_independent"] = {
-            "value": "21%", "trend": "down",
-            "source": "Gallup Korea", "last_updated": "June 9-11, 2026",
-        }
+        sentiment["party_independent"] = _bl(
+            "party_independent", {"value": "21%", "trend": "down"})
     if fallback_used:
         print(f"    ⚠  Sentiment: using fallbacks for {', '.join(fallback_used)}")
     if not sentiment["gallup_spotlight"]:
         fallback_used.append("gallup_spotlight")
-        sentiment["gallup_spotlight"] = {
+        spotlight = baseline.get("spotlight") or {
             "headline": "투표용지 부족 사태: 67% 선거관리 부실, 25% 부정선거 증거 — 한국갤럽 6월 2주차",
             "poll_date": "June 12, 2026",
         }
+        sentiment["gallup_spotlight"] = dict(spotlight)
         print("    ⚠  Sentiment: using fallback for gallup_spotlight")
 
     return sentiment
