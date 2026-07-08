@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Korea Daily Brief — Preview v3 (Refined Editorial · Taegukgi)</title>
+<!--
+  PREVIEW V3 — design sign-off mockup, sample content dated June 18, 2026.
+  Direction: Refined Editorial base + Data Terminal numerals.
+  Palette: Taegukgi red #CD2E3A / blue #0047A0, gold retired.
+  Rule: monospace = machine-measured values only; Georgia/Arial = human text.
+  Email-safe construction: tables, system fonts, no grid/flex/JS.
+  All 13 findings from the Q3 mobile audit are fixed by construction here.
+-->
+<style type="text/css">
+  body, table, td, div, p { margin:0; padding:0; }
+  img { border:0; display:block; }
+  table { border-collapse:collapse; }
+  /* ── Mobile ── */
+  @media only screen and (max-width: 620px) {
+    .wrapper { width:100% !important; }
+    .sec, .footer { padding:16px 16px !important; }
+    /* Masthead keeps presence on phones (audit fix: was 19px) */
+    h1 { font-size:22px !important; }
+    /* Market strip STAYS 3-across on mobile (audit fix: was 6 stacked rows) */
+    .mkt-strip .v { font-size:14px !important; }
+    .mkt-strip td { padding:8px 4px 10px !important; }
+    /* Grids stack once, declared once (audit fix: duplicate rules removed) */
+    .loc-grid td, .gov-grid td { display:block !important; width:100% !important; padding:5px 0 !important; }
+    .loc-grid tr, .gov-grid tr { display:block !important; }
+    .sentiment-strip td { display:inline-block !important; width:47% !important; box-sizing:border-box !important; padding:10px 4px !important; text-align:center !important; }
+    .stack-table td { display:block !important; width:100% !important; padding:4px 0 !important; white-space:normal !important; }
+    .stack-table tr { display:block !important; border-bottom:1px solid #ECECEC !important; padding:5px 0 !important; }
+    p, div { word-wrap:break-word !important; overflow-wrap:break-word !important; }
+    /* Touch targets: min-height only, no line-height bloat (audit fix) */
+    a { min-height:44px; }
+    p a, div a, td a { min-height:auto; padding:6px 0; }
+    img { max-width:100% !important; height:auto !important; }
+  }
+  /* ── Tablet ── */
+  @media only screen and (min-width: 621px) and (max-width: 768px) {
+    .wrapper { width:100% !important; }
+    .sec, .footer { padding:16px 22px !important; }
+    .mkt-strip td { padding:10px 10px 12px !important; }
+  }
+  /* ── Dark mode: scoped tokens, no blanket !important on every element (audit fix) ── */
+  @media (prefers-color-scheme: dark) {
+    body { background:#101214 !important; }
+    .wrapper { background:#181A1D !important; }
+    .sec { background:#181A1D !important; border-bottom-color:#2A2D31 !important; }
+    .prose-h { color:#E8E6E1 !important; }
+    .prose-b { color:#B9BDC4 !important; }
+    .meta-t { color:#8A9099 !important; }
+    .card-bg { background:#212429 !important; border-color:#33373D !important; }
+    a { color:#6FA8E8 !important; }
+  }
+</style>
+</head>
+<body style="background:#EDEDEB;font-family:Arial,Helvetica,sans-serif;">
+
+<!-- Preview ribbon — removed in production -->
+<div style="background:#3B3F45;color:#C9CDD3;text-align:center;padding:6px 10px;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;">Preview v3 · Sample content · Not sent</div>
+
+<div class="wrapper" style="max-width:680px;width:100%;margin:0 auto;background:#FFFFFF;box-shadow:0 2px 20px rgba(0,0,0,0.08);">
+
+  <!-- ═══ Taeguk dual rule — the signature device ═══ -->
+  <div style="height:3px;background:#CD2E3A;font-size:0;line-height:0;">&nbsp;</div>
+  <div style="height:3px;background:#0047A0;font-size:0;line-height:0;">&nbsp;</div>
+
+  <!-- ═══ MASTHEAD ═══ -->
+  <div class="sec" style="background:#072B52;padding:24px 32px 20px;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+      <td>
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:3px;color:rgba(255,255,255,0.65);margin-bottom:7px;">CSIS Korea Chair</div>
+        <h1 style="margin:0;font-size:24px;font-weight:700;font-family:Georgia,'Times New Roman',serif;color:#FFFFFF;letter-spacing:0.3px;">Korea Daily Brief</h1>
+        <div style="margin-top:7px;font-size:14px;color:rgba(255,255,255,0.88);font-family:Georgia,serif;">Thursday, June 18, 2026</div>
+      </td>
+      <td align="right" valign="top">
+        <div style="font-family:'Courier New',Courier,monospace;font-size:11px;color:rgba(255,255,255,0.55);white-space:nowrap;">06:00 ET<br>1,214 wds · 6 min</div>
+      </td>
+    </tr></table>
+    <div style="margin-top:15px;padding-top:13px;border-top:1px solid rgba(205,46,58,0.45);font-size:13px;color:rgba(255,255,255,0.92);font-family:Georgia,serif;line-height:1.55;">
+      <span style="color:#E8697A;font-size:11px;letter-spacing:1.5px;font-family:Arial,sans-serif;font-weight:700;">RE:</span>&nbsp;
+      KF-21 airworthiness certified · NK declares denuclearization "irreversibly terminated" · JTBC/JoongAng files receivership · Lee approval fallout continues
+    </div>
+  </div>
+
+  <!-- ═══ MARKET STRIP — mono numerals, stays 3-across on mobile ═══ -->
+  <table class="mkt-strip" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#051F3D;">
+    <tr>
+      <td width="33%" align="center" style="padding:11px 8px 13px;">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#7B90AC;">KOSPI</div>
+        <div class="v" style="font-family:'Courier New',Courier,monospace;font-size:16px;font-weight:700;color:#FFFFFF;margin-top:3px;">2,548.32</div>
+        <div style="font-family:'Courier New',Courier,monospace;font-size:11px;color:#E8697A;margin-top:2px;">▼ -0.42%</div>
+      </td>
+      <td width="34%" align="center" style="padding:11px 8px 13px;border-left:1px solid rgba(255,255,255,0.10);border-right:1px solid rgba(255,255,255,0.10);">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#7B90AC;">Brent Crude</div>
+        <div class="v" style="font-family:'Courier New',Courier,monospace;font-size:16px;font-weight:700;color:#FFFFFF;margin-top:3px;">$68.15</div>
+        <div style="font-family:'Courier New',Courier,monospace;font-size:11px;color:#69C88E;margin-top:2px;">▲ +0.31%</div>
+      </td>
+      <td width="33%" align="center" style="padding:11px 8px 13px;">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#7B90AC;">USD/KRW</div>
+        <div class="v" style="font-family:'Courier New',Courier,monospace;font-size:16px;font-weight:700;color:#FFFFFF;margin-top:3px;">1,378.50</div>
+        <div style="font-family:'Courier New',Courier,monospace;font-size:11px;color:#69C88E;margin-top:2px;">▲ +0.08%</div>
+      </td>
+    </tr>
+    <tr>
+      <td align="center" style="padding:9px 8px 11px;border-top:1px solid rgba(255,255,255,0.07);">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#7B90AC;">BOK Rate</div>
+        <div class="v" style="font-family:'Courier New',Courier,monospace;font-size:14px;font-weight:700;color:#D5DDE8;margin-top:2px;">2.50%</div>
+      </td>
+      <td align="center" style="padding:9px 8px 11px;border-top:1px solid rgba(255,255,255,0.07);border-left:1px solid rgba(255,255,255,0.10);border-right:1px solid rgba(255,255,255,0.10);">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#7B90AC;">Korea 5Y CDS</div>
+        <div class="v" style="font-family:'Courier New',Courier,monospace;font-size:14px;font-weight:700;color:#D5DDE8;margin-top:2px;">25 bps</div>
+      </td>
+      <td align="center" style="padding:9px 8px 11px;border-top:1px solid rgba(255,255,255,0.07);">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#7B90AC;">2026 GDP Est</div>
+        <div class="v" style="font-family:'Courier New',Courier,monospace;font-size:14px;font-weight:700;color:#D5DDE8;margin-top:2px;">1.8%</div>
+      </td>
+    </tr>
+  </table>
+
+  <!-- ═══ TOP STORIES ═══ -->
+  <div class="sec" style="padding:22px 32px 6px;border-bottom:1px solid #ECECEC;">
+    <div style="font-size:11px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:#0047A0;border-bottom:2px solid #0047A0;display:inline-block;padding-bottom:5px;">Top Stories</div>
+  </div>
+
+  <div class="sec" style="padding:16px 32px 18px;border-bottom:1px solid #ECECEC;">
+    <div class="meta-t" style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#0047A0;margin-bottom:6px;">Defense &middot; Yonhap</div>
+    <div class="prose-h" style="font-family:Georgia,serif;font-size:17px;font-weight:700;color:#1A222E;line-height:1.32;margin-bottom:8px;">KF-21 fighter jet cleared for full airworthiness certification</div>
+    <div class="prose-b" style="font-family:Georgia,serif;font-size:13px;color:#3D4451;line-height:1.6;margin-bottom:10px;">The Defense Acquisition Program Administration announced Thursday that KAI's KF-21 Boramae completed all flight-envelope testing and received full military airworthiness certification, clearing the path for Block 1 mass production beginning October. Poland and Indonesia — both prospective export customers — have observers embedded with the DAPA program office for the certification review.</div>
+    <div style="border-left:2px solid #0047A0;padding:7px 13px;font-size:12px;color:#4A5260;line-height:1.55;">
+      <span style="font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:#0047A0;font-weight:700;">So what</span> — First operational deployment expected 1st ROKAF wing in Q3 2027; Indonesia's unresolved 20% program stake remains the export-financing wildcard.
+    </div>
+  </div>
+
+  <div class="sec" style="padding:16px 32px 18px;border-bottom:1px solid #ECECEC;">
+    <div class="meta-t" style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#0047A0;margin-bottom:6px;">DPRK &middot; KCNA Watch &nbsp;<span style="background:#CD2E3A;color:#FFFFFF;font-size:10px;font-weight:700;letter-spacing:1px;padding:2px 7px;border-radius:2px;">ESCALATION</span></div>
+    <div class="prose-h" style="font-family:Georgia,serif;font-size:17px;font-weight:700;color:#1A222E;line-height:1.32;margin-bottom:8px;">DPRK declares denuclearization "irreversibly terminated" in KCNA commentary</div>
+    <div class="prose-b" style="font-family:Georgia,serif;font-size:13px;color:#3D4451;line-height:1.6;margin-bottom:10px;">A KCNA political commentary released Wednesday declared any future denuclearization negotiations "irreversibly terminated," describing the nuclear program as "permanently and eternally locked in." The formulation exceeds the October 2025 constitutional-status language and lands one week before the anticipated Kim–Xi summit window.</div>
+    <div style="border-left:2px solid #CD2E3A;padding:7px 13px;font-size:12px;color:#4A5260;line-height:1.55;">
+      <span style="font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:#CD2E3A;font-weight:700;">So what</span> — Hardens Pyongyang's opening position ahead of any US preconditions framework; watch for echo in Rodong Sinmun editorial placement over the next 72 hours.
+    </div>
+  </div>
+
+  <div class="sec" style="padding:16px 32px 20px;border-bottom:1px solid #ECECEC;">
+    <div class="meta-t" style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#0047A0;margin-bottom:6px;">Politics &middot; Hankyoreh</div>
+    <div class="prose-h" style="font-family:Georgia,serif;font-size:17px;font-weight:700;color:#1A222E;line-height:1.32;margin-bottom:8px;">Lee agenda stalls as NEC reform bill splits ruling party</div>
+    <div class="prose-b" style="font-family:Georgia,serif;font-size:13px;color:#3D4451;line-height:1.6;margin-bottom:10px;">The Democratic Party's National Election Commission reform bill cleared committee on a party-line vote Wednesday, but eleven DP lawmakers abstained, citing the June 3 ballot-shortage investigation still underway. President Lee's approval sits at 57% in Gallup's June 2nd-week poll — down seven points, the sharpest single-poll decline of his term.</div>
+    <div style="border-left:2px solid #0047A0;padding:7px 13px;font-size:12px;color:#4A5260;line-height:1.55;">
+      <span style="font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:#0047A0;font-weight:700;">So what</span> — First visible crack in DP floor discipline since inauguration; the abstention bloc maps onto the party's 2027 leadership rivals.
+    </div>
+  </div>
+
+  <!-- ═══ OVERNIGHT FLASH — red accent section ═══ -->
+  <div class="sec" style="padding:22px 32px 6px;border-top:3px solid #CD2E3A;border-bottom:1px solid #ECECEC;">
+    <div style="font-size:11px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:#CD2E3A;border-bottom:2px solid #CD2E3A;display:inline-block;padding-bottom:5px;">&#9889; Overnight Flash</div>
+  </div>
+  <div class="sec" style="padding:14px 32px 18px;border-bottom:1px solid #ECECEC;">
+    <div style="padding:10px 0;border-bottom:1px solid #F2F2F2;">
+      <div class="prose-h" style="font-family:Georgia,serif;font-size:14px;font-weight:700;color:#1A222E;line-height:1.4;">JTBC parent JoongAng Holdings files for court receivership</div>
+      <div class="prose-b" style="font-family:Georgia,serif;font-size:13px;color:#3D4451;line-height:1.55;margin-top:4px;">Filing cites $1.2B in overdue debt tied to the K-content production build-out; regulatory review begins Monday. First receivership of a major Korean media group since 1998. <span class="meta-t" style="font-size:11px;color:#78828F;text-transform:uppercase;letter-spacing:0.5px;">— Reuters</span></div>
+    </div>
+    <div style="padding:10px 0;border-bottom:1px solid #F2F2F2;">
+      <div class="prose-h" style="font-family:Georgia,serif;font-size:14px;font-weight:700;color:#1A222E;line-height:1.4;">Seoul and Tokyo resume defense logistics pact talks after two-year freeze</div>
+      <div class="prose-b" style="font-family:Georgia,serif;font-size:13px;color:#3D4451;line-height:1.55;margin-top:4px;">Working-level talks on an ACSA-style mutual logistics agreement restarted in Tokyo; the pact would permit port refueling during joint exercises. <span class="meta-t" style="font-size:11px;color:#78828F;text-transform:uppercase;letter-spacing:0.5px;">— Nikkei</span></div>
+    </div>
+    <div style="padding:10px 0;border-bottom:1px solid #F2F2F2;">
+      <div class="prose-h" style="font-family:Georgia,serif;font-size:14px;font-weight:700;color:#1A222E;line-height:1.4;">Kim Jong Un sends birthday message to Xi Jinping</div>
+      <div class="prose-b" style="font-family:Georgia,serif;font-size:13px;color:#3D4451;line-height:1.55;margin-top:4px;">KCNA carried a personal message emphasizing "eternal friendship" — Kim's first birthday greeting to Xi since 2023, and a scheduling data point for the anticipated summit. <span class="meta-t" style="font-size:11px;color:#78828F;text-transform:uppercase;letter-spacing:0.5px;">— KCNA via Yonhap</span></div>
+    </div>
+    <div style="padding:10px 0;">
+      <div class="prose-h" style="font-family:Georgia,serif;font-size:14px;font-weight:700;color:#1A222E;line-height:1.4;">OFAC designates three DPRK IT-worker front companies in Laos</div>
+      <div class="prose-b" style="font-family:Georgia,serif;font-size:13px;color:#3D4451;line-height:1.55;margin-top:4px;">Treasury action targets revenue channels for the Munitions Industry Department; two designated firms shared infrastructure with entities sanctioned in March. <span class="meta-t" style="font-size:11px;color:#78828F;text-transform:uppercase;letter-spacing:0.5px;">— US Treasury</span></div>
+    </div>
+  </div>
+
+  <!-- ═══ KEY STAT ═══ -->
+  <div class="sec card-bg" style="padding:20px 32px;background:#F5F7FA;border-bottom:1px solid #ECECEC;text-align:center;">
+    <div style="font-size:11px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:#78828F;margin-bottom:8px;">Key Stat of the Day</div>
+    <div style="font-family:'Courier New',Courier,monospace;font-size:34px;font-weight:700;color:#CD2E3A;">57% <span style="font-size:16px;color:#A93226;">▼ -7pp</span></div>
+    <div class="prose-b" style="font-family:Georgia,serif;font-size:13px;color:#3D4451;line-height:1.55;margin-top:7px;max-width:440px;margin-left:auto;margin-right:auto;">Lee Jae-myung's approval, Gallup Korea #665 — first reading below 60% in four months and the steepest single-poll drop of his presidency, driven by the ballot-shortage crisis.</div>
+  </div>
+
+  <!-- ═══ PYONGYANG WATCH — dark data panel ═══ -->
+  <div class="sec" style="padding:22px 32px 20px;background:#0A1E38;border-bottom:1px solid #ECECEC;">
+    <div style="font-size:11px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:#7B90AC;border-bottom:2px solid #CD2E3A;display:inline-block;padding-bottom:5px;margin-bottom:14px;">Pyongyang Watch &middot; KCNA Analysis</div>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" class="gov-grid"><tr>
+      <td width="33%" style="padding-right:10px;">
+        <div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#7B90AC;">Kim Jong Un</div>
+        <div style="font-family:'Courier New',Courier,monospace;font-size:15px;font-weight:700;color:#FFFFFF;margin-top:3px;">SEEN TODAY</div>
+        <div style="font-size:12px;color:#A8B6C8;margin-top:2px;">Xi birthday message, KCNA 04:40</div>
+      </td>
+      <td width="33%" style="padding-right:10px;">
+        <div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#7B90AC;">Output Volume</div>
+        <div style="font-family:'Courier New',Courier,monospace;font-size:15px;font-weight:700;color:#FFFFFF;margin-top:3px;">MODERATE</div>
+        <div style="font-size:12px;color:#A8B6C8;margin-top:2px;">9 articles vs 11.2 14-day avg</div>
+      </td>
+      <td width="34%">
+        <div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#7B90AC;">Tone Shift</div>
+        <div style="font-family:'Courier New',Courier,monospace;font-size:15px;font-weight:700;color:#E8697A;margin-top:3px;">ESCALATORY</div>
+        <div style="font-size:12px;color:#A8B6C8;margin-top:2px;">3 new rejection formulations</div>
+      </td>
+    </tr></table>
+    <div style="margin-top:16px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.10);">
+      <div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#7B90AC;margin-bottom:8px;">Phrase frequency vs 14-day baseline</div>
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td style="padding:3px 0;font-size:12px;color:#D5DDE8;">"irreversibly terminated"</td>
+          <td width="60" align="right" style="font-family:'Courier New',Courier,monospace;font-size:12px;font-weight:700;color:#E8697A;">4 <span style="color:#7B90AC;">(new)</span></td>
+        </tr>
+        <tr>
+          <td style="padding:3px 0;font-size:12px;color:#D5DDE8;">"eternal friendship"</td>
+          <td width="60" align="right" style="font-family:'Courier New',Courier,monospace;font-size:12px;font-weight:700;color:#D5DDE8;">2 <span style="color:#7B90AC;">(+2)</span></td>
+        </tr>
+        <tr>
+          <td style="padding:3px 0;font-size:12px;color:#D5DDE8;">"hostile forces"</td>
+          <td width="60" align="right" style="font-family:'Courier New',Courier,monospace;font-size:12px;font-weight:700;color:#D5DDE8;">6 <span style="color:#7B90AC;">(−1)</span></td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══ SATELLITE & LOCATION WATCH ═══ -->
+  <div class="sec" style="padding:22px 32px 20px;border-bottom:1px solid #ECECEC;">
+    <div style="font-size:11px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:#0047A0;border-bottom:2px solid #0047A0;display:inline-block;padding-bottom:5px;margin-bottom:14px;">Satellite &amp; Location Watch</div>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" class="loc-grid">
+      <tr>
+        <td width="50%" style="padding:0 6px 10px 0;">
+          <div class="card-bg" style="border:1px solid #E4E7EC;border-left:3px solid #0047A0;padding:11px 13px;">
+            <div style="font-size:13px;font-weight:700;color:#1A222E;">Yongbyon <span style="font-family:'Courier New',Courier,monospace;font-size:11px;font-weight:700;color:#0047A0;">ACTIVE</span></div>
+            <div class="prose-b" style="font-size:12px;color:#4A5260;line-height:1.5;margin-top:4px;">Fuel fabrication line operational per 38 North imagery.</div>
+            <div style="font-family:'Courier New',Courier,monospace;font-size:11px;color:#78828F;margin-top:5px;">as of JUN 10</div>
+          </div>
+        </td>
+        <td width="50%" style="padding:0 0 10px 6px;">
+          <div class="card-bg" style="border:1px solid #E4E7EC;border-left:3px solid #CD2E3A;padding:11px 13px;">
+            <div style="font-size:13px;font-weight:700;color:#1A222E;">Sohae <span style="font-family:'Courier New',Courier,monospace;font-size:11px;font-weight:700;color:#CD2E3A;">ANOMALY</span></div>
+            <div class="prose-b" style="font-size:12px;color:#4A5260;line-height:1.5;margin-top:4px;">New gantry construction visible on latest pass.</div>
+            <div style="font-family:'Courier New',Courier,monospace;font-size:11px;color:#78828F;margin-top:5px;">as of JUN 12</div>
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <td width="50%" style="padding:0 6px 0 0;">
+          <div class="card-bg" style="border:1px solid #E4E7EC;border-left:3px solid #B9BDC4;padding:11px 13px;">
+            <div style="font-size:13px;font-weight:700;color:#1A222E;">Punggye-ri <span style="font-family:'Courier New',Courier,monospace;font-size:11px;font-weight:700;color:#78828F;">DORMANT</span></div>
+            <div class="prose-b" style="font-size:12px;color:#4A5260;line-height:1.5;margin-top:4px;">No new tunnel activity observed since May.</div>
+            <div style="font-family:'Courier New',Courier,monospace;font-size:11px;color:#78828F;margin-top:5px;">as of MAY 28</div>
+          </div>
+        </td>
+        <td width="50%" style="padding:0 0 0 6px;">
+          <div class="card-bg" style="border:1px solid #E4E7EC;border-left:3px solid #B9BDC4;padding:11px 13px;">
+            <div style="font-size:13px;font-weight:700;color:#1A222E;">Sinpo <span style="font-family:'Courier New',Courier,monospace;font-size:11px;font-weight:700;color:#78828F;">STANDBY</span></div>
+            <div class="prose-b" style="font-size:12px;color:#4A5260;line-height:1.5;margin-top:4px;">SLBM test submarine remains in dry dock.</div>
+            <div style="font-family:'Courier New',Courier,monospace;font-size:11px;color:#78828F;margin-top:5px;">as of JUN 05</div>
+          </div>
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- ═══ ROK GOVERNMENT ═══ -->
+  <div class="sec" style="padding:22px 32px 20px;border-bottom:1px solid #ECECEC;">
+    <div style="font-size:11px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:#0047A0;border-bottom:2px solid #0047A0;display:inline-block;padding-bottom:5px;margin-bottom:14px;">ROK Government</div>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" class="gov-grid"><tr>
+      <td width="33%" style="padding-right:8px;">
+        <div class="card-bg" style="background:#F5F7FA;padding:10px 12px;">
+          <div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#0047A0;font-weight:700;">MOFA</div>
+          <div class="prose-b" style="font-size:12px;color:#3D4451;line-height:1.5;margin-top:4px;">1st Vice Minister departs for Washington tariff consultations.</div>
+        </div>
+      </td>
+      <td width="33%" style="padding-right:8px;">
+        <div class="card-bg" style="background:#F5F7FA;padding:10px 12px;">
+          <div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#0047A0;font-weight:700;">MND</div>
+          <div class="prose-b" style="font-size:12px;color:#3D4451;line-height:1.5;margin-top:4px;">KF-21 certification statement; Block 1 procurement timeline confirmed.</div>
+        </div>
+      </td>
+      <td width="34%">
+        <div class="card-bg" style="background:#F5F7FA;padding:10px 12px;">
+          <div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#0047A0;font-weight:700;">MOU</div>
+          <div class="prose-b" style="font-size:12px;color:#3D4451;line-height:1.5;margin-top:4px;">Separated-family registry update: 38,102 surviving registrants.</div>
+        </div>
+      </td>
+    </tr></table>
+    <div style="margin-top:14px;">
+      <div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#78828F;font-weight:700;margin-bottom:6px;">Calendar Watch</div>
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td width="64" style="padding:5px 0;font-family:'Courier New',Courier,monospace;font-size:12px;font-weight:700;color:#0047A0;">JUN 22</td>
+          <td style="padding:5px 0;font-size:12px;color:#3D4451;">NSC standing committee — DPRK statement response review</td>
+        </tr>
+        <tr>
+          <td width="64" style="padding:5px 0;font-family:'Courier New',Courier,monospace;font-size:12px;font-weight:700;color:#0047A0;">JUN 24</td>
+          <td style="padding:5px 0;font-size:12px;color:#3D4451;">Bank of Korea June minutes release</td>
+        </tr>
+        <tr>
+          <td width="64" style="padding:5px 0;font-family:'Courier New',Courier,monospace;font-size:12px;font-weight:700;color:#0047A0;">JUN 26</td>
+          <td style="padding:5px 0;font-size:12px;color:#3D4451;">Gallup Korea #666 release (June 4th week)</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══ ELECTION TRACKER ═══ -->
+  <div class="sec" style="padding:22px 32px 20px;border-bottom:1px solid #ECECEC;">
+    <div style="font-size:11px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:#0047A0;border-bottom:2px solid #0047A0;display:inline-block;padding-bottom:5px;margin-bottom:14px;">Election Tracker &middot; June 3 Aftermath</div>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" class="stack-table">
+      <tr>
+        <td style="padding:6px 0;font-size:12px;color:#3D4451;border-bottom:1px solid #F2F2F2;">NEC reform bill</td>
+        <td align="right" style="padding:6px 0;font-family:'Courier New',Courier,monospace;font-size:12px;font-weight:700;color:#0047A0;border-bottom:1px solid #F2F2F2;">COMMITTEE PASSED</td>
+      </tr>
+      <tr>
+        <td style="padding:6px 0;font-size:12px;color:#3D4451;border-bottom:1px solid #F2F2F2;">Ballot-shortage special investigation</td>
+        <td align="right" style="padding:6px 0;font-family:'Courier New',Courier,monospace;font-size:12px;font-weight:700;color:#CD2E3A;border-bottom:1px solid #F2F2F2;">ONGOING · WK 2</td>
+      </tr>
+      <tr>
+        <td style="padding:6px 0;font-size:12px;color:#3D4451;">Invalidated-precinct by-elections</td>
+        <td align="right" style="padding:6px 0;font-family:'Courier New',Courier,monospace;font-size:12px;font-weight:700;color:#0047A0;">AUG 12 · 3 SEATS</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- ═══ US-KOREA TRADE & INVESTMENT ═══ -->
+  <div class="sec" style="padding:22px 32px 20px;border-bottom:1px solid #ECECEC;">
+    <div style="font-size:11px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:#0047A0;border-bottom:2px solid #0047A0;display:inline-block;padding-bottom:5px;margin-bottom:14px;">US-Korea Trade &amp; Investment</div>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+      <td width="50%" style="padding-right:10px;" class="gov-grid">
+        <div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#78828F;">Headline Rate</div>
+        <div style="font-family:'Courier New',Courier,monospace;font-size:22px;font-weight:700;color:#1A222E;margin-top:3px;">10%</div>
+        <div class="prose-b" style="font-size:12px;color:#4A5260;line-height:1.5;margin-top:3px;">Section 122 global surcharge — expires <span style="font-family:'Courier New',Courier,monospace;font-weight:700;color:#CD2E3A;">JUL 24</span></div>
+      </td>
+      <td width="50%">
+        <div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#78828F;">Next Trigger</div>
+        <div class="prose-b" style="font-size:12px;color:#4A5260;line-height:1.55;margin-top:5px;">Commerce/USTR semiconductor 232 report — overdue since <span style="font-family:'Courier New',Courier,monospace;font-weight:700;">APR 14</span>; industry briefings suggest July release.</div>
+      </td>
+    </tr></table>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" class="stack-table" style="margin-top:12px;">
+      <tr>
+        <td style="padding:5px 0;font-size:12px;color:#3D4451;border-bottom:1px solid #F2F2F2;">Autos &amp; parts</td>
+        <td align="right" style="padding:5px 0;font-family:'Courier New',Courier,monospace;font-size:12px;font-weight:700;color:#1A222E;border-bottom:1px solid #F2F2F2;">25% · §232</td>
+      </tr>
+      <tr>
+        <td style="padding:5px 0;font-size:12px;color:#3D4451;border-bottom:1px solid #F2F2F2;">Steel &amp; aluminum</td>
+        <td align="right" style="padding:5px 0;font-family:'Courier New',Courier,monospace;font-size:12px;font-weight:700;color:#1A222E;border-bottom:1px solid #F2F2F2;">25% · §232</td>
+      </tr>
+      <tr>
+        <td style="padding:5px 0;font-size:12px;color:#3D4451;">Semiconductors</td>
+        <td align="right" style="padding:5px 0;font-family:'Courier New',Courier,monospace;font-size:12px;font-weight:700;color:#CD2E3A;">PENDING §232</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- ═══ BUSINESS & ECONOMY ═══ -->
+  <div class="sec" style="padding:22px 32px 18px;border-bottom:1px solid #ECECEC;">
+    <div style="font-size:11px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:#0047A0;border-bottom:2px solid #0047A0;display:inline-block;padding-bottom:5px;margin-bottom:12px;">Business &amp; Economy</div>
+    <div style="padding:8px 0;border-bottom:1px solid #F2F2F2;">
+      <div class="prose-h" style="font-family:Georgia,serif;font-size:14px;font-weight:700;color:#1A222E;line-height:1.4;">Samsung guides Q2 HBM3E revenue to <span style="font-family:'Courier New',Courier,monospace;">$4.2B</span>, up 38% QoQ</div>
+      <div class="prose-b" style="font-family:Georgia,serif;font-size:13px;color:#3D4451;line-height:1.55;margin-top:4px;">NVIDIA and AMD orders drive the beat; guidance implies Samsung closing the HBM share gap with SK Hynix two quarters ahead of consensus. <span class="meta-t" style="font-size:11px;color:#78828F;text-transform:uppercase;letter-spacing:0.5px;">— Bloomberg</span></div>
+    </div>
+    <div style="padding:8px 0;">
+      <div class="prose-h" style="font-family:Georgia,serif;font-size:14px;font-weight:700;color:#1A222E;line-height:1.4;">Hanwha and KAI form joint export-financing vehicle for Middle East defense sales</div>
+      <div class="prose-b" style="font-family:Georgia,serif;font-size:13px;color:#3D4451;line-height:1.55;margin-top:4px;">The ₩2T facility pairs K9 and FA-50 packages with Korea Eximbank guarantees, targeting UAE and Saudi procurement windows. <span class="meta-t" style="font-size:11px;color:#78828F;text-transform:uppercase;letter-spacing:0.5px;">— Korea Economic Daily</span></div>
+    </div>
+  </div>
+
+  <!-- ═══ NORTHEAST ASIA WATCH ═══ -->
+  <div class="sec" style="padding:22px 32px 18px;border-bottom:1px solid #ECECEC;">
+    <div style="font-size:11px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:#0047A0;border-bottom:2px solid #0047A0;display:inline-block;padding-bottom:5px;margin-bottom:12px;">Northeast Asia Watch</div>
+    <div style="padding:8px 0;border-bottom:1px solid #F2F2F2;">
+      <div class="prose-h" style="font-family:Georgia,serif;font-size:14px;font-weight:700;color:#1A222E;line-height:1.4;">Japan PM commits to trilateral summit "before autumn" in Diet address</div>
+      <div class="prose-b" style="font-family:Georgia,serif;font-size:13px;color:#3D4451;line-height:1.55;margin-top:4px;">First firm timeline from Tokyo since the Camp David framework review began; MOFA sources point to a Busan venue. <span class="meta-t" style="font-size:11px;color:#78828F;text-transform:uppercase;letter-spacing:0.5px;">— Kyodo</span></div>
+    </div>
+    <div style="padding:8px 0;">
+      <div class="prose-h" style="font-family:Georgia,serif;font-size:14px;font-weight:700;color:#1A222E;line-height:1.4;">China expands rare-earth export licensing to two Korean magnet makers</div>
+      <div class="prose-b" style="font-family:Georgia,serif;font-size:13px;color:#3D4451;line-height:1.55;margin-top:4px;">MOFCOM approvals cover NdFeB inputs for EV traction motors; analysts read the timing as a signal ahead of the Seoul–Beijing economic dialogue. <span class="meta-t" style="font-size:11px;color:#78828F;text-transform:uppercase;letter-spacing:0.5px;">— SCMP</span></div>
+    </div>
+  </div>
+
+  <!-- ═══ PUBLIC SENTIMENT TRACKER ═══ -->
+  <div class="sec" style="padding:22px 32px 20px;border-bottom:1px solid #ECECEC;">
+    <div style="font-size:11px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:#0047A0;border-bottom:2px solid #0047A0;display:inline-block;padding-bottom:5px;margin-bottom:14px;">Public Sentiment Tracker</div>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" class="sentiment-strip"><tr>
+      <td width="25%" align="center" style="padding:10px 6px;">
+        <div style="font-family:'Courier New',Courier,monospace;font-size:22px;font-weight:700;color:#CD2E3A;">57%</div>
+        <div style="font-family:'Courier New',Courier,monospace;font-size:11px;color:#A93226;">▼ -7pp</div>
+        <div style="font-size:11px;color:#4A5260;margin-top:4px;line-height:1.4;">Presidential<br>approval</div>
+      </td>
+      <td width="25%" align="center" style="padding:10px 6px;border-left:1px solid #ECECEC;">
+        <div style="font-family:'Courier New',Courier,monospace;font-size:22px;font-weight:700;color:#1A222E;">41%</div>
+        <div style="font-family:'Courier New',Courier,monospace;font-size:11px;color:#A93226;">▼ -4pp</div>
+        <div style="font-size:11px;color:#4A5260;margin-top:4px;line-height:1.4;">Democratic<br>Party</div>
+      </td>
+      <td width="25%" align="center" style="padding:10px 6px;border-left:1px solid #ECECEC;">
+        <div style="font-family:'Courier New',Courier,monospace;font-size:22px;font-weight:700;color:#1A222E;">29%</div>
+        <div style="font-family:'Courier New',Courier,monospace;font-size:11px;color:#2E7D4F;">▲ +7pp</div>
+        <div style="font-size:11px;color:#4A5260;margin-top:4px;line-height:1.4;">People Power<br>Party</div>
+      </td>
+      <td width="25%" align="center" style="padding:10px 6px;border-left:1px solid #ECECEC;">
+        <div style="font-family:'Courier New',Courier,monospace;font-size:22px;font-weight:700;color:#1A222E;">21%</div>
+        <div style="font-family:'Courier New',Courier,monospace;font-size:11px;color:#A93226;">▼ -5pp</div>
+        <div style="font-size:11px;color:#4A5260;margin-top:4px;line-height:1.4;">No party<br>preference</div>
+      </td>
+    </tr></table>
+    <div style="text-align:center;font-family:'Courier New',Courier,monospace;font-size:11px;color:#78828F;margin-top:8px;">Gallup Korea #665 · surveyed JUN 9–11, 2026 · n=1,002 · ±3.1pp</div>
+    <div class="card-bg" style="margin-top:12px;background:#F5F7FA;border-left:3px solid #0047A0;padding:10px 14px;">
+      <div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#0047A0;font-weight:700;margin-bottom:4px;">Gallup Spotlight</div>
+      <div class="prose-b" style="font-family:Georgia,serif;font-size:13px;color:#3D4451;line-height:1.55;">On the ballot-shortage crisis: <span style="font-family:'Courier New',Courier,monospace;font-weight:700;">67%</span> call it election mismanagement; <span style="font-family:'Courier New',Courier,monospace;font-weight:700;">25%</span> see evidence of fraud. Among voters in their 20s–30s, over 60% favor full re-elections in affected districts.</div>
+    </div>
+  </div>
+
+  <!-- ═══ THE WIRE ═══ -->
+  <div class="sec" style="padding:22px 32px 18px;border-bottom:1px solid #ECECEC;">
+    <div style="font-size:11px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:#0047A0;border-bottom:2px solid #0047A0;display:inline-block;padding-bottom:5px;margin-bottom:12px;">The Wire</div>
+    <div style="padding:7px 0;border-bottom:1px solid #F2F2F2;font-family:Georgia,serif;font-size:13px;color:#3D4451;line-height:1.5;"><span style="font-size:11px;letter-spacing:0.5px;text-transform:uppercase;color:#0047A0;font-family:Arial,sans-serif;font-weight:700;">38 North</span> — Sohae gantry construction analysis: crane configuration consistent with heavier launch vehicle class</div>
+    <div style="padding:7px 0;border-bottom:1px solid #F2F2F2;font-family:Georgia,serif;font-size:13px;color:#3D4451;line-height:1.5;"><span style="font-size:11px;letter-spacing:0.5px;text-transform:uppercase;color:#0047A0;font-family:Arial,sans-serif;font-weight:700;">CSIS</span> — Korea Chair brief: mapping ROK export-control alignment with the US semiconductor regime</div>
+    <div style="padding:7px 0;border-bottom:1px solid #F2F2F2;font-family:Georgia,serif;font-size:13px;color:#3D4451;line-height:1.5;"><span style="font-size:11px;letter-spacing:0.5px;text-transform:uppercase;color:#0047A0;font-family:Arial,sans-serif;font-weight:700;">Daily NK</span> — Northern market rice prices stable at <span style="font-family:'Courier New',Courier,monospace;">6,100 KPW/kg</span>; fuel up 4% week-on-week</div>
+    <div style="padding:7px 0;border-bottom:1px solid #F2F2F2;font-family:Georgia,serif;font-size:13px;color:#3D4451;line-height:1.5;"><span style="font-size:11px;letter-spacing:0.5px;text-transform:uppercase;color:#0047A0;font-family:Arial,sans-serif;font-weight:700;">KEIA</span> — The Peninsula: post-election episode with former NSC Korea director</div>
+    <div style="padding:7px 0;font-family:Georgia,serif;font-size:13px;color:#3D4451;line-height:1.5;"><span style="font-size:11px;letter-spacing:0.5px;text-transform:uppercase;color:#0047A0;font-family:Arial,sans-serif;font-weight:700;">Stimson</span> — 38 North companion: DPRK IT-worker sanctions evasion after the Laos designations</div>
+  </div>
+
+  <!-- ═══ STATEMENTS & ANALYSIS ═══ -->
+  <div class="sec" style="padding:22px 32px 20px;border-bottom:1px solid #ECECEC;">
+    <div style="font-size:11px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:#0047A0;border-bottom:2px solid #0047A0;display:inline-block;padding-bottom:5px;margin-bottom:12px;">Statements &amp; Analysis</div>
+    <div style="border-left:3px solid #0047A0;padding:10px 16px;margin-bottom:14px;">
+      <div class="prose-b" style="font-family:Georgia,serif;font-size:14px;font-style:italic;color:#3D4451;line-height:1.6;">"The commentary changes the vocabulary, not the arsenal. What matters is whether the formulation migrates from KCNA commentary to a Kim Jong Un attributed statement."</div>
+      <div style="font-size:11px;letter-spacing:0.5px;text-transform:uppercase;color:#78828F;margin-top:6px;">— Wi Sung-lac, National Security Adviser, briefing to National Assembly intelligence committee</div>
+    </div>
+    <div style="padding:7px 0;border-bottom:1px solid #F2F2F2;">
+      <div class="prose-h" style="font-family:Georgia,serif;font-size:14px;font-weight:700;color:#1A222E;line-height:1.4;">FT (Seoul bureau): Receivership at JoongAng tests Korea's media-chaebol model</div>
+      <div class="meta-t" style="font-size:11px;color:#78828F;margin-top:2px;text-transform:uppercase;letter-spacing:0.5px;">Op-ed · Song Jung-a</div>
+    </div>
+    <div style="padding:7px 0;">
+      <div class="prose-h" style="font-family:Georgia,serif;font-size:14px;font-weight:700;color:#1A222E;line-height:1.4;">Foreign Affairs: Extended deterrence after "irreversible" — the case for consultation-group escalation</div>
+      <div class="meta-t" style="font-size:11px;color:#78828F;margin-top:2px;text-transform:uppercase;letter-spacing:0.5px;">Analysis · Victor Cha &amp; Sydney Seiler</div>
+    </div>
+  </div>
+
+  <!-- ═══ ON THIS DAY ═══ -->
+  <div class="sec card-bg" style="padding:18px 32px;background:#F5F7FA;border-bottom:1px solid #ECECEC;">
+    <div style="font-size:11px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:#78828F;margin-bottom:8px;">On This Day · <span style="font-family:'Courier New',Courier,monospace;">JUN 18, 1953</span></div>
+    <div class="prose-b" style="font-family:Georgia,serif;font-size:13px;font-style:italic;color:#3D4451;line-height:1.6;">Syngman Rhee unilaterally releases roughly 27,000 anti-communist North Korean POWs, nearly derailing armistice negotiations five weeks before the signing. Washington briefly weighs contingency plans for his removal; the armistice is signed July 27 without the ROK's endorsement.</div>
+  </div>
+
+  <!-- ═══ FOOTER ═══ -->
+  <div style="height:3px;background:#CD2E3A;font-size:0;line-height:0;">&nbsp;</div>
+  <div style="height:3px;background:#0047A0;font-size:0;line-height:0;">&nbsp;</div>
+  <div class="footer" style="background:#072B52;padding:20px 32px;text-align:center;">
+    <div style="font-family:Georgia,serif;font-size:13px;color:rgba(255,255,255,0.9);">Korea Daily Brief · CSIS Korea Chair</div>
+    <div style="font-family:'Courier New',Courier,monospace;font-size:11px;color:rgba(255,255,255,0.5);margin-top:6px;">generated 06:00 ET · 163 articles · 139 sources</div>
+    <div style="margin-top:10px;font-size:12px;">
+      <a href="#" style="color:#8FB6E8;text-decoration:underline;">Web version</a>
+      <span style="color:rgba(255,255,255,0.3);">&nbsp;·&nbsp;</span>
+      <a href="#" style="color:#8FB6E8;text-decoration:underline;">Archive</a>
+      <span style="color:rgba(255,255,255,0.3);">&nbsp;·&nbsp;</span>
+      <a href="#" style="color:#8FB6E8;text-decoration:underline;">Unsubscribe</a>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
