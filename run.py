@@ -747,6 +747,39 @@ def _repair_digest_urls(digest: dict, payload: dict) -> list[str]:
     return log
 
 
+_PLACEHOLDER_NAME_RE = re.compile(
+    r"not\s+named|unnamed|not\s+specified|not\s+disclosed|unidentified|"
+    r"unknown|n/?a$|tbd|placeholder", re.IGNORECASE)
+
+
+def _drop_nameless_personnel(digest: dict) -> list[str]:
+    """Strip rok_personnel entries whose name is missing or a placeholder.
+
+    A personnel entry without a real name is worse than no entry — expert
+    readers immediately notice (e.g. a nomination rendered as "Not named
+    in source" when the name was in the article headline). The prompt
+    forbids placeholders; this is the hard backstop. Placeholder
+    predecessors are nulled rather than dropping the entry.
+    """
+    log = []
+    personnel = digest.get("rok_personnel") or []
+    if not personnel:
+        return log
+    kept = []
+    for item in personnel:
+        name = str(item.get("name") or "").strip()
+        if not name or _PLACEHOLDER_NAME_RE.search(name):
+            log.append(f"  - dropped personnel entry with placeholder name "
+                       f"{name!r} (position: {item.get('position', '?')})")
+            continue
+        pred = str(item.get("predecessor") or "").strip()
+        if pred and _PLACEHOLDER_NAME_RE.search(pred):
+            item["predecessor"] = None
+        kept.append(item)
+    digest["rok_personnel"] = kept
+    return log
+
+
 def _postprocess_digest(digest_data: dict, payload: dict | None = None) -> tuple[dict, list[str]]:
     """Run dedup, deal filter, source diversity, and URL repair. Returns (digest, all_log_messages)."""
     log = []
@@ -773,6 +806,11 @@ def _postprocess_digest(digest_data: dict, payload: dict | None = None) -> tuple
     if diversity_log:
         log.append(f"\n🧹  Source diversity: removed {len(diversity_log)} over-represented item(s):")
         log.extend(diversity_log)
+
+    nameless_log = _drop_nameless_personnel(digest_data)
+    if nameless_log:
+        log.append(f"\n🧹  Dropped {len(nameless_log)} personnel entr(ies) with placeholder names:")
+        log.extend(nameless_log)
 
     return digest_data, log
 
