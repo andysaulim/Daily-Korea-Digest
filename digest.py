@@ -241,7 +241,8 @@ def _build_kcna_summary_block(payload: dict) -> str:
     return "\n".join(lines)
 
 
-def build_user_prompt(payload: dict, date_str: str, db_context: str = "") -> str:
+def build_user_prompt(payload: dict, date_str: str, db_context: str = "",
+                      recent_coverage: str = "") -> str:
     def tier_json(articles: list, max_items: int = 60) -> str:
         trimmed = articles[:max_items]
         result = []
@@ -283,6 +284,18 @@ CSIS DATABASES (NK-Russia Timeline + NK Provocations)
 IMPORTANT: Use this data for on_this_day, calendar_watch, and pattern_note fields.
 For timeline_candidates: flag any NK-Russia stories that should be added to the CSIS NK-Russia cooperation timeline (268+ verified events since 2022).
 For ESCALATION + DPRK stories: these may be added to the CSIS NK provocations database (540+ events since 1958). Ensure headline and description are suitable for database entry."""
+
+    # Recent coverage (stories already sent to readers in the last week) —
+    # for precedent-citation and avoiding re-leading with old news.
+    recent_block = ""
+    if recent_coverage:
+        recent_block = f"""
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+RECENT COVERAGE (already sent to readers in the last 7 days)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{recent_coverage}
+
+Use this list ONLY to: (1) avoid re-leading with a story already covered above unless today's articles add a genuine NEW development (then say what changed), and (2) add brief sourced precedent context where relevant (e.g. "first reported Jul 3"). Do NOT re-report these as if new, and do NOT treat this list as source material — every published item must still trace to a source article in today's feed below."""
 
     # Kim Jong Un appearance tracker (scraped articles + persistent history)
     kim_block = ""
@@ -423,6 +436,7 @@ US-KOREA INVESTMENT TRACKER
 {bp_block}
 {satellite_block}
 {db_block}
+{recent_block}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 TIER 1: NEWS ARTICLES (last 24h)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -765,7 +779,8 @@ def _call_claude(client, user_prompt: str, max_tokens: int = 32000,
                           max_tokens, model=model)
 
 
-def generate_digest(payload: dict, db_context: str = "") -> dict:
+def generate_digest(payload: dict, db_context: str = "",
+                    recent_coverage: str = "") -> dict:
     """Call Claude and return structured digest JSON. Retries on failure and enforces content minimums."""
     api_key = os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
@@ -773,7 +788,8 @@ def generate_digest(payload: dict, db_context: str = "") -> dict:
     client = anthropic.Anthropic(api_key=api_key)
     from zoneinfo import ZoneInfo
     date_str = datetime.now(ZoneInfo("America/New_York")).strftime("%A, %B %-d, %Y")
-    user_prompt = build_user_prompt(payload, date_str, db_context=db_context)
+    user_prompt = build_user_prompt(payload, date_str, db_context=db_context,
+                                    recent_coverage=recent_coverage)
     total_articles = sum(len(v) for k, v in payload.items() if isinstance(v, list))
     print(f"\n🤖  Generating digest ({total_articles} articles → Claude)...")
 
@@ -876,7 +892,7 @@ def generate_digest(payload: dict, db_context: str = "") -> dict:
 
 def regenerate_digest(payload: dict, previous_digest: dict,
                       validation_warnings: list[str], db_context: str = "",
-                      attempt: int = 0) -> dict:
+                      attempt: int = 0, recent_coverage: str = "") -> dict:
     """Re-generate digest by sending validation feedback to Claude.
 
     Reuses the same collected articles — only re-calls the Claude API with
@@ -889,7 +905,8 @@ def regenerate_digest(payload: dict, previous_digest: dict,
     client = anthropic.Anthropic(api_key=api_key)
     from zoneinfo import ZoneInfo
     date_str = datetime.now(ZoneInfo("America/New_York")).strftime("%A, %B %-d, %Y")
-    user_prompt = build_user_prompt(payload, date_str, db_context=db_context)
+    user_prompt = build_user_prompt(payload, date_str, db_context=db_context,
+                                    recent_coverage=recent_coverage)
 
     word_count = _count_digest_words(previous_digest)
     warning_list = "\n".join(f"  - {w}" for w in validation_warnings)

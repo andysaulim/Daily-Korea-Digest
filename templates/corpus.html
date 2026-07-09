@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Article Corpus — Korea Daily Brief</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background: #f5f6f8;
+    color: #333;
+    min-height: 100vh;
+  }
+  header {
+    background: #1a1f36;
+    color: #fff;
+    padding: 28px 32px 24px;
+  }
+  header .top-bar { max-width: 900px; margin: 0 auto; }
+  header .brand {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 1.8px;
+    color: #8a8fa8; margin-bottom: 6px;
+  }
+  header h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.3px; margin-bottom: 6px; }
+  header .subtitle { font-size: 14px; color: #9ca0b8; font-weight: 400; }
+  header nav { margin-top: 16px; display: flex; gap: 18px; }
+  header nav a {
+    color: #c0c4d8; text-decoration: none; font-size: 13px; font-weight: 500;
+    padding: 4px 0; border-bottom: 2px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  header nav a:hover, header nav a.active { color: #fff; border-bottom-color: #4a7cf7; }
+
+  .container { max-width: 900px; margin: 0 auto; padding: 24px 20px 60px; }
+
+  .controls {
+    background: #fff; border: 1px solid #dce0e8; border-radius: 8px;
+    padding: 16px 20px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .controls label {
+    display: block; font-size: 12px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.8px; color: #666; margin-bottom: 8px;
+  }
+  .controls input[type=text] {
+    width: 100%; padding: 10px 14px; font-size: 15px; border: 1px solid #ccc;
+    border-radius: 6px; outline: none; transition: border-color 0.15s; font-family: inherit;
+  }
+  .controls input[type=text]:focus { border-color: #4a7cf7; box-shadow: 0 0 0 3px rgba(74,124,247,0.12); }
+  .filter-row { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
+  .filter-row select {
+    padding: 7px 10px; font-size: 13px; border: 1px solid #ccc; border-radius: 6px;
+    font-family: inherit; background: #fff; outline: none;
+  }
+  .filter-row label.chk { display: inline-flex; align-items: center; gap: 6px;
+    font-size: 13px; text-transform: none; letter-spacing: 0; color: #444; margin: 0; font-weight: 500; }
+  .search-meta { margin-top: 10px; font-size: 12px; color: #888; }
+
+  .article-list { list-style: none; }
+  .article-item {
+    background: #fff; border: 1px solid #dce0e8; border-left: 3px solid #b8bfce;
+    border-radius: 6px; padding: 14px 18px; margin-bottom: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04); transition: box-shadow 0.15s, border-color 0.15s;
+    display: block; text-decoration: none; color: inherit;
+  }
+  .article-item.used { border-left-color: #2e7d4f; }
+  .article-item:hover { box-shadow: 0 2px 8px rgba(74,124,247,0.10); }
+  .article-item .headline { font-size: 15px; font-weight: 600; color: #1a1f36; line-height: 1.35; margin-bottom: 5px; }
+  .article-item .meta { font-size: 12px; color: #888; }
+  .article-item .meta span { margin-right: 12px; }
+  .badge {
+    display: inline-block; font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.5px; padding: 1px 6px; border-radius: 3px; vertical-align: middle;
+  }
+  .badge.tier { background: #eef1f6; color: #55607a; }
+  .badge.used { background: #e4efe7; color: #2e7d4f; }
+  .article-item mark { background: #fff3a8; color: inherit; padding: 0 2px; border-radius: 2px; }
+
+  .empty-state, .loading { text-align: center; padding: 60px 20px; color: #888; }
+  .empty-state .icon { font-size: 36px; margin-bottom: 12px; }
+  .empty-state p { font-size: 15px; line-height: 1.5; max-width: 480px; margin: 0 auto; }
+  .loading { font-size: 14px; }
+
+  @media (max-width: 600px) {
+    header { padding: 20px 16px 18px; }
+    header h1 { font-size: 22px; }
+    .container { padding: 16px 12px 40px; }
+    .article-item { padding: 12px 14px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="top-bar">
+    <div class="brand">CSIS Korea Chair</div>
+    <h1>Article Corpus</h1>
+    <p class="subtitle">Every article collected &mdash; searchable record, including those not published</p>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="latest.html">Latest Digest</a>
+      <a href="archive.html">Archive &amp; Search</a>
+      <a href="corpus.html" class="active">Article Corpus</a>
+    </nav>
+  </div>
+</header>
+
+<div class="container">
+  <div class="controls">
+    <label for="search-input">Search collected articles</label>
+    <input type="text" id="search-input" placeholder="Type to filter by title or source..." autocomplete="off">
+    <div class="filter-row">
+      <select id="month-select" title="Month"></select>
+      <select id="tier-select" title="Tier">
+        <option value="">All tiers</option>
+        <option value="1">Tier 1 &middot; News</option>
+        <option value="2">Tier 2 &middot; Analysis</option>
+        <option value="3">Tier 3 &middot; Academic</option>
+        <option value="4">Tier 4 &middot; DPRK</option>
+      </select>
+      <label class="chk"><input type="checkbox" id="used-only"> Published only</label>
+    </div>
+    <div class="search-meta" id="search-meta"></div>
+  </div>
+
+  <div id="list-container">
+    <div class="loading" id="loading-msg">Loading corpus&hellip;</div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var rows = [];               // rows for the currently-selected month
+  var listContainer = document.getElementById('list-container');
+  var loadingMsg = document.getElementById('loading-msg');
+  var searchInput = document.getElementById('search-input');
+  var monthSelect = document.getElementById('month-select');
+  var tierSelect = document.getElementById('tier-select');
+  var usedOnly = document.getElementById('used-only');
+  var searchMeta = document.getElementById('search-meta');
+
+  function escapeHtml(str) {
+    var div = document.createElement('div');
+    div.textContent = str == null ? '' : String(str);
+    return div.innerHTML;
+  }
+  function highlight(text, q) {
+    if (!q) return escapeHtml(text);
+    var esc = escapeHtml(text);
+    var re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+    return esc.replace(re, '<mark>$1</mark>');
+  }
+
+  function render() {
+    var q = searchInput.value.trim();
+    var ql = q.toLowerCase();
+    var tier = tierSelect.value;
+    var onlyUsed = usedOnly.checked;
+    var filtered = rows.filter(function(r) {
+      if (tier && String(r.tier) !== tier) return false;
+      if (onlyUsed && !r.used) return false;
+      if (ql) {
+        var hay = ((r.title || '') + ' ' + (r.source || '') + ' ' + (r.topics || []).join(' ')).toLowerCase();
+        if (hay.indexOf(ql) === -1) return false;
+      }
+      return true;
+    });
+    filtered.sort(function(a, b) {
+      return (b.date || '').localeCompare(a.date || '') ||
+             (a.used === b.used ? 0 : (a.used ? -1 : 1));
+    });
+
+    if (filtered.length === 0) {
+      listContainer.innerHTML = '<div class="empty-state"><div class="icon">&#128269;</div>' +
+        '<p>No articles match. Try a broader search or a different month.</p></div>';
+      searchMeta.textContent = '0 of ' + rows.length + ' articles';
+      return;
+    }
+    var html = '<ul class="article-list">';
+    for (var i = 0; i < filtered.length; i++) {
+      var r = filtered[i];
+      var href = (r.url && r.url.indexOf('http') === 0) ? r.url : null;
+      var tag = '<span class="badge tier">T' + (r.tier || '?') + '</span>';
+      var usedBadge = r.used ? ' <span class="badge used">Published</span>' : '';
+      var head = highlight(r.title || '(untitled)', q);
+      var inner =
+        '<div class="headline">' + head + usedBadge + '</div>' +
+        '<div class="meta">' + tag +
+          '<span>' + highlight(r.source || 'unknown', q) + '</span>' +
+          '<span>' + escapeHtml(r.date || '') + '</span>' +
+        '</div>';
+      html += href
+        ? '<a class="article-item' + (r.used ? ' used' : '') + '" href="' + escapeHtml(href) + '" target="_blank" rel="noopener">' + inner + '</a>'
+        : '<div class="article-item' + (r.used ? ' used' : '') + '">' + inner + '</div>';
+    }
+    html += '</ul>';
+    listContainer.innerHTML = html;
+    var pubCount = filtered.filter(function(r){ return r.used; }).length;
+    searchMeta.textContent = filtered.length + ' of ' + rows.length + ' articles (' + pubCount + ' published)';
+  }
+
+  function loadMonth(shard) {
+    listContainer.innerHTML = '<div class="loading">Loading&hellip;</div>';
+    fetch('corpus/' + shard)
+      .then(function(resp) { if (!resp.ok) throw new Error('HTTP ' + resp.status); return resp.json(); })
+      .then(function(data) { rows = Array.isArray(data) ? data : []; render(); })
+      .catch(function() {
+        rows = [];
+        listContainer.innerHTML = '<div class="empty-state"><div class="icon">&#128196;</div>' +
+          '<p>Could not load that month&rsquo;s corpus shard.</p></div>';
+      });
+  }
+
+  // Bootstrap from the manifest
+  fetch('corpus/manifest.json')
+    .then(function(resp) { if (!resp.ok) throw new Error('HTTP ' + resp.status); return resp.json(); })
+    .then(function(man) {
+      loadingMsg.style.display = 'none';
+      var shards = (man && man.shards) ? man.shards.slice() : [];
+      if (shards.length === 0) throw new Error('no shards');
+      for (var i = 0; i < shards.length; i++) {
+        var s = shards[i];                       // index_YYYY-MM.json
+        var label = s.replace('index_', '').replace('.json', '');
+        var opt = document.createElement('option');
+        opt.value = s; opt.textContent = label;
+        monthSelect.appendChild(opt);
+      }
+      monthSelect.value = shards[0];
+      loadMonth(shards[0]);
+    })
+    .catch(function() {
+      loadingMsg.style.display = 'none';
+      listContainer.innerHTML = '<div class="empty-state"><div class="icon">&#128230;</div>' +
+        '<p>The article corpus is empty. It begins accumulating from the first run after this feature was deployed &mdash; ' +
+        'historical articles before then were not retained.</p></div>';
+    });
+
+  var timer = null;
+  searchInput.addEventListener('input', function() { clearTimeout(timer); timer = setTimeout(render, 150); });
+  monthSelect.addEventListener('change', function() { loadMonth(monthSelect.value); });
+  tierSelect.addEventListener('change', render);
+  usedOnly.addEventListener('change', render);
+})();
+</script>
+
+</body>
+</html>

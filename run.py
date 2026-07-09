@@ -13,7 +13,7 @@ import argparse
 import os
 import re
 from pathlib import Path
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from zoneinfo import ZoneInfo
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from digest import _count_digest_words
@@ -939,6 +939,11 @@ def _build_index_html() -> str:
       <div class="card-title">Archive &amp; Search</div>
       <div class="card-desc">Browse and search all past digests by date or keyword.</div>
     </a>
+    <a class="card" href="corpus.html">
+      <div class="icon">&#128230;</div>
+      <div class="card-title">Article Corpus</div>
+      <div class="card-desc">Search every article collected &mdash; including those not published.</div>
+    </a>
   </div>
 </div>
 </body>
@@ -981,10 +986,34 @@ def main():
     databases = fetch_all()
     db_context = build_context_block(databases)
 
+    # ── Step 1c: Recent-coverage context from the article corpus ───────────────
+    # Best-effort: feed the last week of already-published stories back to the
+    # model so it can cite precedent and avoid re-leading with old news. Any
+    # failure (no corpus yet, network) degrades silently to today's behavior.
+    recent_coverage = ""
+    recent_urls: set = set()
+    try:
+        from corpus import (fetch_recent_index, build_recent_coverage_block,
+                            PAGES_CORPUS_BASE)
+        _web = os.environ.get("WEB_URL", "").rstrip("/")
+        _base = f"{_web}/corpus" if _web else PAGES_CORPUS_BASE
+        _local = Path("public/corpus") if Path("public/corpus").exists() else None
+        _idx = fetch_recent_index(base_url=_base, n_days=14, local_dir=_local)
+        recent_coverage = build_recent_coverage_block(_idx, n_days=7)
+        recent_urls = {(r.get("url") or "").strip() for r in _idx
+                       if str(r.get("date", "")) >= (datetime.now(ZoneInfo("America/New_York"))
+                                                      - timedelta(days=7)).strftime("%Y-%m-%d")}
+        if recent_coverage:
+            print(f"  🔁  Recent coverage: {len(recent_coverage.splitlines())} prior stories "
+                  f"in context, {len(recent_urls)} URLs for cross-day dedup")
+    except Exception as e:
+        print(f"  ⚠  Recent-coverage context skipped (non-fatal): {e}")
+
     # ── Step 2: Generate digest via Claude (with validation retry) ──────────
     from digest import generate_digest, regenerate_digest
     MAX_VALIDATION_RETRIES = 2
-    digest_data = generate_digest(payload, db_context=db_context)
+    digest_data = generate_digest(payload, db_context=db_context,
+                                  recent_coverage=recent_coverage)
 
     # Auto-strip duplicates, filter deals, enforce source diversity, repair URLs
     digest_data, pp_log = _postprocess_digest(digest_data, payload=payload)
@@ -1039,7 +1068,7 @@ def main():
             print("\n🔄  Re-generating digest with validation feedback (reusing collected articles)...")
             digest_data = regenerate_digest(
                 payload, digest_data, retryable_warnings, db_context=db_context,
-                attempt=validation_attempt
+                attempt=validation_attempt, recent_coverage=recent_coverage
             )
             # Post-process again after regeneration (incl. URL repair)
             digest_data, pp_log = _postprocess_digest(digest_data, payload=payload)
@@ -1118,12 +1147,27 @@ def main():
         encoding="utf-8",
     )
 
+    # ── Persistent article corpus ──────────────────────────────────────────
+    # Record every collected article (not just the ~15-30 that shipped) as a
+    # permanent audit/analytics/grounding record. Non-fatal: a corpus failure
+    # must never block a digest that already sent.
+    try:
+        from corpus import save_corpus
+        corpus_counts = save_corpus(payload, digest_data, date_slug, archive_dir,
+                                    recent_urls=recent_urls)
+        print(f"  🗄️  Corpus: {corpus_counts['total']} articles recorded "
+              f"({corpus_counts['used_in_digest']} shipped, "
+              f"{corpus_counts['dup_of_recent']} seen in last 7 days)")
+    except Exception as e:
+        print(f"  ⚠  Corpus write failed (non-fatal): {e}")
+
     # ── Landing page and archive page for GitHub Pages ─────────────────────
     (archive_dir / "index.html").write_text(_build_index_html(), encoding="utf-8")
-    archive_template = Path(__file__).parent / "templates" / "archive.html"
-    if archive_template.exists():
-        import shutil
-        shutil.copy2(archive_template, archive_dir / "archive.html")
+    import shutil
+    for _tpl in ("archive.html", "corpus.html"):
+        _src = Path(__file__).parent / "templates" / _tpl
+        if _src.exists():
+            shutil.copy2(_src, archive_dir / _tpl)
 
     # ── Step 4: Send email ───────────────────────────────────────────────────
     if not validation_passed:
