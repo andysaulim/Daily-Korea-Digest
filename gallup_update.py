@@ -85,12 +85,17 @@ def _normalize_date_label(raw: str) -> tuple[str, str]:
 
 
 def _current_sort_key(baseline: dict) -> str:
-    """Derive a YYYY-MM-DD sort key from the stored survey_dates label."""
+    """Derive a YYYY-MM-DD sort key (the survey START date) from the stored
+    survey_dates label. Handles same-month ranges ('June 9-11, 2026'),
+    cross-month ranges ('June 30-July 2, 2026'), single dates ('July 3, 2026'),
+    and week-suffixed labels ('July 3, 2026 (1주차)') by taking the first
+    'Month Day' found plus any 4-digit year in the string."""
     raw = baseline.get("survey_dates", "")
-    m = re.match(r"(\w+)\s+(\d+)(?:-\d+)?,\s+(\d{4})", raw)
-    if not m or m.group(1) not in MONTH_NAMES:
+    md = re.search(r"([A-Z][a-z]+)\s+(\d{1,2})", raw)
+    yr = re.search(r"(20\d{2})", raw)
+    if not md or not yr or md.group(1) not in MONTH_NAMES:
         return ""
-    return f"{m.group(3)}-{MONTH_NAMES.index(m.group(1)) + 1:02d}-{int(m.group(2)):02d}"
+    return f"{yr.group(1)}-{MONTH_NAMES.index(md.group(1)) + 1:02d}-{int(md.group(2)):02d}"
 
 
 def _sane(pres, dp, ppp, ind) -> list[str]:

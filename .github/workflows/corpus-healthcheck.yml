@@ -1,0 +1,60 @@
+name: Weekly Health Check-In
+
+on:
+  schedule:
+    # Monday 13:13 UTC ≈ 9:13 AM ET — off-minute so it doesn't pile onto the
+    # top-of-hour API rush. Weekly nudge + health status to the operator.
+    - cron: '13 13 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  health-checkin:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Restore tracker data from cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            kim_tracker.json
+            kcna_tracker.json
+            bp_tracker.json
+            metrics.jsonl
+          key: tracker-data-v1
+          restore-keys: |
+            tracker-data-
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Download corpus index from Pages
+        continue-on-error: true
+        run: |
+          mkdir -p public/corpus
+          # Current + previous month index shards, so grounding/corpus checks
+          # have local data even if Pages is briefly unreachable.
+          for i in 0 1; do
+            month=$(date -u -d "$i months ago" +%Y-%m 2>/dev/null || date -u -v-${i}m +%Y-%m)
+            url="https://andysaulim.github.io/Daily-Korea-Digest/corpus/index_${month}.json"
+            curl -sf "$url" -o "public/corpus/index_${month}.json" 2>/dev/null || true
+          done
+          curl -sf "https://andysaulim.github.io/Daily-Korea-Digest/corpus/manifest.json" \
+            -o "public/corpus/manifest.json" 2>/dev/null || true
+          ls -la public/corpus/ 2>/dev/null || echo "No corpus data yet"
+
+      - name: Run health check-in
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASS: ${{ secrets.GMAIL_APP_PASS }}
+        run: python healthcheck.py

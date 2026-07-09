@@ -45,14 +45,17 @@ KNOWN_MODEL_IDS = {
 
 
 def _parse_gallup_date(last_updated: str) -> datetime | None:
-    """Parse strings like 'June 9-11, 2026' or 'May 19-21, 2026'."""
+    """Parse the survey START date from labels like 'June 9-11, 2026',
+    'May 19-21, 2026', the cross-month 'June 30-July 2, 2026', or
+    'July 3, 2026 (1주차)'. Takes the first 'Month Day' plus any year."""
     if not last_updated:
         return None
-    m = re.match(r"(\w+)\s+(\d+)(?:-\d+)?,\s+(\d{4})", last_updated)
-    if not m:
+    md = re.search(r"([A-Z][a-z]+)\s+(\d{1,2})", last_updated)
+    yr = re.search(r"(20\d{2})", last_updated)
+    if not md or not yr:
         return None
     try:
-        return datetime.strptime(f"{m.group(1)} {m.group(2)} {m.group(3)}",
+        return datetime.strptime(f"{md.group(1)} {md.group(2)} {yr.group(1)}",
                                  "%B %d %Y").replace(tzinfo=ZoneInfo("America/New_York"))
     except ValueError:
         return None

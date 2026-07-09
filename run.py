@@ -1212,6 +1212,7 @@ def main():
             "sent": not args.no_send and validation_passed,
             "health_alerts": len(health_report.get("alerts", [])),
             "health_warnings": len(health_report.get("warnings", [])),
+            "recent_coverage_lines": len(recent_coverage.splitlines()) if recent_coverage else 0,
         }
         try:
             from digest import get_run_usage
