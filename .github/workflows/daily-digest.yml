@@ -7,10 +7,6 @@ on:
     - cron: '30 11 * * *'  # 7:30 AM ET — fallback if external cron missed
     - cron: '0 13 * * *'   # 9:00 AM ET — last resort
   workflow_dispatch: # Primary trigger via external cron (cron-job.org)
-  # TEMPORARY TEST MODE — one-off send to the operator only. Push events mail
-  # alim@csis.org and skip post-send side effects. Reverted right after firing.
-  push:
-    branches: [claude/korea-digest-Uh7fN]
 
 permissions:
   contents: write
@@ -87,7 +83,7 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASS: ${{ secrets.GMAIL_APP_PASS }}
-          DIGEST_TO: ${{ github.event_name == 'push' && 'alim@csis.org' || secrets.DIGEST_TO }}
+          DIGEST_TO: ${{ secrets.DIGEST_TO }}
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
           WEB_URL: https://andysaulim.github.io/Daily-Korea-Digest
         run: |
@@ -98,12 +94,12 @@ jobs:
       # doesn't mark the workflow as "failed" and trigger a duplicate
       # from the cron fallback.
       - name: Update README with run stats
-        if: steps.guard.outputs.should_run == 'true' && github.event_name != 'push'
+        if: steps.guard.outputs.should_run == 'true'
         continue-on-error: true
         run: python update_readme.py
 
       - name: Deploy to GitHub Pages
-        if: steps.guard.outputs.should_run == 'true' && github.event_name != 'push'
+        if: steps.guard.outputs.should_run == 'true'
         continue-on-error: true
         uses: peaceiris/actions-gh-pages@v4
         with:
@@ -112,7 +108,7 @@ jobs:
           keep_files: true
 
       - name: Commit updated README
-        if: steps.guard.outputs.should_run == 'true' && github.event_name != 'push'
+        if: steps.guard.outputs.should_run == 'true'
         continue-on-error: true
         run: |
           git config user.name "github-actions[bot]"
@@ -125,7 +121,7 @@ jobs:
           fi
 
       - name: Save tracker data to cache
-        if: always() && steps.guard.outputs.should_run == 'true' && github.event_name != 'push'
+        if: always() && steps.guard.outputs.should_run == 'true'
         uses: actions/cache/save@v4
         with:
           path: |
