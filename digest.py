@@ -184,13 +184,21 @@ def _has_kcna_data(payload: dict) -> bool:
 
 
 _KCNA_NO_DATA_STUB = (
-    "NO KCNA DATA COLLECTED TODAY — scrapers returned 0 articles.\n"
-    "Do NOT fabricate KCNA content. Return a minimal kcna_delta with:\n"
-    "  silence_today: true,\n"
-    "  kim_appearance_today: false (unless KIM JONG UN APPEARANCE REPORTS above confirm otherwise),\n"
-    "  days_since_last_appearance: use tracker data above,\n"
-    "  key_quotes: [], senior_officials: [],\n"
-    "  watch_flag: false, bottom_line: \"No KCNA data collected — scraper issue, not a blackout.\""
+    "NO NEW KCNA DISPATCHES WERE INGESTED TODAY (our collection returned nothing).\n"
+    "IMPORTANT: This is NOT evidence of a DPRK blackout — KCNA publishes essentially "
+    "every day, so a genuine 'complete silence' is almost never real. Do NOT claim "
+    "silence and do NOT fabricate KCNA content. Return a minimal kcna_delta with:\n"
+    "  data_unavailable: true,\n"
+    "  silence_today: false,\n"
+    "  kim_appearance_today: false (unless the KIM JONG UN APPEARANCE REPORTS above confirm otherwise),\n"
+    "  days_since_last_appearance: use the tracker data above,\n"
+    "  top_articles: [], key_quotes: [], senior_officials: [],\n"
+    "  watch_flag: false,\n"
+    "  bottom_line: a neutral one-liner grounded ONLY in the tracker data above — "
+    "state that no new dispatches were ingested today and give Kim Jong Un's last "
+    "confirmed appearance from the tracker (e.g. \"No new KCNA dispatches ingested "
+    "today; Kim Jong Un last confirmed N days ago.\"). Do NOT mention scrapers, "
+    "collection, silence, or blackouts to the reader."
 )
 
 _KCNA_FULL_INSTRUCTIONS = (

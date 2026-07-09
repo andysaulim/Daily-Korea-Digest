@@ -413,7 +413,10 @@ def render(digest: dict) -> str:
     if kcna and any(kcna.values()):
         bottom_line = _esc(kcna.get("bottom_line", ""))
         watch = kcna.get("watch_flag", False)
-        silence = kcna.get("silence_today", False)
+        data_unavailable = kcna.get("data_unavailable", False)
+        # A genuine one-day "complete silence" is almost never real (KCNA
+        # publishes daily), so never assert it on a collection failure.
+        silence = kcna.get("silence_today", False) and not data_unavailable
 
         kim_today = "Yes" if kcna.get("kim_appearance_today") else "No"
         kim_activity = _esc(kcna.get("kim_activity", "")) if kcna.get("kim_activity") else ""
@@ -488,8 +491,9 @@ def render(digest: dict) -> str:
             </tr>
           </table>
           <div style="padding:16px 32px;background:{NAVY_PANEL};color:#E0E0E0;">
+            {"<div style='margin-bottom:12px;padding:8px 14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);border-radius:4px;font-size:12px;color:#A8B6C8;'>No new KCNA dispatches ingested today &mdash; showing last known status.</div>" if data_unavailable else ""}
             {"<div style='margin-bottom:12px;padding:8px 14px;background:" + TAEGUK_RED + ";color:#fff;border-radius:4px;font-size:12px;font-weight:600;'>&#9888; Complete KCNA silence today</div>" if silence else ""}
-            {"<div style='margin-bottom:12px;padding:8px 14px;background:" + TAEGUK_RED + ";color:#fff;border-radius:4px;font-size:12px;font-weight:600;'>&#9888; WATCH FLAG — Unusual rhetoric or activity detected</div>" if watch and not silence else ""}
+            {"<div style='margin-bottom:12px;padding:8px 14px;background:" + TAEGUK_RED + ";color:#fff;border-radius:4px;font-size:12px;font-weight:600;'>&#9888; WATCH FLAG — Unusual rhetoric or activity detected</div>" if watch and not silence and not data_unavailable else ""}
             <div style="padding:8px 12px;background:rgba(255,255,255,0.04);border-radius:4px;margin-bottom:12px;">
               <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#7B90AC;margin-bottom:4px;">Kim Jong Un</div>
               <div style="font-size:13px;color:#E0E0E0;font-weight:600;">{kim_icon}{kim_line}</div>
@@ -728,11 +732,17 @@ def render(digest: dict) -> str:
             s122 = tariff_tracker.get("section_122_surcharge")
             last_change = _esc(str(tariff_tracker.get("last_change", "")))
 
-            _tariff_status_colors = {"ACTIVE": TAEGUK_RED, "PAUSED": "#7F8C8D", "NEGOTIATING": TAEGUK_BLUE, "REDUCED": UP_GREEN}
-            h_color = _tariff_status_colors.get(h_status, TAEGUK_RED)
+            # Light-ground status colors (used in the sector-rate table below).
+            _tariff_status_colors = {"ACTIVE": TAEGUK_RED, "PAUSED": "#7F8C8D",
+                                     "NEGOTIATING": TAEGUK_BLUE, "REDUCED": UP_GREEN}
+            # On the navy dashboard strip, use on-navy variants so text stays
+            # legible (pure red/blue are too dark on navy).
+            _tariff_status_navy = {"ACTIVE": RED_ON_NAVY, "PAUSED": "#A8B6C8",
+                                   "NEGOTIATING": BLUE_ON_NAVY, "REDUCED": "#69C88E"}
+            h_color = _tariff_status_navy.get(h_status, RED_ON_NAVY)
             dash_cells.append((
                 "US Tariff on ROK",
-                f'<span style="font-family:{MONO};font-size:24px;font-weight:700;color:{TAEGUK_RED};">{h_rate}</span>',
+                f'<span style="font-family:{MONO};font-size:24px;font-weight:700;color:{RED_ON_NAVY};">{h_rate}</span>',
                 f'<span style="font-family:{MONO};font-size:11px;font-weight:700;color:{h_color};">{_esc(h_status)}</span>',
             ))
 
@@ -748,25 +758,25 @@ def render(digest: dict) -> str:
                 sr_color = _tariff_status_colors.get(sr_st, TAEGUK_RED)
                 sr_note = _esc(sr.get("note", ""))
                 sector_rows += f"""
-                <tr style="border-bottom:1px solid #EDEFF2;">
-                  <td style="padding:4px 6px 4px 0;font-size:11px;font-weight:600;color:{INK};">{sr_sector}</td>
-                  <td style="padding:4px 6px;font-family:{MONO};font-size:13px;font-weight:700;color:{sr_color};text-align:center;white-space:nowrap;">{sr_rate}</td>
-                  <td style="padding:4px 6px;font-size:10px;color:#888;text-transform:uppercase;white-space:nowrap;">{sr_auth}</td>
-                  <td style="padding:4px 0 4px 6px;font-size:11px;color:#666;">{sr_note}</td>
+                <tr style="border-bottom:1px solid #E2E6EC;">
+                  <td style="padding:5px 8px 5px 10px;font-size:12px;font-weight:600;color:{INK};">{sr_sector}</td>
+                  <td style="padding:5px 6px;font-family:{MONO};font-size:13px;font-weight:700;color:{sr_color};text-align:center;white-space:nowrap;">{sr_rate}</td>
+                  <td style="padding:5px 6px;font-size:11px;color:#5A6472;text-transform:uppercase;white-space:nowrap;">{sr_auth}</td>
+                  <td style="padding:5px 10px 5px 6px;font-size:11px;color:#3D4451;">{sr_note}</td>
                 </tr>"""
             if sector_rows.strip():
                 sector_table = f"""
-                <div style="margin-top:12px;">
-                  <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#78828F;font-weight:600;margin-bottom:4px;">Sector Rates</div>
-                  <table class="tariff-sector" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #EDEFF2;">{sector_rows}
+                <div style="margin-top:12px;background:#F5F7FA;border:1px solid #E2E6EC;border-radius:4px;padding:10px 0 2px;">
+                  <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:{TAEGUK_BLUE};font-weight:700;margin:0 10px 6px;">Sector Rates</div>
+                  <table class="tariff-sector" width="100%" cellpadding="0" cellspacing="0" border="0">{sector_rows}
                   </table>
                 </div>"""
 
             if s122:
-                s122_line = f'<div style="margin-top:8px;font-size:11px;color:{TAEGUK_RED};font-weight:600;">+ Section 122 global surcharge: {_esc(str(s122))}</div>'
+                s122_line = f'<div style="margin-top:8px;font-size:12px;color:{TAEGUK_RED};font-weight:600;">+ Section 122 global surcharge: {_esc(str(s122))}</div>'
             note_bits = " &middot; ".join(b for b in (h_note, last_change) if b)
             if note_bits:
-                meta_line = f'<div style="margin-top:4px;font-size:11px;color:#78828F;line-height:1.5;">{note_bits}</div>'
+                meta_line = f'<div style="margin-top:5px;font-size:11px;color:#5A6472;line-height:1.5;">{note_bits}</div>'
 
         if investment_pkg and investment_pkg.get("total_pledged"):
             pct = investment_pkg.get("pct_fulfilled", 0)
@@ -774,8 +784,8 @@ def render(digest: dict) -> str:
             pledged = _esc(str(investment_pkg.get("total_pledged", "")))
             dash_cells.append((
                 "Investment Fulfilled",
-                f'<span style="font-family:{MONO};font-size:24px;font-weight:700;color:{TAEGUK_BLUE};">{pct}%</span>',
-                f'{announced} of {pledged}',
+                f'<span style="font-family:{MONO};font-size:24px;font-weight:700;color:{BLUE_ON_NAVY};">{pct}%</span>',
+                f'<span style="color:#A8B6C8;">{announced} of {pledged}</span>',
             ))
 
             # Deal breakdown — kept as a compact table
@@ -787,14 +797,14 @@ def render(digest: dict) -> str:
                     val = _esc(kd.get("value", ""))
                     sect = _esc(kd.get("sector", ""))
                     deal_rows += f"""
-                    <tr style="border-bottom:1px solid #E8EDF3;">
-                      <td style="padding:4px 6px 4px 0;font-size:11px;font-weight:600;color:{INK};">{co}</td>
-                      <td style="padding:4px 6px;font-family:{MONO};font-size:11px;font-weight:700;color:{UP_GREEN};text-align:right;white-space:nowrap;">{val}</td>
-                      <td style="padding:4px 0 4px 6px;font-size:10px;color:#888;">{sect}</td>
+                    <tr style="border-bottom:1px solid #E2E6EC;">
+                      <td style="padding:5px 8px 5px 10px;font-size:12px;font-weight:600;color:{INK};">{co}</td>
+                      <td style="padding:5px 6px;font-family:{MONO};font-size:12px;font-weight:700;color:{UP_GREEN};text-align:right;white-space:nowrap;">{val}</td>
+                      <td style="padding:5px 10px 5px 6px;font-size:11px;color:#5A6472;">{sect}</td>
                     </tr>"""
                 deals_breakdown = f"""
-                <div style="margin-top:12px;">
-                  <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#78828F;font-weight:600;margin-bottom:4px;">Investment Deal Breakdown ({_esc(str(investment_pkg.get("latest_update", "")))})</div>
+                <div style="margin-top:12px;background:#F5F7FA;border:1px solid #E2E6EC;border-radius:4px;padding:10px 0 2px;">
+                  <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:{TAEGUK_BLUE};font-weight:700;margin:0 10px 6px;">Investment Deal Breakdown ({_esc(str(investment_pkg.get("latest_update", "")))})</div>
                   <table width="100%" cellpadding="0" cellspacing="0" border="0" class="deal-breakdown">
                     {deal_rows}
                   </table>
@@ -805,7 +815,7 @@ def render(digest: dict) -> str:
         if next_trigger:
             dash_cells.append((
                 "Next Trigger",
-                f'<span style="font-family:{MONO};font-size:12px;font-weight:700;color:{INK};line-height:1.45;display:inline-block;padding-top:5px;">{next_trigger}</span>',
+                f'<span style="font-family:{MONO};font-size:12px;font-weight:700;color:#D5DDE8;line-height:1.45;display:inline-block;padding-top:5px;">{next_trigger}</span>',
                 "",
             ))
 
@@ -813,15 +823,15 @@ def render(digest: dict) -> str:
             cell_width = f"{100 // len(dash_cells)}%"
             cells_html = ""
             for i, (label, value, sub) in enumerate(dash_cells):
-                border = "border-left:1px solid #E2E6EC;" if i else ""
+                border = "border-left:1px solid rgba(255,255,255,0.10);" if i else ""
                 cells_html += f"""
-                <td width="{cell_width}" align="center" style="padding:12px 10px 13px;vertical-align:top;{border}">
-                  <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#78828F;margin-bottom:4px;">{label}</div>
+                <td width="{cell_width}" align="center" style="padding:13px 10px 14px;vertical-align:top;{border}">
+                  <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#7B90AC;margin-bottom:5px;">{label}</div>
                   <div>{value}</div>
-                  {"<div style='font-size:11px;color:#78828F;margin-top:3px;'>" + sub + "</div>" if sub else ""}
+                  {"<div style='font-size:11px;margin-top:4px;'>" + sub + "</div>" if sub else ""}
                 </td>"""
             header_html += f"""
-            <table class="trade-dash" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F5F7FA;border:1px solid #E2E6EC;border-radius:4px;">
+            <table class="trade-dash" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:{NAVY_DATA};border-radius:4px;">
               <tr>{cells_html}
               </tr>
             </table>
@@ -845,18 +855,18 @@ def render(digest: dict) -> str:
                     st = "ACTIVE"
                 st_color = status_colors.get(st, "#7F8C8D")
                 status_badge = f'<span style="font-family:{MONO};font-size:11px;font-weight:700;color:{st_color};letter-spacing:0.5px;">{_esc(st)}</span>'
-                agency_tag = f'<span style="font-size:10px;color:#888;font-weight:400;"> · {agency}</span>' if agency else ""
+                agency_tag = f'<span style="font-size:11px;color:#5A6472;font-weight:400;"> · {agency}</span>' if agency else ""
                 item_label = f'<a href="{_esc(item_url)}" style="color:{INK};text-decoration:underline;" target="_blank">{item_text}</a>' if item_url and item_url != "#" and item_url.startswith("http") else item_text
                 tracker_rows += f"""
-                <tr style="border-bottom:1px solid #F0F0F0;">
-                  <td style="padding:6px 8px 6px 0;vertical-align:top;font-size:12px;font-weight:600;color:{INK};width:30%;">{item_label}{agency_tag}</td>
-                  <td style="padding:6px 4px;vertical-align:top;font-size:11px;color:#555;line-height:1.4;">{detail_text}</td>
-                  <td style="padding:6px 0 6px 4px;vertical-align:top;text-align:right;white-space:nowrap;">{status_badge}</td>
+                <tr style="border-bottom:1px solid #E2E6EC;">
+                  <td style="padding:7px 8px 7px 0;vertical-align:top;font-size:12px;font-weight:600;color:{INK};width:30%;">{item_label}{agency_tag}</td>
+                  <td style="padding:7px 4px;vertical-align:top;font-size:12px;color:#3D4451;line-height:1.45;">{detail_text}</td>
+                  <td style="padding:7px 0 7px 4px;vertical-align:top;text-align:right;white-space:nowrap;">{status_badge}</td>
                 </tr>"""
             header_html += f"""
             <div style="margin-bottom:16px;">
-              <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#888;font-weight:600;margin-bottom:6px;">US Trade Policy Tracker</div>
-              <table class="trade-policy" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid #E8E8E8;">
+              <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:{TAEGUK_BLUE};font-weight:700;margin-bottom:6px;">US Trade Policy Tracker</div>
+              <table class="trade-policy" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:2px solid {TAEGUK_BLUE};">
                 {tracker_rows}
               </table>
             </div>"""

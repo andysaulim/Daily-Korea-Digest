@@ -526,30 +526,44 @@ def _scrape_kcna_watch() -> list:
     Returns a list of dicts with title, url, category."""
     articles = []
 
-    # Attempt 1: direct scrape
-    try:
-        resp = requests.get(
-            "https://kcnawatch.org/newstream/",
-            timeout=REQUEST_TIMEOUT,
-            headers={**HEADERS, "Accept": "text/html"},
-        )
-        if resp.status_code == 403:
-            print(f"  ── KCNA Watch scrape: blocked (403) — trying fallback")
-        else:
+    # Attempt 1: direct scrape. Retry once with a browser-like User-Agent —
+    # kcnawatch.org 403s the default UA intermittently; a real browser UA
+    # often gets through on the retry.
+    _browser_ua = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                   "(KHTML, like Gecko) Chrome/122.0 Safari/537.36")
+    for attempt, ua in enumerate((HEADERS.get("User-Agent", ""), _browser_ua)):
+        try:
+            resp = requests.get(
+                "https://kcnawatch.org/newstream/",
+                timeout=REQUEST_TIMEOUT,
+                headers={**HEADERS, "User-Agent": ua, "Accept": "text/html"},
+            )
+            if resp.status_code == 403:
+                if attempt == 0:
+                    print("  ── KCNA Watch scrape: blocked (403) — retrying with browser UA")
+                    continue
+                print("  ── KCNA Watch scrape: blocked (403) — trying fallback")
+                break
             resp.raise_for_status()
             articles = _parse_kcna_watch_html(resp.text)
             if articles:
                 print(f"  ── KCNA Watch scrape: {len(articles)} articles from newstream page")
                 return articles
-    except Exception as e:
-        print(f"  ── KCNA Watch scrape: ⚠ direct failed ({e})")
+            break  # 200 but nothing parsed — go to Google News fallback
+        except Exception as e:
+            print(f"  ── KCNA Watch scrape: ⚠ direct failed ({e})")
+            if attempt == 0:
+                continue
+            break
 
-    # Attempt 2: Google News search for kcnawatch.org articles from today
+    # Attempt 2: Google News search for kcnawatch.org articles. 72h window —
+    # DPRK/KST vs UTC rollover and Google News indexing lag mean a 48h window
+    # can miss same-day items entirely.
     try:
         gnews_url = _gnews("site:kcnawatch.org/newstream/")
         entries = _parse_feed(gnews_url)
         for entry in entries:
-            if not _is_recent(entry, hours=48):
+            if not _is_recent(entry, hours=72):
                 continue
             title = entry.get("title", "").strip()
             link = entry.get("link", "").strip()
@@ -584,15 +598,18 @@ def _parse_kcna_watch_html(html: str) -> list:
         _re.IGNORECASE,
     )
 
-    today_str = datetime.now(timezone.utc).strftime("%Y/%m/%d")
-    yesterday_str = (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y/%m/%d")
+    # Accept the last 3 days (UTC) — KCNA Watch dates URLs in KST, so a strict
+    # today/yesterday-UTC window drops same-day items around the date rollover.
+    now_utc = datetime.now(timezone.utc)
+    recent_date_strs = {(now_utc - timedelta(days=d)).strftime("%Y/%m/%d")
+                        for d in range(3)}
 
     seen_urls = set()
     for match in link_pattern.finditer(html):
         url, title = match.group(1), match.group(2).strip()
         if url in seen_urls:
             continue
-        if today_str not in url and yesterday_str not in url:
+        if not any(ds in url for ds in recent_date_strs):
             continue
         seen_urls.add(url)
 
