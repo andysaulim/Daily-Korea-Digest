@@ -1,0 +1,284 @@
+<title>Trade & Investment — Redesign Options</title>
+<style>
+  :root {
+    --ground:#FBFAF7; --ink:#17202A; --meta:#6B7280; --hair:#E5E1D8;
+    --navy:#072B52; --red:#CD2E3A; --blue:#0047A0; --card:#FFFFFF;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --ground:#0E1218; --ink:#ECEBE5; --meta:#9AA1AA; --hair:#262B33;
+           --navy:#0A1E38; --red:#E8697A; --blue:#8FB6E8; --card:#171C24; }
+  }
+  :root[data-theme="dark"]{ --ground:#0E1218; --ink:#ECEBE5; --meta:#9AA1AA; --hair:#262B33;
+           --navy:#0A1E38; --red:#E8697A; --blue:#8FB6E8; --card:#171C24; }
+  :root[data-theme="light"]{ --ground:#FBFAF7; --ink:#17202A; --meta:#6B7280; --hair:#E5E1D8;
+           --navy:#072B52; --red:#CD2E3A; --blue:#0047A0; --card:#FFFFFF; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--ground); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;
+    font-size:16px; line-height:1.55; -webkit-font-smoothing:antialiased; }
+  .wrap{ max-width:860px; margin:0 auto; padding:34px 24px 80px; }
+  header.top{ border-bottom:1px solid var(--hair); padding-bottom:22px; margin-bottom:10px;
+    display:flex; justify-content:space-between; align-items:baseline; gap:20px; flex-wrap:wrap; }
+  .eyebrow{ font-family:Georgia,serif; font-size:11px; letter-spacing:2.5px; text-transform:uppercase;
+    color:var(--red); font-weight:700; margin-bottom:6px; }
+  h1{ font-family:Georgia,serif; font-size:29px; font-weight:700; margin:0 0 4px; letter-spacing:-0.4px; }
+  .sub{ color:var(--meta); font-size:14px; max-width:66ch; }
+  .toggle{ background:var(--card); color:var(--ink); border:1px solid var(--hair);
+    padding:6px 12px; border-radius:5px; font:inherit; font-size:12px; cursor:pointer; }
+  .note{ font-size:13px; color:var(--meta); margin:16px 0 28px; max-width:80ch; line-height:1.6; }
+  .frame-wrap{ margin-bottom:34px; }
+  .frame-label{ display:flex; align-items:baseline; gap:10px; margin-bottom:10px; flex-wrap:wrap; }
+  .tag{ font-size:10px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase;
+    padding:3px 9px; border-radius:3px; }
+  .tag.cur{ background:#EAE7E0; color:#6B5518; } .tag.a{ background:#E5EAF2; color:#0047A0; }
+  .tag.b{ background:#E4EFE7; color:#1E7940; }
+  :root[data-theme="dark"] .tag.cur{ background:#2A2620; color:#D8C08A; }
+  :root[data-theme="dark"] .tag.a{ background:#1E2531; color:#9FB4D8; }
+  :root[data-theme="dark"] .tag.b{ background:#12241A; color:#7FCFA0; }
+  .fname{ font-family:Georgia,serif; font-size:18px; font-weight:700; }
+  .fdesc{ font-size:13px; color:var(--meta); }
+  .frame{ border:1px solid var(--hair); border-radius:10px; overflow:hidden;
+    box-shadow:0 6px 26px -12px rgba(0,0,0,0.25); background:#fff; max-width:680px; }
+  .verdict{ margin-top:14px; padding:22px 26px; background:var(--card); border:1px solid var(--hair);
+    border-left:3px solid var(--blue); border-radius:6px; }
+  .verdict h2{ font-family:Georgia,serif; font-size:18px; margin:0 0 10px; }
+  .verdict p{ margin:0 0 10px; font-size:14px; line-height:1.6; } .verdict p:last-child{ margin:0; }
+  .verdict b{ color:var(--ink); }
+
+  /* ===== Shared email-safe idioms (fixed inbox palette, ignore page theme) ===== */
+  .frame table{ border-collapse:collapse; width:100%; }
+  .frame td{ vertical-align:top; }
+  .sec-pad{ padding:20px 26px; }
+  .seclabel{ font-size:11px; font-weight:700; letter-spacing:1.8px; text-transform:uppercase;
+    color:#0047A0; border-bottom:2px solid #0047A0; display:inline-block; padding-bottom:5px; margin-bottom:14px; }
+  .mono{ font-family:"Courier New",Courier,monospace; }
+
+  /* --- CURRENT version bits --- */
+  .cur-strip{ background:#051F3D; border-radius:4px; }
+  .cur-strip td{ text-align:center; padding:13px 10px 14px; }
+  .cur-strip td+td{ border-left:1px solid rgba(255,255,255,0.10); }
+  .cur-strip .l{ font-size:11px; letter-spacing:1px; text-transform:uppercase; color:#7B90AC; margin-bottom:5px; }
+  .cur-strip .v{ font-family:"Courier New",monospace; font-size:24px; font-weight:700; }
+  .cur-sub{ font-size:11px; margin-top:4px; color:#A8B6C8; }
+  .cur-tbl{ margin-top:12px; background:#F5F7FA; border:1px solid #E2E6EC; border-radius:4px; padding:10px 0 2px; }
+  .cur-tbl .h{ font-size:11px; text-transform:uppercase; letter-spacing:1px; color:#0047A0; font-weight:700; margin:0 10px 6px; }
+  .cur-tbl td{ padding:5px 10px; font-size:12px; border-bottom:1px solid #E2E6EC; color:#17202A; }
+  .cur-tbl .rate{ font-family:"Courier New",monospace; font-weight:700; text-align:center; }
+
+  /* --- REDESIGN bits --- */
+  .stateofplay{ font-family:Georgia,serif; font-size:14.5px; line-height:1.6; color:#2C3540;
+    padding:2px 0 4px; margin-bottom:6px; }
+  .pillar{ margin-top:18px; }
+  .pillar:first-of-type{ margin-top:6px; }
+  .pillar-h{ font-size:12px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase;
+    color:#072B52; padding-bottom:5px; border-bottom:2px solid #CD2E3A; display:inline-block; margin-bottom:12px; }
+  .pillar-h.blue{ border-bottom-color:#0047A0; }
+  .hero-row td{ vertical-align:middle; }
+  .hero-num{ font-family:"Courier New",monospace; font-size:34px; font-weight:700; line-height:1; }
+  .hero-cap{ font-size:12px; color:#5A6472; line-height:1.4; }
+  .pill{ display:inline-block; font-family:"Courier New",monospace; font-size:11px; font-weight:700;
+    letter-spacing:0.5px; padding:2px 8px; border-radius:3px; }
+  .pill.active{ background:#FBECEE; color:#B0212F; } .pill.pending{ background:#EEF1F5; color:#55607A; }
+  .watchbox{ margin-top:12px; background:#FBF3F0; border:1px solid #F1D9D2; border-left:3px solid #CD2E3A;
+    border-radius:4px; padding:9px 13px; }
+  .watchbox .wl{ font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#B0212F; font-weight:700; }
+  .watchbox .wd{ font-size:13px; color:#3D4451; margin-top:2px; }
+  .watchbox .wd b{ font-family:"Courier New",monospace; color:#B0212F; }
+  .rtbl{ margin-top:12px; width:100%; }
+  .rtbl td{ padding:6px 0; border-bottom:1px solid #EAEDF1; font-size:12.5px; color:#17202A; }
+  .rtbl .s{ font-weight:600; } .rtbl .r{ font-family:"Courier New",monospace; font-weight:700; text-align:right; white-space:nowrap; }
+  .rtbl .a{ font-size:11px; color:#7A828F; text-transform:uppercase; text-align:right; white-space:nowrap; padding-left:12px; }
+  .webref{ font-size:11px; color:#8A94A6; padding-top:7px; }
+  .webref a{ color:#0047A0; text-decoration:none; }
+  /* progress bar */
+  .pbar-line{ font-size:13px; color:#3D4451; margin-bottom:7px; }
+  .pbar-line b{ font-family:"Courier New",monospace; color:#072B52; font-size:15px; }
+  .pbar{ background:#E7EBF0; border-radius:6px; height:16px; overflow:hidden; position:relative; }
+  .pbar-fill{ background:#0047A0; height:100%; border-radius:6px 0 0 6px; }
+  .pbar-goal{ font-size:11px; color:#8A94A6; margin-top:5px; text-align:right; }
+  .newlist td{ padding:9px 0; border-bottom:1px solid #EAEDF1; }
+  .newlist .nh{ font-size:13.5px; font-weight:700; color:#17202A; line-height:1.35; }
+  .newlist .nd{ font-size:12.5px; color:#3D4451; line-height:1.45; margin-top:2px; }
+  .newlist .nm{ font-size:10.5px; text-transform:uppercase; letter-spacing:0.5px; color:#8A94A6; }
+  .val{ display:inline-block; font-family:"Courier New",monospace; font-size:11px; font-weight:700;
+    color:#fff; background:#1E7940; border-radius:3px; padding:1px 6px; margin-left:6px; }
+  .kind{ display:inline-block; font-family:"Courier New",monospace; font-size:10px; font-weight:700;
+    letter-spacing:0.5px; padding:1px 6px; border-radius:3px; }
+  .kind.deal{ background:#E4EFE7; color:#1E7940; } .kind.policy{ background:#E5EAF2; color:#0047A0; }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="eyebrow">Design review · Trade section</div>
+      <h1>US-Korea Trade &amp; Investment — three ways</h1>
+      <div class="sub">Same data, three treatments. The current version stacks seven look-alike tables; the redesigns break it into three labeled pillars, bring back the investment progress bar, and lead with a plain-language read.</div>
+    </div>
+    <button class="toggle" onclick="tog()">Toggle theme</button>
+  </header>
+  <p class="note">Every frame uses email-safe construction (tables, Courier/Georgia/Arial, no web fonts) so what you approve is what Gmail and Outlook render. Frames keep their own fixed inbox palette and ignore this page's light/dark toggle.</p>
+
+  <!-- ============ CURRENT ============ -->
+  <div class="frame-wrap">
+    <div class="frame-label">
+      <span class="tag cur">Current</span>
+      <span class="fname">What ships today</span>
+      <span class="fdesc">— navy scorecard, then six stacked tables. Hard to tell where one topic ends.</span>
+    </div>
+    <div class="frame">
+      <div class="sec-pad">
+        <span class="seclabel">US-Korea Trade &amp; Investment</span>
+        <table class="cur-strip"><tr>
+          <td><div class="l">US Tariff on ROK</div><div class="v" style="color:#E8697A;">10%</div><div class="mono" style="font-size:11px;font-weight:700;color:#E8697A;">ACTIVE</div></td>
+          <td><div class="l">Investment Fulfilled</div><div class="v" style="color:#8FB6E8;">36%</div><div class="cur-sub">$127B of $350B</div></td>
+          <td><div class="l">Next Trigger</div><div class="mono" style="font-size:12px;font-weight:700;color:#D5DDE8;padding-top:6px;">Jul 24 · §122 expiry</div></td>
+        </tr></table>
+        <div style="margin-top:8px;font-size:12px;color:#CD2E3A;font-weight:600;">+ Section 122 global surcharge: 10% (expires Jul 24)</div>
+        <div style="margin-top:5px;font-size:11px;color:#5A6472;">Baseline reciprocal tariff · last changed Feb 24 2026</div>
+        <div class="cur-tbl"><div class="h">Sector Rates</div>
+          <table>
+            <tr><td class="s">Autos &amp; parts</td><td class="rate" style="color:#CD2E3A;">25%</td><td style="color:#5A6472;text-transform:uppercase;">§232</td><td style="color:#3D4451;">Full rate in effect</td></tr>
+            <tr><td class="s">Steel &amp; aluminum</td><td class="rate" style="color:#CD2E3A;">25%</td><td style="color:#5A6472;text-transform:uppercase;">§232</td><td style="color:#3D4451;">Full rate in effect</td></tr>
+            <tr><td class="s">Semiconductors</td><td class="rate" style="color:#CD2E3A;">PENDING</td><td style="color:#5A6472;text-transform:uppercase;">§232</td><td style="color:#3D4451;">Report due Apr 14, overdue</td></tr>
+          </table>
+        </div>
+        <div class="cur-tbl"><div class="h">Investment Deal Breakdown (Samsung fab, Jul 7)</div>
+          <table>
+            <tr><td class="s">Samsung Electronics</td><td class="rate" style="color:#1E7940;text-align:right;">$37B</td><td style="color:#5A6472;">semiconductors</td></tr>
+            <tr><td class="s">Hyundai Motor</td><td class="rate" style="color:#1E7940;text-align:right;">$21B</td><td style="color:#5A6472;">auto</td></tr>
+            <tr><td class="s">SK Group</td><td class="rate" style="color:#1E7940;text-align:right;">$15B</td><td style="color:#5A6472;">battery</td></tr>
+          </table>
+        </div>
+        <div style="margin-top:14px;"><div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#0047A0;font-weight:700;margin-bottom:6px;">US Trade Policy Tracker</div>
+          <table style="border-top:2px solid #0047A0;">
+            <tr><td style="padding:7px 8px 7px 0;font-size:12px;font-weight:600;width:32%;">Section 301 review<span style="color:#5A6472;font-weight:400;"> · USTR</span></td><td style="padding:7px 4px;font-size:12px;color:#3D4451;">Shipbuilding subsidy probe; comment period closes Aug 1.</td><td class="mono" style="font-size:11px;font-weight:700;color:#CD2E3A;text-align:right;">ACTIVE</td></tr>
+          </table>
+        </div>
+        <div style="margin-top:14px;padding:12px 0;border-top:1px solid #E8E8E8;">
+          <div style="font-size:11px;color:#888;">Hanwha &amp; KAI · Korea Economic Daily</div>
+          <div style="font-size:15px;font-weight:700;color:#17202A;margin:2px 0 4px;">Hanwha-KAI form ₩2T defense export-financing vehicle<span class="val">₩2T</span></div>
+          <div style="font-size:13px;color:#444;">Pairs K9 and FA-50 packages with Korea Eximbank guarantees for Gulf sales.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ REDESIGN A — FULL ============ -->
+  <div class="frame-wrap">
+    <div class="frame-label">
+      <span class="tag a">Redesign · Full</span>
+      <span class="fname">Three pillars, everything kept</span>
+      <span class="fdesc">— state-of-play line, progress bar restored, all detail retained but grouped.</span>
+    </div>
+    <div class="frame">
+      <div class="sec-pad">
+        <span class="seclabel">US-Korea Trade &amp; Investment</span>
+        <div class="stateofplay">Seoul faces a <b>10% baseline US tariff</b> with sector rates up to 25%; the <b>$350B investment pledge is 36% fulfilled</b>, and the Section&nbsp;122 surcharge expires <b>July&nbsp;24</b>.</div>
+
+        <div class="pillar">
+          <span class="pillar-h">Tariffs</span>
+          <table class="hero-row"><tr>
+            <td style="width:120px;"><div class="hero-num" style="color:#CD2E3A;">10%</div></td>
+            <td><span class="pill active">ACTIVE</span><div class="hero-cap" style="margin-top:4px;">US baseline reciprocal rate on ROK goods · last changed Feb&nbsp;24</div></td>
+          </tr></table>
+          <div class="watchbox"><div class="wl">Watch this date</div><div class="wd">Section&nbsp;122 global surcharge (10%) expires <b>Jul&nbsp;24</b> — 150-day statutory limit.</div></div>
+          <table class="rtbl">
+            <tr><td class="s">Autos &amp; parts</td><td class="a">§232</td><td class="r" style="color:#CD2E3A;">25%</td></tr>
+            <tr><td class="s">Steel &amp; aluminum</td><td class="a">§232</td><td class="r" style="color:#CD2E3A;">25%</td></tr>
+            <tr><td class="s">Semiconductors</td><td class="a">§232 · report overdue</td><td class="r" style="color:#55607A;">PENDING</td></tr>
+          </table>
+        </div>
+
+        <div class="pillar">
+          <span class="pillar-h blue">Investment · $350B pledge</span>
+          <div class="pbar-line"><b>$127B</b> announced of $350B pledged &middot; 36% fulfilled</div>
+          <div class="pbar"><div class="pbar-fill" style="width:36%;"></div></div>
+          <div class="pbar-goal">latest: Samsung Texas fab, Jul&nbsp;7</div>
+          <table class="rtbl">
+            <tr><td class="s">Samsung Electronics <span style="color:#7A828F;font-weight:400;">semiconductors</span></td><td class="r" style="color:#1E7940;">$37B</td></tr>
+            <tr><td class="s">Hyundai Motor <span style="color:#7A828F;font-weight:400;">auto</span></td><td class="r" style="color:#1E7940;">$21B</td></tr>
+            <tr><td class="s">SK Group <span style="color:#7A828F;font-weight:400;">battery</span></td><td class="r" style="color:#1E7940;">$15B</td></tr>
+          </table>
+        </div>
+
+        <div class="pillar">
+          <span class="pillar-h">New This Week</span>
+          <table class="newlist">
+            <tr><td>
+              <div class="nh">Hanwha-KAI form ₩2T defense export-financing vehicle <span class="kind deal">New deal</span></div>
+              <div class="nd">Pairs K9 and FA-50 packages with Korea Eximbank guarantees for Gulf sales.</div>
+              <div class="nm">Korea Economic Daily</div>
+            </td></tr>
+            <tr><td>
+              <div class="nh">USTR opens Section 301 shipbuilding-subsidy review <span class="kind policy">Policy</span></div>
+              <div class="nd">Comment period closes Aug 1; targets Korean naval-yard support programs.</div>
+              <div class="nm">USTR · ACTIVE</div>
+            </td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ REDESIGN B — LEAN ============ -->
+  <div class="frame-wrap">
+    <div class="frame-label">
+      <span class="tag b">Redesign · Lean</span>
+      <span class="fname">Same pillars, reference on the web</span>
+      <span class="fdesc">— top 3 rows only; full sector table &amp; deal breakdown move to the web edition. Shorter daily read.</span>
+    </div>
+    <div class="frame">
+      <div class="sec-pad">
+        <span class="seclabel">US-Korea Trade &amp; Investment</span>
+        <div class="stateofplay">Seoul faces a <b>10% baseline US tariff</b> (autos &amp; steel at 25%); the <b>$350B pledge is 36% fulfilled</b>, and the Section&nbsp;122 surcharge expires <b>July&nbsp;24</b>.</div>
+
+        <div class="pillar">
+          <span class="pillar-h">Tariffs</span>
+          <table class="hero-row"><tr>
+            <td style="width:120px;"><div class="hero-num" style="color:#CD2E3A;">10%</div></td>
+            <td><span class="pill active">ACTIVE</span> &nbsp;<span class="pill pending">Autos/Steel 25%</span><div class="hero-cap" style="margin-top:4px;">US baseline reciprocal rate on ROK goods</div></td>
+          </tr></table>
+          <div class="watchbox"><div class="wl">Watch this date</div><div class="wd">Section&nbsp;122 surcharge (10%) expires <b>Jul&nbsp;24</b>; semiconductor §232 report overdue.</div></div>
+          <div class="webref">Full sector-rate table &rarr; <a href="#">web edition</a></div>
+        </div>
+
+        <div class="pillar">
+          <span class="pillar-h blue">Investment · $350B pledge</span>
+          <div class="pbar-line"><b>$127B</b> announced of $350B pledged &middot; 36% fulfilled</div>
+          <div class="pbar"><div class="pbar-fill" style="width:36%;"></div></div>
+          <div class="pbar-goal">newest: Samsung Texas fab $37B, Jul&nbsp;7</div>
+          <div class="webref">All 14 committed deals &rarr; <a href="#">web edition</a></div>
+        </div>
+
+        <div class="pillar">
+          <span class="pillar-h">New This Week</span>
+          <table class="newlist">
+            <tr><td>
+              <div class="nh">Hanwha-KAI form ₩2T defense export-financing vehicle <span class="kind deal">New deal</span></div>
+              <div class="nd">Pairs K9 and FA-50 packages with Korea Eximbank guarantees for Gulf sales.</div>
+              <div class="nm">Korea Economic Daily</div>
+            </td></tr>
+            <tr><td>
+              <div class="nh">USTR opens Section 301 shipbuilding-subsidy review <span class="kind policy">Policy</span></div>
+              <div class="nd">Comment period closes Aug 1.</div>
+              <div class="nm">USTR · ACTIVE</div>
+            </td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="verdict">
+    <h2>What changed and why</h2>
+    <p><b>Structure.</b> The four data structures (tariffs, investment, policy, deals) become three labeled pillars, each leading with its own hero figure — so the eye knows what it's looking at instead of scanning six near-identical tables.</p>
+    <p><b>The progress bar is back.</b> "$127B of $350B" as a filled bar conveys "how far along" instantly — a number alone doesn't. This is the piece that was missing.</p>
+    <p><b>A plain-language read up top.</b> One sentence of state-of-play before the data, matching how every other section leads.</p>
+    <p><b>Full vs. Lean is the open question.</b> Full keeps every table in the email; Lean shows the top 3 and pushes the static reference (full sector rates, all 14 deals) to the web edition for a shorter daily read. Tell me which — or mix (e.g. Lean tariffs, Full investment).</p>
+  </div>
+</div>
+
+<script>
+  function tog(){ var r=document.documentElement, c=r.getAttribute('data-theme');
+    r.setAttribute('data-theme', c==='dark'?'light':(c==='light'?'dark':(matchMedia('(prefers-color-scheme: dark)').matches?'light':'dark'))); }
+</script>
