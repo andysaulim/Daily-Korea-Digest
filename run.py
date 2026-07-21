@@ -1157,7 +1157,8 @@ def main():
                                     recent_urls=recent_urls)
         print(f"  🗄️  Corpus: {corpus_counts['total']} articles recorded "
               f"({corpus_counts['used_in_digest']} shipped, "
-              f"{corpus_counts['dup_of_recent']} seen in last 7 days)")
+              f"{corpus_counts['dup_of_recent']} seen in last 7 days, "
+              f"{corpus_counts.get('vectors', 0)} vectors)")
     except Exception as e:
         print(f"  ⚠  Corpus write failed (non-fatal): {e}")
 

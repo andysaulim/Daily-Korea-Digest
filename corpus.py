@@ -176,9 +176,13 @@ def update_month_index(records: list, date_slug: str, corpus_dir: Path) -> Path:
     return path
 
 
-def update_manifest(date_slug: str, records: list, corpus_dir: Path) -> Path:
+def update_manifest(date_slug: str, records: list, corpus_dir: Path,
+                    has_vectors: bool = False) -> Path:
     """Maintain corpus/manifest.json — a thin index of available days and
-    shards for the search UI. Mirrors run.py's archive.json upsert logic."""
+    shards for the search UI. Mirrors run.py's archive.json upsert logic.
+    When has_vectors, records the day's vector sidecar so the UI can lazy-load
+    it for the semantic 'more like this' feature."""
+    month = date_slug[:7]
     path = corpus_dir / "manifest.json"
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
@@ -191,8 +195,9 @@ def update_manifest(date_slug: str, records: list, corpus_dir: Path) -> Path:
         "date": date_slug,
         "total": len(records),
         "used_in_digest": sum(1 for r in records if r["used_in_digest"]),
-        "shard": f"index_{date_slug[:7]}.json",
+        "shard": f"index_{month}.json",
         "daily": f"{date_slug}.json",
+        "vectors": f"vectors_{month}.json" if has_vectors else None,
     })
     days.sort(key=lambda d: d["date"], reverse=True)
     shards = sorted({d["shard"] for d in days}, reverse=True)
@@ -200,6 +205,49 @@ def update_manifest(date_slug: str, records: list, corpus_dir: Path) -> Path:
     data["shards"] = shards
     data["updated"] = datetime.now(timezone.utc).isoformat()
     path.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
+    return path
+
+
+def build_vectors(records: list) -> dict:
+    """Embed each record's title+summary; return {url: base64_int8_vector}.
+
+    Best-effort: returns {} if the embedding backend is unavailable, so the
+    corpus still saves (just without a vector sidecar this run). Vectors are
+    stored ONLY here — never in the daily audit records or the digest prompt.
+    """
+    if not records:
+        return {}
+    try:
+        from embeddings import embed, quantize
+    except Exception:
+        return {}
+    texts = [f"{r.get('title', '')} {r.get('summary', '')}".strip() for r in records]
+    vecs = embed(texts)
+    if vecs is None:
+        return {}
+    out = {}
+    for r, v in zip(records, vecs):
+        url = r.get("url")
+        if url:
+            out[url] = quantize(v)
+    return out
+
+
+def update_vectors_shard(vectors: dict, date_slug: str, corpus_dir: Path) -> Path | None:
+    """Upsert {url: emb} into vectors_{YYYY-MM}.json (keyed by URL; today's urls
+    overwrite). Powers corpus_search.py and the UI's 'more like this'. Returns
+    the path, or None if there were no vectors to write."""
+    if not vectors:
+        return None
+    path = corpus_dir / f"vectors_{date_slug[:7]}.json"
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(data, dict):
+            data = {}
+    except (FileNotFoundError, json.JSONDecodeError):
+        data = {}
+    data.update(vectors)
+    path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
     return path
 
 
@@ -212,11 +260,24 @@ def save_corpus(payload: dict, digest_data: dict, date_slug: str,
     records = build_corpus_records(payload, digest_data, recent_urls)
     write_daily_corpus(records, date_slug, corpus_dir)
     update_month_index(records, date_slug, corpus_dir)
-    update_manifest(date_slug, records, corpus_dir)
+
+    # Semantic vectors for search / related-articles (best-effort: a failure
+    # here leaves the corpus fully intact, just without vectors this run).
+    vec_count = 0
+    try:
+        vectors = build_vectors(records)
+        if vectors:
+            update_vectors_shard(vectors, date_slug, corpus_dir)
+            vec_count = len(vectors)
+    except Exception:
+        vec_count = 0
+
+    update_manifest(date_slug, records, corpus_dir, has_vectors=vec_count > 0)
     return {
         "total": len(records),
         "used_in_digest": sum(1 for r in records if r["used_in_digest"]),
         "dup_of_recent": sum(1 for r in records if r["dup_of_recent"]),
+        "vectors": vec_count,
     }
 
 

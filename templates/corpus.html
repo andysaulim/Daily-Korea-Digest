@@ -75,6 +75,19 @@
   .badge.tier { background: #eef1f6; color: #55607a; }
   .badge.used { background: #e4efe7; color: #2e7d4f; }
   .article-item mark { background: #fff3a8; color: inherit; padding: 0 2px; border-radius: 2px; }
+  .article-item .headline-link { color: #1a1f36; text-decoration: none; }
+  .article-item .headline-link:hover { color: #4a7cf7; text-decoration: underline; }
+  .sim-btn { margin-left: 4px; padding: 1px 8px; font-size: 11px; color: #4a7cf7;
+    background: #eef2fd; border: 1px solid #d6e0fb; border-radius: 10px; cursor: pointer; }
+  .sim-btn:hover { background: #e0e8fc; }
+  .sim-btn[disabled] { opacity: 0.5; cursor: default; }
+  .related { margin-top: 8px; padding-left: 12px; border-left: 2px solid #e3e8f2; }
+  .related .rel-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em;
+    color: #9aa3b8; margin-bottom: 4px; }
+  .related a { display: block; font-size: 13px; color: #33405c; text-decoration: none;
+    padding: 2px 0; }
+  .related a:hover { color: #4a7cf7; }
+  .related .score { color: #9aa3b8; font-variant-numeric: tabular-nums; margin-right: 6px; }
 
   .empty-state, .loading { text-align: center; padding: 60px 20px; color: #888; }
   .empty-state .icon { font-size: 36px; margin-bottom: 12px; }
@@ -131,6 +144,11 @@
 <script>
 (function() {
   var rows = [];               // rows for the currently-selected month
+  var manifest = null;         // corpus/manifest.json
+  var hasVectors = false;      // does the selected month have a vector sidecar?
+  var vectorsFile = null;      // e.g. vectors_2026-07.json
+  var vecMap = null;           // {url: Float32Array} for the selected month (lazy)
+  var vecPromise = null;       // in-flight vector fetch
   var listContainer = document.getElementById('list-container');
   var loadingMsg = document.getElementById('loading-msg');
   var searchInput = document.getElementById('search-input');
@@ -149,6 +167,64 @@
     var esc = escapeHtml(text);
     var re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
     return esc.replace(re, '<mark>$1</mark>');
+  }
+
+  // Decode a base64 int8 vector (from vectors_YYYY-MM.json) into a normalized
+  // Float32Array, so cosine similarity is a plain dot product. Mirrors
+  // embeddings.py dequantize().
+  function b64ToVec(b64) {
+    var bin = atob(b64), n = bin.length, arr = new Float32Array(n), norm = 0, v;
+    for (var i = 0; i < n; i++) { v = bin.charCodeAt(i); if (v > 127) v -= 256; arr[i] = v; norm += v * v; }
+    norm = Math.sqrt(norm) || 1;
+    for (i = 0; i < n; i++) arr[i] /= norm;
+    return arr;
+  }
+  function dot(a, b) { var s = 0, n = Math.min(a.length, b.length); for (var i = 0; i < n; i++) s += a[i] * b[i]; return s; }
+
+  // Lazy-load the current month's vector sidecar on first "similar" click.
+  function ensureVectors() {
+    if (vecMap) return Promise.resolve(vecMap);
+    if (vecPromise) return vecPromise;
+    vecPromise = fetch('corpus/' + vectorsFile)
+      .then(function(resp) { if (!resp.ok) throw new Error('HTTP ' + resp.status); return resp.json(); })
+      .then(function(data) {
+        var m = {};
+        for (var u in data) { if (Object.prototype.hasOwnProperty.call(data, u)) m[u] = b64ToVec(data[u]); }
+        vecMap = m; return m;
+      })
+      .catch(function() { vecMap = {}; return vecMap; });
+    return vecPromise;
+  }
+
+  function onSimilar(e) {
+    var btn = e.currentTarget, url = btn.getAttribute('data-url');
+    var li = btn.parentNode.parentNode, relDiv = li.querySelector('.related');
+    if (relDiv && !relDiv.hidden) { relDiv.hidden = true; relDiv.innerHTML = ''; return; }  // toggle off
+    btn.disabled = true;
+    ensureVectors().then(function(vmap) {
+      btn.disabled = false;
+      var base = vmap[url];
+      if (!base) { relDiv.innerHTML = '<div class="rel-title">No vector for this article.</div>'; relDiv.hidden = false; return; }
+      var scored = [];
+      for (var i = 0; i < rows.length; i++) {
+        var r = rows[i]; if (!r.url || r.url === url) continue;
+        var v = vmap[r.url]; if (!v) continue;
+        scored.push([dot(base, v), r]);
+      }
+      scored.sort(function(a, b) { return b[0] - a[0]; });
+      var top = scored.slice(0, 5);
+      if (top.length === 0) { relDiv.innerHTML = '<div class="rel-title">No related articles in this month.</div>'; relDiv.hidden = false; return; }
+      var h = '<div class="rel-title">Most similar this month</div>';
+      for (var k = 0; k < top.length; k++) {
+        var sc = top[k][0], rr = top[k][1];
+        var hr = (rr.url && rr.url.indexOf('http') === 0) ? rr.url : '#';
+        h += '<a href="' + escapeHtml(hr) + '" target="_blank" rel="noopener">' +
+             '<span class="score">' + sc.toFixed(2) + '</span>' +
+             escapeHtml(rr.title || '(untitled)') +
+             ' <span style="color:#9aa3b8">&middot; ' + escapeHtml(rr.source || '') + '</span></a>';
+      }
+      relDiv.innerHTML = h; relDiv.hidden = false;
+    });
   }
 
   function render() {
@@ -183,24 +259,39 @@
       var tag = '<span class="badge tier">T' + (r.tier || '?') + '</span>';
       var usedBadge = r.used ? ' <span class="badge used">Published</span>' : '';
       var head = highlight(r.title || '(untitled)', q);
-      var inner =
-        '<div class="headline">' + head + usedBadge + '</div>' +
-        '<div class="meta">' + tag +
-          '<span>' + highlight(r.source || 'unknown', q) + '</span>' +
-          '<span>' + escapeHtml(r.date || '') + '</span>' +
-        '</div>';
-      html += href
-        ? '<a class="article-item' + (r.used ? ' used' : '') + '" href="' + escapeHtml(href) + '" target="_blank" rel="noopener">' + inner + '</a>'
-        : '<div class="article-item' + (r.used ? ' used' : '') + '">' + inner + '</div>';
+      var headHtml = href
+        ? '<a class="headline-link" href="' + escapeHtml(href) + '" target="_blank" rel="noopener">' + head + '</a>'
+        : head;
+      // Semantic "similar" button — only when this month has a vector sidecar.
+      var simBtn = (hasVectors && r.url)
+        ? '<button class="sim-btn" type="button" data-url="' + escapeHtml(r.url) + '">&#8942; similar</button>'
+        : '';
+      html +=
+        '<li class="article-item' + (r.used ? ' used' : '') + '">' +
+          '<div class="headline">' + headHtml + usedBadge + '</div>' +
+          '<div class="meta">' + tag +
+            '<span>' + highlight(r.source || 'unknown', q) + '</span>' +
+            '<span>' + escapeHtml(r.date || '') + '</span>' +
+            simBtn +
+          '</div>' +
+          '<div class="related" hidden></div>' +
+        '</li>';
     }
     html += '</ul>';
     listContainer.innerHTML = html;
+    var simBtns = listContainer.querySelectorAll('.sim-btn');
+    for (var b = 0; b < simBtns.length; b++) simBtns[b].addEventListener('click', onSimilar);
     var pubCount = filtered.filter(function(r){ return r.used; }).length;
     searchMeta.textContent = filtered.length + ' of ' + rows.length + ' articles (' + pubCount + ' published)';
   }
 
   function loadMonth(shard) {
     listContainer.innerHTML = '<div class="loading">Loading&hellip;</div>';
+    vecMap = null; vecPromise = null;                       // reset per-month vectors
+    var month = shard.replace('index_', '').replace('.json', '');
+    vectorsFile = 'vectors_' + month + '.json';
+    hasVectors = !!(manifest && (manifest.days || []).some(
+      function(d) { return d.shard === shard && d.vectors; }));
     fetch('corpus/' + shard)
       .then(function(resp) { if (!resp.ok) throw new Error('HTTP ' + resp.status); return resp.json(); })
       .then(function(data) { rows = Array.isArray(data) ? data : []; render(); })
@@ -215,6 +306,7 @@
   fetch('corpus/manifest.json')
     .then(function(resp) { if (!resp.ok) throw new Error('HTTP ' + resp.status); return resp.json(); })
     .then(function(man) {
+      manifest = man;
       loadingMsg.style.display = 'none';
       var shards = (man && man.shards) ? man.shards.slice() : [];
       if (shards.length === 0) throw new Error('no shards');

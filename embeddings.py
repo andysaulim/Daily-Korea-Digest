@@ -35,6 +35,7 @@ perms) and a UTF-8 console (PYTHONUTF8=1). Neither affects the Linux CI runner.
 """
 from __future__ import annotations
 
+import base64
 import os
 
 DEFAULT_THRESHOLD = 0.75
@@ -132,6 +133,29 @@ def cosine(a, b) -> float:
     if na == 0.0 or nb == 0.0:
         return 0.0
     return dot / (na * nb)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Compact persistence: int8-quantize vectors for storage in the corpus sidecar
+# ─────────────────────────────────────────────────────────────────────────────
+
+def quantize(vec) -> str:
+    """Pack a vector into base64-encoded int8 for compact, permanent storage
+    (~768 bytes -> ~1 KB of base64 per article). Normalizes first; round-trips
+    to within ~1e-2 cosine of the original — ample for ranking/related-articles.
+    Pure-Python (no numpy) so it round-trips anywhere."""
+    n = sum(x * x for x in vec) ** 0.5 or 1.0
+    q = bytes((max(-127, min(127, round(x / n * 127))) & 0xFF) for x in vec)
+    return base64.b64encode(q).decode("ascii")
+
+
+def dequantize(s: str):
+    """Inverse of quantize(): base64 int8 -> normalized float list (so cosine
+    is a plain dot product)."""
+    raw = base64.b64decode(s)
+    vals = [b - 256 if b > 127 else b for b in raw]  # unsigned byte -> int8
+    n = sum(v * v for v in vals) ** 0.5 or 1.0
+    return [v / n for v in vals]
 
 
 def _default_text(a: dict) -> str:
