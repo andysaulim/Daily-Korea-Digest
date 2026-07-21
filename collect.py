@@ -12,6 +12,8 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone, timedelta
 
+from embeddings import semantic_dedup
+
 # ─────────────────────────────────────────────────────────────────────────────
 # FEED CONFIGURATION
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1714,6 +1716,30 @@ def collect() -> dict:
     if satellite:
         print(f"  🛰  Satellite imagery: {len(satellite)} articles found (72h window)")
 
+    # ── Semantic (cross-lingual) dedup ───────────────────────────────────────
+    # URL-exact _dedup() already ran per tier. Now collapse near-DUPLICATE
+    # stories — e.g. the same launch carried by Yonhap (EN) and 조선일보 (KO) —
+    # BEFORE they reach the digest prompt, so Claude isn't paid in input tokens
+    # to dedup them itself.
+    #
+    # Scope is deliberately WITHIN the duplicative article streams only: tier1
+    # (news) and tier2 (op-eds). We never collapse across tiers, because tiers
+    # map to distinct digest sections (a news report and an op-ed on the same
+    # event are different deliverables). tier3 (academic — small, precise) and
+    # tier4 (KCNA primary sources, already summarized) are left intact.
+    # If the embedding backend is unavailable the calls are graceful no-ops.
+    _before = len(tier1) + len(tier2)
+    tier1, _sd1 = semantic_dedup(tier1)
+    tier2, _sd2 = semantic_dedup(tier2)
+    semantic_dedup_log = _sd1 + _sd2
+    _after = len(tier1) + len(tier2)
+    if semantic_dedup_log:
+        print(f"\n  🔗  Semantic dedup: collapsed {_before - _after} near-duplicate(s) "
+              f"({_before} → {_after} across tier1+tier2)")
+        for d in semantic_dedup_log:
+            print(f"       – drop [{d['dropped_source']}] ~ keep [{d['kept_source']}] "
+                  f"(cos {d['score']})")
+
     return {
         "tier1": tier1,
         "tier2": tier2,
@@ -1724,6 +1750,7 @@ def collect() -> dict:
         "satellite_imagery_articles": satellite,
         "market_indicators": results["markets"],
         "sentiment_baseline": results["sentiment"],
+        "semantic_dedup_log": semantic_dedup_log,
         "source_health": {
             "total_feeds": total_feeds,
             "feeds_with_data": feeds_with_data,

@@ -1,5 +1,6 @@
 __pycache__/
 *.pyc
+.fastembed_cache/
 collected.json
 digest.json
 digest_*.html

@@ -65,6 +65,13 @@ jobs:
           restore-keys: |
             tracker-data-
 
+      - name: Cache embedding model (semantic dedup)
+        if: steps.guard.outputs.should_run == 'true'
+        uses: actions/cache@v4
+        with:
+          path: .fastembed_cache
+          key: embed-model-onnx-v1
+
       - name: Set up Python
         if: steps.guard.outputs.should_run == 'true'
         uses: actions/setup-python@v5

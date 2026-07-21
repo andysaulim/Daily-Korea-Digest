@@ -2,3 +2,4 @@ anthropic>=0.39.0
 feedparser>=6.0.0
 requests>=2.31.0
 httpx>=0.24.0
+fastembed>=0.3.0  # ONNX (no torch) multilingual embeddings for semantic dedup
