@@ -143,13 +143,23 @@ def merge_poll_records(records: list[dict], newest_sort_key: str = "") -> dict:
 
 # ── Fetching (best-effort; reuses the pipeline's Google-News + feed path) ─────
 
+def _gnews_ko(query: str) -> str:
+    """Google News RSS search in the KOREAN locale. The pipeline's default
+    _gnews() uses hl=en-US/gl=US, which returns almost no Korean-language
+    articles for a Korean query — so Gallup poll text (which is Korean) needs
+    the ko-KR locale to surface the outlets that carry the full breakdown."""
+    from urllib.parse import quote
+    return (f"https://news.google.com/rss/search?q={quote(query)}"
+            f"&hl=ko&gl=KR&ceid=KR:ko")
+
+
 def _gather_texts(max_articles: int = 12, fetch_bodies: bool = True) -> list[str]:
     """Collect text blobs about the latest Gallup weekly poll: RSS title+summary
     for every hit, plus fetched article bodies for the top few (where the full
     party breakdown lives). All best-effort — failures are skipped."""
     texts: list[str] = []
     try:
-        from collect import _gnews, _parse_feed
+        from collect import _parse_feed
     except Exception:
         return texts
     queries = [
@@ -160,13 +170,16 @@ def _gather_texts(max_articles: int = 12, fetch_bodies: bool = True) -> list[str
     entries = []
     for q in queries:
         try:
-            for e in _parse_feed(_gnews(q)):
+            hits = _parse_feed(_gnews_ko(q))
+            print(f"    gallup_fetch: query {q!r} -> {len(hits)} entries")
+            for e in hits:
                 link = (e.get("link") or "").strip()
                 if link and link in seen_links:
                     continue
                 seen_links.add(link)
                 entries.append(e)
-        except Exception:
+        except Exception as e:
+            print(f"    gallup_fetch: query {q!r} failed: {e}")
             continue
     for e in entries[:max_articles]:
         title = re.sub(r"<[^>]+>", " ", e.get("title", "") or "")
