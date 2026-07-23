@@ -196,17 +196,34 @@ def _gather_texts(max_articles: int = 12, fetch_bodies: bool = True) -> list[str
     return texts
 
 
-def fetch_latest_gallup(newest_sort_key: str = "") -> dict:
+def fetch_latest_gallup(newest_sort_key: str = "", verbose: bool = True) -> dict:
     """Fetch + parse + merge the latest Gallup weekly poll from news.
 
     Returns a merged record ({approval, dp, ppp, ind, survey_label, sort_key,
     poll_no}) for the newest poll found, or {} if nothing newer/parseable.
-    Never raises.
+    Never raises. When verbose, prints what it gathered and parsed so a CI run
+    is self-diagnosing (a silent empty result is otherwise indistinguishable
+    from a broken fetch).
     """
     try:
         texts = _gather_texts()
-    except Exception:
+    except Exception as e:
+        if verbose:
+            print(f"    gallup_fetch: article gathering failed: {e}")
         texts = []
     records = [parse_gallup_text(t) for t in texts]
     records = [r for r in records if r]
+    with_appr = [r for r in records if r.get("approval") is not None and r.get("sort_key")]
+    if verbose:
+        print(f"    gallup_fetch: {len(texts)} text blobs, "
+              f"{len(with_appr)} carried an approval# + survey date")
+        # Show the newest poll actually seen (even if not newer than baseline),
+        # so 'no update' vs 'fetch broken' is distinguishable from the log.
+        seen = merge_poll_records(records, newest_sort_key="")
+        if seen:
+            print(f"    gallup_fetch: newest poll seen = {seen.get('survey_label') or seen.get('sort_key')} "
+                  f"(approval {seen.get('approval')}, DP {seen.get('dp')}, "
+                  f"PPP {seen.get('ppp')}, ind {seen.get('ind')}, #{seen.get('poll_no')})")
+        else:
+            print("    gallup_fetch: no parseable Gallup poll found in fetched text")
     return merge_poll_records(records, newest_sort_key=newest_sort_key)
