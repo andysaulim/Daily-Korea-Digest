@@ -150,62 +150,64 @@ def main() -> int:
     print("📊  Weekly Gallup baseline check")
     baseline = _load_baseline()
     print(f"  Current: {baseline.get('poll', '?')} · {baseline.get('survey_dates', '?')}")
-
-    # Scrape via the collector's Wikipedia path (same-poll guarantee)
-    sentiment = {
-        "presidential_approval": None, "party_ruling": None,
-        "party_opposition": None, "party_independent": None,
-        "gallup_spotlight": None,
-    }
-    scraped_ok = False
-    try:
-        from collect import _scrape_wiki_polling
-        scraped_ok = _scrape_wiki_polling(sentiment)
-    except Exception as e:
-        print(f"  ⚠ Scrape failed: {e}")
-
+    current_key = _current_sort_key(baseline)
     stale_age = _baseline_age_days(baseline)
 
-    if not scraped_ok or not sentiment["presidential_approval"]:
-        print("  Scrape did not return a complete same-poll dataset — no update.")
+    # Fetch + merge the latest weekly poll from Korean news (labeled extraction,
+    # multi-article merge). Only accepts a poll strictly newer than the baseline.
+    rec = {}
+    try:
+        from gallup_fetch import fetch_latest_gallup
+        rec = fetch_latest_gallup(newest_sort_key=current_key)
+    except Exception as e:
+        print(f"  ⚠ Fetch failed: {e}")
+
+    # Carry-forward, NOT all-or-nothing: approval anchors the update; any party
+    # field the parse missed inherits the prior baseline value.
+    def _carry(field):
+        return _pct((baseline.get(field) or {}).get("value"))
+
+    pres = rec.get("approval")
+    if pres is None or not rec.get("sort_key"):
+        print("  No newer complete-enough poll found (need approval + survey date).")
         if stale_age is not None and stale_age > ALERT_DAYS:
             _email_operator(
                 f"⚠ Gallup baseline is {stale_age} days stale — manual update needed",
-                f"The weekly Gallup auto-update could not scrape a complete new poll,\n"
+                f"The weekly Gallup auto-update could not parse a newer poll,\n"
                 f"and the current baseline ({baseline.get('poll')}, "
                 f"{baseline.get('survey_dates')}) is {stale_age} days old.\n\n"
                 f"Please update gallup_baseline.json manually with the latest\n"
                 f"Gallup Korea weekly numbers (gallup.co.kr, released Fridays).")
         return 0
 
-    pres = _pct(sentiment["presidential_approval"].get("value"))
-    dp = _pct((sentiment["party_ruling"] or {}).get("value"))
-    ppp = _pct((sentiment["party_opposition"] or {}).get("value"))
-    ind = _pct((sentiment["party_independent"] or {}).get("value"))
-    raw_date = sentiment["presidential_approval"].get("last_updated", "")
-    label, sort_key = _normalize_date_label(raw_date)
+    dp = rec.get("dp") if rec.get("dp") is not None else _carry("party_ruling")
+    ppp = rec.get("ppp") if rec.get("ppp") is not None else _carry("party_opposition")
+    ind = rec.get("ind") if rec.get("ind") is not None else _carry("party_independent")
+    label = rec.get("survey_label") or rec["sort_key"]
+    carried = [n for n, v in (("DP", rec.get("dp")), ("PPP", rec.get("ppp")),
+                              ("ind", rec.get("ind"))) if v is None]
+    poll_name = f"Gallup Korea #{rec['poll_no']}" if rec.get("poll_no") else f"Gallup Korea (week of {label})"
 
-    print(f"  Scraped: approval {pres}%, DP {dp}%, PPP {ppp}%, ind {ind}% ({raw_date!r})")
+    print(f"  Parsed {poll_name}: approval {pres}%, DP {dp}%, PPP {ppp}%, ind {ind}%"
+          + (f"  (carried forward: {', '.join(carried)})" if carried else ""))
 
     problems = _sane(pres, dp, ppp, ind)
     if problems:
         print(f"  ✗ Sanity check failed: {'; '.join(problems)} — no update.")
-        return 0
-    if not sort_key:
-        print(f"  ✗ Could not parse poll date {raw_date!r} — no update.")
-        return 0
-    current_key = _current_sort_key(baseline)
-    if current_key and sort_key <= current_key:
-        print(f"  Poll ({sort_key}) is not newer than baseline ({current_key}) — no update.")
+        if stale_age is not None and stale_age > ALERT_DAYS:
+            _email_operator(
+                f"⚠ Gallup auto-update parsed implausible numbers — check manually",
+                f"Parsed {poll_name}: approval {pres}, DP {dp}, PPP {ppp}, ind {ind}\n"
+                f"Failed sanity: {'; '.join(problems)}. Baseline left unchanged "
+                f"({stale_age} days old).")
         return 0
 
-    # Build updated baseline; trends computed vs previous values
     old = {k: _pct((baseline.get(k) or {}).get("value"))
            for k in ("presidential_approval", "party_ruling",
                      "party_opposition", "party_independent")}
     updated = dict(baseline)
     updated.update({
-        "poll": f"Gallup Korea (week of {label.split(' (')[0]})",
+        "poll": poll_name,
         "survey_dates": label,
         "source": "Gallup Korea",
         "presidential_approval": {"value": f"{pres:g}%",
@@ -217,18 +219,18 @@ def main() -> int:
                              "party_kr": "국민의힘",
                              "trend": _trend(ppp, old["party_opposition"])},
         "updated_at": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
-        "updated_by": "gallup_update.py (auto)",
+        "updated_by": "gallup_update.py (auto, news-parse)",
     })
     if ind is not None:
         updated["party_independent"] = {"value": f"{ind:g}%",
                                         "trend": _trend(ind, old["party_independent"])}
-    # Spotlight can't be scraped from the wiki tables — carry forward, the
-    # daily digest picks up newer spotlights from articles.
+    # Spotlight isn't reliably in short news text — carry forward; the daily
+    # digest still picks up a fresh spotlight from that day's articles.
 
     BASELINE_PATH.write_text(
         json.dumps(updated, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    print(f"  ✅ Baseline updated -> {label}: approval {pres:g}%, DP {dp:g}%, "
-          f"PPP {ppp:g}%, ind {ind if ind is None else format(ind, 'g')}%")
+    print(f"  ✅ Baseline updated -> {poll_name} ({label}): approval {pres:g}%, "
+          f"DP {dp:g}%, PPP {ppp:g}%, ind {ind if ind is None else format(ind, 'g')}%")
     return 0
 
 
