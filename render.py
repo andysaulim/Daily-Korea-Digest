@@ -710,203 +710,164 @@ def render(digest: dict) -> str:
 
     tariff_tracker = (us_korea.get("tariff_tracker") or {}) if isinstance(us_korea, dict) else {}
 
+    state_of_play = _esc(us_korea.get("state_of_play", "")) if isinstance(us_korea, dict) else ""
+
     if deal_list or trade_policy or investment_pkg or tariff_tracker:
-        header_html = ""
+        pillars = []
 
-        # ── Trade dashboard strip — the section's three key numbers in one
-        # row (tariff rate / investment fulfilled / next trigger), followed
-        # by compact detail tables. Replaces the old stacked cards.
-        dash_cells = []
-        sector_table = ""
-        s122_line = ""
-        meta_line = ""
-        deals_breakdown = ""
+        sop_html = ""
+        if state_of_play:
+            sop_html = (f'<div style="font-family:Georgia,serif;font-size:14px;line-height:1.6;'
+                        f'color:#2C3540;margin-bottom:6px;">{state_of_play}</div>')
 
+        _pillar_h = (lambda label, accent=TAEGUK_RED:
+            f'<div style="font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;'
+            f'color:{NAVY};padding-bottom:5px;border-bottom:2px solid {accent};display:inline-block;'
+            f'margin-bottom:12px;">{label}</div>')
+        _box = (lambda inner:
+            f'<div style="border:1px solid #DBE0E6;border-radius:5px;overflow:hidden;margin-top:12px;">{inner}</div>')
+
+        # ── Pillar 1: Tariffs ──────────────────────────────────────────────
         if tariff_tracker and tariff_tracker.get("headline_rate"):
             h_rate = _esc(str(tariff_tracker.get("headline_rate", "")))
             h_status = tariff_tracker.get("headline_status", "ACTIVE")
-            # Escalation labels removed from the product — normalize legacy data
             if h_status == "ESCALATION":
                 h_status = "ACTIVE"
             h_note = _esc(str(tariff_tracker.get("headline_note", "")))
             s122 = tariff_tracker.get("section_122_surcharge")
-            last_change = _esc(str(tariff_tracker.get("last_change", "")))
+            next_trigger = _esc(str(tariff_tracker.get("next_trigger", ""))) if tariff_tracker.get("next_trigger") else ""
+            _status_pill = {"ACTIVE": ("#FBECEE", "#B0212F"), "PAUSED": ("#EEF1F5", "#55607A"),
+                            "NEGOTIATING": ("#E5EAF2", "#0047A0"), "REDUCED": ("#E4EFE7", "#1E7940")}
+            pill_bg, pill_fg = _status_pill.get(h_status, ("#FBECEE", "#B0212F"))
+            status_pill = (f'<span style="display:inline-block;font-family:{MONO};font-size:11px;font-weight:700;'
+                           f'letter-spacing:0.5px;padding:2px 8px;border-radius:3px;background:{pill_bg};color:{pill_fg};">{_esc(h_status)}</span>')
 
-            # Light-ground status colors (used in the sector-rate table below).
-            _tariff_status_colors = {"ACTIVE": TAEGUK_RED, "PAUSED": "#7F8C8D",
-                                     "NEGOTIATING": TAEGUK_BLUE, "REDUCED": UP_GREEN}
-            # On the navy dashboard strip, use on-navy variants so text stays
-            # legible (pure red/blue are too dark on navy).
-            _tariff_status_navy = {"ACTIVE": RED_ON_NAVY, "PAUSED": "#A8B6C8",
-                                   "NEGOTIATING": BLUE_ON_NAVY, "REDUCED": "#69C88E"}
-            h_color = _tariff_status_navy.get(h_status, RED_ON_NAVY)
-            dash_cells.append((
-                "US Tariff on ROK",
-                f'<span style="font-family:{MONO};font-size:24px;font-weight:700;color:{RED_ON_NAVY};">{h_rate}</span>',
-                f'<span style="font-family:{MONO};font-size:11px;font-weight:700;color:{h_color};">{_esc(h_status)}</span>',
-            ))
+            hero = (f'<table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>'
+                    f'<td style="width:96px;vertical-align:middle;"><span style="font-family:{MONO};font-size:32px;font-weight:700;color:{TAEGUK_RED};">{h_rate}</span></td>'
+                    f'<td style="vertical-align:middle;">{status_pill}<div style="font-size:12px;color:#5A6472;line-height:1.4;margin-top:4px;">{h_note or "US baseline reciprocal rate on ROK goods"}</div></td>'
+                    f'</tr></table>')
 
-            # Sector rate rows — compact table under the strip
-            sector_rows = ""
+            watch = ""
+            watch_bits = [b for b in (
+                (f"Section 122 surcharge {_esc(str(s122))}" if s122 else ""),
+                (f"next trigger: {next_trigger}" if next_trigger else ""),
+            ) if b]
+            if watch_bits:
+                watch = (f'<div style="margin-top:12px;background:#FBF3F0;border:1px solid #F1D9D2;'
+                         f'border-left:3px solid {TAEGUK_RED};border-radius:4px;padding:9px 13px;">'
+                         f'<div style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#B0212F;font-weight:700;">Watch this date</div>'
+                         f'<div style="font-size:13px;color:#3D4451;margin-top:2px;">{" &middot; ".join(watch_bits)}</div></div>')
+
+            _sec_colors = {"ACTIVE": TAEGUK_RED, "PAUSED": "#7F8C8D", "NEGOTIATING": TAEGUK_BLUE, "REDUCED": UP_GREEN}
+            sec_rows = ""
             for sr in (tariff_tracker.get("sector_rates") or []):
-                sr_sector = _esc(sr.get("sector", ""))
-                sr_rate = _esc(str(sr.get("rate", "")))
-                sr_auth = _esc(sr.get("authority", ""))
                 sr_st = sr.get("status", "ACTIVE")
                 if sr_st == "ESCALATION":
                     sr_st = "ACTIVE"
-                sr_color = _tariff_status_colors.get(sr_st, TAEGUK_RED)
-                sr_note = _esc(sr.get("note", ""))
-                sector_rows += f"""
-                <tr style="border-bottom:1px solid #E2E6EC;">
-                  <td style="padding:5px 8px 5px 10px;font-size:12px;font-weight:600;color:{INK};">{sr_sector}</td>
-                  <td style="padding:5px 6px;font-family:{MONO};font-size:13px;font-weight:700;color:{sr_color};text-align:center;white-space:nowrap;">{sr_rate}</td>
-                  <td style="padding:5px 6px;font-size:11px;color:#5A6472;text-transform:uppercase;white-space:nowrap;">{sr_auth}</td>
-                  <td style="padding:5px 10px 5px 6px;font-size:11px;color:#3D4451;">{sr_note}</td>
-                </tr>"""
-            if sector_rows.strip():
-                sector_table = f"""
-                <div style="margin-top:12px;background:#F5F7FA;border:1px solid #E2E6EC;border-radius:4px;padding:10px 0 2px;">
-                  <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:{TAEGUK_BLUE};font-weight:700;margin:0 10px 6px;">Sector Rates</div>
-                  <table class="tariff-sector" width="100%" cellpadding="0" cellspacing="0" border="0">{sector_rows}
-                  </table>
-                </div>"""
+                sec_rows += (f'<tr style="border-top:1px solid #E7EBF0;">'
+                             f'<td style="padding:7px 12px;font-size:12.5px;font-weight:600;color:{INK};">{_esc(sr.get("sector",""))}</td>'
+                             f'<td style="padding:7px 8px;font-size:11px;color:#7A828F;text-transform:uppercase;text-align:right;white-space:nowrap;">{_esc(sr.get("authority",""))}</td>'
+                             f'<td style="padding:7px 12px 7px 8px;font-family:{MONO};font-size:13px;font-weight:700;color:{_sec_colors.get(sr_st, TAEGUK_RED)};text-align:right;white-space:nowrap;">{_esc(str(sr.get("rate","")))}</td>'
+                             f'</tr>')
+            sector_box = ""
+            if sec_rows:
+                sector_box = _box(
+                    f'<div style="background:#F5F7FA;padding:7px 12px;font-size:11px;text-transform:uppercase;'
+                    f'letter-spacing:1px;color:{TAEGUK_BLUE};font-weight:700;border-bottom:1px solid #DBE0E6;">Sector Rates</div>'
+                    f'<table width="100%" cellpadding="0" cellspacing="0" border="0" class="tariff-sector">{sec_rows}</table>')
 
-            if s122:
-                s122_line = f'<div style="margin-top:8px;font-size:12px;color:{TAEGUK_RED};font-weight:600;">+ Section 122 global surcharge: {_esc(str(s122))}</div>'
-            note_bits = " &middot; ".join(b for b in (h_note, last_change) if b)
-            if note_bits:
-                meta_line = f'<div style="margin-top:5px;font-size:11px;color:#5A6472;line-height:1.5;">{note_bits}</div>'
+            pillars.append(f'<div style="margin-top:6px;">{_pillar_h("Tariffs")}{hero}{watch}{sector_box}</div>')
 
+        # ── Pillar 2: Investment ───────────────────────────────────────────
         if investment_pkg and investment_pkg.get("total_pledged"):
             pct = investment_pkg.get("pct_fulfilled", 0)
+            try:
+                bar_w = max(2, min(int(pct), 100))
+            except (TypeError, ValueError):
+                bar_w = 2
             announced = _esc(str(investment_pkg.get("announced_to_date", "")))
             pledged = _esc(str(investment_pkg.get("total_pledged", "")))
-            dash_cells.append((
-                "Investment Fulfilled",
-                f'<span style="font-family:{MONO};font-size:24px;font-weight:700;color:{BLUE_ON_NAVY};">{pct}%</span>',
-                f'<span style="color:#A8B6C8;">{announced} of {pledged}</span>',
-            ))
+            latest = _esc(str(investment_pkg.get("latest_update", "")))
+            if len(latest) > 60:
+                latest = latest[:57].rstrip() + "…"
 
-            # Deal breakdown — kept as a compact table
-            known_deals = investment_pkg.get("known_deals") or []
-            if known_deals:
-                deal_rows = ""
-                for kd in known_deals:
-                    co = _esc(kd.get("company", ""))
-                    val = _esc(kd.get("value", ""))
-                    sect = _esc(kd.get("sector", ""))
-                    deal_rows += f"""
-                    <tr style="border-bottom:1px solid #E2E6EC;">
-                      <td style="padding:5px 8px 5px 10px;font-size:12px;font-weight:600;color:{INK};">{co}</td>
-                      <td style="padding:5px 6px;font-family:{MONO};font-size:12px;font-weight:700;color:{UP_GREEN};text-align:right;white-space:nowrap;">{val}</td>
-                      <td style="padding:5px 10px 5px 6px;font-size:11px;color:#5A6472;">{sect}</td>
-                    </tr>"""
-                deals_breakdown = f"""
-                <div style="margin-top:12px;background:#F5F7FA;border:1px solid #E2E6EC;border-radius:4px;padding:10px 0 2px;">
-                  <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:{TAEGUK_BLUE};font-weight:700;margin:0 10px 6px;">Investment Deal Breakdown ({_esc(str(investment_pkg.get("latest_update", "")))})</div>
-                  <table width="100%" cellpadding="0" cellspacing="0" border="0" class="deal-breakdown">
-                    {deal_rows}
-                  </table>
-                </div>"""
+            bar = (f'<div style="font-size:13px;color:#3D4451;margin-bottom:7px;">'
+                   f'<span style="font-family:{MONO};color:{NAVY};font-size:15px;font-weight:700;">{announced}</span> '
+                   f'announced of {pledged} pledged &middot; {pct}% fulfilled</div>'
+                   f'<div style="background:#E7EBF0;border-radius:6px;height:16px;overflow:hidden;">'
+                   f'<div style="background:{TAEGUK_BLUE};width:{bar_w}%;height:100%;border-radius:6px 0 0 6px;"></div></div>'
+                   + (f'<div style="font-size:11px;color:#8A94A6;margin-top:5px;text-align:right;">newest: {latest}</div>' if latest else ""))
 
-        next_trigger = (_esc(str(tariff_tracker.get("next_trigger", "")))
-                        if tariff_tracker and tariff_tracker.get("next_trigger") else "")
-        if next_trigger:
-            dash_cells.append((
-                "Next Trigger",
-                f'<span style="font-family:{MONO};font-size:12px;font-weight:700;color:#D5DDE8;line-height:1.45;display:inline-block;padding-top:5px;">{next_trigger}</span>',
-                "",
-            ))
+            deal_rows = ""
+            for kd in (investment_pkg.get("known_deals") or []):
+                sect = _esc(kd.get("sector", ""))
+                deal_rows += (f'<tr style="border-top:1px solid #E7EBF0;">'
+                              f'<td style="padding:7px 12px;font-size:12.5px;color:{INK};"><span style="font-weight:600;">{_esc(kd.get("company",""))}</span>'
+                              + (f' <span style="color:#7A828F;font-size:11px;">{sect}</span>' if sect else "")
+                              + f'</td>'
+                              f'<td style="padding:7px 12px 7px 8px;font-family:{MONO};font-size:12px;font-weight:700;color:{UP_GREEN};text-align:right;white-space:nowrap;">{_esc(kd.get("value",""))}</td>'
+                              f'</tr>')
+            deal_box = ""
+            if deal_rows:
+                deal_box = _box(
+                    f'<div style="background:#F5F7FA;padding:7px 12px;font-size:11px;text-transform:uppercase;'
+                    f'letter-spacing:1px;color:{TAEGUK_BLUE};font-weight:700;border-bottom:1px solid #DBE0E6;">Committed Investment Deals</div>'
+                    f'<table width="100%" cellpadding="0" cellspacing="0" border="0" class="deal-breakdown">{deal_rows}</table>')
 
-        if dash_cells:
-            cell_width = f"{100 // len(dash_cells)}%"
-            cells_html = ""
-            for i, (label, value, sub) in enumerate(dash_cells):
-                border = "border-left:1px solid rgba(255,255,255,0.10);" if i else ""
-                cells_html += f"""
-                <td width="{cell_width}" align="center" style="padding:13px 10px 14px;vertical-align:top;{border}">
-                  <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#7B90AC;margin-bottom:5px;">{label}</div>
-                  <div>{value}</div>
-                  {"<div style='font-size:11px;margin-top:4px;'>" + sub + "</div>" if sub else ""}
-                </td>"""
-            header_html += f"""
-            <table class="trade-dash" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:{NAVY_DATA};border-radius:4px;">
-              <tr>{cells_html}
-              </tr>
-            </table>
-            {s122_line}
-            {meta_line}
-            {sector_table}
-            {deals_breakdown}
-            <div style="margin-bottom:16px;"></div>"""
+            pillars.append(f'<div style="margin-top:18px;">{_pillar_h("Investment &middot; " + pledged + " pledge", accent=TAEGUK_BLUE)}{bar}{deal_box}</div>')
 
-        # US Trade Policy Tracker (Section 301, USTR, Commerce Dept)
-        if trade_policy:
-            status_colors = {"ACTIVE": TAEGUK_RED, "PENDING": "#7F8C8D", "RISK": TAEGUK_RED, "RESOLVED": UP_GREEN, "MONITOR": TAEGUK_BLUE}
-            tracker_rows = ""
-            for tr in trade_policy:
-                item_text = _esc(tr.get("item", ""))
-                detail_text = _esc(tr.get("detail", ""))
-                agency = _esc(tr.get("agency", ""))
-                item_url = tr.get("url", "")
-                st = tr.get("status", "MONITOR")
-                if st == "ESCALATION":
-                    st = "ACTIVE"
-                st_color = status_colors.get(st, "#7F8C8D")
-                status_badge = f'<span style="font-family:{MONO};font-size:11px;font-weight:700;color:{st_color};letter-spacing:0.5px;">{_esc(st)}</span>'
-                agency_tag = f'<span style="font-size:11px;color:#5A6472;font-weight:400;"> · {agency}</span>' if agency else ""
-                item_label = f'<a href="{_esc(item_url)}" style="color:{INK};text-decoration:underline;" target="_blank">{item_text}</a>' if item_url and item_url != "#" and item_url.startswith("http") else item_text
-                tracker_rows += f"""
-                <tr style="border-bottom:1px solid #E2E6EC;">
-                  <td style="padding:7px 8px 7px 0;vertical-align:top;font-size:12px;font-weight:600;color:{INK};width:30%;">{item_label}{agency_tag}</td>
-                  <td style="padding:7px 4px;vertical-align:top;font-size:12px;color:#3D4451;line-height:1.45;">{detail_text}</td>
-                  <td style="padding:7px 0 7px 4px;vertical-align:top;text-align:right;white-space:nowrap;">{status_badge}</td>
-                </tr>"""
-            header_html += f"""
-            <div style="margin-bottom:16px;">
-              <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:{TAEGUK_BLUE};font-weight:700;margin-bottom:6px;">US Trade Policy Tracker</div>
-              <table class="trade-policy" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:2px solid {TAEGUK_BLUE};">
-                {tracker_rows}
-              </table>
-            </div>"""
-
-        # Individual deals
-        deals_html = ""
-        sector_colors = {
-            "defense": TAEGUK_RED, "energy": TAEGUK_BLUE, "tech": TAEGUK_BLUE,
-            "manufacturing": TAEGUK_BLUE, "trade": TAEGUK_BLUE, "tariff": TAEGUK_RED,
-        }
+        # ── Pillar 3: New This Week ─────────────────────────────────────────
+        new_rows = ""
+        _pol_colors = {"ACTIVE": TAEGUK_RED, "PENDING": "#7F8C8D", "RISK": TAEGUK_RED, "RESOLVED": UP_GREEN, "MONITOR": TAEGUK_BLUE}
         for deal in deal_list:
             headline = _esc(deal.get("headline", ""))
+            if not headline:
+                continue
             value = _esc(deal.get("value", "")) if deal.get("value") else ""
-            sector = deal.get("sector", "trade")
-            parties = _esc(deal.get("parties", ""))
             detail = _esc(deal.get("detail", ""))
-            src = _esc(deal.get("source", ""))
+            src2 = _esc(deal.get("source", ""))
+            parties = _esc(deal.get("parties", ""))
             url = deal.get("url", "")
-            d_tags = deal.get("tags") or []
-            bar_color = sector_colors.get(sector, TAEGUK_BLUE)
-            wh_tracker = deal.get("wh_tracker", False)
-            value_badge = f'<span style="display:inline-block;padding:1px 6px;border-radius:3px;font-family:{MONO};font-size:11px;font-weight:700;color:#fff;background:{UP_GREEN};margin-left:6px;">{value}</span>' if value else ""
-            wh_badge = '<span style="display:inline-block;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:600;color:' + INK + ';background:#E8E8E8;margin-left:6px;text-transform:uppercase;letter-spacing:0.5px;">WH Tracker</span>' if wh_tracker else ""
-            # Source / parties attribution line on the right
-            meta_right = f'<span style="font-size:11px;color:#888;">{parties}</span>' if parties else ""
-            deals_html += f"""
-            <div class="deal-card" style="margin-bottom:14px;padding:12px 0;border-top:1px solid #E8E8E8;">
-              <div style="font-size:11px;color:#888;margin-bottom:2px;">{meta_right} {('&middot; ' + src) if src else ''}</div>
-              <div style="font-size:15px;font-weight:700;color:{INK};line-height:1.3;margin-bottom:4px;">
-                {_link_or_text(headline, url, style="color:" + INK + ";text-decoration:none;")}{value_badge}{wh_badge}
-              </div>
-              <div style="font-size:13px;line-height:1.5;color:#444;">{detail}</div>
-              {"<div style='margin-top:6px;'>" + _link_or_text(_esc(src) + " ↗", url, style="font-size:11px;font-family:monospace;color:#888;text-decoration:none;") + "</div>" if src and url and url != "#" and url.startswith("http") else ""}
-            </div>"""
+            val_badge = (f'<span style="display:inline-block;font-family:{MONO};font-size:11px;font-weight:700;'
+                         f'color:#fff;background:{UP_GREEN};border-radius:3px;padding:1px 6px;margin-left:6px;">{value}</span>') if value else ""
+            kind = ('<span style="display:inline-block;font-family:' + MONO + ';font-size:10px;font-weight:700;'
+                    'letter-spacing:0.5px;padding:1px 6px;border-radius:3px;background:#E4EFE7;color:#1E7940;margin-left:6px;">New deal</span>')
+            meta = " &middot; ".join(b for b in (parties, src2) if b)
+            new_rows += (f'<tr><td style="padding:9px 0;border-top:1px solid #EAEDF1;">'
+                         f'<div style="font-size:13.5px;font-weight:700;color:{INK};line-height:1.35;">{_link_or_text(headline, url, style="color:" + INK + ";text-decoration:none;")}{val_badge}{kind}</div>'
+                         + (f'<div style="font-size:12.5px;color:#3D4451;line-height:1.45;margin-top:2px;">{detail}</div>' if detail else "")
+                         + (f'<div style="font-size:10.5px;text-transform:uppercase;letter-spacing:0.5px;color:#8A94A6;margin-top:2px;">{meta}</div>' if meta else "")
+                         + '</td></tr>')
+        for tr in trade_policy:
+            item_text = _esc(tr.get("item", ""))
+            if not item_text:
+                continue
+            detail_text = _esc(tr.get("detail", ""))
+            agency = _esc(tr.get("agency", ""))
+            item_url = tr.get("url", "")
+            st = tr.get("status", "MONITOR")
+            if st == "ESCALATION":
+                st = "ACTIVE"
+            st_color = _pol_colors.get(st, "#7F8C8D")
+            kind = ('<span style="display:inline-block;font-family:' + MONO + ';font-size:10px;font-weight:700;'
+                    'letter-spacing:0.5px;padding:1px 6px;border-radius:3px;background:#E5EAF2;color:#0047A0;margin-left:6px;">Policy</span>')
+            head = _link_or_text(item_text, item_url, style="color:" + INK + ";text-decoration:none;")
+            status_span = f'<span style="font-family:{MONO};color:{st_color};font-weight:700;">{_esc(st)}</span>'
+            meta = " &middot; ".join(b for b in (agency, status_span) if b)
+            new_rows += (f'<tr><td style="padding:9px 0;border-top:1px solid #EAEDF1;">'
+                         f'<div style="font-size:13.5px;font-weight:700;color:{INK};line-height:1.35;">{head}{kind}</div>'
+                         + (f'<div style="font-size:12.5px;color:#3D4451;line-height:1.45;margin-top:2px;">{detail_text}</div>' if detail_text else "")
+                         + (f'<div style="font-size:10.5px;text-transform:uppercase;letter-spacing:0.5px;color:#8A94A6;margin-top:2px;">{meta}</div>' if meta else "")
+                         + '</td></tr>')
+        if new_rows:
+            pillars.append(f'<div style="margin-top:18px;">{_pillar_h("New This Week")}'
+                           f'<table width="100%" cellpadding="0" cellspacing="0" border="0">{new_rows}</table></div>')
 
         sections.append(f"""
         <div {_SEC}>
           <a name="trade"></a>{_sec_label("US-Korea Trade &amp; Investment")}
-          {header_html}
-          {deals_html}
+          {sop_html}
+          {"".join(pillars)}
         </div>
         """)
 
