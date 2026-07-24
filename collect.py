@@ -361,13 +361,21 @@ def _entry_to_article(entry, source: str, lang: str = "EN", extra: dict | None =
     return article
 
 
-def _is_recent(entry, hours: int = 48) -> bool:
+def _is_recent(entry, hours: int = 48, strict: bool = False) -> bool:
+    """True if the entry is within the recency window.
+
+    strict=False (default): an entry with NO parseable date passes — fine for
+    high-volume news feeds where a missing date usually means fresh wire copy.
+    strict=True: an undated entry is REJECTED. Use for analysis/academic tiers,
+    where a low-volume `site:` query backfills with old evergreen think-tank
+    pieces that frequently carry no date — those must not be presented as
+    today's analysis (e.g. a 2008 AEI essay slipping into opeds_today)."""
     cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
     for attr in ("published_parsed", "updated_parsed"):
         parsed = getattr(entry, attr, None)
         if parsed:
             return datetime(*parsed[:6], tzinfo=timezone.utc) >= cutoff
-    return True
+    return not strict
 
 
 _ENTERTAINMENT_FILTER = re.compile(
@@ -478,7 +486,9 @@ def _collect_tier2() -> list:
     results = _fetch_feeds_parallel(TIER2_FEEDS, is_tiered=True)
     for source, (entries, prestige) in results.items():
         for entry in entries:
-            if not _is_recent(entry, hours=36):
+            # strict: drop undated think-tank pieces (evergreen backfill from
+            # low-volume site: queries — e.g. old AEI essays with no date).
+            if not _is_recent(entry, hours=36, strict=True):
                 continue
             if not _is_korea_related(entry):
                 continue
@@ -492,7 +502,9 @@ def _collect_tier3() -> list:
     results = _fetch_feeds_parallel(TIER3_FEEDS, is_tiered=True)
     for source, (entries, tier) in results.items():
         for entry in entries:
-            if not _is_recent(entry, hours=72):
+            # strict: undated academic hits are almost always old evergreen
+            # papers backfilled by the journal site: query — reject them.
+            if not _is_recent(entry, hours=72, strict=True):
                 continue
             if not _is_korea_related(entry):
                 continue

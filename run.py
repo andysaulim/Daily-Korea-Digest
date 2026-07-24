@@ -792,6 +792,45 @@ def _drop_nameless_personnel(digest: dict) -> list[str]:
     return log
 
 
+_ONTHISDAY_DATE_RE = re.compile(
+    r"(January|February|March|April|May|June|July|August|September|October|"
+    r"November|December)\s+(\d{1,2})", re.IGNORECASE)
+_MONTH_NUM = {m: i + 1 for i, m in enumerate(
+    ["january", "february", "march", "april", "may", "june", "july",
+     "august", "september", "october", "november", "december"])}
+
+
+def _drop_offdate_on_this_day(digest: dict) -> list[str]:
+    """Drop on_this_day entries whose date isn't TODAY's exact month + day.
+
+    "On This Day" must anchor to the current calendar date. The prompt says so,
+    but the model still reaches for famous anniversaries (e.g. the July 4 2017
+    Hwasong-14 test in a July 24 issue). Unlike appointment dates, this IS
+    code-checkable: parse the entry's Month+Day and compare to today (ET).
+    """
+    log = []
+    otd = digest.get("on_this_day") or []
+    if not otd:
+        return log
+    now = datetime.now(ZoneInfo("America/New_York"))
+    kept = []
+    for item in otd:
+        date_str = str(item.get("date") or "")
+        m = _ONTHISDAY_DATE_RE.search(date_str)
+        if not m:
+            log.append(f"  - dropped on_this_day with unparseable date {date_str!r}")
+            continue
+        month = _MONTH_NUM.get(m.group(1).lower())
+        day = int(m.group(2))
+        if month == now.month and day == now.day:
+            kept.append(item)
+        else:
+            log.append(f"  - dropped on_this_day {date_str!r} "
+                       f"(not today {now.strftime('%B %-d')})")
+    digest["on_this_day"] = kept
+    return log
+
+
 def _postprocess_digest(digest_data: dict, payload: dict | None = None) -> tuple[dict, list[str]]:
     """Run dedup, deal filter, source diversity, and URL repair. Returns (digest, all_log_messages)."""
     log = []
@@ -823,6 +862,11 @@ def _postprocess_digest(digest_data: dict, payload: dict | None = None) -> tuple
     if nameless_log:
         log.append(f"\n🧹  Dropped {len(nameless_log)} personnel entr(ies) with placeholder names:")
         log.extend(nameless_log)
+
+    offdate_log = _drop_offdate_on_this_day(digest_data)
+    if offdate_log:
+        log.append(f"\n🧹  Dropped {len(offdate_log)} on_this_day entr(ies) not on today's date:")
+        log.extend(offdate_log)
 
     return digest_data, log
 
