@@ -362,6 +362,20 @@ def main():
     print(f"📅  Found {len(digests)} daily digests: {', '.join(dates)}")
     weekly = generate_weekly(digests)
 
+    # ── Verification pass — check each top story's specifics against the source
+    # daily digests; drop composites/unsupported claims (e.g. a fabricated
+    # multi-nation itinerary). Best-effort: a failure removes nothing.
+    try:
+        from verify import verify_weekly_stories
+        digests_json = json.dumps([_summarize_digest(d) for d in digests], ensure_ascii=False)
+        vlog = verify_weekly_stories(weekly, digests_json)
+        if vlog:
+            print(f"\n🔎  Verification pass dropped {len(vlog)} unsupported weekly story(ies):")
+            for m in vlog:
+                print(m)
+    except Exception as e:
+        print(f"  ⚠  Weekly verification skipped (non-fatal): {e}")
+
     tz = ZoneInfo("America/New_York")
     date_slug = datetime.now(tz).strftime("%Y-%m-%d")
     json_path = Path(f"weekly_{date_slug}.json")

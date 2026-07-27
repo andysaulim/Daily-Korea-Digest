@@ -1064,6 +1064,21 @@ def main():
     for msg in pp_log:
         print(msg)
 
+    # ── Step 1d: Verification pass — adversarial re-read of the failure-prone
+    # analysis sections (op-eds, academic). Drops stale/evergreen pieces a date
+    # filter can't catch (an old AEI essay, a 2021 THAAD paper). Best-effort:
+    # a verification failure never removes content that passed generation.
+    try:
+        from verify import verify_stale_analysis
+        _vdate = datetime.now(ZoneInfo("America/New_York")).strftime("%A, %B %-d, %Y")
+        vlog = verify_stale_analysis(digest_data, _vdate)
+        if vlog:
+            print(f"\n🔎  Verification pass dropped {len(vlog)} stale analysis item(s):")
+            for m in vlog:
+                print(m)
+    except Exception as e:
+        print(f"  ⚠  Verification pass skipped (non-fatal): {e}")
+
     Path("digest.json").write_text(json.dumps(digest_data, ensure_ascii=False, indent=2))
 
     # ── Step 2+: Update trackers (Kim, KCNA, BP, Tension) ──────────────────
