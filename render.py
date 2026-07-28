@@ -729,23 +729,53 @@ def render(digest: dict) -> str:
 
         # ── Pillar 1: Tariffs ──────────────────────────────────────────────
         if tariff_tracker and tariff_tracker.get("headline_rate"):
-            h_rate = _esc(str(tariff_tracker.get("headline_rate", "")))
+            # The big number is JUST the rate. Models sometimes append a whole
+            # clause to headline_rate ("10% (Section 122 expired…)"); that would
+            # render at 32px in a narrow cell and wrap one word per line. Keep
+            # only the leading rate token; spill any trailing text into the note.
+            _raw_rate = str(tariff_tracker.get("headline_rate", "")).strip()
+            _rm = _re.match(r"\s*(\d{1,3}(?:\.\d+)?\s*%(?:\s*[-+/]\s*\d{1,3}(?:\.\d+)?\s*%)?)\s*(.*)",
+                            _raw_rate, _re.DOTALL)
+            if _rm:
+                h_rate = _esc(_rm.group(1).strip())
+                _rate_spill = _rm.group(2).strip().strip("()").strip()
+            else:
+                h_rate = _esc(_raw_rate[:12])
+                _rate_spill = _raw_rate[12:].strip()
             h_status = tariff_tracker.get("headline_status", "ACTIVE")
             if h_status == "ESCALATION":
                 h_status = "ACTIVE"
             h_note = _esc(str(tariff_tracker.get("headline_note", "")))
+            # If the rate field carried a trailing clause and there's no note,
+            # use that clause as the note so nothing is lost.
+            if _rate_spill and not h_note:
+                h_note = _esc(_rate_spill)
             s122 = tariff_tracker.get("section_122_surcharge")
             next_trigger = _esc(str(tariff_tracker.get("next_trigger", ""))) if tariff_tracker.get("next_trigger") else ""
-            _status_pill = {"ACTIVE": ("#FBECEE", "#B0212F"), "PAUSED": ("#EEF1F5", "#55607A"),
-                            "NEGOTIATING": ("#E5EAF2", "#0047A0"), "REDUCED": ("#E4EFE7", "#1E7940")}
-            pill_bg, pill_fg = _status_pill.get(h_status, ("#FBECEE", "#B0212F"))
-            status_pill = (f'<span style="display:inline-block;font-family:{MONO};font-size:11px;font-weight:700;'
-                           f'letter-spacing:0.5px;padding:2px 8px;border-radius:3px;background:{pill_bg};color:{pill_fg};">{_esc(h_status)}</span>')
+            # Only a SHORT recognized status becomes a pill. If the model wrote a
+            # long clause into headline_status, treat it as the note instead —
+            # never cram a sentence into the little pill beside the big rate.
+            _status_pill = {"ACTIVE": ("#FBECEE", "#B0212F"), "EXPIRED": ("#EEF1F5", "#55607A"),
+                            "PAUSED": ("#EEF1F5", "#55607A"), "NEGOTIATING": ("#E5EAF2", "#0047A0"),
+                            "REDUCED": ("#E4EFE7", "#1E7940"), "PENDING": ("#EEF1F5", "#55607A")}
+            _h_key = h_status.strip().upper()
+            status_pill = ""
+            note_text = h_note or "US baseline reciprocal rate on ROK goods"
+            if _h_key in _status_pill:
+                pill_bg, pill_fg = _status_pill[_h_key]
+                status_pill = (f'<span style="display:inline-block;font-family:{MONO};font-size:11px;font-weight:700;'
+                               f'letter-spacing:0.5px;padding:2px 8px;border-radius:3px;background:{pill_bg};color:{pill_fg};">{_esc(_h_key)}</span>')
+            elif h_status.strip():
+                # long/free-form status -> fold into the note so it reads normally
+                note_text = h_note or _esc(h_status)
 
-            hero = (f'<table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>'
-                    f'<td style="width:96px;vertical-align:middle;"><span style="font-family:{MONO};font-size:32px;font-weight:700;color:{TAEGUK_RED};">{h_rate}</span></td>'
-                    f'<td style="vertical-align:middle;">{status_pill}<div style="font-size:12px;color:#5A6472;line-height:1.4;margin-top:4px;">{h_note or "US baseline reciprocal rate on ROK goods"}</div></td>'
-                    f'</tr></table>')
+            # Number and short pill share one line; the note gets its OWN
+            # full-width line below (so it can never wrap into a narrow column).
+            hero = (f'<div style="margin-bottom:5px;">'
+                    f'<span style="font-family:{MONO};font-size:32px;font-weight:700;color:{TAEGUK_RED};vertical-align:middle;">{h_rate}</span>'
+                    + (f'&nbsp;&nbsp;{status_pill}' if status_pill else '')
+                    + f'</div>'
+                    f'<div style="font-size:13px;color:#5A6472;line-height:1.5;">{note_text}</div>')
 
             watch = ""
             watch_bits = [b for b in (
