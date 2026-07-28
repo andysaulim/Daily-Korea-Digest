@@ -530,9 +530,9 @@ Return a digest object with:
   - trade_policy: array of 4-6 NON-TARIFF US trade policy actions (MAX 6) affecting South Korea. Do NOT repeat tariff rates already shown in tariff_tracker. Focus on: Section 301 investigations, export controls, CFIUS reviews, ITC cases, trade negotiation rounds. Each: item, agency, detail (1 sentence — current status with dates/deadlines), status (ACTIVE/PENDING/RISK/RESOLVED/MONITOR), url (link to today's source article or the most recent authoritative source for this policy action — e.g. Federal Register notice, USTR announcement, Reuters/AP report. REQUIRED for every item — if no sourced URL exists, omit the item entirely rather than fabricate a link). Only include currently active/relevant policies.
     See TRADE & TARIFF BASELINES section above for baseline entries, tariff rates, and sector rates.
   - tariff_tracker: current US tariff rates on South Korean goods — this is the SINGLE authoritative source for all tariff rates (do not duplicate in trade_policy). Object with:
-    - headline_rate: the broadest currently active tariff rate applied to general Korean goods (see TRADE & TARIFF BASELINES below)
-    - headline_status: ACTIVE/PAUSED/NEGOTIATING/REDUCED
-    - headline_note: 1 sentence summarizing the current tariff posture
+    - headline_rate: JUST the rate figure and nothing else — a short string like "10%" or "25%" (see TRADE & TARIFF BASELINES below). This is displayed as a large headline number, so it MUST NOT contain any words, parentheses, dates, or explanation. Put all context (Section 122 expiry, legal authority, etc.) in headline_note, never in headline_rate.
+    - headline_status: EXACTLY ONE of these words — ACTIVE, EXPIRED, PAUSED, NEGOTIATING, REDUCED, PENDING. This is a short status LABEL, not a sentence. Do NOT put explanations, dates, or clauses here (e.g. NOT "(Section 122 — expired Jul 24 2026; Section 301 now primary legal vehicle)"). Any such context belongs in headline_note.
+    - headline_note: 1 SHORT sentence (max ~15 words) summarizing the current tariff posture, including any status context (e.g. "Section 122 surcharge expired Jul 24; Section 301 now the primary vehicle").
     - sector_rates: array of sector-specific rates. IMPORTANT — break out Section 232 tariffs by sector. Each with: sector, rate, authority, status, note (1 sentence). See TRADE & TARIFF BASELINES below for baseline sector rates.
     - section_122_surcharge: string — see TRADE & TARIFF BASELINES below for baseline value
     - last_change: date + description of most recent change
