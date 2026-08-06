@@ -1079,6 +1079,26 @@ def main():
     except Exception as e:
         print(f"  ⚠  Verification pass skipped (non-fatal): {e}")
 
+    # ── Step 1e: DPRK facility-alert verification — the highest-stakes check.
+    # An ELEVATED/ALERT facility note that invents an event (e.g. a fabricated
+    # seismic-event/nuclear-test claim) is reverted to the last-verified tracker
+    # state. Checked against today's articles + the tracker's prior note.
+    try:
+        from verify import verify_bp_alerts
+        from bp_tracker import _load as _bp_load
+        _arts = []
+        for _tk in ("tier1", "tier4", "tier2"):
+            for _a in (payload.get(_tk) or []):
+                _arts.append(f"{_a.get('title','')} — {_a.get('summary','')}")
+        _tracker_map = (_bp_load().get("locations") or {})
+        blog = verify_bp_alerts(digest_data, "\n".join(_arts), _tracker_map)
+        if blog:
+            print(f"\n🔎  Facility-alert verification corrected {len(blog)} unsupported alert(s):")
+            for m in blog:
+                print(m)
+    except Exception as e:
+        print(f"  ⚠  Facility-alert verification skipped (non-fatal): {e}")
+
     Path("digest.json").write_text(json.dumps(digest_data, ensure_ascii=False, indent=2))
 
     # ── Step 2+: Update trackers (Kim, KCNA, BP, Tension) ──────────────────

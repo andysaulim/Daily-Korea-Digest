@@ -184,3 +184,74 @@ def verify_weekly_stories(weekly: dict, digests_json: str) -> list:
             kept.append(s)
     weekly["top_10"] = kept
     return log
+
+
+# ── Daily: DPRK facility-alert check (fabricated events) ─────────────────────
+
+_BP_SYSTEM = (
+    "You are the fact-checker for the Korea Daily Brief's DPRK facility monitor "
+    "(Punggye-ri, Yongbyon, Sohae, etc.). You are given (A) today's collected "
+    "article headlines/summaries — the ONLY allowed sources for a NEW event — and "
+    "(B) monitored-site notes currently flagged ELEVATED or ALERT, each with the "
+    "site's PRIOR tracker note (its last verified state). For EACH site decide "
+    "whether its note is SUPPORTED.\n"
+    "SUPPORTED: the note's claim appears in the article sources, OR the note "
+    "merely restates / carries forward the prior tracker note.\n"
+    "UNSUPPORTED: the note asserts a SPECIFIC recent EVENT — a seismic event, a "
+    "nuclear test, a missile launch, a named report on a given date (e.g. 'a "
+    "seismic event assessed by Yonhap as a possible nuclear test on Aug 3') — "
+    "that appears in NEITHER today's articles NOR the prior tracker note. A "
+    "fabricated facility alert is the single worst error this brief can make; "
+    "when a NEW alarming event is not clearly in the sources, mark UNSUPPORTED.\n"
+    "Return ONLY JSON: {\"verdicts\":[{\"name\":\"<site>\",\"supported\":true,\"reason\":\"...\"}]}"
+)
+
+_BP_ALARM_STATUSES = ("elevated", "alert")
+
+
+def verify_bp_alerts(digest: dict, article_index_text: str, tracker_map: dict) -> list:
+    """Check ELEVATED/ALERT facility notes for fabricated events. An unsupported
+    alert is reverted to the site's last-verified tracker state (or neutralized
+    if none). Returns a log. Fail-open: on any error, nothing changes."""
+    locs = digest.get("bp_locations") or []
+    flagged = [l for l in locs if isinstance(l, dict)
+               and str(l.get("status", "")).lower() in _BP_ALARM_STATUSES]
+    if not flagged:
+        return []
+
+    lines = []
+    for l in flagged:
+        name = l.get("name", "?")
+        prior = (tracker_map.get(name) or {}).get("note", "(no prior tracker note)")
+        lines.append(f"- {name} [{l.get('status')}]: {l.get('note','')}\n"
+                     f"  prior tracker note: {prior}")
+    user = (f"(A) TODAY'S ARTICLES:\n{(article_index_text or '(none collected)')[:60000]}\n\n"
+            f"(B) FLAGGED SITES:\n" + "\n".join(lines))
+    try:
+        data = _call_json(_BP_SYSTEM, user, max_tokens=1500)
+        verdicts = {str(v.get("name", "")).strip(): v for v in (data.get("verdicts") or [])}
+    except Exception as e:
+        print(f"  ⚠  Verification pass skipped (bp_alerts, non-fatal): {e}")
+        return []
+
+    log = []
+    for l in flagged:
+        name = l.get("name", "")
+        v = verdicts.get(name)
+        # default supported (only an explicit supported:false acts)
+        if v is None or v.get("supported") is not False:
+            continue
+        reason = v.get("reason", "unsupported alarming claim not found in sources")
+        prior = tracker_map.get(name) or {}
+        if prior.get("note"):
+            l["status"] = prior.get("status", "activity")
+            l["note"] = prior["note"]
+            l["direction"] = prior.get("direction", "")
+            log.append(f"  - {name}: reverted to last-verified tracker state "
+                       f"(unsupported alert: {reason})")
+        else:
+            l["status"] = "activity"
+            l["note"] = "No new verified reporting today."
+            log.append(f"  - {name}: neutralized unsupported alert (no prior tracker "
+                       f"note to restore): {reason}")
+    return log
