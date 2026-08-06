@@ -21,6 +21,35 @@ def _gnews(query: str) -> str:
     return f"https://news.google.com/rss/search?q={query}&hl=en-US&gl=US&ceid=US:en"
 
 
+def _resolve_gnews_url(url: str) -> str:
+    """Turn an opaque Google-News RSS link into the real article URL.
+
+    Google News RSS items link to news.google.com/rss/articles/CBMi<base64>…
+    redirect stubs that don't open the underlying article (broken hyperlinks in
+    the email, and un-fetchable bodies). For the common case the real URL is
+    embedded in the base64 payload — decode and extract it. If it can't be
+    decoded (Google's newer fully-opaque IDs), return the link unchanged so we
+    never make things worse.
+    """
+    if not url or "news.google.com" not in url or "/articles/" not in url:
+        return url
+    try:
+        import base64
+        from urllib.parse import urlparse
+        seg = urlparse(url).path.split("/articles/", 1)[1]
+        enc = seg.split("?", 1)[0].split("/", 1)[0]
+        enc += "=" * (-len(enc) % 4)
+        raw = base64.urlsafe_b64decode(enc)
+        s = raw.decode("latin-1", errors="ignore")
+        # Strict URL charset stops cleanly at the trailing protobuf bytes.
+        m = re.search(r"https?://[A-Za-z0-9._~:/?#\[\]@!$&'()*+,;=%\-]+", s)
+        if m and "news.google.com" not in m.group(0):
+            return m.group(0)
+    except Exception:
+        pass
+    return url
+
+
 def load_gallup_baseline() -> dict:
     """Load the shared Gallup baseline (gallup_baseline.json).
 
@@ -130,7 +159,7 @@ TIER2_FEEDS = {
     "Carnegie":          ("https://carnegieendowment.org/rss/solr?query=korea", "A"),
     "RAND":              ("https://www.rand.org/topics/north-korea.xml", "A"),
     "CFR":               (_gnews("Korea+site:cfr.org"), "A"),
-    "38 North":          (_gnews("site:38north.org"), "A"),
+    "38 North":          ("https://www.38north.org/feed/", "A"),
     "AccessDPRK":        (_gnews("site:accessdprk.com"), "A"),
     "ArmsControlWonk":   (_gnews("site:armscontrolwonk.com"), "A"),
     "Stimson":           (_gnews("Korea+site:stimson.org"), "B"),
@@ -157,7 +186,7 @@ TIER2_FEEDS = {
     "CRS Korea":         (_gnews("Korea+OR+DPRK+site:crsreports.congress.gov"), "B"),
     "CRS North Korea":   (_gnews("North+Korea+site:everycrsreport.com"), "B"),
     # ── DPRK-specialist direct feeds ────────────────────────────────────────
-    "Beyond Parallel":   (_gnews("site:beyondparallel.csis.org"), "A"),
+    "Beyond Parallel":   ("https://beyondparallel.csis.org/feed/", "A"),
 }
 
 # Tier 3: Use Google Scholar RSS and site-specific searches to reduce noise
@@ -326,7 +355,7 @@ def _clean_summary(summary: str, title: str) -> str:
 
 def _entry_to_article(entry, source: str, lang: str = "EN", extra: dict | None = None) -> dict:
     title = entry.get("title", "").strip()
-    link = entry.get("link", "").strip()
+    link = _resolve_gnews_url(entry.get("link", "").strip())
     summary = entry.get("summary", entry.get("description", "")).strip()
     summary = re.sub(r"<[^>]+>", " ", summary)
     summary = re.sub(r"\s+", " ", summary).strip()
