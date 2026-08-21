@@ -1,16 +1,15 @@
 {
-  "poll": "Gallup Korea #670",
-  "survey_dates": "July 21-23, 2026",
+  "poll": "Gallup Korea #672",
+  "survey_dates": "August 18-20, 2026",
   "source": "Gallup Korea",
-  "presidential_approval": {"value": "51%", "trend": "down"},
-  "party_ruling": {"value": "44%", "party": "Democratic Party", "party_kr": "더불어민주당", "trend": "up"},
-  "party_opposition": {"value": "23%", "party": "People Power Party", "party_kr": "국민의힘", "trend": "down"},
-  "party_independent": {"value": "28%", "trend": "stable"},
+  "presidential_approval": {"value": "45%", "trend": "down"},
+  "party_ruling": {"value": "41%", "party": "Democratic Party", "party_kr": "더불어민주당", "trend": "down"},
+  "party_opposition": {"value": "25%", "party": "People Power Party", "party_kr": "국민의힘", "trend": "up"},
+  "party_independent": {"value": "26%", "trend": "down"},
   "spotlight": {
-    "headline": "부동산 정책, 취임 후 첫 부정 평가 1위 (22%) — 종부세 인상 논의 (한국갤럽 7월 4주차)",
-    "poll_date": "July 24, 2026"
+    "headline": "이재명 긍정·부정 45% 동률 — 8월 2주 '데드크로스'(44%/46%)서 소폭 반등; 국정 부정 평가 1위는 부동산 정책 (한국갤럽 8월 3주)",
+    "poll_date": "August 21, 2026"
   },
-  "updated_at": "2026-07-24",
-  "updated_by": "manual (Claude session — #670 via Yonhap; independents carried from #669, not in source)",
-  "hiatus_note": "Gallup Korea announced a 2-week publication hiatus after #670; no Aug 1 or Aug 8 release. #671 publishes Aug 14, 2026 — #670 is correctly the latest until then."
+  "updated_at": "2026-08-21",
+  "updated_by": "manual (Claude session — #672 via multi-outlet search; independents 26% explicit). Prior #671 (Aug 11-13) was Lee's first dead cross at 44/46."
 }
