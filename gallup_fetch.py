@@ -153,15 +153,33 @@ def _gnews_ko(query: str) -> str:
             f"&hl=ko&gl=KR&ceid=KR:ko")
 
 
-def _gather_texts(max_articles: int = 12, fetch_bodies: bool = True) -> list[str]:
-    """Collect text blobs about the latest Gallup weekly poll: RSS title+summary
-    for every hit, plus fetched article bodies for the top few (where the full
-    party breakdown lives). All best-effort — failures are skipped."""
-    texts: list[str] = []
+def _entry_pub(e) -> str:
+    """RSS entry publish date as 'YYYY-MM-DD', or '' if absent."""
+    for attr in ("published_parsed", "updated_parsed"):
+        p = getattr(e, attr, None)
+        if p:
+            try:
+                return f"{p[0]:04d}-{p[1]:02d}-{p[2]:02d}"
+            except Exception:
+                pass
+    return ""
+
+
+def _gather_texts(max_articles: int = 12, fetch_bodies: bool = True) -> list:
+    """Collect (text_blob, pub_date) tuples about the latest Gallup weekly poll:
+    RSS title+summary for every hit, plus fetched article BODIES for the top few
+    (where the survey dates + full party breakdown live). All best-effort.
+
+    Critical: Google-News RSS links are opaque news.google.com redirects whose
+    body is Google's interstitial, not the article — so we resolve each link to
+    the real URL first (via collect._resolve_gnews_url) and skip any that stay
+    on news.google.com. Without this, the body carries no '7월 21~23일' survey
+    date and every poll is discarded for lack of a date."""
+    out: list = []
     try:
-        from collect import _parse_feed
+        from collect import _parse_feed, _resolve_gnews_url
     except Exception:
-        return texts
+        return out
     queries = [
         "한국갤럽 데일리 오피니언 지지율",
         "갤럽 이재명 대통령 지지율 정당 지지도",
@@ -186,12 +204,15 @@ def _gather_texts(max_articles: int = 12, fetch_bodies: bool = True) -> list[str
         summary = re.sub(r"<[^>]+>", " ", e.get("summary", e.get("description", "")) or "")
         blob = f"{title} {summary}".strip()
         if blob:
-            texts.append(blob)
+            out.append((blob, _entry_pub(e)))
     if fetch_bodies:
         import requests
-        for e in entries[:5]:
-            link = (e.get("link") or "").strip()
-            if not link.startswith("http"):
+        fetched = 0
+        for e in entries[:8]:
+            link = _resolve_gnews_url((e.get("link") or "").strip())
+            # Skip links we could not de-opaque — fetching them returns Google's
+            # interstitial, never the article.
+            if not link.startswith("http") or "news.google.com" in link:
                 continue
             try:
                 r = requests.get(link, timeout=8,
@@ -200,13 +221,15 @@ def _gather_texts(max_articles: int = 12, fetch_bodies: bool = True) -> list[str
                     body = re.sub(r"<(script|style)[^>]*>.*?</\1>", " ", r.text,
                                   flags=re.DOTALL | re.IGNORECASE)
                     body = re.sub(r"<[^>]+>", " ", body)
-                    # keep only the region around Gallup mentions to reduce noise
                     idx = body.find("갤럽")
                     if idx != -1:
-                        texts.append(body[max(0, idx - 200): idx + 800])
+                        out.append((body[max(0, idx - 300): idx + 1000], _entry_pub(e)))
+                        fetched += 1
+                        if fetched >= 5:
+                            break
             except Exception:
                 continue
-    return texts
+    return out
 
 
 def fetch_latest_gallup(newest_sort_key: str = "", verbose: bool = True) -> dict:
@@ -219,17 +242,33 @@ def fetch_latest_gallup(newest_sort_key: str = "", verbose: bool = True) -> dict
     from a broken fetch).
     """
     try:
-        texts = _gather_texts()
+        pairs = _gather_texts()
     except Exception as e:
         if verbose:
             print(f"    gallup_fetch: article gathering failed: {e}")
-        texts = []
-    records = [parse_gallup_text(t) for t in texts]
+        pairs = []
+    records = []
+    for text, pub in pairs:
+        r = parse_gallup_text(text)
+        if r:
+            r["_pub"] = pub
+            records.append(r)
+    # Fallback: if NOT ONE record captured an explicit '7월 21~23일' survey date
+    # (e.g. only approval-bearing headlines came through), use the article's
+    # publish date as the sort key so a clearly-current poll isn't discarded.
+    # Only kicks in when the explicit-date path yielded nothing, so it never
+    # competes with a properly dated record.
+    if not any(r.get("sort_key") for r in records):
+        for r in records:
+            if r.get("approval") is not None and r.get("_pub"):
+                r["sort_key"] = r["_pub"]
+                if not r.get("survey_label"):
+                    r["survey_label"] = f"week of {r['_pub']}"
     records = [r for r in records if r]
     with_appr = [r for r in records if r.get("approval") is not None and r.get("sort_key")]
     if verbose:
-        print(f"    gallup_fetch: {len(texts)} text blobs, "
-              f"{len(with_appr)} carried an approval# + survey date")
+        print(f"    gallup_fetch: {len(pairs)} text blobs, "
+              f"{len(with_appr)} carried an approval# + date")
         # Show the newest poll actually seen (even if not newer than baseline),
         # so 'no update' vs 'fetch broken' is distinguishable from the log.
         seen = merge_poll_records(records, newest_sort_key="")
