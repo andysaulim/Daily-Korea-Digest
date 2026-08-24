@@ -150,26 +150,14 @@ SECTION 122 SURCHARGE BASELINE: "10% global surcharge (Section 122, effective Fe
 NEXT TRIGGER BASELINE: "Jul 24 2026 — Section 122 surcharge expiry (150-day statutory limit); Apr 14 2026 — Commerce/USTR semiconductor tariff report due; Section 301 investigations ongoing"."""
 
 _INVESTMENT_TRACKER = """\
-REFERENCE — White House Investment Tracker (whitehouse.gov/investments, Trump 2nd term only).
-$350B pledge timeline: framework agreed Jul 30 2025; Trump-Lee summit Aug 25 2025 (Washington); Trump state visit to Korea Oct 29 2025 (Gyeongju); National Assembly passed Special Investment Act Mar 12 2026 (226-8-8), creating Korea-US Strategic Investment Corporation.
-Investment structure: $150B shipbuilding (MASGA), $200B strategic sectors (capped $20B/yr), $100B US energy purchases.
-VERIFIED WH TRACKER ENTRIES (Trump 2nd term announcements only — do NOT add Biden-era deals):
-  Hyundai Motor Group: $26B (Manufacturing — Georgia EV, Louisiana steel $5.8B, robotics hub; announced at WH Mar 2025, raised from $21B to $26B Aug 2025)
-  Korean Air: $36.2B (Boeing aircraft purchase — 103 aircraft; Oct 2025 summit fact sheet)
-  Korean Air / GE Aerospace: $13.7B (Engines + maintenance for Boeing fleet; Oct 2025 summit fact sheet)
-  HD Hyundai / Cerberus Maritime: $5B (Shipbuilding — US shipyard modernization/acquisition; Oct 2025 summit fact sheet)
-  Hanwha Ocean: $5B (Shipbuilding — Philly Shipyard expansion, 10x capacity increase; Oct 2025 summit fact sheet)
-  LS Group: $3B by 2030 (Power grid infrastructure — undersea cables, power equipment; Oct 2025 summit fact sheet. Includes LS Cable $681M VA facility)
-  Korea Zinc (Crucible Metals): $7.4B (Critical Minerals — Tennessee smelter, 13 minerals incl zinc/copper/rare earths; Dec 2025, Pentagon 40% stake in JV, Commerce CHIPS award $210M)
-  L3Harris / Korean Air: $2.3B (Defense — 4 AEW&C aircraft for ROK Air Force; Oct 2025 summit fact sheet)
-  Samsung Biologics: $280M (Pharma — GSK Rockville MD acquisition; WH running list)
-  Paris Baguette: $200M (Food & Beverage — Burleson TX plant; WH running list at $160M, updated to $200M+ per later reporting)
-  POSCO International / ReElement: undisclosed (Critical Minerals — US rare earth separation/refining; Oct 2025 summit fact sheet)
-  Samsung Heavy Industries / Vigor Marine Group: undisclosed (Shipbuilding MRO — naval vessel maintenance; Oct 2025 summit fact sheet)
-  KOGAS: 3.3 mtpa US LNG annually (Energy purchases — part of $100B energy bucket; Oct 2025 summit)
-*** PRE-CALCULATED TOTAL: $99.1B of $350B pledged (28% fulfilled). Use announced_to_date="$99.1B" and pct_fulfilled=28 EXACTLY. Only change if today's articles report a NEW WH-verified deal. ***
-NOTE: Samsung Electronics $37B Taylor TX fabs and SK Group $22B are Biden-era CHIPS Act commitments (2022-2024) and are NOT counted in the Trump-era $350B tracker. Do NOT add them to known_deals.
-All verified entries MUST appear in known_deals. Set wh_tracker=true for entries on the WH tracker."""
+REFERENCE — US-Korea $350B investment pledge (a GOVERNMENT-LEVEL commitment).
+$350B pledge timeline: framework Jul 30 2025; Trump-Lee summit Aug 25 2025 (Washington); Trump state visit Oct 29 2025 (Gyeongju); National Assembly passed the Special Investment Act Mar 12 2026 (226-8-8), creating the Korea-US Strategic Investment Corporation to channel the fund.
+Intended structure: $150B shipbuilding (MASGA), $200B strategic sectors (capped $20B/yr), $100B US energy purchases.
+
+*** DO NOT CONFLATE — critical ***
+The White House "investments" page and summit fact sheets list many individual Korean corporate US investments (e.g. Hyundai plants ~$26B, Korean Air's Boeing order ~$36.2B, Korea Zinc, LS Group, Paris Baguette, Samsung Biologics, etc.). These are ORDINARY COMMERCIAL announcements. They are NOT verified tranches or drawdown of the $350B Strategic Investment Corporation fund, and MUST NOT be summed and presented as "pledge fulfillment." There is NO public official figure for how much of the $350B has actually been committed/drawn down through the Corporation.
+Do NOT compute a fulfillment percentage from these corporate deals. (Prior versions of this tracker wrongly summed them to "$99.1B / 28% fulfilled" — that was a conflation; do not reproduce it.)
+NOTE: Samsung $37B Taylor TX fabs and SK $22B are Biden-era CHIPS Act commitments (2022-2024), unrelated to this pledge."""
 
 # ─────────────────────────────────────────────────────────────────────────────
 # USER PROMPT BUILDER
@@ -526,7 +514,7 @@ Return a digest object with:
 - also_today: up to 6 remaining articles score >= 4 (MAX 6), INCLUDING Technology/Business/Energy stories. Each: url, source, category, headline, body_text (1-2 sentences), color_bar_class (cb-navy=DPRK, cb-red=Security, cb-lt=Policy, cb-mid=Assembly, cb-nkch=NK-Russia-China, cb-tech=Technology/Energy, cb-biz=Business)
 - us_korea_deals: US-Korea trade and investment deals. Object with five keys. IMPORTANT — NO REPETITION across sub-sections: tariff rates belong ONLY in tariff_tracker (do not repeat rates in trade_policy). Investment totals belong ONLY in investment_package (do not restate in deals). trade_policy covers non-tariff policy actions only. Each fact appears exactly once.
   - state_of_play: ONE plain-language sentence (MAX 30 words) summarizing where the US-Korea trade & investment relationship stands right now — the headline tariff exposure, investment progress, and the nearest deadline. Example: "Seoul faces a 10% baseline US tariff with autos and steel at 25%; the $350B investment pledge is 36% fulfilled, and the Section 122 surcharge expires July 24." No editorializing.
-  - investment_package: running status of the ROK-US $350B investment commitment. Object with: total_pledged (string, e.g. "$350B"), announced_to_date (string — USE THE PRE-CALCULATED SUM in the US-KOREA INVESTMENT TRACKER section above, do NOT recalculate), pct_fulfilled (integer 0-100 — USE THE PRE-CALCULATED PERCENTAGE from the INVESTMENT TRACKER above), latest_update (SHORT phrase, MAX 6 words — the most recent deal + date, e.g. "Samsung Texas fab, Jul 7". NOT a full sentence), known_deals (array: company, value, sector). IMPORTANT: The sum of known deals is PRE-CALCULATED for you. Use it exactly as given. Only adjust if today's articles announce a NEW deal not already in the list.
+  - investment_package: status of the ROK-US $350B investment PLEDGE — a government-level commitment, NOT a sum of corporate deals (see US-KOREA INVESTMENT TRACKER above; do NOT conflate ordinary corporate US-investment announcements with pledge fulfillment). Object with: total_pledged (string, "$350B"); announced_to_date (string or null — an OFFICIAL Strategic Investment Corporation drawdown/commitment figure ONLY; set null if none has been reported, which is currently the case); pct_fulfilled (integer or null — OFFICIAL only; null if no official drawdown figure); known_deals (array — LEAVE EMPTY [] unless today's articles cite an OFFICIAL source explicitly attributing a specific deal to the $350B fund; do NOT populate it with the corporate announcements from the tracker); note (1 short sentence on the pledge's structure/status, e.g. "$150B shipbuilding, $200B strategic sectors, $100B energy purchases; no official drawdown figure reported to date"); latest_update (SHORT phrase, only if there is genuine official progress — else omit). Default state: announced_to_date=null, pct_fulfilled=null, known_deals=[], with a factual note — leave fulfillment unfilled rather than inventing it.
   - trade_policy: array of 4-6 NON-TARIFF US trade policy actions (MAX 6) affecting South Korea. Do NOT repeat tariff rates already shown in tariff_tracker. Focus on: Section 301 investigations, export controls, CFIUS reviews, ITC cases, trade negotiation rounds. Each: item, agency, detail (1 sentence — current status with dates/deadlines), status (ACTIVE/PENDING/RISK/RESOLVED/MONITOR), url (link to today's source article or the most recent authoritative source for this policy action — e.g. Federal Register notice, USTR announcement, Reuters/AP report. REQUIRED for every item — if no sourced URL exists, omit the item entirely rather than fabricate a link). Only include currently active/relevant policies.
     See TRADE & TARIFF BASELINES section above for baseline entries, tariff rates, and sector rates.
   - tariff_tracker: current US tariff rates on South Korean goods — this is the SINGLE authoritative source for all tariff rates (do not duplicate in trade_policy). Object with:

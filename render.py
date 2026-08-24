@@ -810,24 +810,42 @@ def render(digest: dict) -> str:
 
         # ── Pillar 2: Investment ───────────────────────────────────────────
         if investment_pkg and investment_pkg.get("total_pledged"):
-            pct = investment_pkg.get("pct_fulfilled", 0)
-            try:
-                bar_w = max(2, min(int(pct), 100))
-            except (TypeError, ValueError):
-                bar_w = 2
-            announced = _esc(str(investment_pkg.get("announced_to_date", "")))
             pledged = _esc(str(investment_pkg.get("total_pledged", "")))
-            latest = _esc(str(investment_pkg.get("latest_update", "")))
-            if len(latest) > 60:
-                latest = latest[:57].rstrip() + "…"
+            announced = str(investment_pkg.get("announced_to_date") or "").strip()
+            try:
+                pct_int = int(investment_pkg.get("pct_fulfilled"))
+            except (TypeError, ValueError):
+                pct_int = None
+            # Only show a fulfillment bar when there's a REAL official drawdown
+            # figure. The $350B pledge is a government-level commitment; ordinary
+            # Korean corporate US investments are NOT tranches of it, so absent an
+            # official drawdown number we leave fulfillment unfilled rather than
+            # inventing a percentage from unrelated deals.
+            has_progress = bool(announced) and pct_int is not None and pct_int > 0
 
-            bar = (f'<div style="font-size:13px;color:#3D4451;margin-bottom:7px;">'
-                   f'<span style="font-family:{MONO};color:{NAVY};font-size:15px;font-weight:700;">{announced}</span> '
-                   f'announced of {pledged} pledged &middot; {pct}% fulfilled</div>'
-                   f'<div style="background:#E7EBF0;border-radius:6px;height:16px;overflow:hidden;">'
-                   f'<div style="background:{TAEGUK_BLUE};width:{bar_w}%;height:100%;border-radius:6px 0 0 6px;"></div></div>'
-                   + (f'<div style="font-size:11px;color:#8A94A6;margin-top:5px;text-align:right;">newest: {latest}</div>' if latest else ""))
+            if has_progress:
+                bar_w = max(2, min(pct_int, 100))
+                latest = _esc(str(investment_pkg.get("latest_update", "")))
+                if len(latest) > 60:
+                    latest = latest[:57].rstrip() + "…"
+                bar = (f'<div style="font-size:13px;color:#3D4451;margin-bottom:7px;">'
+                       f'<span style="font-family:{MONO};color:{NAVY};font-size:15px;font-weight:700;">{_esc(announced)}</span> '
+                       f'announced of {pledged} pledged &middot; {pct_int}% fulfilled</div>'
+                       f'<div style="background:#E7EBF0;border-radius:6px;height:16px;overflow:hidden;">'
+                       f'<div style="background:{TAEGUK_BLUE};width:{bar_w}%;height:100%;border-radius:6px 0 0 6px;"></div></div>'
+                       + (f'<div style="font-size:11px;color:#8A94A6;margin-top:5px;text-align:right;">newest: {latest}</div>' if latest else ""))
+            else:
+                note = _esc(str(investment_pkg.get("note") or "").strip()) or (
+                    "Government-level commitment under the US-Korea trade framework, "
+                    "channeled through the Korea-US Strategic Investment Corporation. "
+                    "No official drawdown figure reported; individual Korean corporate "
+                    "US investments are tracked separately and are not pledge tranches.")
+                bar = (f'<div><span style="font-family:{MONO};color:{NAVY};font-size:22px;font-weight:700;">{pledged}</span>'
+                       f'<span style="font-size:12px;color:#7A828F;"> &nbsp;pledged</span></div>'
+                       f'<div style="font-size:12.5px;color:#5A6472;line-height:1.55;margin-top:6px;">{note}</div>')
 
+            # Deal table only lists deals officially attributed to the pledge
+            # (the prompt no longer dumps unrelated corporate announcements here).
             deal_rows = ""
             for kd in (investment_pkg.get("known_deals") or []):
                 sect = _esc(kd.get("sector", ""))
