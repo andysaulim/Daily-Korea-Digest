@@ -159,6 +159,37 @@ The White House "investments" page and summit fact sheets list many individual K
 Do NOT compute a fulfillment percentage from these corporate deals. (Prior versions of this tracker wrongly summed them to "$99.1B / 28% fulfilled" — that was a conflation; do not reproduce it.)
 NOTE: Samsung $37B Taylor TX fabs and SK $22B are Biden-era CHIPS Act commitments (2022-2024), unrelated to this pledge."""
 
+
+_INVESTMENT_LEDGER = """\
+REFERENCE — US-Korea Investment Ledger (bilateral CORPORATE investment flows, tracked SEPARATELY from the $350B government pledge above; do NOT conflate the two). Carry these entries forward into investment_ledger every day, and ADD any new deal reported in today's articles. Do NOT sum the values into a total — amounts are as-reported, directions differ, and many are non-binding.
+Format per line: entity | counterparty | value | sector | direction | status | date
+
+KOREA -> US (Korean firms investing in / purchasing from the US):
+  Hyundai Motor Group | (US ops) | $26B | Manufacturing (Georgia EV, Louisiana steel, robotics) | rok_to_us | announced | 2025 (raised from $21B Aug 2025)
+  Korean Air | Boeing | $36.2B | 103-aircraft purchase | rok_to_us | announced | Oct 2025
+  Korean Air | GE Aerospace | $13.7B | Engines + maintenance | rok_to_us | announced | Oct 2025
+  HD Hyundai | Cerberus Maritime | $5B | US shipyard modernization | rok_to_us | announced | Oct 2025
+  Hanwha Ocean | Philly Shipyard | $5B | Shipyard expansion | rok_to_us | announced | Oct 2025
+  Korea Zinc | Crucible Metals | $7.4B | Critical minerals (Tennessee smelter) | rok_to_us | announced | Dec 2025
+  LS Group | (US grid) | $3B | Power-grid infrastructure | rok_to_us | announced | by 2030
+  L3Harris | Korean Air | $2.3B | Defense (AEW&C aircraft) | rok_to_us | announced | Oct 2025
+  Samsung Biologics | GSK | $280M | Pharma (Rockville MD) | rok_to_us | announced | 2025
+  Paris Baguette | (US plant) | $200M | F&B (Burleson TX) | rok_to_us | announced | 2025
+  POSCO International | ReElement | undisclosed | Rare-earth refining | rok_to_us | announced | Oct 2025
+  Samsung Heavy Industries | Vigor Marine | undisclosed | Naval MRO | rok_to_us | announced | Oct 2025
+  KOGAS | (US LNG) | 3.3 mtpa/yr | Energy purchases | rok_to_us | announced | 2025
+
+US -> KOREA (US tech firms investing in Korea — San Francisco AI Summit, Jul 24-25 2026; mostly non-binding):
+  NVIDIA | SK Group / SK Hynix / SKT | >$500B | AI factories; SKT 2GW Vera Rubin build; HBM4 supply | us_to_rok | loi | Jul 2026
+  NVIDIA + Brookfield | Naver | $10B | Triple Naver AI factory to 200MW (~100k GPUs) by 2028 | us_to_rok | mou | Jul 2026
+  Anthropic | SKT / Samsung / SK Hynix | undisclosed (GW-scale) | AI data centers in Korea | us_to_rok | mou | Jul 2026
+
+PARTNERSHIP / SUPPLY (lateral — chip supply, joint platforms; San Francisco AI Summit):
+  Samsung | Broadcom | $200B | HBM + foundry for Broadcom AI chips thru 2030 | partnership | mou | Jul 2026
+  Samsung + SK | OpenAI | (part of SF totals) | Join OpenAI Stargate infrastructure | partnership | mou | Jul 2026
+  Hyundai Motor Group | NVIDIA | undisclosed | Robotics/AV reference platform | partnership | mou | Jul 2026
+CONTEXT: The San Francisco AI Summit headline was ~$950B combined (reported range $700B-$1T; mostly LOIs/MOUs). Cite that ONLY as a reported event figure if relevant — never as a verified sum, and never mix it into the $350B pledge."""
+
 # ─────────────────────────────────────────────────────────────────────────────
 # USER PROMPT BUILDER
 # ─────────────────────────────────────────────────────────────────────────────
@@ -425,6 +456,11 @@ TRADE & TARIFF BASELINES
 US-KOREA INVESTMENT TRACKER
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 {_INVESTMENT_TRACKER}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+US-KOREA INVESTMENT LEDGER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{_INVESTMENT_LEDGER}
 {market_block}
 {sentiment_block}
 {kim_block}
@@ -515,6 +551,7 @@ Return a digest object with:
 - us_korea_deals: US-Korea trade and investment deals. Object with five keys. IMPORTANT — NO REPETITION across sub-sections: tariff rates belong ONLY in tariff_tracker (do not repeat rates in trade_policy). Investment totals belong ONLY in investment_package (do not restate in deals). trade_policy covers non-tariff policy actions only. Each fact appears exactly once.
   - state_of_play: ONE plain-language sentence (MAX 30 words) summarizing where the US-Korea trade & investment relationship stands right now — the headline tariff exposure, investment progress, and the nearest deadline. Example: "Seoul faces a 10% baseline US tariff with autos and steel at 25%; the $350B investment pledge is 36% fulfilled, and the Section 122 surcharge expires July 24." No editorializing.
   - investment_package: status of the ROK-US $350B investment PLEDGE — a government-level commitment, NOT a sum of corporate deals (see US-KOREA INVESTMENT TRACKER above; do NOT conflate ordinary corporate US-investment announcements with pledge fulfillment). Object with: total_pledged (string, "$350B"); announced_to_date (string or null — an OFFICIAL Strategic Investment Corporation drawdown/commitment figure ONLY; set null if none has been reported, which is currently the case); pct_fulfilled (integer or null — OFFICIAL only; null if no official drawdown figure); known_deals (array — LEAVE EMPTY [] unless today's articles cite an OFFICIAL source explicitly attributing a specific deal to the $350B fund; do NOT populate it with the corporate announcements from the tracker); note (1 short sentence on the pledge's structure/status, e.g. "$150B shipbuilding, $200B strategic sectors, $100B energy purchases; no official drawdown figure reported to date"); latest_update (SHORT phrase, only if there is genuine official progress — else omit). Default state: announced_to_date=null, pct_fulfilled=null, known_deals=[], with a factual note — leave fulfillment unfilled rather than inventing it.
+  - investment_ledger: bilateral Korea-US CORPORATE investment flows, tracked SEPARATELY from the $350B pledge (do NOT conflate). Array — carry forward EVERY entry in the US-KOREA INVESTMENT LEDGER reference above, and ADD any new deal reported in today's articles. Each entry: entity (lead firm), counterparty (other party, or null), value (string exactly as reported — "$26B", ">$500B", "undisclosed", "3.3 mtpa/yr"), direction (EXACTLY one of "rok_to_us", "us_to_rok", "partnership"), sector (short), status (EXACTLY one of "binding", "loi", "mou", "announced"), date (short, e.g. "Oct 2025"), note (optional short clause). Do NOT sum the values into any total. Keep directions accurate: Korean firms buying/building in the US = rok_to_us; US firms building/investing in Korea = us_to_rok; chip-supply or joint platforms = partnership.
   - trade_policy: array of 4-6 NON-TARIFF US trade policy actions (MAX 6) affecting South Korea. Do NOT repeat tariff rates already shown in tariff_tracker. Focus on: Section 301 investigations, export controls, CFIUS reviews, ITC cases, trade negotiation rounds. Each: item, agency, detail (1 sentence — current status with dates/deadlines), status (ACTIVE/PENDING/RISK/RESOLVED/MONITOR), url (link to today's source article or the most recent authoritative source for this policy action — e.g. Federal Register notice, USTR announcement, Reuters/AP report. REQUIRED for every item — if no sourced URL exists, omit the item entirely rather than fabricate a link). Only include currently active/relevant policies.
     See TRADE & TARIFF BASELINES section above for baseline entries, tariff rates, and sector rates.
   - tariff_tracker: current US tariff rates on South Korean goods — this is the SINGLE authoritative source for all tariff rates (do not duplicate in trade_policy). Object with:

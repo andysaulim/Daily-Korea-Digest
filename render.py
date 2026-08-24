@@ -709,10 +709,11 @@ def render(digest: dict) -> str:
     investment_pkg = (us_korea.get("investment_package") or {}) if isinstance(us_korea, dict) else {}
 
     tariff_tracker = (us_korea.get("tariff_tracker") or {}) if isinstance(us_korea, dict) else {}
+    investment_ledger = (us_korea.get("investment_ledger") or []) if isinstance(us_korea, dict) else []
 
     state_of_play = _esc(us_korea.get("state_of_play", "")) if isinstance(us_korea, dict) else ""
 
-    if deal_list or trade_policy or investment_pkg or tariff_tracker:
+    if deal_list or trade_policy or investment_pkg or tariff_tracker or investment_ledger:
         pillars = []
 
         sop_html = ""
@@ -863,6 +864,56 @@ def render(digest: dict) -> str:
                     f'<table width="100%" cellpadding="0" cellspacing="0" border="0" class="deal-breakdown">{deal_rows}</table>')
 
             pillars.append(f'<div style="margin-top:18px;">{_pillar_h("Investment &middot; " + pledged + " pledge", accent=TAEGUK_BLUE)}{bar}{deal_box}</div>')
+
+        # ── Pillar 2b: Bilateral Investment Ledger ─────────────────────────
+        # Corporate investment flows BOTH directions, tracked separately from
+        # the $350B pledge. No summed total — amounts are as-reported and many
+        # are non-binding (MOU/LOI).
+        if investment_ledger:
+            _dir_groups = {"rok_to_us": [], "us_to_rok": [], "partnership": []}
+            for e in investment_ledger:
+                if isinstance(e, dict):
+                    _dir_groups.get(str(e.get("direction", "")).lower(),
+                                    _dir_groups["partnership"]).append(e)
+            _status_chip = {"binding": ("#E4EFE7", "#1E7940"), "loi": ("#FBF3F0", "#B0212F"),
+                            "mou": ("#EEF1F5", "#55607A"), "announced": ("#F1F4F8", "#55607A")}
+            _dir_meta = [("rok_to_us", "Korea &rarr; US", TAEGUK_RED),
+                         ("us_to_rok", "US &rarr; Korea", TAEGUK_BLUE),
+                         ("partnership", "Partnerships &amp; supply", "#5A6472")]
+            blocks = ""
+            for key, lbl, color in _dir_meta:
+                rows = _dir_groups.get(key) or []
+                if not rows:
+                    continue
+                r_html = ""
+                for e in rows:
+                    entity = _esc(str(e.get("entity", "")))
+                    cp = _esc(str(e.get("counterparty") or "").strip())
+                    ent = entity + (f' <span style="color:#7A828F;font-weight:400;">/ {cp}</span>' if cp else "")
+                    sect = _esc(str(e.get("sector") or "").strip())
+                    val = _esc(str(e.get("value") or "").strip())
+                    st = str(e.get("status") or "").lower().strip()
+                    chip = ""
+                    if st:
+                        cbg, cfg = _status_chip.get(st, ("#F1F4F8", "#55607A"))
+                        chip = (f'<span style="display:inline-block;font-family:{MONO};font-size:9px;font-weight:700;'
+                                f'letter-spacing:0.5px;padding:1px 5px;border-radius:3px;background:{cbg};color:{cfg};'
+                                f'margin-left:6px;vertical-align:middle;">{_esc(st.upper())}</span>')
+                    r_html += (f'<tr style="border-top:1px solid #EAEDF1;">'
+                               f'<td style="padding:6px 10px 6px 0;font-size:12.5px;color:{INK};">'
+                               f'<span style="font-weight:600;">{ent}</span>{chip}'
+                               + (f'<div style="font-size:10.5px;color:#8A94A6;margin-top:1px;">{sect}</div>' if sect else "")
+                               + f'</td>'
+                               f'<td style="padding:6px 0;font-family:{MONO};font-size:12px;font-weight:700;color:{NAVY};'
+                               f'text-align:right;white-space:nowrap;vertical-align:top;">{val or "&mdash;"}</td></tr>')
+                blocks += (f'<div style="font-size:11px;font-weight:700;letter-spacing:0.5px;color:{color};'
+                           f'margin:12px 0 2px;">{lbl}</div>'
+                           f'<table width="100%" cellpadding="0" cellspacing="0" border="0" class="ledger">{r_html}</table>')
+            _led_note = ('<div style="font-size:11px;color:#8A94A6;line-height:1.5;margin-top:4px;">'
+                         'Corporate investment flows — separate from the $350B pledge. '
+                         'MOU/LOI entries are non-binding; figures as reported, not summed.</div>')
+            pillars.append(f'<div style="margin-top:18px;">'
+                           f'{_pillar_h("Bilateral Investment Ledger", accent=NAVY)}{blocks}{_led_note}</div>')
 
         # ── Pillar 3: New This Week ─────────────────────────────────────────
         new_rows = ""
