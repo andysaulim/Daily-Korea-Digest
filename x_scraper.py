@@ -39,28 +39,32 @@ def _api_key():
 # human; it is STILL scraped, but flag it in the log so you don't trust a wrong
 # account. Confirm each handle on x.com, fix as needed, then drop the flag.
 X_ACCOUNTS = {
-    "ROK Presidential / Government": [
-        {"handle": "the_blue_house", "name": "ROK Presidential Office", "verify": True},
-        {"handle": "Jaemyung_Lee", "name": "President Lee Jae-myung", "verify": True},
+    "ROK Presidential": [
+        {"handle": "Jaemyung_Lee", "name": "President Lee Jae-myung"},
     ],
-    "ROK Ministries": [
-        {"handle": "mofa_kr", "name": "ROK Ministry of Foreign Affairs", "verify": True},
-        {"handle": "ROK_MND", "name": "ROK Ministry of National Defense", "verify": True},
-        {"handle": "unikoreagov", "name": "ROK Ministry of Unification", "verify": True},
+    "ROK Ministers & Ministries": [
+        {"handle": "FMChoHyun", "name": "FM Cho Hyun (Foreign Affairs)"},
+        {"handle": "MinisterofMOTIR", "name": "Minister, Trade/Industry (MOTIR)"},
+        {"handle": "ROK_MND", "name": "Ministry of National Defense"},
+        {"handle": "MNDSpokesperson", "name": "MND Spokesperson"},
+        {"handle": "msitminister", "name": "Minister, Science & ICT (MSIT)"},
+        {"handle": "mof_minister", "name": "MOF Minister"},
+        {"handle": "2VMKimJina", "name": "2nd Vice Minister Kim Jina"},
+        {"handle": "KOREA", "name": "Korea.net (ROK Government)"},
+        {"handle": "han_seongsook", "name": "Han Seong-sook"},
+        {"handle": "AGBhope", "name": "@AGBhope"},
+        {"handle": "coreacdy", "name": "@coreacdy"},
     ],
-    "ROK Politicians": [
-        # Major party leadership — fill in / confirm current handles.
-        {"handle": "", "name": "Democratic Party leader", "verify": True},
-        {"handle": "", "name": "People Power Party leader", "verify": True},
-    ],
-    "US Officials": [
-        {"handle": "MichelleSteelCA", "name": "Amb. Michelle Steel", "verify": True},
-        {"handle": "USEmbassySeoul", "name": "US Embassy Seoul", "verify": True},
+    "US Officials (Korea)": [
+        {"handle": "USAmbROK", "name": "US Ambassador to ROK"},
+        {"handle": "USEmbassySeoul", "name": "US Embassy Seoul"},
+        {"handle": "USForcesKorea", "name": "US Forces Korea"},
+        {"handle": "CDRUNCCFCUSFK", "name": "Commander UNC/CFC/USFK"},
     ],
     # Optional DPRK-watcher lane (recommended earlier) — add if wanted:
     # "DPRK Watchers": [
-    #     {"handle": "nknewsorg", "name": "NK News", "verify": True},
-    #     {"handle": "38NorthNK", "name": "38 North", "verify": True},
+    #     {"handle": "nknewsorg", "name": "NK News"},
+    #     {"handle": "38NorthNK", "name": "38 North"},
     # ],
 }
 
