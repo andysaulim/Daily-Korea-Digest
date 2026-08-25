@@ -1179,8 +1179,39 @@ def render(digest: dict) -> str:
     social = digest.get("social_statements") or []
     opeds = digest.get("opeds_today") or []
     academic = digest.get("academic_today") or []
-    if social or opeds or academic:
+    x_posts = digest.get("official_x_posts") or []
+    if social or opeds or academic or x_posts:
         sa_html = ""
+        # Officials on X — direct posts by tracked official accounts (attributed
+        # to the account, which is the primary source for its own statement).
+        if x_posts:
+            xp_html = ""
+            for xp in x_posts:
+                if not isinstance(xp, dict):
+                    continue
+                name = _esc(str(xp.get("name", "")))
+                handle = _esc(str(xp.get("handle", "")).lstrip("@"))
+                post = _esc(str(xp.get("post", "")))
+                if not post:
+                    continue
+                url = xp.get("url", "")
+                link = (f'<a href="{_esc(url)}" style="font-size:10px;color:{TAEGUK_BLUE};text-decoration:none;">View on X &#8594;</a>'
+                        if url and str(url).startswith("http") else "")
+                xp_html += (f'<div style="margin-bottom:9px;padding-bottom:9px;border-bottom:1px solid #E1E8F0;">'
+                            f'<div style="font-size:12px;font-weight:600;color:{INK};">{name}'
+                            + (f' <span style="color:#8A94A6;font-weight:400;">@{handle}</span>' if handle else "")
+                            + f'</div>'
+                            f'<div style="font-size:12.5px;color:#33404F;line-height:1.45;margin:2px 0 3px;">&ldquo;{post}&rdquo;</div>'
+                            f'{link}</div>')
+            if xp_html:
+                sa_html += (f'<div style="margin-bottom:14px;padding:12px 14px;background:#EEF3F9;'
+                            f'border-radius:6px;border-left:3px solid {TAEGUK_BLUE};">'
+                            f'<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;'
+                            f'color:{TAEGUK_BLUE};margin-bottom:9px;">&#120143; Officials on X</div>'
+                            f'{xp_html}'
+                            f'<div style="font-size:10px;color:#8A94A6;line-height:1.4;margin-top:2px;">'
+                            f'Direct posts by tracked official accounts, attributed as posted. Not independently verified beyond the post.</div>'
+                            f'</div>')
         # Statements
         for s in social:
             initials = _esc(s.get("avatar_initials", "?"))
