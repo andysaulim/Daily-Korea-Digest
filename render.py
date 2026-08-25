@@ -915,9 +915,8 @@ def render(digest: dict) -> str:
             pillars.append(f'<div style="margin-top:18px;">'
                            f'{_pillar_h("Bilateral Investment Ledger", accent=NAVY)}{blocks}{_led_note}</div>')
 
-        # ── Pillar 3: New This Week ─────────────────────────────────────────
+        # ── Pillar 3: New This Week (genuinely new deals only) ─────────────
         new_rows = ""
-        _pol_colors = {"ACTIVE": TAEGUK_RED, "PENDING": "#7F8C8D", "RISK": TAEGUK_RED, "RESOLVED": UP_GREEN, "MONITOR": TAEGUK_BLUE}
         for deal in deal_list:
             headline = _esc(deal.get("headline", ""))
             if not headline:
@@ -937,30 +936,45 @@ def render(digest: dict) -> str:
                          + (f'<div style="font-size:12.5px;color:#3D4451;line-height:1.45;margin-top:2px;">{detail}</div>' if detail else "")
                          + (f'<div style="font-size:10.5px;text-transform:uppercase;letter-spacing:0.5px;color:#8A94A6;margin-top:2px;">{meta}</div>' if meta else "")
                          + '</td></tr>')
+        if new_rows:
+            pillars.append(f'<div style="margin-top:18px;">{_pillar_h("New This Week")}'
+                           f'<table width="100%" cellpadding="0" cellspacing="0" border="0">{new_rows}</table></div>')
+
+        # ── Pillar 4: Trade Policy Watch (STANDING background — not new) ────
+        # Ongoing non-tariff US measures affecting Korea, carried forward as
+        # reference and clearly framed as standing status (not weekly news).
+        # Expired / resolved / lapsed measures are dropped.
+        _pol_colors = {"ACTIVE": TAEGUK_RED, "PENDING": "#7F8C8D", "RISK": TAEGUK_RED, "MONITOR": TAEGUK_BLUE}
+        pol_rows = ""
         for tr in trade_policy:
             item_text = _esc(tr.get("item", ""))
             if not item_text:
                 continue
-            detail_text = _esc(tr.get("detail", ""))
-            agency = _esc(tr.get("agency", ""))
-            item_url = tr.get("url", "")
-            st = tr.get("status", "MONITOR")
+            st = str(tr.get("status", "MONITOR") or "").upper().strip()
             if st == "ESCALATION":
                 st = "ACTIVE"
+            detail_raw = str(tr.get("detail", "") or "")
+            # Editorial rule: drop anything that has ended.
+            if st in ("EXPIRED", "RESOLVED", "LAPSED", "CONCLUDED", "TERMINATED") \
+               or _re.search(r"\b(expired|lapsed|concluded|terminated|no longer in effect)\b", detail_raw, _re.I):
+                continue
+            detail_text = _esc(detail_raw)
+            agency = _esc(tr.get("agency", ""))
+            item_url = tr.get("url", "")
             st_color = _pol_colors.get(st, "#7F8C8D")
-            kind = ('<span style="display:inline-block;font-family:' + MONO + ';font-size:10px;font-weight:700;'
-                    'letter-spacing:0.5px;padding:1px 6px;border-radius:3px;background:#E5EAF2;color:#0047A0;margin-left:6px;">Policy</span>')
             head = _link_or_text(item_text, item_url, style="color:" + INK + ";text-decoration:none;")
             status_span = f'<span style="font-family:{MONO};color:{st_color};font-weight:700;">{_esc(st)}</span>'
             meta = " &middot; ".join(b for b in (agency, status_span) if b)
-            new_rows += (f'<tr><td style="padding:9px 0;border-top:1px solid #EAEDF1;">'
-                         f'<div style="font-size:13.5px;font-weight:700;color:{INK};line-height:1.35;">{head}{kind}</div>'
-                         + (f'<div style="font-size:12.5px;color:#3D4451;line-height:1.45;margin-top:2px;">{detail_text}</div>' if detail_text else "")
+            pol_rows += (f'<tr><td style="padding:8px 0;border-top:1px solid #EAEDF1;">'
+                         f'<div style="font-size:12.5px;font-weight:600;color:{INK};line-height:1.35;">{head}</div>'
+                         + (f'<div style="font-size:12px;color:#3D4451;line-height:1.45;margin-top:2px;">{detail_text}</div>' if detail_text else "")
                          + (f'<div style="font-size:10.5px;text-transform:uppercase;letter-spacing:0.5px;color:#8A94A6;margin-top:2px;">{meta}</div>' if meta else "")
                          + '</td></tr>')
-        if new_rows:
-            pillars.append(f'<div style="margin-top:18px;">{_pillar_h("New This Week")}'
-                           f'<table width="100%" cellpadding="0" cellspacing="0" border="0">{new_rows}</table></div>')
+        if pol_rows:
+            pillars.append(f'<div style="margin-top:18px;">{_pillar_h("Trade Policy Watch", accent="#5A6472")}'
+                           f'<div style="font-size:11px;color:#8A94A6;line-height:1.5;margin:-4px 0 8px;">'
+                           f'Standing US non-tariff measures affecting Korea &mdash; ongoing status, not new this week.</div>'
+                           f'<table width="100%" cellpadding="0" cellspacing="0" border="0">{pol_rows}</table></div>')
 
         sections.append(f"""
         <div {_SEC}>
