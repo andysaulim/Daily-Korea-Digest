@@ -1755,6 +1755,14 @@ def collect() -> dict:
     if satellite:
         print(f"  🛰  Satellite imagery: {len(satellite)} articles found (72h window)")
 
+    # X (Twitter) signals from the curated allowlist — best-effort, tips only.
+    x_signals = []
+    try:
+        from x_scraper import collect_x_signals
+        x_signals = collect_x_signals()
+    except Exception as e:
+        print(f"  🐦  X scraper skipped (non-fatal): {e}")
+
     return {
         "tier1": tier1,
         "tier2": tier2,
@@ -1765,6 +1773,7 @@ def collect() -> dict:
         "satellite_imagery_articles": satellite,
         "market_indicators": results["markets"],
         "sentiment_baseline": results["sentiment"],
+        "x_signals": x_signals,
         "source_health": {
             "total_feeds": total_feeds,
             "feeds_with_data": feeds_with_data,

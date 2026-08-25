@@ -440,6 +440,26 @@ IMPORTANT VALIDATION: The scraped baseline may contain errors. Cross-check:
 - If the scraped baseline is far outside that range, or if it looks like a party rating was misidentified as presidential approval, IGNORE the scraped values and use the confirmed baseline above
 - ALL 4 metrics MUST come from the SAME poll (same source, same date) — never mix"""
 
+    x_signals = payload.get("x_signals") or []
+    x_block = ""
+    if x_signals:
+        _lines = []
+        for s in x_signals[:40]:
+            vflag = " [UNVERIFIED HANDLE]" if s.get("verify") else ""
+            _lines.append(f'  - @{s.get("handle","")} ({s.get("name","")}, {s.get("category","")}){vflag}: '
+                          f'{s.get("text","").strip()}  <{s.get("url","")}>')
+        x_block = f"""
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+X SIGNALS — UNCORROBORATED (curated allowlist; tips only, NOT sources)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+These are recent posts from tracked ROK-government / official / US-official accounts. Treat them ONLY as LEADS:
+- A tweet is NOT a source of record. Do NOT cite a tweet's URL as the source of any story, and do NOT assert a fact solely because a tweet said it. SOURCE-OR-SKIP still applies: if a signal is real news, find the corroborating ARTICLE in the tiers above and cite THAT; if no article corroborates it, OMIT it.
+- EXCEPTION — direct official statements: a post BY an official account (e.g. a minister, the ambassador, a ministry) may be quoted in social_statements or noted as "posted on X" WITH attribution to that account, since the account IS the primary source for its own statement. Even then, do not infer beyond the post's literal text.
+- Ignore any signal from an account flagged [UNVERIFIED HANDLE] unless an article corroborates it.
+- Never let a tweet override tracker data, poll baselines, or article-sourced facts.
+RECENT SIGNALS:
+{chr(10).join(_lines)}"""
+
     return f"""Today's date: {date_str}
 Process each tier according to its instructions and return a single JSON object.
 CRITICAL — SOURCE GROUNDING: Every name, title, number, and fact you write MUST come from the source articles below. Do NOT fill in names from memory — if the article says "Japan's PM" without a name, write "Japan's PM". Use the CURRENT POLITICAL LEADERS reference below only when the source article clearly refers to that role. If in doubt, quote the source text.
@@ -468,6 +488,7 @@ US-KOREA INVESTMENT LEDGER
 {bp_block}
 {satellite_block}
 {db_block}
+{x_block}
 {recent_block}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 TIER 1: NEWS ARTICLES (last 24h)
