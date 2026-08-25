@@ -1512,11 +1512,25 @@ def render(digest: dict) -> str:
   <![endif]-->
 </head>
 <body style="margin:0;padding:0;background:#F2F3F5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;">
-  <!--[if mso]><table width="680" cellpadding="0" cellspacing="0" border="0" align="center"><tr><td><![endif]-->
-  <div class="wrapper" style="max-width:680px;width:100%;margin:0 auto;background:#FFFFFF;overflow:hidden;box-shadow:0 2px 20px rgba(0,0,0,0.08);">
-    {body}
-  </div>
-  <!--[if mso]></td></tr></table><![endif]-->
+  <!-- Centered fixed-width TABLE wrapper (not a max-width div): survives when
+       a client strips the <style> block on forward/reply, so the layout keeps
+       its shape. The .wrapper class lets the mobile media query flex it to
+       100% while the <style> block is present. -->
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0;padding:0;background:#F2F3F5;">
+    <tr>
+      <td align="center" valign="top" style="padding:0;">
+        <!--[if mso]><table width="680" cellpadding="0" cellspacing="0" border="0" align="center"><tr><td><![endif]-->
+        <table role="presentation" class="wrapper" width="680" cellpadding="0" cellspacing="0" border="0" align="center" style="width:680px;max-width:680px;margin:0 auto;background:#FFFFFF;box-shadow:0 2px 20px rgba(0,0,0,0.08);">
+          <tr>
+            <td style="padding:0;">
+              {body}
+            </td>
+          </tr>
+        </table>
+        <!--[if mso]></td></tr></table><![endif]-->
+      </td>
+    </tr>
+  </table>
 </body>
 </html>"""
 
