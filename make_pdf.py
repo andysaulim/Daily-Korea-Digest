@@ -22,13 +22,14 @@ _PRINT_CSS = """
 <style>
   @media print {
     html, body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; background:#fff !important; }
-    .wrapper { max-width: 760px !important; box-shadow: none !important; }
+    .wrapper { box-shadow: none !important; }
     a { text-decoration: none; }
-    /* Only keep small cards/rows intact; large .sec blocks may split across
-       pages so the print doesn't leave big empty gaps at page bottoms. */
-    tr, .story-card, .deal-card { page-break-inside: avoid; }
+    /* Let EVERYTHING flow across page breaks. Avoiding breaks on cards/rows
+       pushes anything that doesn't fit to the next page, leaving big empty
+       gaps — worse than a card occasionally splitting. */
+    * { page-break-inside: auto !important; }
   }
-  @page { size: Letter; margin: 14mm 12mm; }
+  @page { size: Letter; margin: 9mm 10mm; }
 </style>
 """
 
@@ -62,7 +63,7 @@ def html_to_pdf(html: str, out_path: Path):
             path=str(out_path),
             format="Letter",
             print_background=True,
-            margin={"top": "14mm", "bottom": "14mm", "left": "12mm", "right": "12mm"},
+            margin={"top": "9mm", "bottom": "9mm", "left": "10mm", "right": "10mm"},
         )
         browser.close()
 
