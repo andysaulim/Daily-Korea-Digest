@@ -1204,6 +1204,17 @@ def main():
         json.dumps(digest_data, ensure_ascii=False), encoding="utf-8"
     )
 
+    # ── Full-color PDF for print/download (best-effort; needs Playwright) ────
+    try:
+        import shutil
+        from make_pdf import html_from_input, html_to_pdf
+        pdf_html = html_from_input(archive_dir / "latest.html")
+        html_to_pdf(pdf_html, archive_dir / "latest.pdf")
+        shutil.copy(archive_dir / "latest.pdf", archive_dir / f"digest_{date_slug}.pdf")
+        print(f"  🖨  PDF written: public/latest.pdf + public/digest_{date_slug}.pdf")
+    except Exception as e:
+        print(f"  ⚠  PDF generation skipped (non-fatal): {e}")
+
     # ── Maintain archive manifest (archive.json) ────────────────────────────
     archive_json_path = archive_dir / "archive.json"
     try:
