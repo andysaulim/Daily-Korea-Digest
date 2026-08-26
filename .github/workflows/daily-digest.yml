@@ -76,6 +76,11 @@ jobs:
         if: steps.guard.outputs.should_run == 'true'
         run: pip install -r requirements.txt
 
+      - name: Install Chromium for PDF export
+        if: steps.guard.outputs.should_run == 'true'
+        continue-on-error: true
+        run: python -m playwright install --with-deps chromium
+
       - name: Generate and send digest
         if: steps.guard.outputs.should_run == 'true'
         id: send

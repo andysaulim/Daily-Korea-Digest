@@ -4,10 +4,41 @@ Persistent tracking of monitored facility status across digest runs.
 Carries forward last_source_date dates and status so Claude doesn't have to invent them.
 """
 import json
+import re
 from pathlib import Path
 from datetime import datetime, timezone
 
 TRACKER_FILE = Path(__file__).parent / "bp_tracker.json"
+
+
+def _scrub_note(note: str) -> str:
+    """Strip the known-fabricated 'Aug 2026 seismic event at Punggye-ri assessed
+    as a nuclear test' sentence. No such event occurred — it was an AI
+    fabrication that polluted the cached tracker and carried forward daily. Real
+    content (DIA Tunnel 3 assessment, defector study, readiness) is preserved."""
+    if not note:
+        return note
+    parts = re.split(r'(?<=[.!?])\s+', note)
+    kept = [s for s in parts
+            if not (re.search(r'seismic event', s, re.I)
+                    and re.search(r'nuclear test|possible.*\btest\b', s, re.I))]
+    return " ".join(kept).strip()
+
+
+def _scrub_known_false(data: dict) -> dict:
+    """Self-heal the tracker on load: remove known-fabricated content and
+    downgrade a facility 'alert' that rested solely on it. Targeted at the
+    Punggye-ri seismic-event fabrication; safe no-op otherwise."""
+    locs = data.get("locations") or {}
+    p = locs.get("Punggye-ri Nuclear Test Site")
+    if p and "seismic event" in (p.get("note") or "").lower():
+        cleaned = _scrub_note(p["note"])
+        if cleaned != p.get("note"):
+            p["note"] = cleaned
+            if str(p.get("status", "")).lower() == "alert":
+                p["status"] = "activity"
+                p["direction"] = ""
+    return data
 
 # The 11 monitored locations
 DEFAULT_LOCATIONS = [
@@ -28,7 +59,7 @@ DEFAULT_LOCATIONS = [
 def _load() -> dict:
     if TRACKER_FILE.exists():
         try:
-            return json.loads(TRACKER_FILE.read_text())
+            return _scrub_known_false(json.loads(TRACKER_FILE.read_text()))
         except (json.JSONDecodeError, IOError):
             pass
     return {"locations": {loc["name"]: loc for loc in DEFAULT_LOCATIONS}, "last_updated": None}
@@ -50,8 +81,13 @@ def update_from_digest(digest: dict):
         name = loc.get("name", "")
         if not name:
             continue
-        note = loc.get("note", "")
+        note = _scrub_note(loc.get("note", ""))
         status = loc.get("status", "normal")
+        # If scrubbing removed the fabricated seismic claim that was the basis of
+        # an alert, don't persist the alert.
+        if (str(status).lower() == "alert" and "seismic event" in (loc.get("note") or "").lower()
+                and "seismic event" not in note.lower()):
+            status = "activity"
         existing = data["locations"].get(name)
 
         # Accept the update if:
