@@ -134,7 +134,10 @@ Samsung and SK Hynix China fab licenses are EXPORT CONTROL licenses (BIS), NOT "
 
 TARIFF BASELINE REFERENCE (as of Mar 2026 — update from today's articles if anything changes):
 The US-Korea Strategic Trade and Investment Deal (framework Jul 30 2025, reaffirmed at Trump-Lee Oct 29 2025 summit, USTR implementation Dec 3 2025) set a 15% reciprocal tariff rate under IEEPA/EO 14257. On Feb 20 2026 the Supreme Court struck down ALL IEEPA tariffs (6-3 ruling). The White House immediately imposed a 10% Section 122 surcharge on ALL countries (effective Feb 24 2026, expires Jul 24 2026 unless Congress extends). On Jan 27 2026 Trump threatened to raise Korea tariffs to 25% over delayed National Assembly ratification, but NO executive order was issued. On Mar 12 2026 the National Assembly passed the Special Investment Act (226-8-8) creating the Korea-US Strategic Investment Corporation to implement the $350B pledge. On Mar 11 2026 USTR launched Section 301 investigations into 16 trading partners including South Korea — these could provide new legal grounds for tariffs post-Section 122 expiry.
-Use 10% (Section 122) as the headline_rate unless today's articles report an official change.
+DATE-AWARENESS — CRITICAL: The 10% Section 122 surcharge was a TEMPORARY measure that EXPIRED on Jul 24 2026 (150-day statutory limit). Compare Jul 24 2026 to TODAY'S DATE (given at the top of this prompt):
+  - If today is ON OR BEFORE Jul 24 2026: use 10% (Section 122) as headline_rate, status ACTIVE.
+  - If today is AFTER Jul 24 2026 (as it now is) AND no article reports an extension: the surcharge has EXPIRED — do NOT show 10% as an ACTIVE headline rate. Set headline_status to EXPIRED (or reflect any replacement today's articles report), and make clear in headline_note that Section 122 lapsed Jul 24 and the Section 301 investigation (launched Mar 11 2026) is now the primary tariff vehicle. The Section 232 SECTOR rates below remain in force regardless. Do NOT cite Jul 24 2026 (a past date) as a future "next trigger".
+  - Only treat the surcharge as extended/active past Jul 24 if today's articles explicitly report an extension.
 
 BASELINE SECTOR RATES (update from today's articles if changed):
   * Steel & Aluminum: 50%, Section 232, ACTIVE — no exemption in US-Korea deal; all country exemptions eliminated Mar 2025
@@ -146,8 +149,8 @@ BASELINE SECTOR RATES (update from today's articles if changed):
   * Civil Aircraft & Parts: 0%, exempted under US-Korea deal, RESOLVED — tariffs removed per USTR Dec 3 2025 notice
   * Generic Pharma / Precursors / Rare Natural Resources: 0%, exempted under Aligned Partners list, RESOLVED — tariffs eliminated per deal
 
-SECTION 122 SURCHARGE BASELINE: "10% global surcharge (Section 122, effective Feb 24 2026, expires Jul 24 2026)" — update if today's articles report a change (Trump signaled possible increase to 15% statutory max but no formal action taken).
-NEXT TRIGGER BASELINE: "Jul 24 2026 — Section 122 surcharge expiry (150-day statutory limit); Apr 14 2026 — Commerce/USTR semiconductor tariff report due; Section 301 investigations ongoing"."""
+SECTION 122 SURCHARGE BASELINE: "10% global surcharge (Section 122), effective Feb 24 2026, EXPIRED Jul 24 2026 at the 150-day statutory limit" — state it in PAST tense once today's date is after Jul 24 2026, unless today's articles report an extension.
+NEXT TRIGGER BASELINE: use a date that is still in the FUTURE relative to today — do NOT list Jul 24 2026 or Apr 14 2026 (both past). Prefer a dated, forward-looking item from today's articles or the calendar (e.g. a pending Section 301 determination, a scheduled Section 232 semiconductor action, or an upcoming summit/deadline). If none is known, set next_trigger to the Section 301 investigation determination (pending, no fixed date)."""
 
 _INVESTMENT_TRACKER = """\
 REFERENCE — US-Korea $350B investment pledge (a GOVERNMENT-LEVEL commitment).
