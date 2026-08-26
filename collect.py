@@ -857,10 +857,24 @@ def _collect_markets() -> dict:
                 resp = requests.get(url, timeout=10, headers=headers)
                 resp.raise_for_status()
                 data = resp.json()
-                meta = data["chart"]["result"][0]["meta"]
+                result = data["chart"]["result"][0]
+                meta = result["meta"]
                 price = meta.get("regularMarketPrice", 0)
+                # DAILY change must compare the last two DAILY closes. Do NOT use
+                # meta.chartPreviousClose: on a range=5d request it is the close
+                # BEFORE the 5-day window, so the % becomes a ~5-day move, not a
+                # 1-day one (the KOSPI "+5.2%" vs article "+1%" bug). Take the
+                # last two non-null closes from the series instead.
                 prev_close = meta.get("chartPreviousClose",
                                       meta.get("previousClose", price))
+                try:
+                    closes = [c for c in result["indicators"]["quote"][0]["close"]
+                              if c is not None]
+                    if len(closes) >= 2:
+                        price = closes[-1]
+                        prev_close = closes[-2]
+                except (KeyError, IndexError, TypeError):
+                    pass
                 mkt_ts = meta.get("regularMarketTime", 0)
                 mkt_time = (datetime.fromtimestamp(mkt_ts, tz=timezone.utc)
                             if mkt_ts else None)

@@ -1369,8 +1369,24 @@ def render(digest: dict) -> str:
                     note_html = f'<div style="font-size:11px;line-height:1.4;color:#999;margin-top:4px;font-style:italic;">{note}</div>'
                 elif note:
                     note_html = f'<div style="font-size:11px;line-height:1.4;color:#555;margin-top:4px;">{note}</div>'
-                # Last report date — mono, machine-measured
-                last_html = f'<div style="font-family:{MONO};font-size:11px;color:#999;margin-top:4px;">as of {last_source_date}</div>' if last_source_date and last_source_date != "unknown" else ""
+                # Last report date — mono, machine-measured. Flag notes whose
+                # last source is stale (>90 days) so a months-old status isn't
+                # read as current (e.g. Yellow Sea PMZ carried from January).
+                stale_flag = ""
+                _dm = _re.match(r"(\d{4})-(\d{2})(?:-(\d{2}))?", str(loc.get("last_source_date", "")).strip())
+                if _dm:
+                    try:
+                        from datetime import date as _date
+                        _src = _date(int(_dm.group(1)), int(_dm.group(2)), int(_dm.group(3) or 1))
+                        _age = (datetime.now(timezone.utc).date() - _src).days
+                        if _age > 90:
+                            stale_flag = (f' <span style="color:#B26A00;">&middot; no recent reporting '
+                                          f'(~{_age // 30} mo)</span>')
+                    except (ValueError, TypeError):
+                        pass
+                last_html = (f'<div style="font-family:{MONO};font-size:11px;color:#999;margin-top:4px;">'
+                             f'as of {last_source_date}{stale_flag}</div>'
+                             if last_source_date and last_source_date != "unknown" else "")
                 row_cards += f"""
                 <td style="width:50%;padding:4px;vertical-align:top;">
                   <div style="background:{b_bg};border-radius:4px;padding:10px 12px;border-left:3px solid {b_color};">
