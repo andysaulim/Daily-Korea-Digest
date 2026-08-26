@@ -1441,7 +1441,9 @@ def render(digest: dict) -> str:
       html, body {{ background:#FFFFFF !important; }}
       .wrapper {{ box-shadow:none !important; width:680px !important; max-width:680px !important; margin:0 auto !important; }}
       a {{ text-decoration:none !important; }}
-      .sec, .footer {{ page-break-inside: avoid; }}
+      /* Let large sections flow across page breaks — forcing them whole leaves
+         big empty gaps. Only keep small cards/rows intact. */
+      .story-card, .deal-card, tr {{ page-break-inside: avoid; }}
     }}
     /* Mobile responsive — one declaration per pattern; no duplicates.
        Fixes from the Q3 2026 mobile audit are marked (A#). */

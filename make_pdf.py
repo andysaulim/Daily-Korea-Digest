@@ -24,7 +24,9 @@ _PRINT_CSS = """
     html, body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; background:#fff !important; }
     .wrapper { max-width: 760px !important; box-shadow: none !important; }
     a { text-decoration: none; }
-    .sec, tr, .story-card, .deal-card { page-break-inside: avoid; }
+    /* Only keep small cards/rows intact; large .sec blocks may split across
+       pages so the print doesn't leave big empty gaps at page bottoms. */
+    tr, .story-card, .deal-card { page-break-inside: avoid; }
   }
   @page { size: Letter; margin: 14mm 12mm; }
 </style>

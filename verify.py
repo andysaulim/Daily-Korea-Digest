@@ -75,10 +75,14 @@ _ANALYSIS_SYSTEM = (
     "DROP (keep:false) an item that reads as: a general survey or retrospective; "
     "a 'diagnosis' or 'current state of' a controversy that peaked years ago "
     "(e.g. the THAAD–China dispute of 2016–17, the history of inter-Korean "
-    "economic cooperation); an anniversary or historical reflection; or anything "
-    "you cannot confirm is recent. When in doubt, DROP — omitting a stale item "
-    "is always better than shipping it. KEEP (keep:true) items clearly tied to a "
-    "current, dated development.\n"
+    "economic cooperation); or an anniversary / historical reflection with no "
+    "current news hook.\n"
+    "IMPORTANT — DEFAULT TO KEEP. Only drop an item you are CONFIDENT is old / "
+    "evergreen / retrospective. If a piece is plausibly current, or you are "
+    "unsure, KEEP it — dropping a legitimate current op-ed is worse than "
+    "occasionally keeping a borderline one. A recent-sounding analysis tied to "
+    "an ongoing issue is CURRENT even without an explicit date. KEEP (keep:true) "
+    "unless you can clearly point to why it is stale.\n"
     "Return ONLY JSON: {\"verdicts\":[{\"index\":0,\"keep\":true,\"reason\":\"...\"}]}"
 )
 
