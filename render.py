@@ -1273,7 +1273,8 @@ def render(digest: dict) -> str:
               {"<div style='font-size:11px;color:" + TAEGUK_BLUE + ";margin-top:3px;'><strong>Implication:</strong> " + implication + "</div>" if implication else ""}
               {read_link}
             </div>"""
-        sections.append(f"""
+        if sa_html.strip():
+            sections.append(f"""
         <div {_SEC}>
           <a name="analysis"></a>{_sec_label("Statements &amp; Analysis")}
           {sa_html}
@@ -1421,6 +1422,18 @@ def render(digest: dict) -> str:
     /* Reset */
     body, table, td, div, p {{ margin:0; padding:0; }}
     img {{ border:0; display:block; }}
+    /* Print — keep FULL colors and the exact on-screen look; only drop page
+       chrome (shadow, page margins). print-color-adjust forces browsers to
+       print background colors instead of stripping them. Works when printing
+       the archived web page or the email via the browser's Print / Save as PDF. */
+    @page {{ margin: 12mm; }}
+    @media print {{
+      * {{ -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }}
+      html, body {{ background:#FFFFFF !important; }}
+      .wrapper {{ box-shadow:none !important; width:680px !important; max-width:680px !important; margin:0 auto !important; }}
+      a {{ text-decoration:none !important; }}
+      .sec, .footer {{ page-break-inside: avoid; }}
+    }}
     /* Mobile responsive — one declaration per pattern; no duplicates.
        Fixes from the Q3 2026 mobile audit are marked (A#). */
     @media only screen and (max-width: 620px) {{
