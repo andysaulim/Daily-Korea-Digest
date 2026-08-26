@@ -1189,9 +1189,17 @@ def render(digest: dict) -> str:
             for xp in x_posts:
                 if not isinstance(xp, dict):
                     continue
-                name = _esc(str(xp.get("name", "")))
-                handle = _esc(str(xp.get("handle", "")).lstrip("@"))
-                post = _esc(str(xp.get("post", "")))
+                # Tolerate both key conventions: the model often emits these
+                # using the social_statements shape (who/quote_text/handle_context)
+                # instead of the official_x_posts shape (name/post/handle).
+                name = _esc(str(xp.get("name") or xp.get("who") or ""))
+                handle_raw = str(xp.get("handle") or "").strip()
+                if not handle_raw:
+                    m = _re.search(r"@([A-Za-z0-9_]+)", str(xp.get("handle_context") or ""))
+                    handle_raw = m.group(1) if m else ""
+                handle = _esc(handle_raw.lstrip("@"))
+                post = _esc(str(xp.get("post") or xp.get("quote_text") or ""))
+                note = _esc(str(xp.get("analyst_note") or "").strip())
                 if not post:
                     continue
                 url = xp.get("url", "")
@@ -1202,7 +1210,8 @@ def render(digest: dict) -> str:
                             + (f' <span style="color:#8A94A6;font-weight:400;">@{handle}</span>' if handle else "")
                             + f'</div>'
                             f'<div style="font-size:12.5px;color:#33404F;line-height:1.45;margin:2px 0 3px;">&ldquo;{post}&rdquo;</div>'
-                            f'{link}</div>')
+                            + (f'<div style="font-size:11px;color:{TAEGUK_BLUE};line-height:1.4;margin-bottom:3px;"><strong>Context:</strong> {note}</div>' if note else "")
+                            + f'{link}</div>')
             if xp_html:
                 sa_html += (f'<div style="margin-bottom:14px;padding:12px 14px;background:#EEF3F9;'
                             f'border-radius:6px;border-left:3px solid {TAEGUK_BLUE};">'
