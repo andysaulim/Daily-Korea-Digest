@@ -744,8 +744,12 @@ def render(digest: dict) -> str:
                 h_rate = _esc(_rm.group(1).strip())
                 _rate_spill = _rm.group(2).strip().strip("()").strip()
             else:
-                h_rate = _esc(_raw_rate[:12])
-                _rate_spill = _raw_rate[12:].strip()
+                # No numeric rate (e.g. the surcharge expired) — never show a
+                # truncated string as the big number. Lead with the status
+                # instead; the descriptive text falls to the note.
+                h_rate = ""
+                _rate_spill = _raw_rate
+            _has_rate = bool(h_rate)
             h_status = tariff_tracker.get("headline_status", "ACTIVE")
             if h_status == "ESCALATION":
                 h_status = "ACTIVE"
@@ -775,17 +779,29 @@ def render(digest: dict) -> str:
 
             # Number and short pill share one line; the note gets its OWN
             # full-width line below (so it can never wrap into a narrow column).
-            hero = (f'<div style="margin-bottom:5px;">'
-                    f'<span style="font-family:{MONO};font-size:32px;font-weight:700;color:{TAEGUK_RED};vertical-align:middle;">{h_rate}</span>'
-                    + (f'&nbsp;&nbsp;{status_pill}' if status_pill else '')
-                    + f'</div>'
+            if _has_rate:
+                _hero_lead = (f'<span style="font-family:{MONO};font-size:32px;font-weight:700;color:{TAEGUK_RED};vertical-align:middle;">{h_rate}</span>'
+                              + (f'&nbsp;&nbsp;{status_pill}' if status_pill else ''))
+            else:
+                # Status is the hero (e.g. EXPIRED), muted — not a red percentage.
+                _sw = _esc(_h_key if _h_key in _status_pill else (h_status.strip() or "—"))
+                _hero_lead = f'<span style="font-family:{MONO};font-size:24px;font-weight:700;color:#55607A;letter-spacing:0.5px;vertical-align:middle;">{_sw}</span>'
+            hero = (f'<div style="margin-bottom:5px;">{_hero_lead}</div>'
                     f'<div style="font-size:13px;color:#5A6472;line-height:1.5;">{note_text}</div>')
 
+            def _cap(_s, _n=80):
+                _s = str(_s).strip()
+                return _s if len(_s) <= _n else _s[:_n - 1].rstrip() + "…"
             watch = ""
-            watch_bits = [b for b in (
-                (f"Section 122 surcharge {_esc(str(s122))}" if s122 else ""),
-                (f"next trigger: {next_trigger}" if next_trigger else ""),
-            ) if b]
+            watch_bits = []
+            # Section 122 belongs in "Watch this date" only while it's a FUTURE
+            # item — once expired it's history, so drop it here (the expiry is
+            # already stated in the note).
+            if s122 and "expir" not in str(s122).lower():
+                watch_bits.append(f"Section 122 surcharge {_esc(_cap(s122, 48))}")
+            _nt_raw = str(tariff_tracker.get("next_trigger", "")).strip()
+            if _nt_raw:
+                watch_bits.append(f"next trigger: {_esc(_cap(_nt_raw, 90))}")
             if watch_bits:
                 watch = (f'<div style="margin-top:12px;background:#FBF3F0;border:1px solid #F1D9D2;'
                          f'border-left:3px solid {TAEGUK_RED};border-radius:4px;padding:9px 13px;">'
