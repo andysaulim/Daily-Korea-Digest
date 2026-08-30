@@ -186,7 +186,8 @@ def main() -> int:
     label = rec.get("survey_label") or rec["sort_key"]
     carried = [n for n, v in (("DP", rec.get("dp")), ("PPP", rec.get("ppp")),
                               ("ind", rec.get("ind"))) if v is None]
-    poll_name = f"Gallup Korea #{rec['poll_no']}" if rec.get("poll_no") else f"Gallup Korea (week of {label})"
+    _lbl = label[8:] if label.lower().startswith("week of ") else label  # avoid "week of week of ..."
+    poll_name = f"Gallup Korea #{rec['poll_no']}" if rec.get("poll_no") else f"Gallup Korea (week of {_lbl})"
 
     print(f"  Parsed {poll_name}: approval {pres}%, DP {dp}%, PPP {ppp}%, ind {ind}%"
           + (f"  (carried forward: {', '.join(carried)})" if carried else ""))
