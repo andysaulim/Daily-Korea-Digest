@@ -831,6 +831,65 @@ def _drop_offdate_on_this_day(digest: dict) -> list[str]:
     return log
 
 
+def _maybe_persist_sentiment_baseline(digest_data: dict) -> str | None:
+    """Durable Gallup auto-update: if the digest's model-extracted
+    public_sentiment reflects a NEWER Gallup poll than the stored baseline,
+    write it to gallup_baseline.json. This reuses the daily digest's own reading
+    of the news (which works every day) instead of the separate Friday scrape,
+    so a fresh Friday poll persists automatically. Same-poll + newer-date +
+    sanity guarded; best-effort (never raises). Returns a log line or None."""
+    try:
+        import re as _re
+        import gallup_update as gu
+        ps = digest_data.get("public_sentiment") or {}
+        appr = ps.get("presidential_approval") or {}
+        if "gallup" not in str(appr.get("source", "")).lower():
+            return None  # only Gallup drives the baseline (same-poll integrity)
+        m = _re.search(r"(\d{4}-\d{2}-\d{2})", str(appr.get("last_updated", "")))
+        if not m:
+            return None
+        new_key = m.group(1)
+        baseline = gu._load_baseline()
+        cur_key = gu._current_sort_key(baseline)
+        if cur_key and new_key <= cur_key:
+            return None  # not newer than what we have
+        pres = gu._pct(appr.get("value"))
+        dp = gu._pct((ps.get("party_ruling") or {}).get("value"))
+        ppp = gu._pct((ps.get("party_opposition") or {}).get("value"))
+        ind = gu._pct((ps.get("party_independent") or {}).get("value"))
+        if gu._sane(pres, dp, ppp, ind):
+            return None  # implausible numbers — don't persist
+        old = {k: gu._pct((baseline.get(k) or {}).get("value"))
+               for k in ("presidential_approval", "party_ruling",
+                         "party_opposition", "party_independent")}
+        label = str(appr.get("last_updated", "")).replace("week of ", "").strip() or new_key
+        updated = dict(baseline)
+        updated.update({
+            "poll": f"Gallup Korea (week of {label})",
+            "survey_dates": label,
+            "source": "Gallup Korea",
+            "presidential_approval": {"value": f"{pres:g}%", "trend": gu._trend(pres, old["presidential_approval"])},
+            "party_ruling": {"value": f"{dp:g}%", "party": "Democratic Party", "party_kr": "더불어민주당",
+                             "trend": gu._trend(dp, old["party_ruling"])},
+            "party_opposition": {"value": f"{ppp:g}%", "party": "People Power Party", "party_kr": "국민의힘",
+                                 "trend": gu._trend(ppp, old["party_opposition"])},
+            "updated_at": datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d"),
+            "updated_by": "run.py (auto — persisted from digest public_sentiment)",
+        })
+        if ind is not None:
+            updated["party_independent"] = {"value": f"{ind:g}%", "trend": gu._trend(ind, old["party_independent"])}
+        spot = ps.get("gallup_spotlight")
+        if isinstance(spot, dict) and spot.get("topic"):
+            updated["spotlight"] = {"headline": spot.get("finding") or spot.get("topic"),
+                                    "poll_date": label}
+        gu.BASELINE_PATH.write_text(json.dumps(updated, ensure_ascii=False, indent=2) + "\n",
+                                    encoding="utf-8")
+        return f"{label}: approval {pres:g}%, DP {dp:g}%, PPP {ppp:g}%, ind {ind if ind is None else format(ind, 'g')}%"
+    except Exception as e:
+        print(f"  ⚠  Sentiment-baseline persist skipped (non-fatal): {e}")
+        return None
+
+
 def _postprocess_digest(digest_data: dict, payload: dict | None = None) -> tuple[dict, list[str]]:
     """Run dedup, deal filter, source diversity, and URL repair. Returns (digest, all_log_messages)."""
     log = []
@@ -1163,6 +1222,9 @@ def main():
         update_from_digest(digest_data)
         kcna_update_from_digest(digest_data)
         bp_update_from_digest(digest_data)
+        _sent_log = _maybe_persist_sentiment_baseline(digest_data)
+        if _sent_log:
+            print(f"  📊  Gallup baseline auto-updated from today's digest -> {_sent_log}")
     else:
         print("  ⚠  Skipping tracker updates due to critical validation failures")
 

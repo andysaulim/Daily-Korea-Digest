@@ -113,15 +113,17 @@ jobs:
           publish_dir: ./public
           keep_files: true
 
-      - name: Commit updated README
+      - name: Commit updated README + Gallup baseline
         if: steps.guard.outputs.should_run == 'true'
         continue-on-error: true
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add README.md
+          # gallup_baseline.json is auto-updated when the digest reads a newer
+          # Gallup poll from that day's articles (see _maybe_persist_sentiment_baseline).
+          git add README.md gallup_baseline.json
           if ! git diff --cached --quiet; then
-            git commit -m "Update README stats [skip ci]"
+            git commit -m "Update README stats + Gallup baseline [skip ci]"
             git pull --rebase origin main || true
             git push
           fi
