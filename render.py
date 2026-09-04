@@ -312,6 +312,18 @@ def render(digest: dict) -> str:
         </table>
         """)
 
+    # ── 2b. Banner disclaimer — last row of the navy banner ───────────────
+    sections.append(f"""
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#03142A;border-bottom:3px solid {RED_ON_NAVY};">
+      <tr>
+        <td style="padding:9px 32px 11px;font-family:Arial,sans-serif;font-size:10.5px;line-height:1.5;color:rgba(255,255,255,0.62);">
+          This newsletter is automatically generated, so it may contain errors. Please check all information and sources before citing.
+          To report errors or other issues, please contact Andy Lim at <a href="mailto:alim@csis.org" style="color:rgba(255,255,255,0.82);text-decoration:underline;">alim@csis.org</a>.
+        </td>
+      </tr>
+    </table>
+    """)
+
     # ── 3. Morning Memo (top 3 at a glance) ─────────────────────────────────
     memo_items = digest.get("morning_memo") or []
     if memo_items:
