@@ -1,15 +1,31 @@
 {
-  "poll": "Gallup Korea #673",
-  "survey_dates": "August 25-27, 2026",
+  "poll": "Gallup Korea (week of 2026-08-28)",
+  "survey_dates": "week of 2026-08-28",
   "source": "Gallup Korea",
-  "presidential_approval": {"value": "42%", "trend": "down"},
-  "party_ruling": {"value": "39%", "party": "Democratic Party", "party_kr": "더불어민주당", "trend": "down"},
-  "party_opposition": {"value": "25%", "party": "People Power Party", "party_kr": "국민의힘", "trend": "stable"},
-  "party_independent": {"value": "26%", "trend": "stable"},
+  "presidential_approval": {
+    "value": "42%",
+    "trend": "stable"
+  },
+  "party_ruling": {
+    "value": "39%",
+    "party": "Democratic Party",
+    "party_kr": "더불어민주당",
+    "trend": "stable"
+  },
+  "party_opposition": {
+    "value": "25%",
+    "party": "People Power Party",
+    "party_kr": "국민의힘",
+    "trend": "stable"
+  },
+  "party_independent": {
+    "value": "26%",
+    "trend": "stable"
+  },
   "spotlight": {
     "headline": "안보 이슈 집중: 전작권 환수·북핵·남북 군사력·3군 사관학교 통합 (한국갤럽 8월 4주). 이재명 긍정 42%(취임 후 최저)·부정 50%(첫 50% 돌파)",
     "poll_date": "August 29, 2026"
   },
-  "updated_at": "2026-08-29",
-  "updated_by": "manual (Claude session — #673 via multi-outlet search; supersedes auto #672 45%)"
+  "updated_at": "2026-09-04",
+  "updated_by": "gallup_update.py (auto, news-parse)"
 }
