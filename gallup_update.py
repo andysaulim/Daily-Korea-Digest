@@ -86,16 +86,24 @@ def _normalize_date_label(raw: str) -> tuple[str, str]:
 
 def _current_sort_key(baseline: dict) -> str:
     """Derive a YYYY-MM-DD sort key (the survey START date) from the stored
-    survey_dates label. Handles same-month ranges ('June 9-11, 2026'),
-    cross-month ranges ('June 30-July 2, 2026'), single dates ('July 3, 2026'),
-    and week-suffixed labels ('July 3, 2026 (1주차)') by taking the first
-    'Month Day' found plus any 4-digit year in the string."""
-    raw = baseline.get("survey_dates", "")
-    md = re.search(r"([A-Z][a-z]+)\s+(\d{1,2})", raw)
-    yr = re.search(r"(20\d{2})", raw)
-    if not md or not yr or md.group(1) not in MONTH_NAMES:
-        return ""
-    return f"{yr.group(1)}-{MONTH_NAMES.index(md.group(1)) + 1:02d}-{int(md.group(2)):02d}"
+    baseline. Accepts every label format the two writers produce:
+      - 'June 9-11, 2026', 'June 30-July 2, 2026', 'July 3, 2026 (1주차)'
+        (this script) -> first 'Month Day' plus any 4-digit year
+      - '2026-09-04' or 'week of 2026-09-04' (run.py persist) -> the ISO date
+    Falls back to an ISO date in the 'poll' field, then to 'updated_at', so a
+    stored baseline is never treated as undated. An undated baseline was how a
+    three-week-old poll overwrote a fresh one on 2026-09-05."""
+    for raw in (baseline.get("survey_dates", ""), baseline.get("poll", "")):
+        raw = str(raw or "")
+        iso = re.search(r"(20\d{2})-(\d{2})-(\d{2})", raw)
+        if iso:
+            return f"{iso.group(1)}-{iso.group(2)}-{iso.group(3)}"
+        md = re.search(r"([A-Z][a-z]+)\s+(\d{1,2})", raw)
+        yr = re.search(r"(20\d{2})", raw)
+        if md and yr and md.group(1) in MONTH_NAMES:
+            return f"{yr.group(1)}-{MONTH_NAMES.index(md.group(1)) + 1:02d}-{int(md.group(2)):02d}"
+    iso = re.search(r"(20\d{2})-(\d{2})-(\d{2})", str(baseline.get("updated_at", "")))
+    return f"{iso.group(1)}-{iso.group(2)}-{iso.group(3)}" if iso else ""
 
 
 def _sane(pres, dp, ppp, ind) -> list[str]:
@@ -103,6 +111,10 @@ def _sane(pres, dp, ppp, ind) -> list[str]:
     problems = []
     if pres is None or not (20 <= pres <= 90):
         problems.append(f"approval {pres} outside 20-90")
+    elif abs(pres - round(pres)) > 1e-9:
+        # Gallup Korea publishes whole-number percentages. A decimal (43.3%)
+        # means the parser picked up Realmeter/NBS or another pollster.
+        problems.append(f"approval {pres} has a decimal — not a Gallup Korea figure")
     if dp is None or not (3 <= dp <= 70):
         problems.append(f"DP {dp} outside 3-70")
     if ppp is None or not (3 <= ppp <= 70):

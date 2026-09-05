@@ -862,10 +862,14 @@ def _maybe_persist_sentiment_baseline(digest_data: dict) -> str | None:
         old = {k: gu._pct((baseline.get(k) or {}).get("value"))
                for k in ("presidential_approval", "party_ruling",
                          "party_opposition", "party_independent")}
-        label = str(appr.get("last_updated", "")).replace("week of ", "").strip() or new_key
+        # Store the label in the 'Month D, YYYY' form every reader parses
+        # (gallup_update._current_sort_key, healthcheck age checks). A bare
+        # ISO label written here on 2026-09-04 read as "undated" and let an
+        # older poll overwrite it the next morning.
+        label = gu._normalize_date_label(new_key)[0] or new_key
         updated = dict(baseline)
         updated.update({
-            "poll": f"Gallup Korea (week of {label})",
+            "poll": f"Gallup Korea ({label})",
             "survey_dates": label,
             "source": "Gallup Korea",
             "presidential_approval": {"value": f"{pres:g}%", "trend": gu._trend(pres, old["presidential_approval"])},

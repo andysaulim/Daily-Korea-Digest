@@ -1,10 +1,10 @@
 {
-  "poll": "Gallup Korea (week of 2026-08-11)",
-  "survey_dates": "week of 2026-08-11",
+  "poll": "Gallup Korea (September 4, 2026)",
+  "survey_dates": "September 4, 2026",
   "source": "Gallup Korea",
   "presidential_approval": {
-    "value": "43.3%",
-    "trend": "up"
+    "value": "40%",
+    "trend": "down"
   },
   "party_ruling": {
     "value": "39%",
@@ -24,8 +24,8 @@
   },
   "spotlight": {
     "headline": "Gallup Korea's August 4th-week spotlight covered security policy priorities including OPCON transfer, denuclearization, inter-Korean military balance, and the proposed merger of three military academies; Lee Jae-myung's approval stood at 42% (lowest since inauguration) with disapproval first crossing 50%.",
-    "poll_date": "2026-09-04"
+    "poll_date": "August 25-27, 2026"
   },
   "updated_at": "2026-09-05",
-  "updated_by": "gallup_update.py (auto, news-parse)"
+  "updated_by": "manual restore of the 2026-09-04 record (auto-update regression)"
 }
