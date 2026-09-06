@@ -1,4 +1,4 @@
-anthropic>=0.39.0
+anthropic>=1.0,<2  # 1.x moved to httpx2; digest.py handles both
 feedparser>=6.0.0
 requests>=2.31.0
 httpx>=0.24.0

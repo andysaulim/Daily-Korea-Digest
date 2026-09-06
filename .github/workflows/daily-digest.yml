@@ -93,7 +93,8 @@ jobs:
           X_SCRAPER_KEY: ${{ secrets.X_SCRAPER_KEY }}
           WEB_URL: https://andysaulim.github.io/Daily-Korea-Digest
         run: |
-          python run.py
+          set -o pipefail
+          python run.py 2>&1 | tee /tmp/run.log
           echo "success=true" >> "$GITHUB_OUTPUT"
 
       # Post-email steps use continue-on-error so a Pages/README failure
@@ -152,7 +153,14 @@ jobs:
           from datetime import datetime
           from zoneinfo import ZoneInfo
           now = datetime.now(ZoneInfo('America/New_York')).strftime('%Y-%m-%d %I:%M %p ET')
-          body = f'The Korea Daily Brief pipeline failed at {now}.\n\nRun: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\n\nThe next fallback cron will retry automatically.'
+          tail = ''
+          try:
+              with open('/tmp/run.log', encoding='utf-8', errors='replace') as f:
+                  lines = f.read().splitlines()
+              tail = chr(10).join(lines[-60:])
+          except OSError:
+              tail = '(no run log captured — the job failed before python run.py started)'
+          body = f'The Korea Daily Brief pipeline failed at {now}.' + chr(10)*2 + 'Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}' + chr(10)*2 + 'The next fallback cron will retry automatically.' + chr(10)*2 + '--- last 60 lines of the run ---' + chr(10) + tail
           msg = MIMEText(body)
           msg['Subject'] = f'⚠ Korea Daily Brief FAILED — {now}'
           msg['From'] = os.environ['GMAIL_USER']

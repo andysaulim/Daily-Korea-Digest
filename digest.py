@@ -9,7 +9,27 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 import httpx
+
+# The Anthropic SDK moved from httpx to httpx2 at 1.0. A mid-stream disconnect
+# therefore raises an httpx2 class that `except httpx.RemoteProtocolError`
+# silently stops matching, which killed the inner stream retry. Catch the
+# transport classes from whichever library the installed SDK actually uses.
+_TRANSPORT_ERRORS: tuple = (httpx.RemoteProtocolError, httpx.ReadError,
+                            httpx.StreamError, httpx.TimeoutException)
+try:  # pragma: no cover - depends on the installed SDK major version
+    import httpx2 as _httpx2
+    _TRANSPORT_ERRORS += (_httpx2.RemoteProtocolError, _httpx2.ReadError,
+                          _httpx2.StreamError, _httpx2.TimeoutException)
+except ImportError:
+    pass
 import anthropic
+
+# anthropic.APIConnectionError covers transport failures the SDK wraps;
+# _TRANSPORT_ERRORS covers the raw classes that escape the wrapper mid-stream.
+_RETRYABLE_API_ERRORS: tuple = (anthropic.APIConnectionError,
+                                anthropic.APITimeoutError,
+                                anthropic.InternalServerError,
+                                anthropic.RateLimitError) + _TRANSPORT_ERRORS
 
 # ─────────────────────────────────────────────────────────────────────────────
 # SYSTEM PROMPT
@@ -823,7 +843,7 @@ def _stream_claude(client, messages: list, max_tokens: int = 32000,
                   f"({response.usage.input_tokens} in / {response.usage.output_tokens} out{cache_info}"
                   f" / ${call_cost:.3f})")
             return _robust_json_parse(raw_text)
-        except (httpx.RemoteProtocolError, httpx.ReadError, httpx.StreamError) as e:
+        except _RETRYABLE_API_ERRORS as e:
             if attempt < _retries - 1:
                 wait = 5 * (attempt + 1)
                 print(f"  ⚠  Stream interrupted ({e.__class__.__name__}), retrying in {wait}s...")
@@ -927,8 +947,7 @@ def generate_digest(payload: dict, db_context: str = "",
                       f"{overnight_count} overnight items")
             return digest
 
-        except (anthropic.APIError, anthropic.APIConnectionError,
-                httpx.RemoteProtocolError, httpx.StreamError) as e:
+        except (anthropic.APIError,) + _RETRYABLE_API_ERRORS as e:
             if attempt < MAX_ATTEMPTS - 1:
                 wait = 5 * (attempt + 1)
                 print(f"  ⚠  API error (retrying in {wait}s): {e}")
@@ -1012,8 +1031,7 @@ def regenerate_digest(payload: dict, previous_digest: dict,
         print(f"  ✅  Re-generated: ~{new_word_count} words, {top_count} top stories, "
               f"{overnight_count} overnight items")
         return digest
-    except (anthropic.APIError, anthropic.APIConnectionError, json.JSONDecodeError,
-            httpx.RemoteProtocolError, httpx.StreamError) as e:
+    except (anthropic.APIError, json.JSONDecodeError) + _RETRYABLE_API_ERRORS as e:
         print(f"  ⚠  Re-generation failed ({e}) — keeping previous digest")
         return previous_digest
 
