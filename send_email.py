@@ -139,6 +139,32 @@ def _html_to_plain_text(html: str) -> str:
     return text
 
 
+_ADDR_RE = re.compile(r"^[^@\s,;<>\"]+@[^@\s,;<>\"]+\.[A-Za-z]{2,}$")
+
+
+def _parse_recipients(raw: str) -> list:
+    """Split a recipient secret into clean addresses.
+
+    GitHub secrets are edited in a textarea, so a multi-recipient DIGEST_TO
+    often arrives newline-separated (or with a trailing newline). smtplib
+    rejects any RCPT TO containing a newline outright, which failed the send
+    after the digest had already been generated and paid for. Accept commas,
+    semicolons, and any whitespace as separators, strip angle brackets, and
+    drop anything that is not a plausible address.
+    """
+    out = []
+    for part in re.split(r"[,;\s]+", (raw or "").strip()):
+        addr = part.strip().strip("<>").strip()
+        if not addr:
+            continue
+        if not _ADDR_RE.match(addr):
+            print(f"  \u26a0  Skipping malformed recipient: {addr!r}")
+            continue
+        if addr not in out:
+            out.append(addr)
+    return out
+
+
 def send(html: str, re_line: Optional[str] = None, subject: Optional[str] = None,
          recipients: Optional[list] = None):
     """
@@ -146,7 +172,7 @@ def send(html: str, re_line: Optional[str] = None, subject: Optional[str] = None
     Required environment variables:
       GMAIL_USER      — Gmail address (used for SMTP auth)
       GMAIL_APP_PASS  — 16-char Gmail App Password
-      DIGEST_TO       — comma-separated recipient list
+      DIGEST_TO       — recipient list, separated by commas, semicolons, or newlines
     Optional:
       GMAIL_FROM      — sending alias (defaults to GMAIL_USER)
     """
@@ -154,11 +180,17 @@ def send(html: str, re_line: Optional[str] = None, subject: Optional[str] = None
     gmail_pass = os.environ.get("GMAIL_APP_PASS")
     if not gmail_user or not gmail_pass:
         raise RuntimeError("Missing GMAIL_USER or GMAIL_APP_PASS environment variables")
-    from_addr = os.environ.get("GMAIL_FROM", gmail_user)
+    gmail_user = gmail_user.strip()
+    gmail_pass = gmail_pass.strip()
+    from_addr = os.environ.get("GMAIL_FROM", gmail_user).strip()
     to_str = os.environ.get("DIGEST_TO", gmail_user)
 
     if recipients is None:
-        recipients = [r.strip() for r in to_str.split(",") if r.strip()]
+        recipients = _parse_recipients(to_str)
+    if not recipients:
+        raise RuntimeError(
+            "No valid recipients. DIGEST_TO parsed to an empty list — check the "
+            "secret for stray punctuation or a missing address.")
 
     if subject is None:
         from zoneinfo import ZoneInfo
