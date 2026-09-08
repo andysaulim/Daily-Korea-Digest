@@ -1195,9 +1195,17 @@ def render(digest: dict) -> str:
             except Exception:
                 pass
 
+        # Approval sparkline. Renders only once poll_history holds at least
+        # three surveys; a bare number says nothing about direction.
+        try:
+            from poll_history import sparkline_html as _spark
+            _spark_html = _spark(color=TAEGUK_BLUE)
+        except Exception:
+            _spark_html = ""
         sections.append(f"""
         <div {_SEC}>
           <a name="sentiment"></a>{_sec_label("Public Sentiment")}
+          {"<div style='margin:-2px 0 12px;'>" + _spark_html + "</div>" if _spark_html else ""}
           <table width="100%" cellpadding="0" cellspacing="0" border="0" class="sentiment-table">
             <tr>
               {_sentiment_cell("Presidential Approval", approval)}

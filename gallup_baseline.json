@@ -27,5 +27,17 @@
     "poll_date": "August 25-27, 2026"
   },
   "updated_at": "2026-09-05",
-  "updated_by": "manual restore of the 2026-09-04 record (auto-update regression)"
+  "updated_by": "manual restore of the 2026-09-04 record (auto-update regression)",
+  "history": [
+    {
+      "date": "2026-08-25",
+      "approval": 42.0,
+      "label": "Aug 25-27"
+    },
+    {
+      "date": "2026-09-04",
+      "approval": 40.0,
+      "label": "Sep 4"
+    }
+  ]
 }

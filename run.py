@@ -886,6 +886,13 @@ def _maybe_persist_sentiment_baseline(digest_data: dict) -> str | None:
         if isinstance(spot, dict) and spot.get("topic"):
             updated["spotlight"] = {"headline": spot.get("finding") or spot.get("topic"),
                                     "poll_date": label}
+        # Append to the approval series before writing, so the brief can show a
+        # trend alongside the number. No-op on a survey already recorded.
+        try:
+            import poll_history
+            poll_history.record(new_key, pres, label=label, baseline=updated)
+        except Exception as _e:
+            print(f"  ⚠  Poll history skipped (non-fatal): {_e}")
         gu.BASELINE_PATH.write_text(json.dumps(updated, ensure_ascii=False, indent=2) + "\n",
                                     encoding="utf-8")
         return f"{label}: approval {pres:g}%, DP {dp:g}%, PPP {ppp:g}%, ind {ind if ind is None else format(ind, 'g')}%"

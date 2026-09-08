@@ -240,6 +240,14 @@ def main() -> int:
     # Spotlight isn't reliably in short news text — carry forward; the daily
     # digest still picks up a fresh spotlight from that day's articles.
 
+    # Append to the approval series so the brief can show a trend, not just a
+    # number. No-op if this survey is already recorded; never fatal.
+    try:
+        import poll_history
+        poll_history.record(rec["sort_key"], pres, label=_lbl, baseline=updated)
+    except Exception as e:
+        print(f"  ⚠ Poll history skipped (non-fatal): {e}")
+
     BASELINE_PATH.write_text(
         json.dumps(updated, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"  ✅ Baseline updated -> {poll_name} ({label}): approval {pres:g}%, "
