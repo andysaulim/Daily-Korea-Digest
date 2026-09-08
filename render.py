@@ -62,7 +62,8 @@ def _esc(text) -> str:
 # percentages, dates in data displays. Human prose stays Georgia/Arial.
 TAEGUK_RED = "#CD2E3A"
 TAEGUK_BLUE = "#0047A0"
-NAVY = "#072B52"          # masthead / footer ground
+NAVY = "#1B2A4A"          # masthead / footer ground (shared across the four briefs)
+BAND = "#0052B4"          # nameplate band — Korea's identity colour (taeguk blue)
 NAVY_DATA = "#051F3D"     # market strip ground
 NAVY_PANEL = "#0A1E38"    # KCNA dark panel
 INK = "#1A222E"
@@ -182,6 +183,8 @@ def render(digest: dict) -> str:
     read_min = max(1, round(word_count / 250))
 
     web_url = digest.get("web_url", "")
+    _b = web_url[:-len("latest.html")] if web_url.endswith("latest.html") else ""
+    archive_url = (_b + "archive.html") if _b else web_url
     sections = []
 
     # ── 0. View in Browser bar (Read online · Print / PDF · Archive) ──────
@@ -194,6 +197,7 @@ def render(digest: dict) -> str:
             links.append(f'<a href="{_esc(base + "archive.html")}" style="{_a}">Archive</a>')
         sep = '&nbsp;&nbsp;&middot;&nbsp;&nbsp;'
         sections.append(f"""
+        <div style="background:#2E3644;padding:5px 32px;text-align:center;font-family:Arial,sans-serif;font-size:9.5px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:rgba(255,255,255,0.72);" class="sec">For Internal Use Only</div>
         <div style="background:#F0F0F0;padding:6px 32px;text-align:center;font-size:11px;color:#888;" class="sec">
           {sep.join(links)}
         </div>
@@ -202,15 +206,16 @@ def render(digest: dict) -> str:
     # ── 1. Header ────────────────────────────────────────────────────────
     sections.append(f"""
     <a name="top"></a>
-    {_TAEGUK_RULE}
-    <div bgcolor="{NAVY}" style="background-color:{NAVY};color:#fff;padding:22px 32px 18px;" class="sec">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:{BAND};"><tr>
+      <td style="padding:7px 32px 8px;font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:#fff;">CSIS Korea Chair</td>
+    </tr></table>
+    <div bgcolor="{NAVY}" style="background-color:{NAVY};color:#fff;padding:18px 32px 14px;" class="sec">
       <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
         <td style="vertical-align:top;">
-          <div style="font-size:11px;text-transform:uppercase;letter-spacing:3px;color:rgba(255,255,255,0.65);font-family:Arial,sans-serif;margin-bottom:7px;">CSIS Korea Chair</div>
-          <h1 style="margin:0;font-size:24px;font-weight:700;font-family:Georgia,'Times New Roman',serif;color:#fff;letter-spacing:0.3px;">
+          <h1 style="margin:0 0 4px 0;font-size:28px;font-weight:700;font-family:Georgia,'Times New Roman',serif;color:#fff;letter-spacing:0.3px;">
             Korea Daily Brief
           </h1>
-          <div style="margin-top:7px;font-size:14px;font-weight:400;color:rgba(255,255,255,0.88);letter-spacing:0.3px;font-family:Georgia,serif;">{_esc(date_str)}</div>
+          <div style="font-size:16px;font-weight:400;color:rgba(255,255,255,0.85);font-family:Georgia,serif;">{_esc(date_str)}</div>
         </td>
         <td style="vertical-align:top;text-align:right;">
           <div style="font-family:{MONO};font-size:11px;color:rgba(255,255,255,0.55);white-space:nowrap;">{gen_time}<br>{word_count:,} words &middot; {read_min} min read</div>
@@ -229,57 +234,39 @@ def render(digest: dict) -> str:
         brent = markets.get("brent") or {}
         krw = markets.get("usd_krw") or {}
         bok_rate = markets.get("bok_rate") or {}
-        korea_cds = markets.get("korea_cds") or {}
-        gdp = markets.get("gdp_estimate") or {}
+        korea_cds = {}
+        gdp = {}
         # Top row: KOSPI, Brent, USD/KRW
         sections.append(f"""
         <a name="markets"></a>
         <table class="mkt-table" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:{NAVY_DATA};color:#fff;border-bottom:1px solid rgba(255,255,255,0.10);">
           <tr>
-            <td width="33%" align="center" style="padding:11px 8px 13px;">
-              <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#7B90AC;">KOSPI</div>
+            <td width="25%" align="center" style="padding:11px 6px 13px;">
+              <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#8FA0B5;">KOSPI</div>
               <div style="font-family:{MONO};font-size:16px;font-weight:700;margin-top:3px;">{_esc(str(kospi.get("value", "—")))}</div>
               <div style="font-family:{MONO};font-size:11px;margin-top:2px;">{_arrow(kospi.get("change_pct", 0))}</div>
-              {"<div style='font-family:" + MONO + ";font-size:10px;color:#7B90AC;margin-top:2px;'>as of " + _esc(kospi.get("as_of", "")) + "</div>" if kospi.get("as_of") else ""}
             </td>
-            <td width="34%" align="center" style="padding:11px 8px 13px;border-left:1px solid rgba(255,255,255,0.10);border-right:1px solid rgba(255,255,255,0.10);">
-              <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#7B90AC;">Brent Crude</div>
-              <div style="font-family:{MONO};font-size:16px;font-weight:700;margin-top:3px;">${_esc(str(brent.get("value", "—")))}</div>
-              <div style="font-family:{MONO};font-size:11px;margin-top:2px;">{_arrow(brent.get("change_pct", 0))}</div>
-              {"<div style='font-family:" + MONO + ";font-size:10px;color:#7B90AC;margin-top:2px;'>as of " + _esc(brent.get("as_of", "")) + "</div>" if brent.get("as_of") else ""}
-            </td>
-            <td width="33%" align="center" style="padding:11px 8px 13px;">
-              <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#7B90AC;">USD/KRW</div>
+            <td width="25%" align="center" style="padding:11px 6px 13px;border-left:1px solid rgba(255,255,255,0.10);">
+              <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#8FA0B5;">USD/KRW</div>
               <div style="font-family:{MONO};font-size:16px;font-weight:700;margin-top:3px;">{_esc(str(krw.get("value", "—")))}</div>
               <div style="font-family:{MONO};font-size:11px;margin-top:2px;">{_arrow(krw.get("change_pct", 0))}</div>
-              {"<div style='font-family:" + MONO + ";font-size:10px;color:#7B90AC;margin-top:2px;'>as of " + _esc(krw.get("as_of", "")) + "</div>" if krw.get("as_of") else ""}
             </td>
-          </tr>
-        </table>
-        <table class="mkt-table" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#04182F;color:#fff;border-bottom:1px solid rgba(255,255,255,0.08);">
-          <tr>
-            <td width="33%" align="center" style="padding:9px 8px 11px;">
-              <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#7B90AC;">BOK Rate</div>
-              <div style="font-family:{MONO};font-size:14px;font-weight:700;color:#D5DDE8;margin-top:2px;">{_esc(str(bok_rate.get("value", "—")))}</div>
-              <div style="font-size:10px;color:#7B90AC;">{_esc(str(bok_rate.get("last_change", "")))}</div>
+            <td width="25%" align="center" style="padding:11px 6px 13px;border-left:1px solid rgba(255,255,255,0.10);">
+              <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#8FA0B5;">Brent Crude</div>
+              <div style="font-family:{MONO};font-size:16px;font-weight:700;margin-top:3px;">${_esc(str(brent.get("value", "—")))}</div>
+              <div style="font-family:{MONO};font-size:11px;margin-top:2px;">{_arrow(brent.get("change_pct", 0))}</div>
             </td>
-            <td width="34%" align="center" style="padding:9px 8px 11px;border-left:1px solid rgba(255,255,255,0.10);border-right:1px solid rgba(255,255,255,0.10);">
-              <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#7B90AC;">Korea 5Y CDS</div>
-              <div style="font-family:{MONO};font-size:14px;font-weight:700;color:#D5DDE8;margin-top:2px;">{_esc(str(korea_cds.get("value", "—")))} bps</div>
-              <div style="font-family:{MONO};font-size:10px;">{_cds_arrow(korea_cds.get("change_bps", 0))}</div>
-              {"<div style='font-family:" + MONO + ";font-size:10px;color:#7B90AC;margin-top:2px;'>as of " + _esc(korea_cds.get("as_of", "")) + "</div>" if korea_cds.get("as_of") else ""}
-            </td>
-            <td width="33%" align="center" style="padding:9px 8px 11px;">
-              <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#7B90AC;">GDP Est.</div>
-              <div style="font-family:{MONO};font-size:14px;font-weight:700;color:#D5DDE8;margin-top:2px;">{_esc(str(gdp.get("value", "—")))}</div>
-              <div style="font-size:10px;color:#7B90AC;">{_esc(str(gdp.get("source", "BOK")))}{" · " + _esc(str(gdp.get("period", ""))) if gdp.get("period") else ""}</div>
+            <td width="25%" align="center" style="padding:11px 6px 13px;border-left:1px solid rgba(255,255,255,0.10);">
+              <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#8FA0B5;">BOK Rate</div>
+              <div style="font-family:{MONO};font-size:16px;font-weight:700;margin-top:3px;">{_esc(str(bok_rate.get("value", "—")))}</div>
+              <div style="font-family:{MONO};font-size:11px;margin-top:2px;"><span style="color:#8FA0B5;">{_esc(str(bok_rate.get("last_change", "")))}</span></div>
             </td>
           </tr>
         </table>
         """)
 
         # Third row: BOK ECOS indicators (only if data available)
-        bok_ecos = markets.get("bok_ecos") or {}
+        bok_ecos = {}   # second/third market rows retired — 4 tiles, one row
         if bok_ecos:
             cpi_yoy = _esc(str(bok_ecos.get("cpi_yoy", "—")))
             unemployment = _esc(str(bok_ecos.get("unemployment", "—")))
@@ -1484,16 +1471,36 @@ def render(digest: dict) -> str:
           <div style="font-size:12px;color:rgba(255,255,255,0.85);line-height:1.5;font-family:Georgia,serif;">{otd_event}</div>
           <div style="font-size:11px;color:rgba(255,255,255,0.6);font-style:italic;margin-top:4px;line-height:1.4;">{otd_rel}</div>
         </div>"""
+    otd_block = ""
+    if on_this_day:
+        otd_block = f"""
+      <tr><td style="padding:20px 32px 8px;">
+        <div style="font-family:Arial,sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:{BLUE_ON_NAVY};padding-bottom:7px;margin-bottom:11px;border-bottom:1px solid rgba(255,255,255,0.18);">On This Day</div>
+        <div style="font-family:Georgia,serif;font-size:14px;line-height:1.55;color:rgba(255,255,255,0.88);"><strong style="color:{BLUE_ON_NAVY};">{otd_date}</strong> &nbsp; {otd_event}</div>
+        {"<div style='font-family:Georgia,serif;font-size:12.5px;color:rgba(255,255,255,0.6);font-style:italic;margin-top:5px;'>" + otd_rel + "</div>" if otd_rel else ""}
+      </td></tr>"""
     sections.append(f"""
-    {_TAEGUK_RULE}
-    <div style="padding:20px 32px;background:{NAVY};text-align:center;" class="sec footer">
-      {otd_footer}
-      <div style="font-size:10px;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,0.45);font-family:Arial,sans-serif;line-height:2;">
-        CSIS Korea Chair &nbsp;&middot;&nbsp; Korea Daily Brief
-      </div>
-      <div style="font-family:{MONO};font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;">generated {gen_time}</div>
-      <div style="margin-top:8px;"><a href="#top" style="font-size:10px;color:rgba(255,255,255,0.4);text-decoration:none;letter-spacing:1px;">&#8593; Back to top</a></div>
-    </div>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:{NAVY};border-top:3px solid {BAND};" class="sec footer">
+      {otd_block}
+      <tr><td style="padding:16px 32px 6px;text-align:center;">
+        <div style="font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:{BLUE_ON_NAVY};">CSIS Korea Chair</div>
+        <div style="font-family:Georgia,serif;font-size:12.5px;color:rgba(255,255,255,0.62);margin-top:5px;">Center for Strategic and International Studies &middot; Washington, DC</div>
+        <div style="margin-top:9px;font-family:Arial,sans-serif;font-size:11px;">
+          <a href="{_esc(web_url)}" style="color:{BLUE_ON_NAVY};text-decoration:none;">Read online</a> &nbsp;&middot;&nbsp;
+          <a href="{_esc(archive_url)}" style="color:{BLUE_ON_NAVY};text-decoration:none;">Archive</a>
+        </div>
+      </td></tr>
+      <tr><td style="padding:12px 32px 10px;">
+        <div style="border-top:1px solid rgba(255,255,255,0.14);padding-top:11px;font-family:Arial,sans-serif;font-size:10.5px;line-height:1.55;color:rgba(255,255,255,0.52);">
+          This newsletter is automatically generated, so it may contain errors. Please check all information and sources before citing.
+          To report errors or other issues, please contact Andy Lim at <a href="mailto:alim@csis.org" style="color:rgba(255,255,255,0.78);">alim@csis.org</a>.
+        </div>
+      </td></tr>
+      <tr><td style="padding:0 32px 18px;text-align:center;">
+        <div style="font-family:{MONO};font-size:10px;color:rgba(255,255,255,0.35);margin-bottom:7px;">generated {gen_time}</div>
+        <a href="#top" style="font-family:Arial,sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:{BLUE_ON_NAVY};text-decoration:none;">&#8593; Back to top</a>
+      </td></tr>
+    </table>
     """)
 
     body = "\n".join(sections)
