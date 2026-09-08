@@ -385,6 +385,23 @@ def _entry_to_article(entry, source: str, lang: str = "EN", extra: dict | None =
             pub_date = datetime(*parsed[:6], tzinfo=timezone.utc).isoformat()
             break
 
+    # Image the feed advertised, if any. Kept as a plain URL — whether it is
+    # usable is a rights question decided later, in photo_of_day.
+    image_url = ""
+    for _mkey in ("media_content", "media_thumbnail"):
+        _m = getattr(entry, _mkey, None) or entry.get(_mkey) if hasattr(entry, "get") else None
+        if isinstance(_m, list) and _m:
+            _u = _m[0].get("url") if isinstance(_m[0], dict) else _m[0]
+            if isinstance(_u, str) and _u.startswith("http"):
+                image_url = _u
+                break
+    if not image_url:
+        for _enc in (getattr(entry, "enclosures", None) or []):
+            _u = _enc.get("href") or _enc.get("url") if isinstance(_enc, dict) else None
+            if isinstance(_u, str) and _u.startswith("http") and "image" in str(_enc.get("type", "")):
+                image_url = _u
+                break
+
     # Extract RSS category tags (feedparser stores them in entry.tags)
     tags = []
     for tag in getattr(entry, "tags", []) or []:
@@ -396,6 +413,7 @@ def _entry_to_article(entry, source: str, lang: str = "EN", extra: dict | None =
         "title": title,
         "url": link,
         "summary": summary[:800],
+        "image_url": image_url,
         "source": source,
         "lang": lang,
         "pub_date": pub_date,

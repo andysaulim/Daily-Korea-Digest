@@ -1273,6 +1273,26 @@ def main():
     if web_base:
         digest_data["web_url"] = web_base.rstrip("/") + "/latest.html"
 
+    # Photo of the Day. Chosen from what the feeds advertised, restricted to
+    # sources whose imagery we can defensibly reproduce (see photo_of_day),
+    # and copied next to the archive so the email does not hot-link a
+    # publisher. Non-fatal: no photo simply means no section.
+    try:
+        import photo_of_day
+        _all_articles = []
+        for _bucket in ("tier1", "tier2", "tier3", "tier4", "satellite_imagery_articles"):
+            _all_articles.extend(payload.get(_bucket) or [])
+        _photo = photo_of_day.pick(_all_articles)
+        if _photo:
+            _photo = photo_of_day.fetch_to_public(
+                _photo, Path("public"),
+                datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d"))
+            digest_data["photo_of_day"] = _photo
+            print(f"  🖼  Photo of the Day: {_photo.get('credit')} "
+                  f"({'hosted' if _photo.get('local_file') else 'caption only'})")
+    except Exception as _e:
+        print(f"  ⚠  Photo of the Day skipped (non-fatal): {_e}")
+
     # Issue number, so a reader can cite the brief in a footnote. Derived from
     # the archive manifest rather than a counter, so it stays correct across
     # re-runs: a re-run of an issue already in the manifest reuses its number

@@ -411,24 +411,32 @@ def render(digest: dict) -> str:
         </div>
         """)
 
-    # ── 6b. Chart of the Day. Drawn only when a series with real depth is
-    #      available; chart_of_day.pick() returns None on a day with nothing
-    #      worth plotting and the section simply does not appear. ──────────
-    try:
-        import chart_of_day
-        from shared.chart import column_chart
-        _picked = chart_of_day.pick()
-    except Exception:
-        _picked = None
-    if _picked:
-        _c_title, _c_points, _c_note = _picked
-        _chart_html = column_chart(_c_points, accent=TAEGUK_BLUE,
-                                   title=_c_title, note=_c_note)
-        if _chart_html:
-            sections.append(f"""
+    # ── 6b. Photo of the Day. The caption and credit carry the information;
+    #      the image is an enhancement. Most mail clients block remote images
+    #      by default, so this reads correctly with the picture suppressed. ─
+    photo = digest.get("photo_of_day") or {}
+    if photo.get("caption"):
+        _p_src = ""
+        if photo.get("local_file") and web_url:
+            _base = web_url[:-len("latest.html")] if web_url.endswith("latest.html") else ""
+            if _base:
+                _p_src = _base + photo["local_file"]
+        _credit = _esc(photo.get("credit", ""))
+        _cap = _esc(photo.get("caption", ""))
+        _link = photo.get("source_url", "")
+        _img_html = ""
+        if _p_src:
+            _img_html = (f'<img src="{_esc(_p_src)}" width="616" alt="{_cap}" '
+                         f'style="display:block;width:100%;max-width:616px;height:auto;'
+                         f'border:0;outline:none;text-decoration:none;" />')
+        _cap_html = (f'<a href="{_esc(_link)}" style="color:{INK};text-decoration:none;">{_cap}</a>'
+                     if _link else _cap)
+        sections.append(f"""
         <div {_SEC}>
-          <a name="chart"></a>{_sec_label("Chart of the Day")}
-          {_chart_html}
+          <a name="photo"></a>{_sec_label("Photo of the Day")}
+          {_img_html}
+          <div style="margin-top:{'9' if _img_html else '0'}px;font-family:Georgia,serif;font-size:14px;line-height:1.55;color:{INK};">{_cap_html}</div>
+          <div style="margin-top:5px;font-family:Arial,sans-serif;font-size:10.5px;text-transform:uppercase;letter-spacing:1.2px;color:#9AA3AE;">{_credit}</div>
         </div>
         """)
 
@@ -1602,7 +1610,7 @@ def render(digest: dict) -> str:
     # 1,600-2,000 word target the brief is too long to scan end to end and the
     # only link was "back to top". A quiet day that drops sections simply gets
     # fewer links, and fewer than four suppresses the row entirely.
-    _NAV = [("Top Stories", "overnight"), ("Chart", "chart"), ("Pyongyang", "kcna"),
+    _NAV = [("Top Stories", "overnight"), ("Photo", "photo"), ("Pyongyang", "kcna"),
             ("Trade", "trade"), ("Markets", "business"),
             ("Polling", "sentiment"), ("Upcoming", "upcoming"),
             ("Analysis", "analysis"), ("Satellite", "satellite")]
