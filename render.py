@@ -194,12 +194,16 @@ def render(digest: dict) -> str:
     # ── 0. View in Browser bar (Read online · Print / PDF · Archive) ──────
     if web_url:
         base = web_url[:-len("latest.html")] if web_url.endswith("latest.html") else ""
-        _a = ('color:#2980B9;text-decoration:none;white-space:nowrap;')
-        links = [f'<a href="{_esc(web_url)}" style="{_a}">Read online &#8594;</a>']
+        _a = ('display:inline-block;padding:4px 12px;margin:0 2px;'
+              'font-family:Arial,sans-serif;font-size:11px;font-weight:700;'
+              'letter-spacing:0.6px;color:#2C3E50;background:#FFFFFF;'
+              'border:1px solid #D5DAE1;border-radius:3px;'
+              'text-decoration:none;white-space:nowrap;')
+        links = [f'<a href="{_esc(web_url)}" style="{_a}">Read online</a>']
         if base:
-            links.append(f'<a href="{_esc(base + "latest.pdf")}" style="{_a}">Print / PDF &#8595;</a>')
-            links.append(f'<a href="{_esc(base + "archive.html")}" style="{_a}">Archive</a>')
-        sep = '&nbsp;&nbsp;&middot;&nbsp;&nbsp;'
+            links.append(f'<a href="{_esc(base + "latest.pdf")}" style="{_a}">Download PDF</a>')
+            links.append(f'<a href="{_esc(base + "archive.html")}" style="{_a}">Past issues</a>')
+        sep = ''
         sections.append(f"""
         <div style="background:#2E3644;padding:5px 32px;text-align:center;font-family:Arial,sans-serif;font-size:9.5px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:rgba(255,255,255,0.72);" class="sec">For Internal Use Only</div>
         <div style="background:#F0F0F0;padding:6px 32px;text-align:center;font-size:11px;color:#888;" class="sec">
@@ -716,7 +720,8 @@ def render(digest: dict) -> str:
     state_of_play = _esc(us_korea.get("state_of_play", "")) if isinstance(us_korea, dict) else ""
 
     if deal_list or trade_policy or investment_pkg or tariff_tracker or investment_ledger:
-        pillars = []
+        pillars = []        # shown in the daily brief
+        standing = []       # reference — published to the standing page instead
 
         sop_html = ""
         if state_of_play:
@@ -881,7 +886,7 @@ def render(digest: dict) -> str:
                     f'letter-spacing:1px;color:{TAEGUK_BLUE};font-weight:700;border-bottom:1px solid #DBE0E6;">Committed Investment Deals</div>'
                     f'<table width="100%" cellpadding="0" cellspacing="0" border="0" class="deal-breakdown">{deal_rows}</table>')
 
-            pillars.append(f'<div style="margin-top:18px;">{_pillar_h("Investment &middot; " + pledged + " pledge", accent=TAEGUK_BLUE)}{bar}{deal_box}</div>')
+            standing.append(f'<div style="margin-top:18px;">{_pillar_h("Investment &middot; " + pledged + " pledge", accent=TAEGUK_BLUE)}{bar}{deal_box}</div>')
 
         # ── Pillar 2b: Bilateral Investment Ledger ─────────────────────────
         # Corporate investment flows BOTH directions, tracked separately from
@@ -930,7 +935,7 @@ def render(digest: dict) -> str:
             _led_note = ('<div style="font-size:11px;color:#8A94A6;line-height:1.5;margin-top:4px;">'
                          'Corporate investment flows — separate from the $350B pledge. '
                          'MOU/LOI entries are non-binding; figures as reported, not summed.</div>')
-            pillars.append(f'<div style="margin-top:18px;">'
+            standing.append(f'<div style="margin-top:18px;">'
                            f'{_pillar_h("Bilateral Investment Ledger", accent=NAVY)}{blocks}{_led_note}</div>')
 
         # ── Pillar 3: New This Week (genuinely new deals only) ─────────────
@@ -989,16 +994,33 @@ def render(digest: dict) -> str:
                          + (f'<div style="font-size:10.5px;text-transform:uppercase;letter-spacing:0.5px;color:#8A94A6;margin-top:2px;">{meta}</div>' if meta else "")
                          + '</td></tr>')
         if pol_rows:
-            pillars.append(f'<div style="margin-top:18px;">{_pillar_h("Trade Policy Watch", accent="#5A6472")}'
+            standing.append(f'<div style="margin-top:18px;">{_pillar_h("Trade Policy Watch", accent="#5A6472")}'
                            f'<div style="font-size:11px;color:#8A94A6;line-height:1.5;margin:-4px 0 8px;">'
                            f'Standing US non-tariff measures affecting Korea &mdash; ongoing status, not new this week.</div>'
                            f'<table width="100%" cellpadding="0" cellspacing="0" border="0">{pol_rows}</table></div>')
 
+        # The pledge tracker, bilateral ledger and standing policy watch move
+        # at monthly cadence at best. Carrying them daily made this the longest
+        # section in the brief by double and buried the tariff status, which is
+        # the part that actually changes. They are published to a standing page
+        # instead, linked from here and rebuilt on every run.
+        _standing_link = ""
+        if standing and web_url:
+            _b = web_url[:-len("latest.html")] if web_url.endswith("latest.html") else ""
+            if _b:
+                _standing_link = (
+                    f'<div style="margin-top:14px;padding-top:11px;border-top:1px solid #E4E7EB;'
+                    f'font-family:Arial,sans-serif;font-size:11.5px;color:#6B7280;">'
+                    f'Investment ledger, pledge tracker and standing policy measures: '
+                    f'<a href="{_esc(_b + "trade.html")}" style="color:{TAEGUK_BLUE};'
+                    f'text-decoration:none;">full trade reference &#8594;</a></div>')
+        digest["_trade_standing_html"] = "".join(standing)
         sections.append(f"""
         <div {_SEC}>
           <a name="trade"></a>{_sec_label("US-Korea Trade &amp; Investment")}
           {sop_html}
           {"".join(pillars)}
+          {_standing_link}
         </div>
         """)
 

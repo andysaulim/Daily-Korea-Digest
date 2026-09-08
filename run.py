@@ -1288,6 +1288,20 @@ def main():
 
     html = render(digest_data)
 
+    # Standing trade reference page. render() stashes the blocks it moved out
+    # of the daily brief; this publishes them alongside the archive so the
+    # link in the brief always resolves to a current page.
+    try:
+        import trade_page
+        _wb = ""
+        if digest_data.get("web_url", "").endswith("latest.html"):
+            _wb = digest_data["web_url"][:-len("latest.html")]
+        trade_page.write(digest_data.get("_trade_standing_html", ""),
+                         Path("public"), web_base=_wb)
+    except Exception as _e:
+        print(f"  ⚠  Trade reference page skipped (non-fatal): {_e}")
+
+
     date_slug = _date_slug
     out_path  = Path(f"digest_{date_slug}.html")
     out_path.write_text(html, encoding="utf-8")
