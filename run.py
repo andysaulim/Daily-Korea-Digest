@@ -405,15 +405,15 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
     if not re_line or len(str(re_line).strip()) < 10:
         warnings.append("RE: LINE CRITICAL: missing or too short")
 
-    # ── Word count check (hard minimum 850, target 1200-1400) ──────────
-    # Hard floor lowered from 1000: legitimate slow-news-day digests were
-    # landing at ~900-980 words and blocking sending. 850 catches genuinely
-    # truncated outputs without false-positive on slim days.
+    # ── Word count check (hard minimum 1,100, target 1,600-2,000) ──────
+    # The critical floor stays well below target so a genuinely slow news day
+    # still sends; it exists to catch truncated output, not thin days. The
+    # warning band is what pulls the model toward the 1,600-word target.
     word_count = _count_digest_words(digest)
-    if word_count < 850:
-        warnings.append(f"WORD COUNT CRITICAL: ~{word_count} words (HARD MINIMUM 850 — newsletter is too short)")
-    elif word_count < 1200:
-        warnings.append(f"WORD COUNT: ~{word_count} words (target 1200-1400 for 5-min read)")
+    if word_count < 1100:
+        warnings.append(f"WORD COUNT CRITICAL: ~{word_count} words (HARD MINIMUM 1100 — newsletter is too short)")
+    elif word_count < 1600:
+        warnings.append(f"WORD COUNT: ~{word_count} words (target 1600-2000 for a 7-min read)")
 
     # ── KCNA delta should exist but is non-blocking ────────────────────────
     kcna = digest.get("kcna_delta")

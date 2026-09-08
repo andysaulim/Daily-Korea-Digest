@@ -551,7 +551,7 @@ TIER 4: KCNA / RODONG SINMUN (last 48h)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 DIGEST SYNTHESIS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-TARGET LENGTH — HARD MINIMUM 1,000 WORDS (5-minute read): The newsletter MUST contain at least 1,000 words of readable text (excluding HTML/metadata). Aim for 1,400-1,600 words (target ~1,500) — post-processing removes duplicate URLs and excess same-source items, which typically strips 200-400 words. Write substantive body text for each story — but keep each story TIGHT. Each top_stories item should have 2-3 sentences MAX (60-80 words) of body text — no more. Each overnight_items item should have 2-3 sentences (50-70 words). Each business_economy/northeast_asia/also_today item should have 1-2 sentences (40-60 words). Reach the word count target by covering MORE stories, not by making individual stories longer. If your draft is under 1,000 words, add more items to overnight_items or also_today rather than inflating story bodies.
+TARGET LENGTH — HARD MINIMUM 1,600 WORDS (7-minute read): The newsletter MUST contain at least 1,600 words of readable text (excluding HTML/metadata). Aim for 1,800-2,000 words (target ~1,900) — post-processing removes duplicate URLs and excess same-source items, which typically strips 200-400 words. Write substantive body text for each story — but keep each story TIGHT. Each top_stories item should have 2-3 sentences MAX (60-80 words) of body text — no more. Each overnight_items item should have 2-3 sentences (50-70 words). Each business_economy/northeast_asia/also_today item should have 1-2 sentences (40-60 words). Reach the word count target by covering MORE stories, not by making individual stories longer. If your draft is under 1,600 words, add more items to overnight_items or also_today rather than inflating story bodies.
 Return a digest object with:
 - digest_date: "{date_str}"
 - re_line: one-line RE: summary (max 120 chars, key themes separated by ·)
@@ -674,8 +674,8 @@ def _check_content_minimums(digest: dict) -> list[str]:
     """Check hard content minimums. Returns list of failures (empty = pass)."""
     failures = []
     word_count = _count_digest_words(digest)
-    if word_count < 1000:
-        failures.append(f"WORD COUNT: {word_count} words (hard minimum 1000)")
+    if word_count < 1600:
+        failures.append(f"WORD COUNT: {word_count} words (hard minimum 1600)")
     top = len(digest.get("top_stories") or [])
     if top < 3:
         failures.append(f"TOP STORIES: {top} (minimum 3)")
@@ -897,7 +897,7 @@ def generate_digest(payload: dict, db_context: str = "",
                     + json.dumps(digest, ensure_ascii=False)[:8000]
                     + "\n\nRevise and return a COMPLETE updated digest JSON that fixes ALL failures above. "
                     "Specifically:\n"
-                    "- WORD COUNT: The digest MUST reach at least 1000 words across all text fields. "
+                    "- WORD COUNT: The digest MUST reach at least 1600 words across all text fields. "
                     "Each top_stories body must be 60-80 words (2-3 dense sentences). "
                     "Each overnight_items body_text must be 50-70 words. "
                     "Each business_economy/northeast_asia/also_today item must be 40-60 words. "
