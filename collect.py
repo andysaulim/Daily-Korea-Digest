@@ -505,6 +505,83 @@ def _fetch_feeds_parallel(feed_dict: dict, is_tiered: bool = False) -> dict:
 # TIER COLLECTORS
 # ─────────────────────────────────────────────────────────────────────────────
 
+# Korean-language feeds arrive through Google News, whose RSS carries a title
+# and often nothing else — so the richest sources in the brief were reaching
+# the model as headlines alone. This fetches the article body for a bounded
+# number of them. Bounded deliberately: full-text fetching is the slowest and
+# most failure-prone thing the collector does, so it runs last, in parallel,
+# with a hard per-request timeout, and any failure leaves the article exactly
+# as it was.
+_FULLTEXT_MAX_ARTICLES = 24
+_FULLTEXT_TIMEOUT = 6.0
+_FULLTEXT_CHARS = 2200
+_SCRIPT_RE = re.compile(r"<(script|style|noscript)[^>]*>.*?</\1>", re.S | re.I)
+_TAG_RE = re.compile(r"<[^>]+>")
+
+
+def _extract_body(html: str) -> str:
+    """Pull readable text out of an article page.
+
+    No dependency on a readability library: strip scripts and tags, collapse
+    whitespace, then keep the longest run of prose. Crude, but it only has to
+    beat a bare headline, and a bad extraction is discarded by the caller.
+    """
+    if not html:
+        return ""
+    text = _SCRIPT_RE.sub(" ", html)
+    text = _TAG_RE.sub(" ", text)
+    text = re.sub(r"&nbsp;?", " ", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
+
+
+def _fetch_fulltext(article: dict) -> dict:
+    """Best-effort body fetch for one article. Never raises."""
+    url = article.get("url") or ""
+    if not url.startswith("http") or "news.google.com" in url:
+        return article
+    try:
+        resp = requests.get(url, timeout=_FULLTEXT_TIMEOUT, headers={
+            "User-Agent": "Mozilla/5.0 (compatible; CSIS-Korea-Digest/1.0)"})
+        if resp.status_code != 200:
+            return article
+        resp.encoding = resp.apparent_encoding or resp.encoding
+        body = _extract_body(resp.text)
+    except Exception:
+        return article
+    # Only replace the summary when the fetch clearly beat it. A short
+    # extraction usually means a paywall or consent wall, not an article.
+    if len(body) > max(400, len(article.get("summary") or "") + 200):
+        article = dict(article)
+        article["summary"] = body[:_FULLTEXT_CHARS]
+        article["fulltext"] = True
+    return article
+
+
+def _add_fulltext(articles: list) -> list:
+    """Fetch bodies for the newest Korean-language articles, in parallel."""
+    targets = [a for a in articles if a.get("lang") == "KO"][:_FULLTEXT_MAX_ARTICLES]
+    if not targets:
+        return articles
+    by_url = {}
+    try:
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            futures = {pool.submit(_fetch_fulltext, a): a.get("url") for a in targets}
+            for fut in as_completed(futures, timeout=_FULLTEXT_TIMEOUT * 4):
+                try:
+                    got = fut.result()
+                    if got.get("fulltext"):
+                        by_url[got.get("url")] = got
+                except Exception:
+                    continue
+    except Exception:
+        pass
+    if by_url:
+        articles = [by_url.get(a.get("url"), a) for a in articles]
+        print(f"    📄  Full text fetched for {len(by_url)}/{len(targets)} Korean-language articles")
+    return articles
+
+
 def _collect_tier1() -> list:
     articles = []
     results = _fetch_feeds_parallel(TIER1_FEEDS)
@@ -524,7 +601,7 @@ def _collect_tier1() -> list:
             article = _entry_to_article(entry, source, lang=lang)
             article = _flag_journalist(article)
             articles.append(article)
-    return _dedup(articles)
+    return _add_fulltext(_dedup(articles))
 
 
 def _collect_tier2() -> list:

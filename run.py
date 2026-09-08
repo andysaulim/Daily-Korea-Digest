@@ -1256,9 +1256,22 @@ def main():
     if web_base:
         digest_data["web_url"] = web_base.rstrip("/") + "/latest.html"
 
+    # Issue number, so a reader can cite the brief in a footnote. Derived from
+    # the archive manifest rather than a counter, so it stays correct across
+    # re-runs: a re-run of an issue already in the manifest reuses its number
+    # instead of advancing past it.
+    _date_slug = datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d")
+    try:
+        _entries = json.loads((Path("public") / "archive.json").read_text(encoding="utf-8"))
+        _dates = sorted({e.get("date") for e in _entries if e.get("date")})
+        digest_data["issue_no"] = (_dates.index(_date_slug) + 1
+                                   if _date_slug in _dates else len(_dates) + 1)
+    except (OSError, json.JSONDecodeError, ValueError, TypeError):
+        pass
+
     html = render(digest_data)
 
-    date_slug = datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d")
+    date_slug = _date_slug
     out_path  = Path(f"digest_{date_slug}.html")
     out_path.write_text(html, encoding="utf-8")
     print(f"\n📄  HTML rendered: {out_path} ({len(html):,} bytes)")

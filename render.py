@@ -180,6 +180,10 @@ def render(digest: dict) -> str:
     gen_time = now.strftime("%-I:%M %p ET")
     re_line = _esc(digest.get("re_line", ""))
     word_count = _estimate_word_count(digest)
+    # Issue number, when run.py supplied one, so the brief is citable.
+    _issue_no = digest.get("issue_no")
+    _issue_meta = (f'<br>No. {int(_issue_no)}'
+                   if isinstance(_issue_no, (int, float)) and _issue_no > 0 else "")
     read_min = max(1, round(word_count / 250))
 
     web_url = digest.get("web_url", "")
@@ -218,7 +222,7 @@ def render(digest: dict) -> str:
           <div style="font-size:16px;font-weight:400;color:rgba(255,255,255,0.85);font-family:Georgia,serif;">{_esc(date_str)}</div>
         </td>
         <td style="vertical-align:top;text-align:right;">
-          <div style="font-family:{MONO};font-size:11px;color:rgba(255,255,255,0.55);white-space:nowrap;">{gen_time}<br>{word_count:,} words &middot; {read_min} min read</div>
+          <div style="font-family:{MONO};font-size:11px;color:rgba(255,255,255,0.55);white-space:nowrap;">{gen_time}<br>{word_count:,} words &middot; {read_min} min read{_issue_meta}</div>
         </td>
       </tr></table>
       {"<div style='margin-top:14px;padding-top:12px;border-top:1px solid rgba(205,46,58,0.45);font-size:13px;color:rgba(255,255,255,0.92);font-family:Georgia,serif;line-height:1.55;'><strong style='color:" + RED_ON_NAVY + ";font-size:11px;letter-spacing:1.5px;font-family:Arial,sans-serif;'>RE:</strong>&nbsp; " + re_line + "</div>" if re_line else ""}
