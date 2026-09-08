@@ -81,6 +81,10 @@ TIER1_FEEDS = {
     "한겨레":              _gnews("site:hani.co.kr+-english"),
     "동아일보":            _gnews("site:donga.com+-en"),
     "MBN":                _gnews("Korea+site:mbn.co.kr"),
+    "중앙일보":            _gnews("site:joongang.co.kr"),
+    "한국일보":            _gnews("site:hankookilbo.com"),
+    "뉴시스":              _gnews("site:newsis.com"),
+    "서울신문":            _gnews("site:seoul.co.kr"),
     "경향신문":            _gnews("site:khan.co.kr"),
     "뉴스1":              _gnews("site:news1.kr"),
     "연합뉴스":            _gnews("site:yna.co.kr+-en"),
@@ -107,6 +111,7 @@ TIER1_FEEDS = {
     "BBC Korea":          _gnews("Korea+site:bbc.com"),
     "CNN Korea":          _gnews("Korea+site:cnn.com"),
     "CNBC Korea":         _gnews("Korea+site:cnbc.com"),
+    "Economist Korea":    _gnews("Korea+site:economist.com"),
     "Guardian Korea":     _gnews("Korea+site:theguardian.com"),
     "Al Jazeera Korea":   _gnews("Korea+site:aljazeera.com"),
     # ── Regional Asia ─────────────────────────────────────────────────────
@@ -144,8 +149,27 @@ TIER1_FEEDS = {
     # SK file there before they announce, so this is corporate news at source
     # rather than through the business dailies.
     "DART disclosures":   _gnews("%EC%A0%84%EC%9E%90%EA%B3%B5%EC%8B%9C+OR+site:dart.fss.or.kr"),
+    # korea.kr (정책브리핑) is the whole-of-government aggregator: every
+    # ministry's press release lands there, same day, in one native feed.
+    # Its absence was why eleven ROK bodies had to be scraped through Google.
+    "ROK Policy Briefing": "https://www.korea.kr/rss/policy.xml",
+    "Korea.net":          _gnews("site:korea.net"),
+    # The Joint Chiefs are the originating source for every DPRK launch
+    # detection. The brief was getting those secondhand from Yonhap.
+    "ROK Joint Chiefs":   _gnews("site:jcs.mil.kr"),
+    # BOK press releases and MPC statements. The ECOS statistics API is
+    # already called for the rate itself; this is the accompanying language.
+    "Bank of Korea":      _gnews("%ED%95%9C%EA%B5%AD%EC%9D%80%ED%96%89+site:bok.or.kr"),
+    "Statistics Korea":   _gnews("site:kostat.go.kr"),
+    # Customs publishes the ten-day export figures — the earliest read on what
+    # the tariff regime is actually doing to trade.
+    "Korea Customs":      _gnews("site:customs.go.kr"),
+    "ROK Justice Ministry": _gnews("site:moj.go.kr"),
+    "ROK FSC":            _gnews("site:fsc.go.kr"),
     "Japan MOFA":         _gnews("Korea+site:mofa.go.jp"),
     # ── US Economic agencies ────────────────────────────────────────────
+    "USTR":               _gnews("Korea+OR+trade+site:ustr.gov"),
+    "Federal Register KR": _gnews("Korea+OR+DPRK+site:federalregister.gov"),
     "Dept of Commerce":   _gnews("Korea+site:commerce.gov"),
     "Dept of Treasury":   _gnews("Korea+site:treasury.gov"),
     "OFAC":               _gnews("Korea+OR+DPRK+site:ofac.treasury.gov"),
@@ -272,6 +296,61 @@ KOREA_KEYWORDS = re.compile(
     r"|한반도|북한|남북|조선민주주의|평양|서울|통일부|국방부",
     re.IGNORECASE,
 )
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Feeds that are Korea-relevant by construction
+# ─────────────────────────────────────────────────────────────────────────────
+# KOREA_KEYWORDS exists to strip world news out of general wires: Reuters and
+# AP publish about everything, so their items must mention Korea to belong in
+# a Korea brief.
+#
+# Applied to a primary ROK source it does the opposite of its job. Every item
+# the finance ministry publishes is Korean by definition, but a real headline
+# such as "2027년도 예산안 국무회의 의결" contains none of the eight Korean
+# tokens in the pattern, so it was dropped before the model ever saw it.
+# Measured against twelve representative ministry headlines, nine were
+# discarded — the Presidential Office, MOFA, MOEF, MOTIE, DAPA, the Assembly,
+# the Prosecution Service, the courts and the statistics office. Only the
+# Unification and Defence ministries survived, because 통일부 and 국방부
+# happen to appear in the pattern.
+#
+# The brief was telling the model it had primary sources while the collector
+# was throwing most of them away. These feeds are exempt: relevance is already
+# guaranteed by the feed itself.
+KOREA_NATIVE_FEEDS = {
+    # ROK government and state bodies
+    "ROK MOFA", "ROK MOTIE", "ROK MND", "ROK Presidential Office",
+    "ROK Unification Ministry", "ROK MOEF", "ROK DAPA",
+    "ROK National Assembly", "ROK Prosecution Service", "ROK Courts",
+    "DART disclosures", "USFK",
+    "ROK Policy Briefing", "Korea.net", "ROK Joint Chiefs", "Bank of Korea",
+    "Statistics Korea", "Korea Customs", "ROK Justice Ministry", "ROK FSC",
+    # Korean-language outlets
+    "조선일보", "한겨레", "동아일보", "경향신문", "뉴스1", "연합뉴스",
+    "중앙일보", "한국일보", "뉴시스", "서울신문",
+    "MBN", "JTBC", "KBS", "MBC", "SBS", "YTN", "Channel A", "Arirang News",
+    "매일경제", "한국경제", "서울경제", "머니투데이",
+    # English-language Korea desks whose entire output is Korea
+    "Yonhap English", "Korea Herald", "Korea Times", "Korea JoongAng Daily",
+    "Korea Economic Daily", "Dong-A English", "Chosun English",
+    "Hankyoreh English", "Pressian",
+}
+
+# Korean-language feeds, for the lang tag that drives full-text fetch and the
+# in-prompt translation note. Derived rather than restated so the two lists
+# cannot drift apart.
+KOREAN_LANGUAGE_FEEDS = {
+    "조선일보", "한겨레", "동아일보", "경향신문", "뉴스1", "연합뉴스",
+    "중앙일보", "한국일보", "뉴시스", "서울신문",
+    "MBN", "JTBC", "KBS", "MBC", "SBS", "YTN", "Channel A",
+    "매일경제", "한국경제", "서울경제", "머니투데이",
+    "ROK Presidential Office", "ROK Unification Ministry", "ROK MOEF",
+    "ROK DAPA", "ROK National Assembly", "ROK Prosecution Service",
+    "ROK Courts", "ROK MOFA", "ROK MND", "ROK MOTIE", "DART disclosures",
+    "ROK Policy Briefing", "ROK Joint Chiefs", "Bank of Korea",
+    "Statistics Korea", "Korea Customs", "ROK Justice Ministry", "ROK FSC",
+}
+
 
 PRESTIGE_JOURNALISTS = {
     "Timothy Martin", "Dasl Yoon", "Choe Sang-Hun", "Michelle Ye Hee Lee",
@@ -587,14 +666,13 @@ def _collect_tier1() -> list:
     results = _fetch_feeds_parallel(TIER1_FEEDS)
     for source, (entries, _) in results.items():
         # Korean-language feeds get lang="KO"
-        lang = "KO" if source in ("조선일보", "한겨레", "동아일보", "MBN",
-                                    "JTBC", "KBS", "MBC", "SBS", "YTN", "Channel A",
-                                    "매일경제", "한국경제",
-                                    "경향신문", "뉴스1", "연합뉴스") else "EN"
+        lang = "KO" if source in KOREAN_LANGUAGE_FEEDS else "EN"
+        native = source in KOREA_NATIVE_FEEDS
         for entry in entries:
             if not _is_recent(entry, hours=24):
                 continue
-            if not _is_korea_related(entry):
+            # A primary ROK source needs no relevance test; see KOREA_NATIVE_FEEDS.
+            if not native and not _is_korea_related(entry):
                 continue
             if _is_entertainment(entry):
                 continue
