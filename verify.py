@@ -21,14 +21,22 @@ Design principles:
     passed primary generation.
   - Per-item default is KEEP. An item is dropped only on an explicit
     keep:false verdict, so a truncated/partial response can't nuke content.
-  - Cheap. One FAST_MODEL call per run over a small payload.
+  - One VERIFY_MODEL call per run over a small payload.
 """
 import json
 import os
 
 import anthropic
 
-from digest import FAST_MODEL, _robust_json_parse
+from digest import FAST_MODEL, PRIMARY_MODEL, _robust_json_parse
+
+# The verification pass reads for the failures that actually reached readers:
+# a composite itinerary assembled from two true developments, corporate
+# investment folded into a treaty pledge, an evergreen paper dressed as today's
+# analysis. Those need judgment, not speed, so this runs on the stronger model
+# even though the draft itself is written by the fast one. One small call per
+# run; the cost difference is a few dollars a month.
+VERIFY_MODEL = PRIMARY_MODEL
 
 try:
     from digest import _record_usage as _digest_record_usage
@@ -44,18 +52,19 @@ def _client():
 
 
 def _call_json(system: str, user: str, max_tokens: int = 2000) -> dict:
-    """Non-streaming JSON call on the fast model. Records usage for the cost
-    tracker. Raises on any failure (callers fail open)."""
+    """Non-streaming JSON call on the verification model. Records usage for the
+    cost tracker. Raises on any failure (callers fail open)."""
     client = _client()
     resp = client.messages.create(
-        model=FAST_MODEL,
+        model=VERIFY_MODEL,
         max_tokens=max_tokens,
         system=[{"type": "text", "text": system}],
         messages=[{"role": "user", "content": user}],
+        output_config={"effort": "high"},
     )
     if _digest_record_usage:
         try:
-            _digest_record_usage(FAST_MODEL, resp.usage)
+            _digest_record_usage(VERIFY_MODEL, resp.usage)
         except Exception:
             pass
     text = "".join(getattr(b, "text", "") for b in resp.content

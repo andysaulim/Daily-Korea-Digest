@@ -1379,6 +1379,54 @@ def render(digest: dict) -> str:
               {source_links_html}
             </div>"""
 
+        # Split the watch list by recency. Every site carrying a status the
+        # model set months ago reads as current, so eleven amber cards said
+        # nothing: on 8 Sep 2026 all eleven were >60 days stale and ten of
+        # eleven were non-normal. Show only what has been reported on
+        # recently; name the rest honestly in one line.
+        _FRESH_DAYS = 30
+
+        def _age_days(loc):
+            m = _re.match(r"(\d{4})-(\d{2})(?:-(\d{2}))?",
+                          str(loc.get("last_source_date", "")).strip())
+            if not m:
+                return None
+            try:
+                y, mo, d = int(m.group(1)), int(m.group(2)), int(m.group(3) or 1)
+                from datetime import date
+                return (date.today() - date(y, mo, d)).days
+            except ValueError:
+                return None
+
+        _fresh, _quiet = [], []
+        for _loc in locations:
+            _age = _age_days(_loc)
+            if _age is not None and _age <= _FRESH_DAYS:
+                _fresh.append(_loc)
+            else:
+                _quiet.append(_loc)
+        # Never render an empty section: if nothing is fresh, show whatever is
+        # newest so the reader still sees the watch list.
+        if not _fresh and locations:
+            _dated = [(l, _age_days(l)) for l in locations]
+            _dated = [(l, a) for l, a in _dated if a is not None]
+            if _dated:
+                _dated.sort(key=lambda t: t[1])
+                _fresh = [_dated[0][0]]
+                _quiet = [l for l in locations if l is not _fresh[0]]
+        quiet_html = ""
+        if _quiet:
+            _oldest = ""
+            _dates = sorted(str(l.get("last_source_date", ""))[:7]
+                            for l in _quiet if l.get("last_source_date"))
+            if _dates:
+                _oldest = f" &middot; oldest report {_esc(_dates[0])}"
+            quiet_html = (f'<div style="font-size:11.5px;color:#8A9199;margin-top:10px;'
+                          f'padding-top:9px;border-top:1px solid #EAEAEA;">'
+                          f'{len(_quiet)} other monitored site{"s" if len(_quiet) != 1 else ""}: '
+                          f'no new imagery in the last {_FRESH_DAYS} days{_oldest}.</div>')
+        locations = _fresh
+
         # BP Monitored Locations — 2-column card grid with status context
         _badge_styles = {
             "normal": ("#7F8C8D", "#F5F6F7", "MONITORING"),
@@ -1453,6 +1501,7 @@ def render(digest: dict) -> str:
           <table width="100%" cellpadding="0" cellspacing="0" border="0" class="loc-grid">
             {loc_cards}
           </table>
+          {quiet_html}
         </div>
         """)
 
