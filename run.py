@@ -19,10 +19,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from digest import _count_digest_words
 
 
-_PRESTIGE_OUTLETS = {"WSJ", "Wall Street Journal", "Washington Post", "WaPo", "NYT",
-                      "New York Times", "Bloomberg", "Financial Times", "FT", "Economist", "The Economist"}
-
-
 def _check_url(url: str, timeout: float = 5.0) -> tuple[str, bool, str]:
     """HEAD-check a URL; returns (url, ok, reason).
     Only flags 404/410 (definitively dead). Treats 403/405/429 as OK
@@ -1106,6 +1102,23 @@ def main():
         from collect import collect
         payload = collect()
         Path("collected.json").write_text(json.dumps(payload, ensure_ascii=False, indent=2))
+
+    # Feed health. collect() has always computed this and nothing ever read it,
+    # so a feed could rot for months without anyone noticing. Printing it puts
+    # the numbers in the run log, which is where a failure gets diagnosed.
+    _health = (payload or {}).get("source_health") or {}
+    if _health:
+        _total = _health.get("total_feeds", 0)
+        _ok = _health.get("feeds_with_data", 0)
+        print(f"\n📡  Feeds: {_ok}/{_total} returned articles")
+        _empty = sorted(name for name, h in (_health.get("per_source") or {}).items()
+                        if not h.get("success"))
+        if _empty:
+            print(f"    Silent: {', '.join(_empty[:25])}"
+                  + (f" (+{len(_empty) - 25} more)" if len(_empty) > 25 else ""))
+        if _total and _ok / _total < 0.5:
+            print(f"    ⚠  Under half the feed list returned anything — "
+                  f"check for a Google News block before trusting this issue.")
 
     if args.dry_run:
         print("\n  --dry-run: stopping after collection. See collected.json")

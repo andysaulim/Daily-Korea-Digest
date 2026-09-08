@@ -54,13 +54,15 @@ Runs after every digest. Warns on:
 
 Findings are printed inline and rolled into `metrics.jsonl` for trend analysis.
 
-### Peninsula Tension Index (activated)
-`tension_scorer.py` was fully built (404 lines) but never called. Now:
-- Computes daily after digest generation
-- Writes to `tension_tracker.json` (cached across GH Actions runs)
-- Persists 30 days of history for sparkline rendering
-- Prints inline: `📈 Peninsula Tension Index: 4.5/10 (GUARDED, trend STABLE)`
-- **Not yet rendered in the HTML** — deliberately holding until we redesign that section
+### Peninsula Tension Index (NOT activated — this entry was wrong)
+`tension_scorer.py` is fully built (404 lines) and is still never called. The
+wiring described here was planned and written up, but not shipped: nothing
+imports the module, `tension_tracker.json` does not exist, and no run has ever
+computed a score. Corrected September 2026 after an audit found the claim.
+
+Leaving the module in place is deliberate — the scoring logic is sound and the
+section may return. Anyone reviving it should treat it as unrun code, not as a
+feature that regressed.
 
 ### Failure-alert routing
 Failure emails now go to `alim@csis.org` only, not the full distribution list.
@@ -72,7 +74,7 @@ Failure emails now go to `alim@csis.org` only, not the full distribution list.
 | `kim_tracker.json` | Active | "Days since last seen" computed correctly |
 | `kcna_tracker.json` | Active | 14-day rhetoric baseline OK |
 | `bp_tracker.json` | Active | 11 facilities monitored |
-| `tension_tracker.json` | **New** | Now building history |
+| `tension_tracker.json` | Never created | Module is not wired; see above |
 | `metrics.jsonl` | Active | Now records health-check counts |
 
 ## 5. Format / design review — recommendations for next quarter

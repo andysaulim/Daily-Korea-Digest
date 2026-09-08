@@ -23,7 +23,7 @@ Orchestrated by `run.py`. Triggered via external cron (cron-job.org) → GitHub 
 | `kim_tracker.py` | Kim Jong Un appearance log — computes "days since last seen" |
 | `kcna_tracker.py` | 14-day KCNA rhetoric baseline — phrase counts, tone shifts |
 | `bp_tracker.py` | 11 DPRK facility statuses (Yongbyon, Punggye-ri, Sohae, Sinpo, etc.) |
-| `tension_scorer.py` | Peninsula tension index (0–10 scale) |
+| `tension_scorer.py` | Peninsula tension index (0–10 scale) — **built but not wired**; nothing imports it |
 | `weekly.py` | Friday "Week in Review" synthesis from the week's 7 daily digests |
 | `update_readme.py` | Auto-updates README with latest run stats |
 

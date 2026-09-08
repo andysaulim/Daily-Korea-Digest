@@ -79,8 +79,6 @@ SERIF = "Georgia,'Times New Roman',serif"
 MUTE = "#6B7280"          # labels, meta, source lines
 BODY_INK = "#4A5260"      # running body copy
 
-_TAEGUK_RULE = (f'<div style="height:3px;background:{TAEGUK_RED};font-size:0;line-height:0;">&nbsp;</div>'
-                f'<div style="height:3px;background:{TAEGUK_BLUE};font-size:0;line-height:0;">&nbsp;</div>')
 
 
 
@@ -134,6 +132,10 @@ _DARK_EXEMPT = {
     "#0047A0", "#0052B4", "#1B2A4A", "#051F3D", "#0A1E38", "#2E3644",
     "#EBEBEB", "#E4E7EB", "#E8E8E8", "#EEF0F3", "#D5DAE1", "#F2F3F5",
     "#5A6472",  # badge fill — legible in both schemes, needs no variant
+    # The KCNA panel and the market strip are dark grounds in both schemes,
+    # so their type and status dots are already light-on-dark.
+    "#E0E0E0", "#E8E8E8", "#A8B6C8", "#A0AEC0", "#D8DEE8",
+    "#27AE60", "#C0392B", "#69C88E", "#E8697A",
 }
 
 
@@ -219,19 +221,6 @@ def _arrow(val) -> str:
 
 
 
-def _cds_arrow(val) -> str:
-    """CDS arrow — up (wider spread) is red/risk, down (tighter) is green.
-    Rendered on the navy data ground."""
-    try:
-        val = float(val)
-    except (TypeError, ValueError):
-        return '<span style="color:#7B90AC;">—</span>'
-    if val > 0:
-        return f'<span style="color:#E8697A;">&#9650; +{val:.1f} bps</span>'
-    elif val < 0:
-        return f'<span style="color:#69C88E;">&#9660; {val:.1f} bps</span>'
-    return '<span style="color:#7B90AC;">— flat</span>'
-
 
 def _link_or_text(text: str, url: str, style: str = "color:#1A222E;text-decoration:none;") -> str:
     """Render as <a> only if url is a real link, otherwise plain text.
@@ -243,7 +232,6 @@ def _link_or_text(text: str, url: str, style: str = "color:#1A222E;text-decorati
 
 # ── Section padding helper (responsive via class) ────────────────────────
 _SEC = 'style="padding:20px 32px;border-bottom:1px solid #EBEBEB;" class="sec"'
-_H2 = lambda color: f'style="margin:0 0 8px 0;font-size:11px;color:{color};text-transform:uppercase;letter-spacing:1.5px;font-family:Arial,sans-serif;font-weight:600;"'
 
 
 def _sec_label(label: str, color: str = TAEGUK_BLUE) -> str:
@@ -286,7 +274,7 @@ def _estimate_word_count(digest: dict) -> int:
                          "northeast_asia"):
         for item in (digest.get(section_key) or []):
             for field in ("body", "body_text", "summary", "detail", "quote_text",
-                          "so_what", "pattern_note", "central_argument", "analyst_note"):
+                          "central_argument", "analyst_note"):
                 words += len(str(item.get(field, "")).split())
     kcna = digest.get("kcna_delta") or {}
     words += len(str(kcna.get("bottom_line", "")).split())
@@ -362,8 +350,6 @@ def render(digest: dict) -> str:
         brent = markets.get("brent") or {}
         krw = markets.get("usd_krw") or {}
         bok_rate = markets.get("bok_rate") or {}
-        korea_cds = {}
-        gdp = {}
         # Top row: KOSPI, Brent, USD/KRW
         sections.append(f"""
         <a name="markets"></a>
@@ -389,44 +375,6 @@ def render(digest: dict) -> str:
               <div style="font-family:{MONO};font-size:16px;font-weight:700;margin-top:3px;">{_esc(str(bok_rate.get("value", "—")))}</div>
               <div style="font-family:{MONO};font-size:11px;margin-top:2px;"><span style="color:#8FA0B5;">{_esc(str(bok_rate.get("last_change", "")))}</span></div>
             </td>
-          </tr>
-        </table>
-        """)
-
-        # Third row: BOK ECOS indicators (only if data available)
-        bok_ecos = {}   # second/third market rows retired — 4 tiles, one row
-        if bok_ecos:
-            cpi_yoy = _esc(str(bok_ecos.get("cpi_yoy", "—")))
-            unemployment = _esc(str(bok_ecos.get("unemployment", "—")))
-            trade_balance = _esc(str(bok_ecos.get("trade_balance", "—")))
-            consumer_conf = _esc(str(bok_ecos.get("consumer_confidence", "—")))
-            # Build cells — only show indicators that have data
-            ecos_cells = []
-            if bok_ecos.get("cpi_yoy"):
-                ecos_cells.append(("CPI (YoY)", cpi_yoy))
-            if bok_ecos.get("unemployment"):
-                ecos_cells.append(("Unemployment", unemployment))
-            if bok_ecos.get("trade_balance"):
-                ecos_cells.append(("Trade Bal.", trade_balance))
-            if bok_ecos.get("consumer_confidence"):
-                ecos_cells.append(("Consumer Conf.", consumer_conf))
-
-            if ecos_cells:
-                # Distribute widths evenly
-                cell_width = f"{100 // len(ecos_cells)}%"
-                cells_html = ""
-                for i, (label, value) in enumerate(ecos_cells):
-                    border = ' border-left:1px solid rgba(255,255,255,0.1);' if i > 0 else ''
-                    cells_html += f"""
-            <td width="{cell_width}" align="center" style="padding:8px 8px 10px;{border}">
-              <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#7B90AC;">{label}</div>
-              <div style="font-family:{MONO};font-size:14px;font-weight:700;color:#D5DDE8;margin-top:2px;">{value}</div>
-              <div style="font-size:10px;color:#7B90AC;">BOK ECOS</div>
-            </td>"""
-
-                sections.append(f"""
-        <table class="mkt-table" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#03142A;color:#fff;border-bottom:1px solid rgba(255,255,255,0.08);">
-          <tr>{cells_html}
           </tr>
         </table>
         """)
@@ -571,6 +519,30 @@ def render(digest: dict) -> str:
               <div style='font-size:10px;margin-top:4px;'>{speaker_line}{src_line}</div>
             </div>"""
 
+        # Senior officials around Kim. Extracted by the prompt and, until now,
+        # discarded at the render step.
+        seniors = kcna.get("senior_officials") or []
+        seniors_html = ""
+        senior_rows = ""
+        for off in seniors[:3]:
+            o_name = _esc(off.get("name", ""))
+            o_role = _esc(off.get("role", ""))
+            o_act = _esc(off.get("activity", ""))
+            if not o_name or not o_act:
+                continue
+            role_line = (f"<span style='color:#7B90AC;'> &middot; {o_role}</span>"
+                         if o_role else "")
+            senior_rows += (
+                f"<div style='margin-bottom:7px;'>"
+                f"<div style='font-size:12.5px;font-weight:600;color:#E8E8E8;'>{o_name}{role_line}</div>"
+                f"<div style='font-size:12px;color:#A8B6C8;line-height:1.45;'>{o_act}</div>"
+                f"</div>")
+        if senior_rows:
+            seniors_html = (
+                f'<div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.10);">'
+                f'<div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#7B90AC;margin-bottom:8px;">Senior Officials</div>'
+                f'{senior_rows}</div>')
+
         # Top 3 KCNA articles — Kim-related items ranked first by the prompt
         top_articles = kcna.get("top_articles") or []
         articles_html = ""
@@ -620,6 +592,7 @@ def render(digest: dict) -> str:
             </div>
             {quotes_html}
             {articles_html}
+            {seniors_html}
             {"<div style='margin-top:14px;padding:10px 14px;background:rgba(255,255,255,0.06);border-radius:4px;border-left:3px solid " + BLUE_ON_NAVY + ";font-size:13px;line-height:1.6;color:#E0E0E0;font-family:Georgia,serif;'><strong style='color:" + BLUE_ON_NAVY + ";'>Bottom line:</strong> " + bottom_line + "</div>" if bottom_line else ""}
           </div>
         </div>
@@ -643,6 +616,12 @@ def render(digest: dict) -> str:
                 detail = _esc(item.get("detail", ""))
                 source_url = item.get("url", "")
                 source_label = _esc(item.get("source_label", ""))
+                # Who acted. The prompt has always extracted this; the card
+                # showed only the ministry, so the name was thrown away.
+                official = _esc(item.get("official", ""))
+                official_line = (
+                    f'<div style="font-size:12px;color:#4A5260;margin-bottom:4px;">{official}</div>'
+                    if official and official.lower() not in ("none", "null", "n/a") else "")
                 ministry_header = ""
                 if ministry_korean:
                     ministry_header = f'<span style="font-size:11px;color:#6B7280;">{ministry_korean} · </span>'
@@ -658,6 +637,7 @@ def render(digest: dict) -> str:
                   <div style="background:#F5F7FA;border-radius:4px;padding:14px;min-height:100px;">
                     <div style="margin-bottom:6px;">{ministry_header}</div>
                     <div style="font-size:14px;font-weight:700;color:{INK};line-height:1.3;margin-bottom:6px;">{_esc(action)}</div>
+                    {official_line}
                     <div style="font-size:12px;line-height:1.5;color:#4A5260;">{_esc(detail)}</div>
                     {src_link}
                   </div>
@@ -876,7 +856,6 @@ def render(digest: dict) -> str:
             if _rate_spill and not h_note:
                 h_note = _esc(_rate_spill)
             s122 = tariff_tracker.get("section_122_surcharge")
-            next_trigger = _esc(str(tariff_tracker.get("next_trigger", ""))) if tariff_tracker.get("next_trigger") else ""
             # Only a SHORT recognized status becomes a pill. If the model wrote a
             # long clause into headline_status, treat it as the note instead —
             # never cram a sentence into the little pill beside the big rate.

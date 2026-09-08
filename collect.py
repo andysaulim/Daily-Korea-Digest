@@ -1126,22 +1126,19 @@ def _collect_markets() -> dict:
         symbol_futures = {pool.submit(_fetch_symbol, k): k
                           for k in YAHOO_SYMBOLS.keys()}
         bok_f = pool.submit(_fetch_bok_rate)
-        cds_f = pool.submit(_fetch_korea_cds)
-        gdp_f = pool.submit(_fetch_gdp_estimate)
-        ecos_f = pool.submit(_fetch_bok_ecos)
 
         for future in as_completed(symbol_futures):
             k, v = future.result()
             result[k] = v
 
     result["bok_rate"] = bok_f.result()
-    result["korea_cds"] = cds_f.result()
-    result["gdp_estimate"] = gdp_f.result()
 
-    # BOK ECOS data — only include if API key was set and data returned
-    ecos_data = ecos_f.result()
-    if ecos_data:
-        result["bok_ecos"] = ecos_data
+    # Sovereign CDS, the GDP estimate and the ECOS indicator set were fetched
+    # here every run and then discarded: the market strip was cut to four
+    # tiles and render.py hardcodes all three to empty. That was four ECOS API
+    # calls, a scrape of worldgovernmentbonds.com and a BOK/OECD call per day
+    # for output nothing could display. The fetchers are removed with them; if
+    # a tile for any of these comes back, restore from git history.
 
     # Always return market data — even if all fetches fail, BOK indicators
     # have hardcoded fallbacks so there's always something to show
@@ -1171,180 +1168,7 @@ def _fetch_bok_rate() -> dict:
     return {"value": "2.50%", "last_change": fallback_date}
 
 
-def _fetch_bok_ecos() -> dict | None:
-    """Fetch key economic indicators from Bank of Korea ECOS API.
 
-    Requires BOK_API_KEY environment variable. Returns None gracefully if
-    the key is not set or any request fails.
-
-    Stats fetched:
-      - CPI year-over-year % change
-      - Unemployment rate (%)
-      - Trade balance (million USD)
-      - Consumer Confidence Index (composite)
-    """
-    api_key = os.environ.get("BOK_API_KEY", "").strip()
-    if not api_key:
-        return None
-
-    now = datetime.now(timezone.utc)
-    # Use a 2-year lookback to ensure we get at least one data point
-    start = (now - timedelta(days=730)).strftime("%Y%m")
-    end = now.strftime("%Y%m")
-
-    STAT_SPECS = {
-        "cpi_yoy": ("722Y001", "M", "0101000"),
-        "unemployment": ("403Y001", "M", "0101000"),
-        "trade_balance": ("301Y013", "M", "101000"),
-        "consumer_confidence": ("732Y001", "M", "0101000"),
-    }
-
-    base_url = "https://ecos.bok.or.kr/api/StatisticSearch"
-    results = {}
-
-    for key, (stat_code, freq, item_code) in STAT_SPECS.items():
-        try:
-            url = (
-                f"{base_url}/{api_key}/json/kr/1/10/"
-                f"{stat_code}/{freq}/{start}/{end}/{item_code}"
-            )
-            resp = requests.get(url, timeout=5, headers={"User-Agent": "Mozilla/5.0"})
-            if not resp.ok:
-                continue
-            data = resp.json()
-            rows = data.get("StatisticSearch", {}).get("row", [])
-            if not rows:
-                continue
-            # Take the most recent data point (last row)
-            val_str = rows[-1].get("DATA_VALUE", "")
-            if not val_str:
-                continue
-            val = float(val_str)
-
-            # Format based on indicator type
-            if key == "cpi_yoy":
-                results[key] = f"{val:.1f}%"
-            elif key == "unemployment":
-                results[key] = f"{val:.1f}%"
-            elif key == "trade_balance":
-                # Value is in million USD; convert to billions for display
-                val_b = val / 1000.0
-                sign = "+" if val_b >= 0 else "-"
-                results[key] = f"{sign}${abs(val_b):.1f}B"
-            elif key == "consumer_confidence":
-                results[key] = f"{val:.1f}"
-        except Exception:
-            # Never crash the pipeline — skip this indicator
-            continue
-
-    return results if results else None
-
-
-def _fetch_korea_cds() -> dict:
-    """Fetch Korea 5-year CDS spread (bps) from WorldGovernmentBonds."""
-    try:
-        url = "https://www.worldgovernmentbonds.com/cds-historical-data/south-korea/5-years/"
-        resp = requests.get(url, timeout=12, headers={
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-        })
-        if resp.ok:
-            # Parse latest two CDS values from the history table
-            # Table rows contain: Date | CDS spread (bps)
-            matches = re.findall(
-                r'<td[^>]*>\s*(\d{1,2}\s+\w+\s+\d{4})\s*</td>\s*<td[^>]*>\s*([\d.]+)\s*</td>',
-                resp.text
-            )
-            if len(matches) >= 2:
-                latest_date, latest_val = matches[0]
-                _, prev_val = matches[1]
-                spread = float(latest_val)
-                prev_spread = float(prev_val)
-                change = spread - prev_spread
-                as_of = ""
-                try:
-                    as_of = datetime.strptime(latest_date.strip(), "%d %B %Y").strftime("%b %d")
-                except ValueError:
-                    try:
-                        as_of = datetime.strptime(latest_date.strip(), "%d %b %Y").strftime("%b %d")
-                    except ValueError:
-                        pass
-                return {"value": f"{spread:.0f}", "change_bps": round(change, 1), "as_of": as_of}
-            elif matches:
-                spread = float(matches[0][1])
-                return {"value": f"{spread:.0f}", "change_bps": 0, "as_of": ""}
-    except Exception as e:
-        print(f"    ⚠  Korea CDS fetch error: {e}")
-
-    # Fallback
-    print("    ⚠  Korea 5Y CDS: using fallback (25 bps)")
-    return {"value": "25", "change_bps": 0, "as_of": ""}
-
-
-def _fetch_gdp_estimate() -> dict:
-    """Fetch latest GDP growth estimate from BOK, with OECD as secondary source."""
-    estimates = []
-
-    # Source 1: BOK API (quarterly GDP data)
-    try:
-        now = datetime.now(timezone.utc)
-        start = (now - timedelta(days=730)).strftime("%Y") + "Q1"
-        end = now.strftime("%Y") + "Q4"
-        url = f"https://ecos.bok.or.kr/api/StatisticSearch/json/en/1/20/200Y002/Q/{start}/{end}/10111/"
-        resp = requests.get(url, timeout=10, headers={"User-Agent": "Mozilla/5.0"})
-        if resp.ok:
-            rows = resp.json().get("StatisticSearch", {}).get("row", [])
-            if rows:
-                latest = rows[-1]
-                val = latest.get("DATA_VALUE", "")
-                period = latest.get("TIME", "")
-                if "Q" in str(period):
-                    parts = str(period).split("Q")
-                    period = f"Q{parts[1]} {parts[0]}"
-                estimates.append({"value": f"{float(val):.1f}%", "period": period, "source": "BOK"})
-    except Exception as e:
-        print(f"    ⚠  BOK GDP API error: {e}")
-
-    # Source 2: OECD forecast (scrape from news)
-    try:
-        url = _gnews("OECD+Korea+GDP+growth+forecast+2026")
-        entries = _parse_feed(url)
-        for entry in entries[:5]:
-            text = f"{entry.get('title', '')} {entry.get('summary', entry.get('description', ''))}"
-            match = re.search(r'(\d+\.\d+)\s*(?:percent|%|pct)', text, re.IGNORECASE)
-            if match:
-                val = float(match.group(1))
-                if 0 < val < 10:
-                    estimates.append({"value": f"{val:.1f}%", "period": "2026 forecast", "source": "OECD"})
-                    break
-    except Exception:
-        pass
-
-    # Source 3: BOK forecast from news (fallback)
-    if not estimates:
-        try:
-            url = _gnews("Bank+of+Korea+GDP+growth+forecast+2026")
-            entries = _parse_feed(url)
-            for entry in entries[:5]:
-                text = f"{entry.get('title', '')} {entry.get('summary', entry.get('description', ''))}"
-                match = re.search(r'(\d+\.\d+)\s*(?:percent|%|pct)', text, re.IGNORECASE)
-                if match:
-                    val = float(match.group(1))
-                    if 0 < val < 10:
-                        estimates.append({"value": f"{val:.1f}%", "period": "2026 forecast", "source": "BOK"})
-                        break
-        except Exception:
-            pass
-
-    if estimates:
-        # Return the most recent estimate; attach all sources for the digest prompt
-        primary = estimates[0]
-        if len(estimates) > 1:
-            primary["alt_estimates"] = estimates[1:]
-        return primary
-
-    # Hardcoded fallback (updated manually if all sources fail)
-    print("    ⚠  GDP estimate: using fallback (1.5%)")
-    return {"value": "1.5%", "period": "2026 forecast", "source": "BOK"}
 
 
 # ─────────────────────────────────────────────────────────────────────────────
