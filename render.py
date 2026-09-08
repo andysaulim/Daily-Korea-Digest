@@ -307,18 +307,6 @@ def render(digest: dict) -> str:
         </table>
         """)
 
-    # ── 2b. Banner disclaimer — last row of the navy banner ───────────────
-    sections.append(f"""
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#03142A;border-bottom:3px solid {RED_ON_NAVY};">
-      <tr>
-        <td style="padding:9px 32px 11px;font-family:Arial,sans-serif;font-size:10.5px;line-height:1.5;color:rgba(255,255,255,0.62);">
-          This newsletter is automatically generated, so it may contain errors. Please check all information and sources before citing.
-          To report errors or other issues, please contact Andy Lim at <a href="mailto:alim@csis.org" style="color:rgba(255,255,255,0.82);text-decoration:underline;">alim@csis.org</a>.
-        </td>
-      </tr>
-    </table>
-    """)
-
     # ── 2c. Section navigation. Emitted as a placeholder here and resolved
     #      after every section is built, so links are only offered for
     #      sections that actually rendered. ─────────────────────────────────
@@ -343,41 +331,12 @@ def render(digest: dict) -> str:
               </tr>
             </table>"""
         sections.append(f"""
-        <div style="padding:20px 32px;border-bottom:1px solid #EAEAEA;background:#FAFBFC;" class="sec">
+        <div style="padding:18px 32px 6px;" class="sec">
           <a name="memo"></a>
-          {_sec_label("Today at a Glance")}
-          {memo_html}
-        </div>
-        """)
-
-    # ── 3b. Corrections. The brief tells readers it is automatically
-    #      generated; this is where it says so when it was wrong. Filed by a
-    #      person via corrections.py, never by the model. Absent on any day
-    #      with nothing to correct. ──────────────────────────────────────────
-    try:
-        from corrections import active as _active_corrections
-        _corrections = _active_corrections()
-    except Exception:
-        _corrections = []
-    if _corrections:
-        _rows = ""
-        for _c in _corrections:
-            _where = _esc(_c.get("section", ""))
-            _issue = _esc(str(_c.get("issue", ""))[:10])
-            _meta = " &middot; ".join(x for x in (_where, _issue) if x)
-            _rows += f"""
-            <div style="padding:10px 0;border-top:1px solid #EADFC4;">
-              {"<div style='font-family:Arial,sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:#8A6D2F;margin-bottom:4px;'>" + _meta + "</div>" if _meta else ""}
-              <div style="font-size:13.5px;line-height:1.55;color:#5C4A22;"><strong>We reported:</strong> {_esc(_c.get("was", ""))}</div>
-              <div style="font-size:13.5px;line-height:1.55;color:#33383F;margin-top:3px;"><strong>Correct:</strong> {_esc(_c.get("now", ""))}</div>
-            </div>"""
-        sections.append(f"""
-        <div {_SEC}>
-          <a name="corrections"></a>
-          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#FDF8EC;border-left:3px solid #C8912B;">
-            <tr><td style="padding:14px 18px 12px;">
-              <div style="font-family:Arial,sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#8A6D2F;margin-bottom:2px;">Corrections</div>
-              {_rows}
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#EDF2FA;border-left:3px solid {BAND};">
+            <tr><td style="padding:16px 20px 8px;">
+              {_sec_label("Today at a Glance")}
+              {memo_html}
             </td></tr>
           </table>
         </div>
@@ -391,7 +350,6 @@ def render(digest: dict) -> str:
             cat = _esc(_str(story.get("category_tag", story.get("category", ""))))
             headline = _esc(story.get("headline", ""))
             body = _esc(story.get("body", ""))
-            pattern = _esc(story.get("pattern_note", ""))
             src_line = _esc(_clean_src(story.get("src_line", story.get("source", ""))))
             url = story.get("url", "")
             cat_badge = f'<span style="display:inline-block;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:{TAEGUK_BLUE};font-weight:600;margin-bottom:6px;">{cat}</span>' if cat else ""
@@ -402,7 +360,6 @@ def render(digest: dict) -> str:
                 {_link_or_text(headline, url, style="color:" + INK + ";text-decoration:none;")}
               </h3>
               <p style="margin:0 0 8px 0;font-size:13px;line-height:1.6;color:#444;">{body}</p>
-              {"<p style='margin:0 0 6px 0;font-size:12px;line-height:1.5;color:#4A5260;'><strong>Pattern:</strong> " + pattern + "</p>" if pattern else ""}
               <div style="font-size:10px;color:#AAA;margin-top:6px;">{src_line}</div>
             </div>"""
         sections.append(f"""
@@ -1591,9 +1548,17 @@ def render(digest: dict) -> str:
     sections.append(f"""
     <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:{NAVY};border-top:3px solid {BAND};" class="sec footer">
       {otd_block}
-      <tr><td style="padding:16px 32px 6px;text-align:center;">
-        <div style="font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:{BLUE_ON_NAVY};">CSIS Korea Chair</div>
-        <div style="font-family:Georgia,serif;font-size:12.5px;color:rgba(255,255,255,0.62);margin-top:5px;">Center for Strategic and International Studies &middot; Washington, DC</div>
+      <tr><td style="padding:18px 32px 6px;text-align:center;">
+        <!-- CSIS Korea Chair lockup, built in HTML rather than as an image:
+             mail clients block images by default, and a blocked logo is a
+             broken logo. This always renders, scales, and stays legible in
+             dark mode. -->
+        <table cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto;"><tr>
+          <td style="padding-right:12px;font-family:Georgia,'Times New Roman',serif;font-size:26px;letter-spacing:3px;color:#FFFFFF;line-height:1;">CSIS</td>
+          <td style="border-left:1px solid rgba(255,255,255,0.45);padding:2px 12px;font-family:Arial,sans-serif;font-size:9px;letter-spacing:1.4px;text-transform:uppercase;color:rgba(255,255,255,0.82);line-height:1.35;text-align:left;">Geopolitics and Foreign<br>Policy Department</td>
+          <td style="border-left:1px solid rgba(255,255,255,0.45);padding:2px 0 2px 12px;font-family:Arial,sans-serif;font-size:9px;letter-spacing:1.4px;text-transform:uppercase;color:rgba(255,255,255,0.82);line-height:1.35;text-align:left;">Korea<br>Chair</td>
+        </tr></table>
+        <div style="font-family:Georgia,serif;font-size:12.5px;color:rgba(255,255,255,0.62);margin-top:12px;">Center for Strategic and International Studies &middot; Washington, DC</div>
         <div style="margin-top:9px;font-family:Arial,sans-serif;font-size:11px;">
           <a href="{_esc(web_url)}" style="color:{BLUE_ON_NAVY};text-decoration:none;">Read online</a> &nbsp;&middot;&nbsp;
           <a href="{_esc(archive_url)}" style="color:{BLUE_ON_NAVY};text-decoration:none;">Archive</a>
