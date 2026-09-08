@@ -340,7 +340,7 @@ def render(digest: dict) -> str:
           </h1>
           <div style="margin-top:2px;font-size:16px;font-weight:400;color:rgba(255,255,255,0.85);font-family:Georgia,serif;">{_esc(date_str)}</div>
         </td>
-        <td style="vertical-align:bottom;text-align:right;">
+        <td class="mast-meta" style="vertical-align:bottom;text-align:right;">
           <div style="font-family:{MONO};font-size:11px;color:rgba(255,255,255,0.50);white-space:nowrap;">{_issue_meta}{word_count:,} words &middot; {read_min} min read</div>
         </td>
       </tr></table>
@@ -373,7 +373,7 @@ def render(digest: dict) -> str:
               <div style="font-family:{MONO};font-size:11px;margin-top:2px;">{_arrow(krw.get("change_pct", 0))}</div>
             </td>
             <td width="25%" align="center" style="padding:11px 6px 13px;border-left:1px solid rgba(255,255,255,0.10);">
-              <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#8FA0B5;">Brent Crude</div>
+              <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#8FA0B5;">Brent</div>
               <div style="font-family:{MONO};font-size:16px;font-weight:700;margin-top:3px;">${_esc(str(brent.get("value", "—")))}</div>
               <div style="font-family:{MONO};font-size:11px;margin-top:2px;">{_arrow(brent.get("change_pct", 0))}</div>
             </td>
@@ -1018,7 +1018,7 @@ def render(digest: dict) -> str:
                     chip = ""
                     if st:
                         cbg, cfg = _status_chip.get(st, ("#F1F4F8", "#55607A"))
-                        chip = (f'<span style="display:inline-block;font-family:{MONO};font-size:9px;font-weight:700;'
+                        chip = (f'<span style="display:inline-block;font-family:{MONO};font-size:10px;font-weight:700;'
                                 f'letter-spacing:0.5px;padding:1px 5px;border-radius:3px;background:{cbg};color:{cfg};'
                                 f'margin-left:6px;vertical-align:middle;">{_esc(st.upper())}</span>')
                     r_html += (f'<tr style="border-top:1px solid #EAEDF1;">'
@@ -1137,7 +1137,7 @@ def render(digest: dict) -> str:
             company_tags = ""
             if companies:
                 company_tags = " ".join(
-                    f'<span style="display:inline-block;padding:1px 5px;border-radius:3px;font-size:9px;background:#E8E8E8;color:#4A5260;margin-right:3px;">{_esc(c)}</span>'
+                    f'<span style="display:inline-block;padding:1px 5px;border-radius:3px;font-size:10px;background:#E8E8E8;color:#4A5260;margin-right:3px;">{_esc(c)}</span>'
                     for c in companies[:3]
                 )
                 company_tags = f'<div style="margin-top:3px;">{company_tags}</div>'
@@ -1313,7 +1313,7 @@ def render(digest: dict) -> str:
                 <td width="54" style="padding:9px 12px 9px 0;vertical-align:top;">
                   <table cellpadding="0" cellspacing="0" border="0" style="background:{TAEGUK_BLUE};">
                     <tr><td align="center" style="padding:4px 0 5px;width:46px;">
-                      <div style="font-family:Arial,sans-serif;font-size:9px;font-weight:700;letter-spacing:1.5px;color:rgba(255,255,255,0.82);">{_esc(cal.get("month", ""))}</div>
+                      <div style="font-family:Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;color:rgba(255,255,255,0.82);">{_esc(cal.get("month", ""))}</div>
                       <div style="font-family:Georgia,serif;font-size:19px;font-weight:700;color:#fff;line-height:1;">{_esc(str(cal.get("day", "")))}</div>
                     </td></tr>
                   </table>
@@ -1673,10 +1673,10 @@ def render(digest: dict) -> str:
              mail clients block images by default, and a blocked logo is a
              broken logo. This always renders, scales, and stays legible in
              dark mode. -->
-        <table cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto;"><tr>
+        <table class="lockup" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto;"><tr>
           <td style="padding-right:12px;font-family:Georgia,'Times New Roman',serif;font-size:26px;letter-spacing:2px;color:#FFFFFF;line-height:1;">CSIS</td>
-          <td style="border-left:1px solid rgba(255,255,255,0.45);padding:2px 12px;font-family:Arial,sans-serif;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.82);line-height:1.35;text-align:left;">Geopolitics and Foreign<br>Policy Department</td>
-          <td style="border-left:1px solid rgba(255,255,255,0.45);padding:2px 0 2px 12px;font-family:Arial,sans-serif;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.82);line-height:1.35;text-align:left;">Korea<br>Chair</td>
+          <td style="border-left:1px solid rgba(255,255,255,0.45);padding:2px 12px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.82);line-height:1.35;text-align:left;">Geopolitics and Foreign<br>Policy Department</td>
+          <td style="border-left:1px solid rgba(255,255,255,0.45);padding:2px 0 2px 12px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.82);line-height:1.35;text-align:left;">Korea<br>Chair</td>
         </tr></table>
         <div style="font-family:Georgia,serif;font-size:13px;color:rgba(255,255,255,0.62);margin-top:12px;">Center for Strategic and International Studies &middot; Washington, DC</div>
         <div style="margin-top:9px;font-family:Arial,sans-serif;font-size:11px;">
@@ -1744,12 +1744,42 @@ def render(digest: dict) -> str:
     /* Mobile responsive — one declaration per pattern; no duplicates.
        Fixes from the Q3 2026 mobile audit are marked (A#). */
     @media only screen and (max-width: 620px) {{
-      /* Notice and links will not sit side by side on a phone. */
-      .util-row .util-cell {{ display:block !important; width:100% !important;
-        text-align:center !important; padding:5px 14px !important; }}
-      .util-row .util-cell a {{ padding:4px 8px !important; margin:1px !important;
-        font-size:10px !important; letter-spacing:0.5px !important; }}
+      /* Notice and links will not sit side by side on a phone.
+         No width:100% here: a table cell set to display:block already fills
+         its row, and 100% plus horizontal padding is measured content-box,
+         which pushed the whole document 28px wider than the screen and gave
+         every section a horizontal scrollbar. */
+      .util-row .util-cell {{ display:block !important; text-align:center !important;
+        padding:5px 8px !important; white-space:normal !important; }}
+      .util-row .util-cell a {{ padding:4px 7px !important; margin:1px !important;
+        font-size:11px !important; letter-spacing:0.3px !important; }}
       .wrapper {{ width:100% !important; }}
+      /* The metadata line is nowrap, so sitting beside the title it set a
+         211px floor on the masthead row. A table cannot shrink below the
+         min-content width of its cells, so the whole 680px wrapper stopped at
+         about 325px and every section inherited that floor: the brief scrolled
+         sideways on a 320px screen. Stacked under the date it wraps freely. */
+      .mast-meta {{ display:block !important; text-align:left !important;
+        padding-top:8px !important; }}
+      .mast-meta div {{ white-space:normal !important; }}
+      /* The CSIS lockup is three cells side by side with rules between them.
+         Its min-content width is 293px, which with the footer padding put a
+         325px floor under the whole table — the last thing still forcing a
+         320px screen to scroll sideways. Stacked and centred it costs three
+         short lines and fits any screen. */
+      .lockup td {{ display:block !important; border-left:0 !important;
+        text-align:center !important; padding:3px 0 !important; }}
+      /* Public Sentiment put the approval hero and three party tiles in one
+         row. On a phone that left each tile 72px, so "RULING PARTY" and
+         "OPPOSITION" ran into each other. Hero above, tiles below, each tile
+         then has about 114px and the labels sit clear. */
+      .sentiment-table > tbody > tr > td {{ display:block !important;
+        width:100% !important; border-right:0 !important;
+        padding:0 0 12px 0 !important; }}
+      .sentiment-table > tbody > tr > td + td {{ padding:12px 0 0 0 !important;
+        border-top:1px solid #E4E7EB !important; }}
+      /* 9px labels are too small to read on a phone. */
+      .cal-table div[style*="font-size:10px"], .lockup td {{ font-size:10px !important; }}
       .sec, .footer {{ padding:16px 16px !important; }}
       /* (A4) Masthead keeps presence on phones */
       h1 {{ font-size:22px !important; }}
@@ -1771,8 +1801,12 @@ def render(digest: dict) -> str:
       .deal-card {{ padding:10px 0 !important; }}
       .deal-breakdown td {{ display:block !important; width:100% !important; padding:2px 8px !important; font-size:11px !important; white-space:normal !important; }}
       .deal-breakdown tr {{ display:block !important; border-bottom:1px solid #E8EDF3 !important; padding:4px 0 !important; }}
-      /* (A7) Sentiment 2x2 — 47% leaves room for padding, no wrap */
-      .sentiment-table td {{ display:inline-block !important; width:47% !important; box-sizing:border-box !important; padding:10px 4px !important; text-align:center !important; }}
+      /* Party tiles, three across under the approval hero. This rule dates
+         from the old four-equal-column layout and still said 47%, which put
+         two tiles on one line and orphaned the third. The outer cells are
+         handled by the stacking rule above, whose selector is more specific. */
+      .sentiment-table table td {{ display:inline-block !important; width:32% !important;
+        box-sizing:border-box !important; padding:8px 2px !important; text-align:center !important; }}
       /* Trade dashboard strip — stays 3-across like the market strip */
       .trade-dash td {{ padding:9px 4px 10px !important; }}
       .trade-dash span[style*="font-size:24px"] {{ font-size:18px !important; }}
