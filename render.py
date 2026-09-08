@@ -72,9 +72,122 @@ BLUE_ON_NAVY = "#8FB6E8"
 UP_GREEN = "#2E7D4F"      # semantic up (white ground)
 DOWN_RED = "#A93226"      # semantic down (white ground)
 MONO = "'Courier New',Courier,monospace"
+SANS = "Arial,Helvetica,sans-serif"
+SERIF = "Georgia,'Times New Roman',serif"
+# One muted grey and one body grey. There were six, three of which failed
+# contrast on white; a reader should not be able to tell two greys apart.
+MUTE = "#6B7280"          # labels, meta, source lines
+BODY_INK = "#4A5260"      # running body copy
 
 _TAEGUK_RULE = (f'<div style="height:3px;background:{TAEGUK_RED};font-size:0;line-height:0;">&nbsp;</div>'
                 f'<div style="height:3px;background:{TAEGUK_BLUE};font-size:0;line-height:0;">&nbsp;</div>')
+
+
+
+# ── Dark mode ───────────────────────────────────────────────────────────────
+# Every colour in this brief is applied inline, because email clients strip
+# stylesheets. Dark mode is therefore a mapping from the light palette to a
+# dark one, and it is generated from the two tables below rather than written
+# as selectors by hand.
+#
+# The hand-written version rotted immediately: its selectors matched only
+# `div`, `h3` and `a`, while the markup also uses `td`, `p` and `span`, and it
+# enumerated a subset of the colours actually in use. The accent blue on every
+# section label had no rule at all. Readers on Apple Mail saw headlines at
+# 1.1:1 against the background — invisible.
+#
+# `_check_dark_coverage()` runs in the render test and fails when any inline
+# colour reaching the output is absent from these tables, so a new colour
+# cannot ship without its dark counterpart.
+
+_DARK_TEXT = {
+    "#0047A0": "#7FB0F0",   # accent — section labels, kickers, links
+    "#1A222E": "#E8E6E1",   # ink — headlines
+    "#1B2A4A": "#D5D8DC",   # navy used as type, not as ground
+    "#2C3E50": "#D5D8DC",   # sub-headings
+    "#2C3540": "#D5D8DC",
+    "#4A5260": "#C4C8CE",   # body copy
+    "#55607A": "#C4C8CE",
+    "#5A6472": "#C4C8CE",
+    "#6B7280": "#9AA3AE",   # muted labels and meta
+    "#CD2E3A": "#F08A94",   # alert red
+    "#A93226": "#F08A94",   # semantic down
+    "#2E7D4F": "#5FBF87",   # semantic up
+}
+
+_DARK_BG = {
+    "#fff":     "#262A30",  # cards
+    "#FFFFFF":  "#262A30",
+    "#F0F0F0":  "#2A2E34",
+    "#F7F8FA":  "#1A1D22",  # utility bar
+    "#F5F7FA":  "#22262C",  # table header rows
+    "#EDF2FA":  "#1C2A3E",  # Today at a Glance
+    "#F0F5FB":  "#16222F",  # Gallup spotlight
+    "#FBF0F1":  "#2A1518",  # discourse flag
+}
+
+# Colours that need no dark variant: they already sit on a dark ground
+# (masthead, market strip, KCNA panel, footer, accent chips) or are white on
+# an accent fill.
+_DARK_EXEMPT = {
+    "#fff", "#FFFFFF", "#8FA0B5", "#8FB6E8", "#7B90AC", "#E8697A",
+    "#0047A0", "#0052B4", "#1B2A4A", "#051F3D", "#0A1E38", "#2E3644",
+    "#EBEBEB", "#E4E7EB", "#E8E8E8", "#EEF0F3", "#D5DAE1", "#F2F3F5",
+    "#5A6472",  # badge fill — legible in both schemes, needs no variant
+}
+
+
+def _dark_mode_css() -> str:
+    """Build the dark media query from the palette maps.
+
+    Selectors are descendants of `.wrapper`, so the wrapper's own white ground
+    is left to the explicit rule below rather than being caught by the card
+    rule. Backgrounds are written `background:` throughout, so a `color:`
+    substring match cannot collide with one.
+    """
+    lines = [
+        "    @media (prefers-color-scheme: dark) {",
+        "      body { background:#121212 !important; }",
+        "      .wrapper { background:#1a1a1a !important; }",
+        "      .wrapper .sec { background:#1E2126 !important; border-bottom-color:#33373D !important; }",
+        "      .wrapper .nav-row { background:#1A1D22 !important; border-bottom-color:#33373D !important; }",
+        "      .wrapper h1, .wrapper h2, .wrapper h3 { color:#E8E6E1 !important; }",
+        "      .wrapper .footer { background:#04182F !important; }",
+        "      .wrapper .kcna-dark, .wrapper .kcna-dark table, .wrapper .kcna-dark > div { background:#0A1E38 !important; }",
+        "      .wrapper .item-card, .wrapper .story-card, .wrapper .gov-grid div, .wrapper .loc-grid div { background:#262A30 !important; border-color:#33373D !important; }",
+        "      .wrapper .sentiment-spotlight { background:#16222F !important; }",
+        "      .wrapper .sentiment-discourse { background:#2A1518 !important; }",
+        "      .wrapper .mkt-table td { border-color:rgba(255,255,255,0.08) !important; }",
+        "      .wrapper .sentiment-table td, .wrapper .cal-table { border-color:#33373D !important; }",
+        "      .wrapper td[style*=\"border-bottom:1px solid #E8E8E8\"], .wrapper table[style*=\"border-bottom:1px solid #E8E8E8\"] { border-color:#33373D !important; }",
+    ]
+    for light, dark in _DARK_TEXT.items():
+        lines.append(f'      .wrapper [style*="color:{light}"] {{ color:{dark} !important; }}')
+    for light, dark in _DARK_BG.items():
+        lines.append(f'      .wrapper [style*="background:{light}"] {{ background-color:{dark} !important; }}')
+    lines.append("    }")
+    return "\n".join(lines)
+
+
+_DARK_CSS = _dark_mode_css()
+
+
+def _check_dark_coverage(html: str) -> list[str]:
+    """Every inline colour in the output must have a dark counterpart.
+
+    Called by the render test. This is the guard that keeps dark mode from
+    silently rotting the next time someone adds a colour.
+    """
+    import re as _re
+    body = html.split("<body", 1)[-1]
+    missing = []
+    for hexv in set(_re.findall(r"(?<!-)color:\s*(#[0-9A-Fa-f]{3,6})", body)):
+        if hexv not in _DARK_TEXT and hexv not in _DARK_EXEMPT:
+            missing.append(f"text colour {hexv} has no dark mapping")
+    for hexv in set(_re.findall(r"background:\s*(#[0-9A-Fa-f]{3,6})", body)):
+        if hexv not in _DARK_BG and hexv not in _DARK_EXEMPT:
+            missing.append(f"background {hexv} has no dark mapping")
+    return sorted(missing)
 
 
 def _color_bar(css_class: str) -> str:
@@ -213,7 +326,7 @@ def render(digest: dict) -> str:
         sep = ''
         sections.append(f"""
         <div style="background:#2E3644;padding:5px 32px;text-align:center;font-family:Arial,sans-serif;font-size:9.5px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:rgba(255,255,255,0.72);" class="sec">For Internal Use Only</div>
-        <div style="background:#F0F0F0;padding:6px 32px;text-align:center;font-size:11px;color:#888;" class="sec">
+        <div style="background:#F0F0F0;padding:6px 32px;text-align:center;font-size:11px;color:#6B7280;" class="sec">
           {sep.join(links)}
         </div>
         """)
@@ -371,7 +484,7 @@ def render(digest: dict) -> str:
                 {_link_or_text(headline, url)}
               </h3>
               <p style="margin:0 0 6px 0;font-size:13px;line-height:1.6;color:#4A5260;">{body}</p>
-              <div style="font-size:10.5px;color:#7A828F;margin-top:4px;">{src_line}</div>
+              <div style="font-size:10.5px;color:#6B7280;margin-top:4px;">{src_line}</div>
             </div>"""
         sections.append(f"""
         <div {_SEC}>
@@ -532,20 +645,20 @@ def render(digest: dict) -> str:
                 source_label = _esc(item.get("source_label", ""))
                 ministry_header = ""
                 if ministry_korean:
-                    ministry_header = f'<span style="font-size:11px;color:#888;">{ministry_korean} · </span>'
-                ministry_header += f'<span style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:0.3px;">{ministry}</span>'
+                    ministry_header = f'<span style="font-size:11px;color:#6B7280;">{ministry_korean} · </span>'
+                ministry_header += f'<span style="font-size:10px;color:#6B7280;text-transform:uppercase;letter-spacing:0.3px;">{ministry}</span>'
                 src_link = ""
                 if source_url and source_url != "#" and source_url.startswith("http"):
                     s_label = source_label if source_label else ministry.lower()
-                    src_link = f'<div style="margin-top:6px;font-size:11px;color:#888;">→ <a href="{_esc(source_url)}" style="color:#888;text-decoration:none;">{_esc(s_label)} ↗</a></div>'
+                    src_link = f'<div style="margin-top:6px;font-size:11px;color:#6B7280;">→ <a href="{_esc(source_url)}" style="color:#6B7280;text-decoration:none;">{_esc(s_label)} ↗</a></div>'
                 elif source_label:
-                    src_link = f'<div style="margin-top:6px;font-size:11px;color:#888;">→ {_esc(source_label)}</div>'
+                    src_link = f'<div style="margin-top:6px;font-size:11px;color:#6B7280;">→ {_esc(source_label)}</div>'
                 row_cards += f"""
                 <td style="width:50%;padding:8px;vertical-align:top;">
                   <div style="background:#F5F7FA;border-radius:4px;padding:14px;min-height:100px;">
                     <div style="margin-bottom:6px;">{ministry_header}</div>
                     <div style="font-size:14px;font-weight:700;color:{INK};line-height:1.3;margin-bottom:6px;">{_esc(action)}</div>
-                    <div style="font-size:12px;line-height:1.5;color:#555;">{_esc(detail)}</div>
+                    <div style="font-size:12px;line-height:1.5;color:#4A5260;">{_esc(detail)}</div>
                     {src_link}
                   </div>
                 </td>"""
@@ -573,12 +686,12 @@ def render(digest: dict) -> str:
                 <table class="cal-table" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-bottom:1px solid #E8E8E8;">
                   <tr>
                     <td width="50" style="padding:10px 10px 10px 0;text-align:center;vertical-align:top;">
-                      <div style="font-size:10px;text-transform:uppercase;color:#888;letter-spacing:0.5px;">{cal_month}</div>
+                      <div style="font-size:10px;text-transform:uppercase;color:#6B7280;letter-spacing:0.5px;">{cal_month}</div>
                       <div class="cal-date" style="font-family:{MONO};font-size:17px;font-weight:700;color:{TAEGUK_BLUE};line-height:1.2;">{cal_day}</div>
                     </td>
                     <td style="padding:10px 0;vertical-align:top;">
                       <div style="font-size:13px;font-weight:600;color:#1B2A4A;margin-bottom:2px;">{cal_headline}</div>
-                      <div style="font-size:12px;line-height:1.4;color:#555;">{cal_detail}</div>
+                      <div style="font-size:12px;line-height:1.4;color:#4A5260;">{cal_detail}</div>
                     </td>
                   </tr>
                 </table>"""
@@ -603,12 +716,12 @@ def render(digest: dict) -> str:
                 predecessor = _esc(item.get("predecessor", ""))
                 a_color = action_colors.get(action, "#1B2A4A")
                 action_badge = f'<span style="display:inline-block;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:600;color:#fff;background:{a_color};text-transform:uppercase;margin-left:6px;">{_esc(action)}</span>'
-                pred_line = f'<div style="font-size:11px;color:#888;margin-top:2px;">Replaces: {predecessor}</div>' if predecessor else ""
+                pred_line = f'<div style="font-size:11px;color:#6B7280;margin-top:2px;">Replaces: {predecessor}</div>' if predecessor else ""
                 pers_items += f"""
                 <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid {a_color};">
                   <div style="font-size:13px;font-weight:600;color:#1B2A4A;">{name}{action_badge}</div>
-                  <div style="font-size:12px;color:#555;">{position}</div>
-                  <div style="font-size:12px;line-height:1.4;color:#555;">{detail}</div>
+                  <div style="font-size:12px;color:#4A5260;">{position}</div>
+                  <div style="font-size:12px;line-height:1.4;color:#4A5260;">{detail}</div>
                   {pred_line}
                 </div>"""
             pers_html = f"""
@@ -629,7 +742,7 @@ def render(digest: dict) -> str:
                 <div style="margin-bottom:8px;padding-left:12px;border-left:3px solid #7F8C8D;">
                   <div style="font-size:11px;color:#7F8C8D;font-weight:600;text-transform:uppercase;">{committee}</div>
                   <div style="font-size:13px;font-weight:600;color:#1B2A4A;">{action}</div>
-                  <div style="font-size:12px;line-height:1.4;color:#555;">{detail}</div>
+                  <div style="font-size:12px;line-height:1.4;color:#4A5260;">{detail}</div>
                 </div>"""
             asm_html = f"""
             <div style="margin-top:16px;">
@@ -641,7 +754,7 @@ def render(digest: dict) -> str:
         sections.append(f"""
         <div {_SEC}>
           <a name="rok-gov"></a>{_sec_label("ROK Government")}
-          <div style="font-size:10px;color:#888;font-family:Arial,sans-serif;margin-top:-10px;margin-bottom:10px;">President + Ministries &middot; {rok_date}</div>
+          <div style="font-size:10px;color:#6B7280;font-family:Arial,sans-serif;margin-top:-10px;margin-bottom:10px;">President + Ministries &middot; {rok_date}</div>
           <div style="padding-top:4px;">
             {gov_grid_html}
             {pers_html}
@@ -677,15 +790,15 @@ def render(digest: dict) -> str:
                     <span style="color:{inc_color};font-weight:600;">{inc}</span> vs <span style="color:{chal_color};font-weight:600;">{chal}</span>
                   </td>
                   <td style="padding:6px 4px;font-size:11px;font-weight:600;color:{INK};text-align:center;">{status}</td>
-                  <td style="padding:6px 0 6px 4px;font-size:10px;color:#888;">{note}</td>
+                  <td style="padding:6px 0 6px 4px;font-size:10px;color:#6B7280;">{note}</td>
                 </tr>"""
             races_html = f"""
             <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:10px;border-top:1px solid #E8E8E8;">
               <tr style="border-bottom:1px solid #E8E8E8;">
-                <td style="padding:4px 8px 4px 0;font-size:10px;color:#888;text-transform:uppercase;">Race</td>
-                <td style="padding:4px 4px;font-size:10px;color:#888;text-transform:uppercase;">Parties</td>
-                <td style="padding:4px 4px;font-size:10px;color:#888;text-transform:uppercase;text-align:center;">Status</td>
-                <td style="padding:4px 0 4px 4px;font-size:10px;color:#888;text-transform:uppercase;">Note</td>
+                <td style="padding:4px 8px 4px 0;font-size:10px;color:#6B7280;text-transform:uppercase;">Race</td>
+                <td style="padding:4px 4px;font-size:10px;color:#6B7280;text-transform:uppercase;">Parties</td>
+                <td style="padding:4px 4px;font-size:10px;color:#6B7280;text-transform:uppercase;text-align:center;">Status</td>
+                <td style="padding:4px 0 4px 4px;font-size:10px;color:#6B7280;text-transform:uppercase;">Note</td>
               </tr>
               {race_rows}
             </table>"""
@@ -698,8 +811,8 @@ def render(digest: dict) -> str:
             <span style="font-size:18px;font-weight:700;color:{INK};">{e_name}</span>
             <span style="display:inline-block;padding:2px 10px;border-radius:3px;font-family:{MONO};font-size:11px;font-weight:700;color:#fff;background:{urgency_color};margin-left:10px;vertical-align:middle;">{e_days} DAYS</span>
           </div>
-          <div style="font-size:11px;color:#888;margin-top:4px;">{e_date}</div>
-          <div style="font-size:13px;line-height:1.6;color:#444;margin-top:8px;">{e_summary}</div>
+          <div style="font-size:11px;color:#6B7280;margin-top:4px;">{e_date}</div>
+          <div style="font-size:13px;line-height:1.6;color:#4A5260;margin-top:8px;">{e_summary}</div>
           {races_html}
         </div>
         """)
@@ -820,7 +933,7 @@ def render(digest: dict) -> str:
                     sr_st = "ACTIVE"
                 sec_rows += (f'<tr style="border-top:1px solid #E7EBF0;">'
                              f'<td style="padding:7px 12px;font-size:12.5px;font-weight:600;color:{INK};">{_esc(sr.get("sector",""))}</td>'
-                             f'<td style="padding:7px 8px;font-size:11px;color:#7A828F;text-transform:uppercase;text-align:right;white-space:nowrap;">{_esc(sr.get("authority",""))}</td>'
+                             f'<td style="padding:7px 8px;font-size:11px;color:#6B7280;text-transform:uppercase;text-align:right;white-space:nowrap;">{_esc(sr.get("authority",""))}</td>'
                              f'<td style="padding:7px 12px 7px 8px;font-family:{MONO};font-size:13px;font-weight:700;color:{_sec_colors.get(sr_st, TAEGUK_RED)};text-align:right;white-space:nowrap;">{_esc(str(sr.get("rate","")))}</td>'
                              f'</tr>')
             sector_box = ""
@@ -865,7 +978,7 @@ def render(digest: dict) -> str:
                     "No official drawdown figure reported; individual Korean corporate "
                     "US investments are tracked separately and are not pledge tranches.")
                 bar = (f'<div><span style="font-family:{MONO};color:{NAVY};font-size:22px;font-weight:700;">{pledged}</span>'
-                       f'<span style="font-size:12px;color:#7A828F;"> &nbsp;pledged</span></div>'
+                       f'<span style="font-size:12px;color:#6B7280;"> &nbsp;pledged</span></div>'
                        f'<div style="font-size:12.5px;color:#5A6472;line-height:1.55;margin-top:6px;">{note}</div>')
 
             # Deal table only lists deals officially attributed to the pledge
@@ -875,7 +988,7 @@ def render(digest: dict) -> str:
                 sect = _esc(kd.get("sector", ""))
                 deal_rows += (f'<tr style="border-top:1px solid #E7EBF0;">'
                               f'<td style="padding:7px 12px;font-size:12.5px;color:{INK};"><span style="font-weight:600;">{_esc(kd.get("company",""))}</span>'
-                              + (f' <span style="color:#7A828F;font-size:11px;">{sect}</span>' if sect else "")
+                              + (f' <span style="color:#6B7280;font-size:11px;">{sect}</span>' if sect else "")
                               + f'</td>'
                               f'<td style="padding:7px 12px 7px 8px;font-family:{MONO};font-size:12px;font-weight:700;color:{UP_GREEN};text-align:right;white-space:nowrap;">{_esc(kd.get("value",""))}</td>'
                               f'</tr>')
@@ -912,7 +1025,7 @@ def render(digest: dict) -> str:
                 for e in rows:
                     entity = _esc(str(e.get("entity", "")))
                     cp = _esc(str(e.get("counterparty") or "").strip())
-                    ent = entity + (f' <span style="color:#7A828F;font-weight:400;">/ {cp}</span>' if cp else "")
+                    ent = entity + (f' <span style="color:#6B7280;font-weight:400;">/ {cp}</span>' if cp else "")
                     sect = _esc(str(e.get("sector") or "").strip())
                     val = _esc(str(e.get("value") or "").strip())
                     st = str(e.get("status") or "").lower().strip()
@@ -1038,7 +1151,7 @@ def render(digest: dict) -> str:
             company_tags = ""
             if companies:
                 company_tags = " ".join(
-                    f'<span style="display:inline-block;padding:1px 5px;border-radius:3px;font-size:9px;background:#E8E8E8;color:#555;margin-right:3px;">{_esc(c)}</span>'
+                    f'<span style="display:inline-block;padding:1px 5px;border-radius:3px;font-size:9px;background:#E8E8E8;color:#4A5260;margin-right:3px;">{_esc(c)}</span>'
                     for c in companies[:3]
                 )
                 company_tags = f'<div style="margin-top:3px;">{company_tags}</div>'
@@ -1081,7 +1194,7 @@ def render(digest: dict) -> str:
             reaction_badge = ""
             if is_reaction:
                 badge_label = "PRC SOURCE" if "China" in region else "STATE MEDIA"
-                reaction_badge = f'<span style="display:inline-block;padding:1px 5px;border-radius:3px;font-size:10px;font-weight:600;color:#fff;background:#888;margin-left:6px;">{badge_label}</span>'
+                reaction_badge = f'<span style="display:inline-block;padding:1px 5px;border-radius:3px;font-size:10px;font-weight:600;color:#fff;background:#5A6472;margin-left:6px;">{badge_label}</span>'
             # "Trilateral · Trilateral" when the region tag and category coincide.
             region_txt = _esc(region) + " &middot; " if region and region.lower() != cat_raw.lower() else ""
             nea_html += _item_block(cat=f"{region_txt}{cat}{reaction_badge}", src=src,
@@ -1111,11 +1224,11 @@ def render(digest: dict) -> str:
             colour = INK if has else "#9AA3AE"
             # The line is always emitted so the three numbers sit on one baseline
             # whether or not a tile has a Korean name to show.
-            kr_html = (f'<div style="font-size:10px;line-height:1.4;color:#9AA3AE;font-family:Arial,sans-serif;'
+            kr_html = (f'<div style="font-size:10px;line-height:1.4;color:#6B7280;font-family:Arial,sans-serif;'
                        f'white-space:nowrap;">{_esc(str(kr)) if kr else "&nbsp;"}</div>')
             return f"""
                     <td width="33%" valign="top" align="center" style="padding:2px 4px;">
-                      <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#7A828F;font-family:Arial,sans-serif;white-space:nowrap;">{label}</div>
+                      <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#6B7280;font-family:Arial,sans-serif;white-space:nowrap;">{label}</div>
                       {kr_html}
                       <div style="font-family:Georgia,serif;font-size:22px;font-weight:700;color:{colour};margin-top:6px;line-height:1;">{val}{_trend_mark(data.get("trend") if has else None)}</div>
                     </td>"""
@@ -1129,7 +1242,7 @@ def render(digest: dict) -> str:
         discourse_html = ""
         if discourse:
             discourse_html = f"""
-            <div class="sentiment-discourse" style="margin-top:8px;padding:6px 10px;background:#FBF0F1;border-radius:4px;border-left:3px solid {TAEGUK_RED};font-size:11px;color:#555;">
+            <div class="sentiment-discourse" style="margin-top:8px;padding:6px 10px;background:#FBF0F1;border-radius:4px;border-left:3px solid {TAEGUK_RED};font-size:11px;color:#4A5260;">
               <strong style="color:{TAEGUK_RED};">Discourse:</strong> {_esc(discourse)}
             </div>"""
 
@@ -1140,9 +1253,9 @@ def render(digest: dict) -> str:
             finding = _esc(str(gallup_finding.get("finding", "")))
             poll_date = _esc(str(gallup_finding.get("poll_date", "")))
             spotlight_html = f"""
-            <div class="sentiment-spotlight" style="margin-top:10px;padding:8px 12px;background:#F0F5FB;border-radius:4px;border-left:3px solid {TAEGUK_BLUE};font-size:11px;color:#444;line-height:1.5;">
+            <div class="sentiment-spotlight" style="margin-top:10px;padding:8px 12px;background:#F0F5FB;border-radius:4px;border-left:3px solid {TAEGUK_BLUE};font-size:11px;color:#4A5260;line-height:1.5;">
               <strong style="color:{TAEGUK_BLUE};">Gallup Korea Spotlight</strong>
-              <span style="font-family:{MONO};font-size:10px;color:#999;margin-left:6px;">{poll_date}</span><br>
+              <span style="font-family:{MONO};font-size:10px;color:#5A6472;margin-left:6px;">{poll_date}</span><br>
               <span style="font-weight:600;">{topic}:</span> {finding}
             </div>"""
 
@@ -1161,7 +1274,7 @@ def render(digest: dict) -> str:
                         continue
                 if poll_dt and (now - poll_dt).days > 7:
                     stale_html = f"""
-            <div style="margin-top:8px;font-size:10px;color:#999;text-align:center;">
+            <div style="margin-top:8px;font-size:10px;color:#6B7280;text-align:center;">
               Data from {_esc(poll_updated)} — newer polling may be available
             </div>"""
             except Exception:
@@ -1180,7 +1293,7 @@ def render(digest: dict) -> str:
           <table width="100%" cellpadding="0" cellspacing="0" border="0" class="sentiment-table">
             <tr>
               <td width="42%" valign="top" style="padding:4px 18px 4px 0;border-right:1px solid #E4E7EB;">
-                <div style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:#7A828F;font-family:Arial,sans-serif;">Presidential approval</div>
+                <div style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:#6B7280;font-family:Arial,sans-serif;">Presidential approval</div>
                 <div class="hero-num" style="font-family:Georgia,serif;font-size:42px;font-weight:700;color:{TAEGUK_BLUE};line-height:1.05;margin-top:4px;">{_esc(str(approval.get("value") or "--"))}{_trend_mark(approval.get("trend"))}</div>
                 <div style="font-size:11px;color:#6B7280;font-family:Arial,sans-serif;margin-top:5px;">{_esc(str(approval.get("source") or ""))}{" &middot; " + _esc(str(approval.get("last_updated") or "")) if approval.get("last_updated") else ""}</div>
                 {"<div style='margin-top:9px;'>" + _spark_html + "</div>" if _spark_html else ""}
@@ -1317,7 +1430,7 @@ def render(digest: dict) -> str:
                   </td>
                   <td style="padding-left:8px;vertical-align:middle;">
                     <div style="font-size:12px;font-weight:600;color:{INK};">{who}</div>
-                    <div style="font-size:10px;color:#888;">{handle}</div>
+                    <div style="font-size:10px;color:#6B7280;">{handle}</div>
                   </td>
                 </tr>
               </table>
@@ -1334,11 +1447,11 @@ def render(digest: dict) -> str:
             url = op.get("url", "")
             sa_html += f"""
             <div style="margin-bottom:12px;padding-left:12px;border-left:3px solid {TAEGUK_BLUE};">
-              <div style="font-size:11px;color:#888;">{src}</div>
+              <div style="font-size:11px;color:#6B7280;">{src}</div>
               <div style="font-size:13px;font-weight:600;color:{INK};">
                 {_link_or_text(title, url)}
               </div>
-              <div style="font-size:12px;line-height:1.4;color:#555;">{summary}</div>
+              <div style="font-size:12px;line-height:1.4;color:#4A5260;">{summary}</div>
               {"<div style='font-size:11px;color:" + TAEGUK_BLUE + ";margin-top:3px;'><strong>So what:</strong> " + so_what + "</div>" if so_what else ""}
             </div>"""
         # Academic
@@ -1353,9 +1466,9 @@ def render(digest: dict) -> str:
             title_html = f'<div style="font-size:13px;font-weight:600;color:{INK};margin-bottom:4px;">{_link_or_text(title, url)}</div>' if title else ""
             sa_html += f"""
             <div style="margin-bottom:12px;padding-left:12px;border-left:3px solid {TAEGUK_BLUE};">
-              <div style="font-size:11px;color:#888;">{src} &middot; {tier}</div>
+              <div style="font-size:11px;color:#6B7280;">{src} &middot; {tier}</div>
               {title_html}
-              <div style="font-size:12px;line-height:1.4;color:#555;">{summary}</div>
+              <div style="font-size:12px;line-height:1.4;color:#4A5260;">{summary}</div>
               {"<div style='font-size:11px;color:" + TAEGUK_BLUE + ";margin-top:3px;'><strong>Implication:</strong> " + implication + "</div>" if implication else ""}
               {read_link}
             </div>"""
@@ -1394,20 +1507,20 @@ def render(digest: dict) -> str:
                         s_label = _esc(s.get("label", s.get("source", "")))
                         s_url = s.get("url", "")
                         if s_url and s_url != "#" and s_url.startswith("http"):
-                            _src_parts.append(f'<a href="{_esc(s_url)}" style="font-size:11px;font-family:monospace;color:#888;text-decoration:none;">{s_label} ↗</a>')
+                            _src_parts.append(f'<a href="{_esc(s_url)}" style="font-size:11px;font-family:monospace;color:#6B7280;text-decoration:none;">{s_label} ↗</a>')
                         else:
-                            _src_parts.append(f'<span style="font-size:11px;font-family:monospace;color:#888;">{s_label} ↗</span>')
+                            _src_parts.append(f'<span style="font-size:11px;font-family:monospace;color:#6B7280;">{s_label} ↗</span>')
                     else:
-                        _src_parts.append(f'<span style="font-size:11px;font-family:monospace;color:#888;">{_esc(str(s))} ↗</span>')
+                        _src_parts.append(f'<span style="font-size:11px;font-family:monospace;color:#6B7280;">{_esc(str(s))} ↗</span>')
                 source_links_html = "<div style='margin-top:8px;'>" + " &middot; ".join(_src_parts) + "</div>"
             bp_ids_html = ""
             if ir_bp_ids:
-                bp_ids_html = "<div style='margin-top:6px;font-size:11px;color:#888;'>→ " + " · ".join(_esc(str(b)) for b in ir_bp_ids) + "</div>"
+                bp_ids_html = "<div style='margin-top:6px;font-size:11px;color:#6B7280;'>→ " + " · ".join(_esc(str(b)) for b in ir_bp_ids) + "</div>"
             img_report_html = f"""
             <div style="margin-bottom:20px;padding:16px;border-left:3px solid {TAEGUK_BLUE};">
               <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:{TAEGUK_BLUE};font-weight:600;margin-bottom:6px;">{ir_source} · {ir_date} — {ir_label}</div>
               <div style="font-size:17px;font-weight:700;color:{INK};line-height:1.3;margin-bottom:8px;">{ir_headline}</div>
-              <div style="font-size:13px;line-height:1.6;color:#444;">{ir_body}</div>
+              <div style="font-size:13px;line-height:1.6;color:#4A5260;">{ir_body}</div>
               {bp_ids_html}
               {source_links_html}
             </div>"""
@@ -1475,9 +1588,9 @@ def render(digest: dict) -> str:
                              if l.get("status", "normal") in ("elevated", "alert"))
         summary_html = ""
         if elevated_count:
-            summary_html = f'<div style="font-size:11px;color:#888;margin-top:6px;margin-bottom:12px;">{elevated_count} of {len(_all_locs)} sites at elevated or alert status</div>'
+            summary_html = f'<div style="font-size:11px;color:#6B7280;margin-top:6px;margin-bottom:12px;">{elevated_count} of {len(_all_locs)} sites at elevated or alert status</div>'
         else:
-            summary_html = f'<div style="font-size:11px;color:#888;margin-top:6px;margin-bottom:12px;">{len(_all_locs)} monitored sites</div>'
+            summary_html = f'<div style="font-size:11px;color:#6B7280;margin-top:6px;margin-bottom:12px;">{len(_all_locs)} monitored sites</div>'
 
         loc_cards = ""
         for i in range(0, len(locations), 2):
@@ -1498,9 +1611,9 @@ def render(digest: dict) -> str:
                 # Note rendering — style differently for carried-forward vs active
                 note_html = ""
                 if note and "no new reporting" in note.lower():
-                    note_html = f'<div style="font-size:11px;line-height:1.4;color:#999;margin-top:4px;font-style:italic;">{note}</div>'
+                    note_html = f'<div style="font-size:11px;line-height:1.4;color:#6B7280;margin-top:4px;font-style:italic;">{note}</div>'
                 elif note:
-                    note_html = f'<div style="font-size:11px;line-height:1.4;color:#555;margin-top:4px;">{note}</div>'
+                    note_html = f'<div style="font-size:11px;line-height:1.4;color:#4A5260;margin-top:4px;">{note}</div>'
                 # Last report date — mono, machine-measured. Flag notes whose
                 # last source is stale (>90 days) so a months-old status isn't
                 # read as current (e.g. Yellow Sea PMZ carried from January).
@@ -1516,7 +1629,7 @@ def render(digest: dict) -> str:
                                           f'(~{_age // 30} mo)</span>')
                     except (ValueError, TypeError):
                         pass
-                last_html = (f'<div style="font-family:{MONO};font-size:11px;color:#999;margin-top:4px;">'
+                last_html = (f'<div style="font-family:{MONO};font-size:11px;color:#6B7280;margin-top:4px;">'
                              f'as of {last_source_date}{stale_flag}</div>'
                              if last_source_date and last_source_date != "unknown" else "")
                 row_cards += f"""
@@ -1613,7 +1726,7 @@ def render(digest: dict) -> str:
     if len(_links) >= 4:
         _nav_html = ('<div class="nav-row" style="background:#F7F8FA;border-bottom:1px solid #E4E7EB;'
                      'padding:8px 32px;text-align:center;font-family:Arial,sans-serif;'
-                     'font-size:11px;line-height:1.9;color:#9AA3AE;" class="sec">'
+                     'font-size:11px;line-height:1.9;color:#6B7280;" class="sec">'
                      + ' &nbsp;&middot;&nbsp; '.join(_links) + '</div>')
     body = body.replace("%%NAV%%", _nav_html)
 
@@ -1702,40 +1815,7 @@ def render(digest: dict) -> str:
       /* (A5) Market strip numbers don't collide at 621px */
       .mkt-table td {{ padding:10px 10px 12px !important; }}
     }}
-    /* Dark mode support — scoped selectors, no blanket color override (A6).
-       The masthead, market strip, key stat, KCNA panel, and footer are
-       already dark surfaces and need no inversion. */
-    @media (prefers-color-scheme: dark) {{
-      body {{ background:#121212 !important; }}
-      .wrapper {{ background:#1a1a1a !important; }}
-      .wrapper .sec {{ background:#1E2126 !important; border-bottom-color:#33373D !important; }}
-      .wrapper h1, .wrapper h2, .wrapper h3 {{ color:#E8E6E1 !important; }}
-      .wrapper .sec p {{ color:#C4C8CE !important; }}
-      .wrapper a {{ color:#6FA8E8 !important; }}
-      .wrapper .footer {{ background:#04182F !important; }}
-      .wrapper .story-card {{ background:#262A30 !important; border-color:#33373D !important; }}
-      .wrapper .kcna-dark, .wrapper .kcna-dark table, .wrapper .kcna-dark > div {{ background:#0A1E38 !important; }}
-      .wrapper .gov-grid div {{ background:#262A30 !important; }}
-      .wrapper .loc-grid div {{ background:#262A30 !important; border-color:#4A4F57 !important; }}
-      .wrapper .loc-grid div[style*="color:#1A222E"] {{ color:#D5D8DC !important; }}
-      .wrapper .loc-grid div[style*="color:#555"] {{ color:#AAA !important; }}
-      .wrapper .loc-grid div[style*="color:#999"] {{ color:#8A9099 !important; }}
-      .wrapper .sentiment-spotlight {{ background:#16222F !important; color:#C4C8CE !important; }}
-      .wrapper .sentiment-discourse {{ background:#2A1518 !important; color:#C4C8CE !important; }}
-      .wrapper .mkt-table td {{ border-color:rgba(255,255,255,0.08) !important; }}
-      /* Surfaces and type added in the 2026-09 redesign */
-      .wrapper .item-card {{ background:#262A30 !important; border-color:#33373D !important; }}
-      .wrapper .glance-panel {{ background:#1C2A3E !important; }}
-      .wrapper .nav-row {{ background:#1A1D22 !important; border-bottom-color:#33373D !important; }}
-      .wrapper .sec div[style*="color:#1A222E"], .wrapper .sec h3, .wrapper .sec a[style*="color:#1A222E"] {{ color:#E8E6E1 !important; }}
-      .wrapper .sec div[style*="color:#4A5260"], .wrapper .sec div[style*="color:#444"], .wrapper .sec div[style*="color:#555"], .wrapper .sec p[style*="color:#444"] {{ color:#C4C8CE !important; }}
-      .wrapper .sec div[style*="color:#2C3E50"], .wrapper .sec div[style*="color:#33383F"] {{ color:#D5D8DC !important; }}
-      .wrapper .sec div[style*="color:#6B7280"], .wrapper .sec div[style*="color:#7A828F"], .wrapper .sec div[style*="color:#888"] {{ color:#9AA3AE !important; }}
-      .wrapper .hero-num {{ color:#7FB0F0 !important; }}
-      .wrapper table[style*="background:#EDF2FA"] {{ background:#1C2A3E !important; }}
-      .wrapper .sentiment-table td {{ border-color:#33373D !important; }}
-      .wrapper table[style*="border-bottom:1px solid #E8E8E8"] {{ border-color:#33373D !important; }}
-    }}
+{_DARK_CSS}
   </style>
   <!--[if mso]>
   <style type="text/css">
@@ -1753,7 +1833,7 @@ def render(digest: dict) -> str:
     <tr>
       <td align="center" valign="top" style="padding:0;">
         <!--[if mso]><table width="680" cellpadding="0" cellspacing="0" border="0" align="center"><tr><td><![endif]-->
-        <table role="presentation" class="wrapper" width="680" cellpadding="0" cellspacing="0" border="0" align="center" style="width:680px;max-width:680px;margin:0 auto;background:#FFFFFF;box-shadow:0 2px 20px rgba(0,0,0,0.08);">
+        <table role="presentation" class="wrapper" width="680" cellpadding="0" cellspacing="0" border="0" align="center" style="width:680px;max-width:680px;margin:0 auto;background:#FFFFFF;font-family:Arial,Helvetica,sans-serif;box-shadow:0 2px 20px rgba(0,0,0,0.08);">
           <tr>
             <td style="padding:0;">
               {body}
