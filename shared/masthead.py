@@ -1,4 +1,6 @@
-"""Shared masthead for the CSIS daily briefs (Korea, China, Japan, Australia).
+"""Masthead rendering for the CSIS daily briefs.
+
+Part of the shared engine — see shared/__init__.py.
 
 This file is the single source of truth for the top of every edition: the
 accent rule, the navy header block, the RE: line, the utility link bar, and
@@ -7,13 +9,13 @@ Everything that differs between editions lives in BRAND, which each repo
 overrides in its own `brand.py`.
 
 To adopt in another edition:
-  1. Copy this file in unchanged. Do not edit it per repo — edits here are
-     what caused the four briefs to drift apart in the first place.
+  1. Copy the whole shared/ directory in unchanged. Per-repo edits are what
+     caused the four briefs to drift apart in the first place.
   2. Add a `brand.py` defining BRAND (see brand.py in this repo for the shape).
   3. In render.py, replace the hand-written bar/header/disclaimer blocks with:
          from masthead import render_masthead
          sections.append(render_masthead(...))
-  4. Run `python masthead.py --check` to confirm the file matches the others.
+  4. Run `python -m shared` to confirm the engine matches the other repos.
 
 Any change to the shared look is made here once and copied to all four.
 """
@@ -131,17 +133,3 @@ def render_masthead(*, web_url: str, date_str: str, gen_time: str,
         market_strip,
         render_disclaimer(brand),
     ])
-
-
-def _self_check() -> int:
-    """Print a fingerprint so drift between repos is visible at a glance."""
-    import hashlib
-    from pathlib import Path
-    body = Path(__file__).read_bytes()
-    print(f"masthead {MASTHEAD_VERSION}  sha256:{hashlib.sha256(body).hexdigest()[:16]}")
-    print("Compare this line across all four repos; identical means aligned.")
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(_self_check())

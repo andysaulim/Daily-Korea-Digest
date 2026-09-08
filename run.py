@@ -622,6 +622,23 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
                 f"FABRICATED ARTICLES CRITICAL: {fabricated_count} article(s) have URLs not found "
                 f"in today's input feed — likely hallucinated")
 
+    # Cross-check against the shared engine's checks. Additive on purpose: the
+    # local gate above stays authoritative for Korea, and anything the shared
+    # module catches that the local gate missed shows up here. That difference
+    # is the signal — it means a check exists in one place and not the other,
+    # which is exactly the drift the shared package exists to end.
+    try:
+        from shared import validate as _shared_validate
+        # Every shared problem is reported, even if the local gate found the
+        # same thing. An operator can ignore a duplicate; a suppressed warning
+        # is how a real defect ships. An earlier version deduplicated on the
+        # section name and swallowed a genuine placeholder catch.
+        for _problem in _shared_validate.run_all(
+                digest, sections=_ALL_ITEM_SECTIONS, word_count=_count_digest_words(digest)):
+            warnings.append(f"[shared] {_problem}")
+    except Exception as _e:
+        print(f"  ⚠  Shared validation skipped (non-fatal): {_e}")
+
     return warnings
 
 
