@@ -213,13 +213,13 @@ def render(digest: dict) -> str:
     <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:{BAND};"><tr>
       <td style="padding:7px 32px 8px;font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:#fff;">CSIS Korea Chair</td>
     </tr></table>
-    <div bgcolor="{NAVY}" style="background-color:{NAVY};color:#fff;padding:18px 32px 14px;" class="sec">
+    <div bgcolor="{NAVY}" style="background-color:{NAVY};color:#fff;padding:18px 32px 16px;border-bottom:1px solid rgba(255,255,255,0.12);" class="sec">
       <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
         <td style="vertical-align:top;">
           <h1 style="margin:0 0 4px 0;font-size:28px;font-weight:700;font-family:Georgia,'Times New Roman',serif;color:#fff;letter-spacing:0.3px;">
             Korea Daily Brief
           </h1>
-          <div style="font-size:16px;font-weight:400;color:rgba(255,255,255,0.85);font-family:Georgia,serif;">{_esc(date_str)}</div>
+          <div style="margin-top:2px;font-size:16px;font-weight:400;color:rgba(255,255,255,0.85);font-family:Georgia,serif;">{_esc(date_str)}</div>
         </td>
         <td style="vertical-align:top;text-align:right;">
           <div style="font-family:{MONO};font-size:11px;color:rgba(255,255,255,0.55);white-space:nowrap;">{gen_time}<br>{word_count:,} words &middot; {read_min} min read{_issue_meta}</div>
@@ -408,6 +408,27 @@ def render(digest: dict) -> str:
           <div style="font-size:12px;color:rgba(255,255,255,0.85);margin-top:5px;font-family:Georgia,serif;">{_esc(key_stat.get("label", ""))}</div>
           <div style="font-size:11px;color:rgba(255,255,255,0.6);margin-top:6px;font-style:italic;max-width:480px;margin-left:auto;margin-right:auto;line-height:1.5;">{_esc(key_stat.get("context", ""))}</div>
           {"<div style='font-family:" + MONO + ";font-size:10px;color:rgba(255,255,255,0.4);margin-top:6px;'>Source: " + _esc(key_stat.get("source", "")) + "</div>" if key_stat.get("source") else ""}
+        </div>
+        """)
+
+    # ── 6b. Chart of the Day. Drawn only when a series with real depth is
+    #      available; chart_of_day.pick() returns None on a day with nothing
+    #      worth plotting and the section simply does not appear. ──────────
+    try:
+        import chart_of_day
+        from shared.chart import column_chart
+        _picked = chart_of_day.pick()
+    except Exception:
+        _picked = None
+    if _picked:
+        _c_title, _c_points, _c_note = _picked
+        _chart_html = column_chart(_c_points, accent=TAEGUK_BLUE,
+                                   title=_c_title, note=_c_note)
+        if _chart_html:
+            sections.append(f"""
+        <div {_SEC}>
+          <a name="chart"></a>{_sec_label("Chart of the Day")}
+          {_chart_html}
         </div>
         """)
 
@@ -1581,7 +1602,7 @@ def render(digest: dict) -> str:
     # 1,600-2,000 word target the brief is too long to scan end to end and the
     # only link was "back to top". A quiet day that drops sections simply gets
     # fewer links, and fewer than four suppresses the row entirely.
-    _NAV = [("Top Stories", "overnight"), ("Pyongyang", "kcna"),
+    _NAV = [("Top Stories", "overnight"), ("Chart", "chart"), ("Pyongyang", "kcna"),
             ("Trade", "trade"), ("Markets", "business"),
             ("Polling", "sentiment"), ("Upcoming", "upcoming"),
             ("Analysis", "analysis"), ("Satellite", "satellite")]
