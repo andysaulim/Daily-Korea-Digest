@@ -68,8 +68,17 @@ def load_gallup_baseline() -> dict:
 
 TIER1_FEEDS = {
     # ── Korean English-language dailies ────────────────────────────────────
+    # Both papers redesigned their sites and moved their feeds. The legacy
+    # paths below have been returning zero articles — Korea Herald is a
+    # designated MAJOR_FEED, so that failure was load-bearing and silent.
+    # The current paths are added alongside rather than swapped in, because
+    # they could not be verified from the build environment: if a new path is
+    # wrong it simply stays empty, and the feed-health line in the run log now
+    # says which of the pair is actually delivering. Retire the loser then.
     "Korea Herald":       "https://www.koreaherald.com/common/rss_xml.php?ct=102",
+    "Korea Herald RSS":   "https://www.koreaherald.com/rss",
     "Korea Times":        "https://www.koreatimes.co.kr/www/rss/nation.xml",
+    "Korea Times RSS":    "https://feed.koreatimes.co.kr/k/allnews.xml",
     "Yonhap English":     "https://en.yna.co.kr/RSS/news.xml",
     "JoongAng Daily":     _gnews("Korea+site:koreajoongangdaily.joins.com"),
     "Chosun English":     _gnews("Korea+site:english.chosun.com"),
@@ -331,7 +340,8 @@ KOREA_NATIVE_FEEDS = {
     "MBN", "JTBC", "KBS", "MBC", "SBS", "YTN", "Channel A", "Arirang News",
     "매일경제", "한국경제", "서울경제", "머니투데이",
     # English-language Korea desks whose entire output is Korea
-    "Yonhap English", "Korea Herald", "Korea Times", "Korea JoongAng Daily",
+    "Yonhap English", "Korea Herald", "Korea Herald RSS",
+    "Korea Times", "Korea Times RSS", "Korea JoongAng Daily",
     "Korea Economic Daily", "Dong-A English", "Chosun English",
     "Hankyoreh English", "Pressian",
 }
