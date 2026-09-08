@@ -1345,12 +1345,17 @@ def render(digest: dict) -> str:
     if locations or imagery_report:
         # Featured imagery report (e.g., AEI / 38North analysis)
         img_report_html = ""
-        if imagery_report:
+        # Only render the block when it carries actual reporting. A payload with
+        # a label but no headline or body produced a bare "· — NEW IMAGERY
+        # REPORTS" heading with nothing under it.
+        if imagery_report and (imagery_report.get("headline")
+                               or imagery_report.get("body")
+                               or imagery_report.get("summary")):
             ir_source = _esc(imagery_report.get("source", ""))
             ir_date = _esc(imagery_report.get("date", ""))
             ir_label = _esc(imagery_report.get("label", "New imagery reports"))
             ir_headline = _esc(imagery_report.get("headline", ""))
-            ir_body = _esc(imagery_report.get("body", ""))
+            ir_body = _esc(imagery_report.get("body") or imagery_report.get("summary", ""))
             ir_sources = imagery_report.get("source_links") or []
             ir_bp_ids = imagery_report.get("bp_location_ids") or []
             source_links_html = ""
@@ -1434,12 +1439,17 @@ def render(digest: dict) -> str:
             "elevated": (TAEGUK_RED, "#FBF0F1", "ELEVATED"),
             "alert": (TAEGUK_RED, "#FBE9EA", "ALERT"),
         }
-        elevated_count = sum(1 for l in locations if l.get("status", "normal") in ("elevated", "alert"))
+        # Count against the full watch list, not the freshness-filtered view —
+        # "1 of 1 sites at elevated status" was true of the filtered set and
+        # meaningless to a reader.
+        _all_locs = _fresh + _quiet
+        elevated_count = sum(1 for l in _all_locs
+                             if l.get("status", "normal") in ("elevated", "alert"))
         summary_html = ""
         if elevated_count:
-            summary_html = f'<div style="font-size:11px;color:#888;margin-top:6px;margin-bottom:12px;">{elevated_count} of {len(locations)} sites at elevated or alert status</div>'
+            summary_html = f'<div style="font-size:11px;color:#888;margin-top:6px;margin-bottom:12px;">{elevated_count} of {len(_all_locs)} sites at elevated or alert status</div>'
         else:
-            summary_html = f'<div style="font-size:11px;color:#888;margin-top:6px;margin-bottom:12px;">{len(locations)} monitored sites</div>'
+            summary_html = f'<div style="font-size:11px;color:#888;margin-top:6px;margin-bottom:12px;">{len(_all_locs)} monitored sites</div>'
 
         loc_cards = ""
         for i in range(0, len(locations), 2):
