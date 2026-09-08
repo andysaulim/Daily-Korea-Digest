@@ -1,0 +1,11 @@
+{
+  "corrections": [
+    {
+      "filed": "2026-09-08",
+      "issue": "2026-08-14",
+      "section": "Satellite & Location Watch",
+      "was": "Reported renewed seismic activity at the Punggye-ri nuclear test site",
+      "now": "No seismic event occurred. The entry was a model fabrication that entered the facility tracker and carried forward for several days."
+    }
+  ]
+}

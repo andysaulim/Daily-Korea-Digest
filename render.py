@@ -341,6 +341,39 @@ def render(digest: dict) -> str:
         </div>
         """)
 
+    # ── 3b. Corrections. The brief tells readers it is automatically
+    #      generated; this is where it says so when it was wrong. Filed by a
+    #      person via corrections.py, never by the model. Absent on any day
+    #      with nothing to correct. ──────────────────────────────────────────
+    try:
+        from corrections import active as _active_corrections
+        _corrections = _active_corrections()
+    except Exception:
+        _corrections = []
+    if _corrections:
+        _rows = ""
+        for _c in _corrections:
+            _where = _esc(_c.get("section", ""))
+            _issue = _esc(str(_c.get("issue", ""))[:10])
+            _meta = " &middot; ".join(x for x in (_where, _issue) if x)
+            _rows += f"""
+            <div style="padding:10px 0;border-top:1px solid #EADFC4;">
+              {"<div style='font-family:Arial,sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:#8A6D2F;margin-bottom:4px;'>" + _meta + "</div>" if _meta else ""}
+              <div style="font-size:13.5px;line-height:1.55;color:#5C4A22;"><strong>We reported:</strong> {_esc(_c.get("was", ""))}</div>
+              <div style="font-size:13.5px;line-height:1.55;color:#33383F;margin-top:3px;"><strong>Correct:</strong> {_esc(_c.get("now", ""))}</div>
+            </div>"""
+        sections.append(f"""
+        <div {_SEC}>
+          <a name="corrections"></a>
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#FDF8EC;border-left:3px solid #C8912B;">
+            <tr><td style="padding:14px 18px 12px;">
+              <div style="font-family:Arial,sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#8A6D2F;margin-bottom:2px;">Corrections</div>
+              {_rows}
+            </td></tr>
+          </table>
+        </div>
+        """)
+
     # ── 4. Top Stories ────────────────────────────────────────────────────
     top_stories = digest.get("top_stories") or []
     if top_stories:
