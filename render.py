@@ -120,7 +120,7 @@ def _cds_arrow(val) -> str:
     return '<span style="color:#7B90AC;">— flat</span>'
 
 
-def _link_or_text(text: str, url: str, style: str = "color:#1B2A4A;text-decoration:underline;") -> str:
+def _link_or_text(text: str, url: str, style: str = "color:#1A222E;text-decoration:none;") -> str:
     """Render as <a> only if url is a real link, otherwise plain text.
     NOTE: `text` should already be HTML-escaped by the caller via _esc()."""
     if url and url != "#" and url.startswith("http"):
@@ -130,7 +130,6 @@ def _link_or_text(text: str, url: str, style: str = "color:#1B2A4A;text-decorati
 
 # ── Section padding helper (responsive via class) ────────────────────────
 _SEC = 'style="padding:20px 32px;border-bottom:1px solid #EBEBEB;" class="sec"'
-_SEC_ALERT = f'style="padding:20px 32px;border-top:3px solid {TAEGUK_RED};border-bottom:1px solid #EBEBEB;" class="sec"'
 _H2 = lambda color: f'style="margin:0 0 8px 0;font-size:11px;color:{color};text-transform:uppercase;letter-spacing:1.5px;font-family:Arial,sans-serif;font-weight:600;"'
 
 
@@ -143,14 +142,22 @@ def _sec_label(label: str, color: str = TAEGUK_BLUE) -> str:
 
 def _item_block(cat: str, src: str, headline: str, body: str, url: str,
                  bar_color: str = TAEGUK_BLUE, extra_html: str = "") -> str:
-    """Render a standard border-left news item."""
+    """One card treatment for every list item in the brief.
+
+    Top stories, overnight, business, regional and wire items used to carry
+    three different treatments — bordered cards, bare underlined links, and a
+    red-barred block — for the same kind of content. That read as two products
+    stitched together. This is the single form: white card, accent left rule,
+    kicker, headline in ink with no underline, body, source last and muted.
+    """
+    kicker = " &middot; ".join(x for x in (cat, src) if x)
     return f"""
-            <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid {bar_color};">
-              <div style="font-size:11px;color:#888;text-transform:uppercase;">{cat} &middot; {src}</div>
-              <div style="font-size:13px;font-weight:600;color:{INK};">
+            <div class="item-card" style="margin-bottom:10px;padding:12px 14px;background:#fff;border-radius:3px;border-left:3px solid {bar_color};border-top:1px solid #EEF0F3;border-right:1px solid #EEF0F3;border-bottom:1px solid #EEF0F3;">
+              {"<div style='font-size:10px;text-transform:uppercase;letter-spacing:1px;color:" + bar_color + ";font-weight:700;margin-bottom:4px;'>" + kicker + "</div>" if kicker else ""}
+              <div style="font-size:14px;font-weight:600;color:#1A222E;font-family:Georgia,serif;line-height:1.4;">
                 {_link_or_text(headline, url)}
               </div>
-              <div style="font-size:12px;line-height:1.4;color:#555;">{body}</div>
+              {"<div style='font-size:12.5px;line-height:1.5;color:#4A5260;margin-top:4px;'>" + body + "</div>" if body else ""}
               {extra_html}
             </div>"""
 
@@ -194,7 +201,7 @@ def render(digest: dict) -> str:
     # ── 0. View in Browser bar (Read online · Print / PDF · Archive) ──────
     if web_url:
         base = web_url[:-len("latest.html")] if web_url.endswith("latest.html") else ""
-        _a = ('display:inline-block;padding:4px 12px;margin:0 2px;'
+        _a = ('display:inline-block;padding:4px 12px;margin:0 2px;'  # util-btn
               'font-family:Arial,sans-serif;font-size:11px;font-weight:700;'
               'letter-spacing:0.6px;color:#2C3E50;background:#FFFFFF;'
               'border:1px solid #D5DAE1;border-radius:3px;'
@@ -337,7 +344,7 @@ def render(digest: dict) -> str:
         sections.append(f"""
         <div style="padding:18px 32px 6px;" class="sec">
           <a name="memo"></a>
-          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#EDF2FA;border-left:3px solid {BAND};">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" class="glance-panel" style="background:#EDF2FA;border-left:3px solid {BAND};">
             <tr><td style="padding:16px 20px 8px;">
               {_sec_label("Today at a Glance")}
               {memo_html}
@@ -356,15 +363,15 @@ def render(digest: dict) -> str:
             body = _esc(story.get("body", ""))
             src_line = _esc(_clean_src(story.get("src_line", story.get("source", ""))))
             url = story.get("url", "")
-            cat_badge = f'<span style="display:inline-block;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:{TAEGUK_BLUE};font-weight:600;margin-bottom:6px;">{cat}</span>' if cat else ""
+            cat_badge = f'<div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:{TAEGUK_BLUE};font-weight:700;margin-bottom:4px;">{cat}</div>' if cat else ""
             stories_html += f"""
-            <div class="story-card" style="margin-bottom:14px;padding:14px 16px;background:#fff;border-radius:3px;border-left:4px solid {TAEGUK_BLUE};box-shadow:0 1px 3px rgba(0,0,0,0.06);">
+            <div class="item-card story-card" style="margin-bottom:12px;padding:14px 16px;background:#fff;border-radius:3px;border-left:3px solid {TAEGUK_BLUE};border-top:1px solid #EEF0F3;border-right:1px solid #EEF0F3;border-bottom:1px solid #EEF0F3;">
               {cat_badge}
-              <h3 style="margin:0 0 8px 0;font-size:16px;color:{INK};font-family:Georgia,serif;line-height:1.4;">
-                {_link_or_text(headline, url, style="color:" + INK + ";text-decoration:none;")}
+              <h3 style="margin:0 0 6px 0;font-size:16px;font-weight:600;color:{INK};font-family:Georgia,serif;line-height:1.4;">
+                {_link_or_text(headline, url)}
               </h3>
-              <p style="margin:0 0 8px 0;font-size:13px;line-height:1.6;color:#444;">{body}</p>
-              <div style="font-size:10px;color:#AAA;margin-top:6px;">{src_line}</div>
+              <p style="margin:0 0 6px 0;font-size:13px;line-height:1.6;color:#4A5260;">{body}</p>
+              <div style="font-size:10.5px;color:#7A828F;margin-top:4px;">{src_line}</div>
             </div>"""
         sections.append(f"""
         <div {_SEC}>
@@ -384,17 +391,10 @@ def render(digest: dict) -> str:
             body = _esc(item.get("body_text", ""))
             src = _esc(_clean_src(item.get("source", "")))
             url = item.get("url", "")
-            flash_html += f"""
-            <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid {TAEGUK_RED};">
-              <div style="font-size:11px;color:{TAEGUK_RED};text-transform:uppercase;font-weight:600;">{cat} &middot; {src}</div>
-              <div style="font-size:13px;font-weight:600;color:{INK};">
-                {_link_or_text(headline, url)}
-              </div>
-              <div style="font-size:12px;line-height:1.4;color:#555;">{body}</div>
-            </div>"""
+            flash_html += _item_block(cat=cat, src=src, headline=headline, body=body, url=url)
         sections.append(f"""
-        <div {_SEC_ALERT}>
-          <a name="overnight"></a>{_sec_label("&#9889; Overnight Flash", color=TAEGUK_RED)}
+        <div {_SEC}>
+          <a name="overnight"></a>{_sec_label("Overnight")}
           {flash_html}
         </div>
         """)
@@ -499,8 +499,8 @@ def render(digest: dict) -> str:
           </table>
           <div style="padding:16px 32px;background:{NAVY_PANEL};color:#E0E0E0;">
             {"<div style='margin-bottom:12px;padding:8px 14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);border-radius:4px;font-size:12px;color:#A8B6C8;'>No new KCNA dispatches ingested today &mdash; showing last known status.</div>" if data_unavailable else ""}
-            {"<div style='margin-bottom:12px;padding:8px 14px;background:" + TAEGUK_RED + ";color:#fff;border-radius:4px;font-size:12px;font-weight:600;'>&#9888; Complete KCNA silence today</div>" if silence else ""}
-            {"<div style='margin-bottom:12px;padding:8px 14px;background:" + TAEGUK_RED + ";color:#fff;border-radius:4px;font-size:12px;font-weight:600;'>&#9888; WATCH FLAG — Unusual rhetoric or activity detected</div>" if watch and not silence and not data_unavailable else ""}
+            {"<div style='margin-bottom:12px;padding:8px 14px;background:" + TAEGUK_RED + ";color:#fff;border-radius:4px;font-size:12px;font-weight:600;'>Complete KCNA silence today</div>" if silence else ""}
+            {"<div style='margin-bottom:12px;padding:8px 14px;background:" + TAEGUK_RED + ";color:#fff;border-radius:4px;font-size:12px;font-weight:600;'>WATCH FLAG — Unusual rhetoric or activity detected</div>" if watch and not silence and not data_unavailable else ""}
             <div style="padding:8px 12px;background:rgba(255,255,255,0.04);border-radius:4px;margin-bottom:12px;">
               <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#7B90AC;margin-bottom:4px;">Kim Jong Un</div>
               <div style="font-size:13px;color:#E0E0E0;font-weight:600;">{kim_icon}{kim_line}</div>
@@ -1067,7 +1067,6 @@ def render(digest: dict) -> str:
         _nea_red = {"japan-history", "territorial", "thaad-retaliation", "china-coercion",
                     "china-military", "russia-weapons", "russia-military", "russia-sanctions"}
         nea_cat_colors = {cat: TAEGUK_RED for cat in _nea_red}
-        region_colors = {"Japan-Korea": "#5A6472", "China-Korea": "#5A6472", "Trilateral": "#5A6472", "Russia-Korea": "#5A6472"}
         nea_html = ""
         for item in nea_items:
             cat_raw = _str(item.get("category", ""))
@@ -1083,17 +1082,10 @@ def render(digest: dict) -> str:
             if is_reaction:
                 badge_label = "PRC SOURCE" if "China" in region else "STATE MEDIA"
                 reaction_badge = f'<span style="display:inline-block;padding:1px 5px;border-radius:3px;font-size:10px;font-weight:600;color:#fff;background:#888;margin-left:6px;">{badge_label}</span>'
-            region_label = f'<span style="font-size:10px;padding:1px 5px;border-radius:3px;background:{region_colors.get(region, "#5A6472")};color:#fff;margin-right:6px;">{_esc(region)}</span>' if region else ""
-            nea_html += f"""
-            <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid {bar_color};">
-              <div style="font-size:11px;color:#888;text-transform:uppercase;">
-                {region_label}{cat} &middot; {src}{reaction_badge}
-              </div>
-              <div style="font-size:13px;font-weight:600;color:{INK};">
-                {_link_or_text(headline, url)}
-              </div>
-              <div style="font-size:12px;line-height:1.4;color:#555;">{body}</div>
-            </div>"""
+            # "Trilateral · Trilateral" when the region tag and category coincide.
+            region_txt = _esc(region) + " &middot; " if region and region.lower() != cat_raw.lower() else ""
+            nea_html += _item_block(cat=f"{region_txt}{cat}{reaction_badge}", src=src,
+                                    headline=headline, body=body, url=url, bar_color=bar_color)
         sections.append(f"""
         <div {_SEC}>
           <a name="nea"></a>{_sec_label("Northeast Asia Watch")}
@@ -1104,32 +1096,29 @@ def render(digest: dict) -> str:
     # ── 12c. Public Sentiment Tracker ──────────────────────────────────
     sentiment = digest.get("public_sentiment") or {}
     if sentiment and any(sentiment.values()):
-        def _sentiment_cell(label, data, width="25%"):
-            if not data or not data.get("value") or str(data.get("value")).strip().lower() in ("none", ""):
-                return f"""
-                <td width="{width}" align="center" style="padding:8px 6px;">
-                  <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#888;">{label}</div>
-                  <div style="font-family:{MONO};font-size:18px;font-weight:700;color:#888;">--</div>
-                  <div style="font-size:10px;color:#999;">No recent data</div>
-                </td>"""
-            val = _esc(str(data.get("value", "")))
-            trend = data.get("trend", "")
-            source = _esc(str(data.get("source", "")))
-            updated = _esc(str(data.get("last_updated", "")))
-            trend_arrow = ""
+        def _trend_mark(trend):
             if trend == "up":
-                trend_arrow = f'<span style="color:{UP_GREEN};">&#9650;</span>'
-            elif trend == "down":
-                trend_arrow = f'<span style="color:{DOWN_RED};">&#9660;</span>'
-            elif trend == "stable":
-                trend_arrow = '<span style="color:#888;">&#8594;</span>'
+                return f' <span style="font-size:18px;color:{UP_GREEN};vertical-align:middle;">&#9650;</span>'
+            if trend == "down":
+                return f' <span style="font-size:18px;color:{DOWN_RED};vertical-align:middle;">&#9660;</span>'
+            return ""
+
+        def _tile(label, kr, data):
+            """Compact party tile. Korean name sits on its own line so it can
+            never break mid-word inside a parenthesis, as 무당층 was doing."""
+            has = bool(data and data.get("value") and str(data.get("value")).strip().lower() not in ("none", ""))
+            val = _esc(str(data.get("value"))) if has else "--"
+            colour = INK if has else "#9AA3AE"
+            # The line is always emitted so the three numbers sit on one baseline
+            # whether or not a tile has a Korean name to show.
+            kr_html = (f'<div style="font-size:10px;line-height:1.4;color:#9AA3AE;font-family:Arial,sans-serif;'
+                       f'white-space:nowrap;">{_esc(str(kr)) if kr else "&nbsp;"}</div>')
             return f"""
-            <td width="{width}" align="center" style="padding:8px 6px;">
-              <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#888;">{label}</div>
-              <div style="font-family:{MONO};font-size:20px;font-weight:700;color:{INK};">{val} {trend_arrow}</div>
-              <div style="font-size:10px;color:#999;">{source}</div>
-              <div style="font-family:{MONO};font-size:10px;color:#999;">{updated}</div>
-            </td>"""
+                    <td width="33%" valign="top" align="center" style="padding:2px 4px;">
+                      <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#7A828F;font-family:Arial,sans-serif;white-space:nowrap;">{label}</div>
+                      {kr_html}
+                      <div style="font-family:Georgia,serif;font-size:22px;font-weight:700;color:{colour};margin-top:6px;line-height:1;">{val}{_trend_mark(data.get("trend") if has else None)}</div>
+                    </td>"""
 
         approval = sentiment.get("presidential_approval") or {}
         party_ruling = sentiment.get("party_ruling") or {}
@@ -1188,13 +1177,23 @@ def render(digest: dict) -> str:
         sections.append(f"""
         <div {_SEC}>
           <a name="sentiment"></a>{_sec_label("Public Sentiment")}
-          {"<div style='margin:-2px 0 12px;'>" + _spark_html + "</div>" if _spark_html else ""}
           <table width="100%" cellpadding="0" cellspacing="0" border="0" class="sentiment-table">
             <tr>
-              {_sentiment_cell("Presidential Approval", approval)}
-              {_sentiment_cell(f"Ruling ({party_ruling.get('party_kr', 'DP')})" if party_ruling.get("party_kr") else "Ruling Party", party_ruling)}
-              {_sentiment_cell(f"Opposition ({party_opp.get('party_kr', 'PPP')})" if party_opp.get("party_kr") else "Opposition", party_opp)}
-              {_sentiment_cell("Independents (무당층)", party_ind)}
+              <td width="42%" valign="top" style="padding:4px 18px 4px 0;border-right:1px solid #E4E7EB;">
+                <div style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:#7A828F;font-family:Arial,sans-serif;">Presidential approval</div>
+                <div class="hero-num" style="font-family:Georgia,serif;font-size:42px;font-weight:700;color:{TAEGUK_BLUE};line-height:1.05;margin-top:4px;">{_esc(str(approval.get("value") or "--"))}{_trend_mark(approval.get("trend"))}</div>
+                <div style="font-size:11px;color:#6B7280;font-family:Arial,sans-serif;margin-top:5px;">{_esc(str(approval.get("source") or ""))}{" &middot; " + _esc(str(approval.get("last_updated") or "")) if approval.get("last_updated") else ""}</div>
+                {"<div style='margin-top:9px;'>" + _spark_html + "</div>" if _spark_html else ""}
+              </td>
+              <td valign="top" style="padding:4px 0 4px 18px;">
+                <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    {_tile("Ruling party", party_ruling.get("party_kr", ""), party_ruling)}
+                    {_tile("Opposition", party_opp.get("party_kr", ""), party_opp)}
+                    {_tile("Independents", "무당층", party_ind)}
+                  </tr>
+                </table>
+              </td>
             </tr>
           </table>
           {stale_html}
@@ -1294,7 +1293,7 @@ def render(digest: dict) -> str:
                 sa_html += (f'<div style="margin-bottom:14px;padding:12px 14px;background:#EEF3F9;'
                             f'border-radius:6px;border-left:3px solid {TAEGUK_BLUE};">'
                             f'<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;'
-                            f'color:{TAEGUK_BLUE};margin-bottom:9px;">&#120143; Officials on X</div>'
+                            f'color:{TAEGUK_BLUE};margin-bottom:9px;">Officials on X</div>'
                             f'{xp_html}'
                             f'<div style="font-size:10px;color:#8A94A6;line-height:1.4;margin-top:2px;">'
                             f'Direct posts by tracked official accounts, attributed as posted. Not independently verified beyond the post.</div>'
@@ -1612,7 +1611,7 @@ def render(digest: dict) -> str:
               for _l, _a in _NAV if f'a name="{_a}"' in body]
     _nav_html = ""
     if len(_links) >= 4:
-        _nav_html = ('<div style="background:#F7F8FA;border-bottom:1px solid #E4E7EB;'
+        _nav_html = ('<div class="nav-row" style="background:#F7F8FA;border-bottom:1px solid #E4E7EB;'
                      'padding:8px 32px;text-align:center;font-family:Arial,sans-serif;'
                      'font-size:11px;line-height:1.9;color:#9AA3AE;" class="sec">'
                      + ' &nbsp;&middot;&nbsp; '.join(_links) + '</div>')
@@ -1724,6 +1723,18 @@ def render(digest: dict) -> str:
       .wrapper .sentiment-spotlight {{ background:#16222F !important; color:#C4C8CE !important; }}
       .wrapper .sentiment-discourse {{ background:#2A1518 !important; color:#C4C8CE !important; }}
       .wrapper .mkt-table td {{ border-color:rgba(255,255,255,0.08) !important; }}
+      /* Surfaces and type added in the 2026-09 redesign */
+      .wrapper .item-card {{ background:#262A30 !important; border-color:#33373D !important; }}
+      .wrapper .glance-panel {{ background:#1C2A3E !important; }}
+      .wrapper .nav-row {{ background:#1A1D22 !important; border-bottom-color:#33373D !important; }}
+      .wrapper .sec div[style*="color:#1A222E"], .wrapper .sec h3, .wrapper .sec a[style*="color:#1A222E"] {{ color:#E8E6E1 !important; }}
+      .wrapper .sec div[style*="color:#4A5260"], .wrapper .sec div[style*="color:#444"], .wrapper .sec div[style*="color:#555"], .wrapper .sec p[style*="color:#444"] {{ color:#C4C8CE !important; }}
+      .wrapper .sec div[style*="color:#2C3E50"], .wrapper .sec div[style*="color:#33383F"] {{ color:#D5D8DC !important; }}
+      .wrapper .sec div[style*="color:#6B7280"], .wrapper .sec div[style*="color:#7A828F"], .wrapper .sec div[style*="color:#888"] {{ color:#9AA3AE !important; }}
+      .wrapper .hero-num {{ color:#7FB0F0 !important; }}
+      .wrapper table[style*="background:#EDF2FA"] {{ background:#1C2A3E !important; }}
+      .wrapper .sentiment-table td {{ border-color:#33373D !important; }}
+      .wrapper table[style*="border-bottom:1px solid #E8E8E8"] {{ border-color:#33373D !important; }}
     }}
   </style>
   <!--[if mso]>
