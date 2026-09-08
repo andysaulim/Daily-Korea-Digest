@@ -411,27 +411,6 @@ def render(digest: dict) -> str:
         </div>
         """)
 
-    # ── 6b. Chart of the Day. Drawn only when a series with real depth is
-    #      available; chart_of_day.pick() returns None on a day with nothing
-    #      worth plotting and the section simply does not appear. ──────────
-    try:
-        import chart_of_day
-        from shared.chart import column_chart
-        _picked = chart_of_day.pick()
-    except Exception:
-        _picked = None
-    if _picked:
-        _c_title, _c_points, _c_note = _picked
-        _chart_html = column_chart(_c_points, accent=TAEGUK_BLUE,
-                                   title=_c_title, note=_c_note)
-        if _chart_html:
-            sections.append(f"""
-        <div {_SEC}>
-          <a name="chart"></a>{_sec_label("Chart of the Day")}
-          {_chart_html}
-        </div>
-        """)
-
     # ── 7. DPRK Official Statements ───────────────────────────────────────
     kcna = digest.get("kcna_delta") or {}
     if kcna and any(kcna.values()):
@@ -1602,7 +1581,7 @@ def render(digest: dict) -> str:
     # 1,600-2,000 word target the brief is too long to scan end to end and the
     # only link was "back to top". A quiet day that drops sections simply gets
     # fewer links, and fewer than four suppresses the row entirely.
-    _NAV = [("Top Stories", "overnight"), ("Chart", "chart"), ("Pyongyang", "kcna"),
+    _NAV = [("Top Stories", "overnight"), ("Pyongyang", "kcna"),
             ("Trade", "trade"), ("Markets", "business"),
             ("Polling", "sentiment"), ("Upcoming", "upcoming"),
             ("Analysis", "analysis"), ("Satellite", "satellite")]
