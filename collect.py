@@ -615,7 +615,11 @@ def _fetch_feeds_parallel(feed_dict: dict, is_tiered: bool = False) -> dict:
 
     def _fetch_one(source, url_or_tuple):
         if is_tiered:
-            url, tier_val = url_or_tuple
+            # (url_or_candidates, tier). The first element may itself be a list
+            # of candidate URLs, so unpack the pair rather than the whole value
+            # — otherwise a tiered feed given a fallback list would unpack into
+            # the wrong two things and fail silently.
+            url, tier_val = url_or_tuple[0], url_or_tuple[1]
         else:
             url = url_or_tuple
             tier_val = None

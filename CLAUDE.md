@@ -5,7 +5,7 @@ Automated intelligence briefing on Korean Peninsula affairs, delivered daily at 
 ## Architecture
 
 ```
-COLLECT (140+ RSS feeds, 25 threads) → DIGEST (Claude Sonnet/Opus) → VALIDATE (dedup, URL repair, source caps) → RENDER (HTML email) → SEND (Gmail SMTP)
+COLLECT (160+ feeds, 25 threads) → RANK (editorial priority) → DIGEST (Claude Sonnet/Opus) → VALIDATE (dedup, URL repair, source caps) → RENDER (HTML email) → SEND (Gmail SMTP)
 ```
 
 Orchestrated by `run.py`. Triggered via external cron (cron-job.org) → GitHub Actions `workflow_dispatch`, with fallback crons at 7:30 and 9:00 AM ET.
@@ -26,14 +26,55 @@ Orchestrated by `run.py`. Triggered via external cron (cron-job.org) → GitHub 
 | `tension_scorer.py` | Peninsula tension index (0–10 scale) — **built but not wired**; nothing imports it |
 | `weekly.py` | Friday "Week in Review" synthesis from the week's 7 daily digests |
 | `update_readme.py` | Auto-updates README with latest run stats |
+| `feed_health.py` | Per-feed delivery streaks across runs — flags feeds silent 3+ runs |
+| `test_sources.py` | Guards the prompt's source claims against the actual feed list |
+| `test_render_visual.py` | Measures contrast, typeface count and mobile overflow in a browser |
 
 ## Persistent State
 
-Tracker files (`kim_tracker.json`, `kcna_tracker.json`, `bp_tracker.json`, `metrics.jsonl`) are cached across GitHub Actions runs. They prevent the AI from hallucinating baselines — real historical data is injected into the prompt instead.
+Tracker files (`kim_tracker.json`, `kcna_tracker.json`, `bp_tracker.json`, `feed_health.json`, `metrics.jsonl`) are cached across GitHub Actions runs. They prevent the AI from hallucinating baselines — real historical data is injected into the prompt instead.
+
+## Sourcing
+
+Read this before touching `collect.py` or the prompt's source rules.
+
+**A feed is a list of candidate URLs, not one URL.** They are tried in order
+and the first to return items wins: the publisher's own RSS first, a Google
+News `site:` search last. Use `_native(native_url, gnews_query)` to define one.
+Never put a search ahead of a native feed.
+
+The reason is that the brief used to be ~150 Google News searches, so one
+change upstream would take nearly every source at once, silently — the issue
+would just arrive thin. The fallback also means an unverified native URL is
+safe to add: if it is wrong, the search behind it answers as before.
+
+**Primary sources bypass the relevance filter.** `KOREA_KEYWORDS` strips world
+news out of general wires. Applied to a ROK ministry feed it deleted most of
+it, because a real headline like `2027년도 예산안 국무회의 의결` contains none
+of its Korean tokens. Feeds listed in `KOREA_NATIVE_FEEDS` are exempt. Add any
+new ROK government or Korean-language feed to that set, or most of it is
+discarded before the model sees it.
+
+**Only the top N articles per tier reach the model** (140 for tier 1). They are
+ordered by `digest.rank_for_prompt` — primary documents, then outlets a
+mandatory rule names, then flagged correspondents, then Korean full-text —
+taking one per source before any source gets a second. Before this, the cut was
+by network latency, and the outlets the prompt calls mandatory often were not
+in the prompt at all.
+
+**Never name a source in the prompt that no feed collects.** It invites the
+model to satisfy the instruction from memory, which is what SOURCE-OR-SKIP
+exists to prevent. `test_sources.py` enforces this.
+
+**Feed health** is tracked across runs in `feed_health.json`. A feed silent 3+
+consecutive runs is reported in the run log with the date it last delivered.
+Check that before assuming a source is covered.
+
+Run `python test_sources.py` after any change here.
 
 ## Feed Tiers
 
-- **Tier 1 (News, 24h window)**: Korea Herald, Reuters, WSJ, NYT, Bloomberg, Yonhap, JTBC, Global Times, Xinhua, TASS
+- **Tier 1 (News, 24h window)**: Korea Herald, Reuters, WSJ, NYT, Bloomberg, Yonhap, JTBC, Global Times, Xinhua, TASS; ROK primary sources (Presidential Office, MOFA, MND, Unification, MOEF, MOTIE, DAPA, Joint Chiefs, National Assembly, Prosecution, Courts, Bank of Korea, KOSTAT, Customs, DART, korea.kr); Korean-language dailies (조선·중앙·동아·한겨레·경향·한국일보·연합·뉴시스) and broadcast
 - **Tier 2 (Analysis, 36h)**: CSIS, Brookings, 38 North, Foreign Affairs, The Diplomat, RAND
 - **Tier 3 (Academic, 72h)**: International Security, Asian Survey, Pacific Affairs
 - **Tier 4 (DPRK, 24h)**: KCNA Watch, Rodong Sinmun, Daily NK, NK News
