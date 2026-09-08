@@ -26,7 +26,42 @@
     /* Mobile responsive — one declaration per pattern; no duplicates.
        Fixes from the Q3 2026 mobile audit are marked (A#). */
     @media only screen and (max-width: 620px) {
+      /* Notice and links will not sit side by side on a phone.
+         No width:100% here: a table cell set to display:block already fills
+         its row, and 100% plus horizontal padding is measured content-box,
+         which pushed the whole document 28px wider than the screen and gave
+         every section a horizontal scrollbar. */
+      .util-row .util-cell { display:block !important; text-align:center !important;
+        padding:5px 8px !important; white-space:normal !important; }
+      .util-row .util-cell a { padding:4px 7px !important; margin:1px !important;
+        font-size:11px !important; letter-spacing:0.3px !important; }
       .wrapper { width:100% !important; }
+      /* The metadata line is nowrap, so sitting beside the title it set a
+         211px floor on the masthead row. A table cannot shrink below the
+         min-content width of its cells, so the whole 680px wrapper stopped at
+         about 325px and every section inherited that floor: the brief scrolled
+         sideways on a 320px screen. Stacked under the date it wraps freely. */
+      .mast-meta { display:block !important; text-align:left !important;
+        padding-top:8px !important; }
+      .mast-meta div { white-space:normal !important; }
+      /* The CSIS lockup is three cells side by side with rules between them.
+         Its min-content width is 293px, which with the footer padding put a
+         325px floor under the whole table — the last thing still forcing a
+         320px screen to scroll sideways. Stacked and centred it costs three
+         short lines and fits any screen. */
+      .lockup td { display:block !important; border-left:0 !important;
+        text-align:center !important; padding:3px 0 !important; }
+      /* Public Sentiment put the approval hero and three party tiles in one
+         row. On a phone that left each tile 72px, so "RULING PARTY" and
+         "OPPOSITION" ran into each other. Hero above, tiles below, each tile
+         then has about 114px and the labels sit clear. */
+      .sentiment-table > tbody > tr > td { display:block !important;
+        width:100% !important; border-right:0 !important;
+        padding:0 0 12px 0 !important; }
+      .sentiment-table > tbody > tr > td + td { padding:12px 0 0 0 !important;
+        border-top:1px solid #E4E7EB !important; }
+      /* 9px labels are too small to read on a phone. */
+      .cal-table div[style*="font-size:10px"], .lockup td { font-size:10px !important; }
       .sec, .footer { padding:16px 16px !important; }
       /* (A4) Masthead keeps presence on phones */
       h1 { font-size:22px !important; }
@@ -48,8 +83,12 @@
       .deal-card { padding:10px 0 !important; }
       .deal-breakdown td { display:block !important; width:100% !important; padding:2px 8px !important; font-size:11px !important; white-space:normal !important; }
       .deal-breakdown tr { display:block !important; border-bottom:1px solid #E8EDF3 !important; padding:4px 0 !important; }
-      /* (A7) Sentiment 2x2 — 47% leaves room for padding, no wrap */
-      .sentiment-table td { display:inline-block !important; width:47% !important; box-sizing:border-box !important; padding:10px 4px !important; text-align:center !important; }
+      /* Party tiles, three across under the approval hero. This rule dates
+         from the old four-equal-column layout and still said 47%, which put
+         two tiles on one line and orphaned the third. The outer cells are
+         handled by the stacking rule above, whose selector is more specific. */
+      .sentiment-table table td { display:inline-block !important; width:32% !important;
+        box-sizing:border-box !important; padding:8px 2px !important; text-align:center !important; }
       /* Trade dashboard strip — stays 3-across like the market strip */
       .trade-dash td { padding:9px 4px 10px !important; }
       .trade-dash span[style*="font-size:24px"] { font-size:18px !important; }
@@ -83,39 +122,40 @@
       /* (A5) Market strip numbers don't collide at 621px */
       .mkt-table td { padding:10px 10px 12px !important; }
     }
-    /* Dark mode support — scoped selectors, no blanket color override (A6).
-       The masthead, market strip, key stat, KCNA panel, and footer are
-       already dark surfaces and need no inversion. */
     @media (prefers-color-scheme: dark) {
       body { background:#121212 !important; }
       .wrapper { background:#1a1a1a !important; }
       .wrapper .sec { background:#1E2126 !important; border-bottom-color:#33373D !important; }
-      .wrapper h1, .wrapper h2, .wrapper h3 { color:#E8E6E1 !important; }
-      .wrapper .sec p { color:#C4C8CE !important; }
-      .wrapper a { color:#6FA8E8 !important; }
-      .wrapper .footer { background:#04182F !important; }
-      .wrapper .story-card { background:#262A30 !important; border-color:#33373D !important; }
-      .wrapper .kcna-dark, .wrapper .kcna-dark table, .wrapper .kcna-dark > div { background:#0A1E38 !important; }
-      .wrapper .gov-grid div { background:#262A30 !important; }
-      .wrapper .loc-grid div { background:#262A30 !important; border-color:#4A4F57 !important; }
-      .wrapper .loc-grid div[style*="color:#1A222E"] { color:#D5D8DC !important; }
-      .wrapper .loc-grid div[style*="color:#555"] { color:#AAA !important; }
-      .wrapper .loc-grid div[style*="color:#999"] { color:#8A9099 !important; }
-      .wrapper .sentiment-spotlight { background:#16222F !important; color:#C4C8CE !important; }
-      .wrapper .sentiment-discourse { background:#2A1518 !important; color:#C4C8CE !important; }
-      .wrapper .mkt-table td { border-color:rgba(255,255,255,0.08) !important; }
-      /* Surfaces and type added in the 2026-09 redesign */
-      .wrapper .item-card { background:#262A30 !important; border-color:#33373D !important; }
-      .wrapper .glance-panel { background:#1C2A3E !important; }
       .wrapper .nav-row { background:#1A1D22 !important; border-bottom-color:#33373D !important; }
-      .wrapper .sec div[style*="color:#1A222E"], .wrapper .sec h3, .wrapper .sec a[style*="color:#1A222E"] { color:#E8E6E1 !important; }
-      .wrapper .sec div[style*="color:#4A5260"], .wrapper .sec div[style*="color:#444"], .wrapper .sec div[style*="color:#555"], .wrapper .sec p[style*="color:#444"] { color:#C4C8CE !important; }
-      .wrapper .sec div[style*="color:#2C3E50"], .wrapper .sec div[style*="color:#33383F"] { color:#D5D8DC !important; }
-      .wrapper .sec div[style*="color:#6B7280"], .wrapper .sec div[style*="color:#7A828F"], .wrapper .sec div[style*="color:#888"] { color:#9AA3AE !important; }
-      .wrapper .hero-num { color:#7FB0F0 !important; }
-      .wrapper table[style*="background:#EDF2FA"] { background:#1C2A3E !important; }
-      .wrapper .sentiment-table td { border-color:#33373D !important; }
-      .wrapper table[style*="border-bottom:1px solid #E8E8E8"] { border-color:#33373D !important; }
+      .wrapper h1, .wrapper h2, .wrapper h3 { color:#E8E6E1 !important; }
+      .wrapper .footer { background:#04182F !important; }
+      .wrapper .kcna-dark, .wrapper .kcna-dark table, .wrapper .kcna-dark > div { background:#0A1E38 !important; }
+      .wrapper .item-card, .wrapper .story-card, .wrapper .gov-grid div, .wrapper .loc-grid div { background:#262A30 !important; border-color:#33373D !important; }
+      .wrapper .sentiment-spotlight { background:#16222F !important; }
+      .wrapper .sentiment-discourse { background:#2A1518 !important; }
+      .wrapper .mkt-table td { border-color:rgba(255,255,255,0.08) !important; }
+      .wrapper .sentiment-table td, .wrapper .cal-table { border-color:#33373D !important; }
+      .wrapper td[style*="border-bottom:1px solid #E8E8E8"], .wrapper table[style*="border-bottom:1px solid #E8E8E8"] { border-color:#33373D !important; }
+      .wrapper [style*="color:#0047A0"] { color:#7FB0F0 !important; }
+      .wrapper [style*="color:#1A222E"] { color:#E8E6E1 !important; }
+      .wrapper [style*="color:#1B2A4A"] { color:#D5D8DC !important; }
+      .wrapper [style*="color:#2C3E50"] { color:#D5D8DC !important; }
+      .wrapper [style*="color:#2C3540"] { color:#D5D8DC !important; }
+      .wrapper [style*="color:#4A5260"] { color:#C4C8CE !important; }
+      .wrapper [style*="color:#55607A"] { color:#C4C8CE !important; }
+      .wrapper [style*="color:#5A6472"] { color:#C4C8CE !important; }
+      .wrapper [style*="color:#6B7280"] { color:#9AA3AE !important; }
+      .wrapper [style*="color:#CD2E3A"] { color:#F08A94 !important; }
+      .wrapper [style*="color:#A93226"] { color:#F08A94 !important; }
+      .wrapper [style*="color:#2E7D4F"] { color:#5FBF87 !important; }
+      .wrapper [style*="background:#fff"] { background-color:#262A30 !important; }
+      .wrapper [style*="background:#FFFFFF"] { background-color:#262A30 !important; }
+      .wrapper [style*="background:#F0F0F0"] { background-color:#2A2E34 !important; }
+      .wrapper [style*="background:#F7F8FA"] { background-color:#1A1D22 !important; }
+      .wrapper [style*="background:#F5F7FA"] { background-color:#22262C !important; }
+      .wrapper [style*="background:#EDF2FA"] { background-color:#1C2A3E !important; }
+      .wrapper [style*="background:#F0F5FB"] { background-color:#16222F !important; }
+      .wrapper [style*="background:#FBF0F1"] { background-color:#2A1518 !important; }
     }
   </style>
   <!--[if mso]>
@@ -134,33 +174,34 @@
     <tr>
       <td align="center" valign="top" style="padding:0;">
         <!--[if mso]><table width="680" cellpadding="0" cellspacing="0" border="0" align="center"><tr><td><![endif]-->
-        <table role="presentation" class="wrapper" width="680" cellpadding="0" cellspacing="0" border="0" align="center" style="width:680px;max-width:680px;margin:0 auto;background:#FFFFFF;box-shadow:0 2px 20px rgba(0,0,0,0.08);">
+        <table role="presentation" class="wrapper" width="680" cellpadding="0" cellspacing="0" border="0" align="center" style="width:680px;max-width:680px;margin:0 auto;background:#FFFFFF;font-family:Arial,Helvetica,sans-serif;box-shadow:0 2px 20px rgba(0,0,0,0.08);">
           <tr>
             <td style="padding:0;">
               
-        <div style="background:#2E3644;padding:5px 32px;text-align:center;font-family:Arial,sans-serif;font-size:9.5px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:rgba(255,255,255,0.72);" class="sec">For Internal Use Only</div>
-        <div style="background:#F0F0F0;padding:6px 32px;text-align:center;font-size:11px;color:#888;" class="sec">
-          <a href="https://andysaulim.github.io/Daily-Korea-Digest/latest.html" style="display:inline-block;padding:4px 12px;margin:0 2px;font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:0.6px;color:#2C3E50;background:#FFFFFF;border:1px solid #D5DAE1;border-radius:3px;text-decoration:none;white-space:nowrap;">Read online</a><a href="https://andysaulim.github.io/Daily-Korea-Digest/latest.pdf" style="display:inline-block;padding:4px 12px;margin:0 2px;font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:0.6px;color:#2C3E50;background:#FFFFFF;border:1px solid #D5DAE1;border-radius:3px;text-decoration:none;white-space:nowrap;">Download PDF</a><a href="https://andysaulim.github.io/Daily-Korea-Digest/archive.html" style="display:inline-block;padding:4px 12px;margin:0 2px;font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:0.6px;color:#2C3E50;background:#FFFFFF;border:1px solid #D5DAE1;border-radius:3px;text-decoration:none;white-space:nowrap;">Past issues</a>
-        </div>
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#2E3644;" class="util-row">
+          <tr>
+            <td class="util-cell" style="padding:7px 32px;font-family:Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.72);white-space:nowrap;">For Internal Use Only</td>
+            <td class="util-cell" align="right" style="padding:5px 32px 5px 0;text-align:right;"><a href="https://andysaulim.github.io/Daily-Korea-Digest/latest.html" style="display:inline-block;padding:4px 12px;margin:0 2px;font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:0.5px;color:rgba(255,255,255,0.92);background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.22);border-radius:3px;text-decoration:none;white-space:nowrap;">Read online</a><a href="https://andysaulim.github.io/Daily-Korea-Digest/latest.pdf" style="display:inline-block;padding:4px 12px;margin:0 2px;font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:0.5px;color:rgba(255,255,255,0.92);background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.22);border-radius:3px;text-decoration:none;white-space:nowrap;">Download PDF</a><a href="https://andysaulim.github.io/Daily-Korea-Digest/archive.html" style="display:inline-block;padding:4px 12px;margin:0 2px;font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:0.5px;color:rgba(255,255,255,0.92);background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.22);border-radius:3px;text-decoration:none;white-space:nowrap;">Past issues</a></td>
+          </tr>
+        </table>
         
 
     <a name="top"></a>
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#0052B4;"><tr>
-      <td style="padding:7px 32px 8px;font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:#fff;">CSIS Korea Chair</td>
-    </tr></table>
-    <div bgcolor="#1B2A4A" style="background-color:#1B2A4A;color:#fff;padding:18px 32px 16px;border-bottom:1px solid rgba(255,255,255,0.12);" class="sec">
+    <div style="height:4px;background:#0052B4;font-size:0;line-height:0;">&nbsp;</div>
+    <div bgcolor="#1B2A4A" style="background-color:#1B2A4A;color:#fff;padding:16px 32px 16px;border-bottom:1px solid rgba(255,255,255,0.12);" class="sec">
       <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
         <td style="vertical-align:top;">
-          <h1 style="margin:0 0 4px 0;font-size:28px;font-weight:700;font-family:Georgia,'Times New Roman',serif;color:#fff;letter-spacing:0.3px;">
+          <div style="font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#8FB6E8;margin-bottom:7px;">CSIS Korea Chair</div>
+          <h1 style="margin:0 0 4px 0;font-size:28px;font-weight:700;font-family:Georgia,'Times New Roman',serif;color:#fff;letter-spacing:0.5px;">
             Korea Daily Brief
           </h1>
           <div style="margin-top:2px;font-size:16px;font-weight:400;color:rgba(255,255,255,0.85);font-family:Georgia,serif;">Tuesday, September 8, 2026</div>
         </td>
-        <td style="vertical-align:top;text-align:right;">
-          <div style="font-family:'Courier New',Courier,monospace;font-size:11px;color:rgba(255,255,255,0.55);white-space:nowrap;">5:44 PM ET<br>1,785 words &middot; 7 min read</div>
+        <td class="mast-meta" style="vertical-align:bottom;text-align:right;">
+          <div style="font-family:'Courier New',Courier,monospace;font-size:11px;color:rgba(255,255,255,0.50);white-space:nowrap;">1,318 words &middot; 5 min read</div>
         </td>
       </tr></table>
-      <div style='margin-top:14px;padding-top:12px;border-top:1px solid rgba(205,46,58,0.45);font-size:13px;color:rgba(255,255,255,0.92);font-family:Georgia,serif;line-height:1.55;'><strong style='color:#E8697A;font-size:11px;letter-spacing:1.5px;font-family:Arial,sans-serif;'>RE:</strong>&nbsp; Kang Kon destroyer commissioned · NK-Russia road bridge opens · Lee-Macron summit · ROK Hormuz deployment decision · SDD opens</div>
+      <div style='margin-top:14px;padding-top:12px;border-top:1px solid rgba(205,46,58,0.45);font-size:13px;color:rgba(255,255,255,0.92);font-family:Georgia,serif;line-height:1.55;'><strong style='color:#E8697A;font-size:11px;letter-spacing:1.5px;font-family:Arial,sans-serif;'>RE:</strong>&nbsp; DPRK commissions Kang Kon destroyer, declares nuclear navy · NK-Russia road bridge opens · Seoul weighs Hormuz deployment · Lee-Macron summit Paris</div>
     </div>
     
 
@@ -174,12 +215,12 @@
             </td>
             <td width="25%" align="center" style="padding:11px 6px 13px;border-left:1px solid rgba(255,255,255,0.10);">
               <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#8FA0B5;">USD/KRW</div>
-              <div style="font-family:'Courier New',Courier,monospace;font-size:16px;font-weight:700;margin-top:3px;">1,339.93</div>
-              <div style="font-family:'Courier New',Courier,monospace;font-size:11px;margin-top:2px;"><span style="color:#E8697A;">&#9660; -0.3%</span></div>
+              <div style="font-family:'Courier New',Courier,monospace;font-size:16px;font-weight:700;margin-top:3px;">1,340.49</div>
+              <div style="font-family:'Courier New',Courier,monospace;font-size:11px;margin-top:2px;"><span style="color:#E8697A;">&#9660; -0.2%</span></div>
             </td>
             <td width="25%" align="center" style="padding:11px 6px 13px;border-left:1px solid rgba(255,255,255,0.10);">
-              <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#8FA0B5;">Brent Crude</div>
-              <div style="font-family:'Courier New',Courier,monospace;font-size:16px;font-weight:700;margin-top:3px;">$99.31</div>
+              <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#8FA0B5;">Brent</div>
+              <div style="font-family:'Courier New',Courier,monospace;font-size:16px;font-weight:700;margin-top:3px;">$99.28</div>
               <div style="font-family:'Courier New',Courier,monospace;font-size:11px;margin-top:2px;"><span style="color:#69C88E;">&#9650; +3.1%</span></div>
             </td>
             <td width="25%" align="center" style="padding:11px 6px 13px;border-left:1px solid rgba(255,255,255,0.10);">
@@ -190,13 +231,13 @@
           </tr>
         </table>
         
-<div class="nav-row" style="background:#F7F8FA;border-bottom:1px solid #E4E7EB;padding:8px 32px;text-align:center;font-family:Arial,sans-serif;font-size:11px;line-height:1.9;color:#9AA3AE;" class="sec"><a href="#overnight" style="color:#0047A0;text-decoration:none;white-space:nowrap;">Top Stories</a> &nbsp;&middot;&nbsp; <a href="#kcna" style="color:#0047A0;text-decoration:none;white-space:nowrap;">Pyongyang</a> &nbsp;&middot;&nbsp; <a href="#trade" style="color:#0047A0;text-decoration:none;white-space:nowrap;">Trade</a> &nbsp;&middot;&nbsp; <a href="#business" style="color:#0047A0;text-decoration:none;white-space:nowrap;">Markets</a> &nbsp;&middot;&nbsp; <a href="#sentiment" style="color:#0047A0;text-decoration:none;white-space:nowrap;">Polling</a> &nbsp;&middot;&nbsp; <a href="#upcoming" style="color:#0047A0;text-decoration:none;white-space:nowrap;">Upcoming</a> &nbsp;&middot;&nbsp; <a href="#analysis" style="color:#0047A0;text-decoration:none;white-space:nowrap;">Analysis</a> &nbsp;&middot;&nbsp; <a href="#satellite" style="color:#0047A0;text-decoration:none;white-space:nowrap;">Satellite</a></div>
+<div class="nav-row" style="background:#F7F8FA;border-bottom:1px solid #E4E7EB;padding:8px 32px;text-align:center;font-family:Arial,sans-serif;font-size:11px;line-height:1.9;color:#6B7280;" class="sec"><a href="#overnight" style="color:#0047A0;text-decoration:none;white-space:nowrap;">Top Stories</a> &nbsp;&middot;&nbsp; <a href="#kcna" style="color:#0047A0;text-decoration:none;white-space:nowrap;">Pyongyang</a> &nbsp;&middot;&nbsp; <a href="#trade" style="color:#0047A0;text-decoration:none;white-space:nowrap;">Trade</a> &nbsp;&middot;&nbsp; <a href="#business" style="color:#0047A0;text-decoration:none;white-space:nowrap;">Markets</a> &nbsp;&middot;&nbsp; <a href="#sentiment" style="color:#0047A0;text-decoration:none;white-space:nowrap;">Polling</a> &nbsp;&middot;&nbsp; <a href="#upcoming" style="color:#0047A0;text-decoration:none;white-space:nowrap;">Upcoming</a> &nbsp;&middot;&nbsp; <a href="#analysis" style="color:#0047A0;text-decoration:none;white-space:nowrap;">Analysis</a> &nbsp;&middot;&nbsp; <a href="#satellite" style="color:#0047A0;text-decoration:none;white-space:nowrap;">Satellite</a></div>
 
         <div style="padding:18px 32px 6px;" class="sec">
           <a name="memo"></a>
-          <table width="100%" cellpadding="0" cellspacing="0" border="0" class="glance-panel" style="background:#EDF2FA;border-left:3px solid #0052B4;">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" class="glance-panel" style="background:#EDF2FA;border-left:3px solid #0047A0;">
             <tr><td style="padding:16px 20px 8px;">
-              <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.8px;color:#0047A0;font-family:Arial,sans-serif;margin-bottom:14px;padding-bottom:6px;border-bottom:2px solid #0047A0;">Today at a Glance</div>
+              <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#0047A0;font-family:Arial,sans-serif;margin-bottom:14px;padding-bottom:6px;border-bottom:2px solid #0047A0;">Today at a Glance</div>
               
             <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:10px;">
               <tr>
@@ -204,7 +245,7 @@
                   <div style="width:24px;height:24px;border-radius:50%;background:#0047A0;color:#FFFFFF;text-align:center;line-height:24px;font-size:12px;font-weight:700;font-family:Georgia,serif;">1</div>
                 </td>
                 <td style="padding-left:10px;vertical-align:top;">
-                  <div style="font-size:14px;line-height:1.6;color:#2C3E50;font-family:Georgia,serif;">Kim Jong Un commissioned the Kang Kon (No. 52) naval destroyer at Wonsan, declaring it part of DPRK's nuclear response system — with daughter Kim Ju-ae appearing alongside him on the day Freedom Edge 2026 trilateral exercises opened.</div>
+                  <div style="font-size:14px;line-height:1.6;color:#2C3E50;font-family:Georgia,serif;">North Korea commissioned the destroyer Kang Kon at Wonsan, with Kim Jong Un declaring naval nuclear armament and linking the warship to DPRK's nuclear response system — timed precisely to the opening of Freedom Edge 2026 trilateral drills.</div>
                 </td>
               </tr>
             </table>
@@ -214,7 +255,7 @@
                   <div style="width:24px;height:24px;border-radius:50%;background:#0047A0;color:#FFFFFF;text-align:center;line-height:24px;font-size:12px;font-weight:700;font-family:Georgia,serif;">2</div>
                 </td>
                 <td style="padding-left:10px;vertical-align:top;">
-                  <div style="font-size:14px;line-height:1.6;color:#2C3E50;font-family:Georgia,serif;">South Korea dispatched an investigation team to assess the Hormuz Strait situation as Iran warned of 'serious consequences' and domestic civil groups and the progressive opposition press publicly opposed any ROK troop deployment.</div>
+                  <div style="font-size:14px;line-height:1.6;color:#2C3E50;font-family:Georgia,serif;">Russia and North Korea formally opened the first road bridge over the Tumen River at a ceremony attended by Russian Prime Minister Mikhail Mishustin, named after Soviet officer Yakov Novichenko, the first permanent road link across the shared border.</div>
                 </td>
               </tr>
             </table>
@@ -224,7 +265,7 @@
                   <div style="width:24px;height:24px;border-radius:50%;background:#0047A0;color:#FFFFFF;text-align:center;line-height:24px;font-size:12px;font-weight:700;font-family:Georgia,serif;">3</div>
                 </td>
                 <td style="padding-left:10px;vertical-align:top;">
-                  <div style="font-size:14px;line-height:1.6;color:#2C3E50;font-family:Georgia,serif;">President Lee Jae-myung concluded a summit with French President Macron in Paris, signing 15 cooperation documents spanning defense, semiconductors, and civil nuclear energy — including a Samsung partnership with French AI startup Mistral AI.</div>
+                  <div style="font-size:14px;line-height:1.6;color:#2C3E50;font-family:Georgia,serif;">South Korea dispatched an assessment team to the Strait of Hormuz, while President Lee Jae-myung and French President Macron agreed at the Elysée to coordinate closely on Hormuz freedom of navigation — Seoul clarifying it is studying 'contribution methods,' not combat deployment.</div>
                 </td>
               </tr>
             </table>
@@ -234,68 +275,68 @@
         
 
         <div style="padding:20px 32px;border-bottom:1px solid #EBEBEB;" class="sec">
-          <a name="top-stories"></a><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.8px;color:#0047A0;font-family:Arial,sans-serif;margin-bottom:14px;padding-bottom:6px;border-bottom:2px solid #0047A0;">Top Stories</div>
+          <a name="top-stories"></a><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#0047A0;font-family:Arial,sans-serif;margin-bottom:14px;padding-bottom:6px;border-bottom:2px solid #0047A0;">Top Stories</div>
           
             <div class="item-card story-card" style="margin-bottom:12px;padding:14px 16px;background:#fff;border-radius:3px;border-left:3px solid #0047A0;border-top:1px solid #EEF0F3;border-right:1px solid #EEF0F3;border-bottom:1px solid #EEF0F3;">
-              <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#0047A0;font-weight:700;margin-bottom:4px;">US-Korea</div>
+              <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#0047A0;font-weight:700;margin-bottom:4px;">DPRK</div>
               <h3 style="margin:0 0 6px 0;font-size:16px;font-weight:600;color:#1A222E;font-family:Georgia,serif;line-height:1.4;">
-                <a href="https://en.yna.co.kr/view/AEN20260908011253320" style="color:#1A222E;text-decoration:none;">ROK dispatches inspection team to Hormuz Strait as Iran warns of 'serious consequences'</a>
+                <a href="https://news.google.com/rss/articles/CBMiWkFVX3lxTE1NQWplSldhaGdzUFFaRUZ2V0Mtbl96UVpZYzQ5UVdka2xMcHhoYjFpRjhKZ2tnUlNRZkU3eDZVMTdkbWJNc0hheGpFeEV4ck02MFE4UE44VmpPQQ?oc=5" style="color:#1A222E;text-decoration:none;">DPRK commissions destroyer Kang Kon, Kim Jong Un declares naval nuclear armament</a>
               </h3>
-              <p style="margin:0 0 6px 0;font-size:13px;line-height:1.6;color:#4A5260;">South Korea's Ministry of National Defense confirmed September 8 that it dispatched an investigation team to the Hormuz Strait to assess the operational situation, a procedural step preceding any formal deployment decision. Iran's foreign ministry issued a warning of 'serious consequences' if Seoul supports US military operations in the strait, while domestic civil society groups and progressive media publicly opposed any troop deployment. South Korea currently maintains the Cheonghae Unit (destroyer and maritime patrol aircraft) in the Gulf of Aden; an expansion to the Hormuz zone would represent a qualitatively different operational posture.</p>
-              <div style="font-size:10.5px;color:#7A828F;margin-top:4px;">Yonhap English / Hankyoreh English / Arirang TV</div>
-            </div>
-            <div class="item-card story-card" style="margin-bottom:12px;padding:14px 16px;background:#fff;border-radius:3px;border-left:3px solid #0047A0;border-top:1px solid #EEF0F3;border-right:1px solid #EEF0F3;border-bottom:1px solid #EEF0F3;">
-              <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#0047A0;font-weight:700;margin-bottom:4px;">US-Korea</div>
-              <h3 style="margin:0 0 6px 0;font-size:16px;font-weight:600;color:#1A222E;font-family:Georgia,serif;line-height:1.4;">
-                <a href="https://en.yna.co.kr/view/AEN20260908010554315" style="color:#1A222E;text-decoration:none;">Lee, Macron sign 15 cooperation documents in Paris spanning defense, semiconductors, and nuclear energy</a>
-              </h3>
-              <p style="margin:0 0 6px 0;font-size:13px;line-height:1.6;color:#4A5260;">President Lee Jae-myung and French President Macron concluded a bilateral summit in Paris on September 8, producing 15 signed cooperation agreements covering military intelligence sharing, logistics, defense industry collaboration, civil nuclear energy, and a Samsung Electronics partnership with French AI startup Mistral AI. Lee also paid tribute at the Arc de Triomphe's Tomb of the Unknown Soldier, citing France's participation in the Korean War as the foundation of the current partnership. The agreements expand a Seoul-Paris defense industrial relationship that has included previous Hanwha-led bids for French military contracts.</p>
-              <div style="font-size:10.5px;color:#7A828F;margin-top:4px;">Yonhap English / SBS / Hankyoreh English</div>
+              <p style="margin:0 0 6px 0;font-size:13px;line-height:1.6;color:#4A5260;">North Korea commissioned the destroyer Kang Kon at Wonsan — the same warship that capsized during its 2025 launch — with Kim Jong Un declaring the vessel part of the DPRK's nuclear response system and calling for the navy to be nuclear-armed. Kim appeared alongside his daughter Ju Ae at the ceremony; DPRK defense minister Kim Song Gi separately warned of 'more powerful and resolute action' against US-ROK-Japan Freedom Edge drills running September 7-11. The commissioning marks DPRK's second nuclear-capable destroyer and the first explicit naval nuclear armament declaration.</p>
+              <div style="font-size:11px;color:#6B7280;margin-top:4px;">WSJ / Reuters / NK News / Korea Times</div>
             </div>
             <div class="item-card story-card" style="margin-bottom:12px;padding:14px 16px;background:#fff;border-radius:3px;border-left:3px solid #0047A0;border-top:1px solid #EEF0F3;border-right:1px solid #EEF0F3;border-bottom:1px solid #EEF0F3;">
               <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#0047A0;font-weight:700;margin-bottom:4px;">NK-Russia-China</div>
               <h3 style="margin:0 0 6px 0;font-size:16px;font-weight:600;color:#1A222E;font-family:Georgia,serif;line-height:1.4;">
-                <a href="https://news.google.com/rss/articles/CBMipgFBVV95cUxNMDVzYWtmajVFTFVBSlZPVnVuMDZkaEhENTFlUUwzT2dOeDZ6STdQT2ZkZ3lVS0hjSWgxNkJNN2laLUtMdFNQeXQ0U3Uyc0ZuWE1nRXVGNlhRWktMd25mX0VPUWxEZFlJd2tZWFFnV2tuejV0bkY5YndtUEpSZWFSS3pYbVl0THI2ZWJSLThhaFpjMWI5OFozZzNSTklvUWN5RjFNS1Bn?oc=5" style="color:#1A222E;text-decoration:none;">Russia and North Korea open first road bridge over Tumen River in ceremony marking expanding bilateral ties</a>
+                <a href="https://en.yna.co.kr/view/AEN20260908001152315" style="color:#1A222E;text-decoration:none;">Russia-North Korea open first road bridge over Tumen River — PM Mishustin presides</a>
               </h3>
-              <p style="margin:0 0 6px 0;font-size:13px;line-height:1.6;color:#4A5260;">Russia and North Korea formally opened their first road bridge over the Tumen River on September 7, per Russian state media (TASS, Reuters, BBC, and NK News), with the completion ceremony marking a new overland cargo and personnel link between the two countries. The bridge supplements the existing rail crossing at Tumangang–Khasan; satellite imagery from 38 North (Aug 25) had shown construction nearing completion, and NK Pro imagery (Sep 4) documented flood and landslide disruption in the area in the days before opening. The opening follows the broader NK-Russia bilateral expansion including arms transfers, labor deployments, and space cooperation tracked since September 2023.</p>
-              <div style="font-size:10.5px;color:#7A828F;margin-top:4px;">Reuters / BBC / NK News / Yonhap / SBS</div>
+              <p style="margin:0 0 6px 0;font-size:13px;line-height:1.6;color:#4A5260;">Russia and North Korea formally opened the first road bridge across their shared border, over the Tumen River, in a ceremony attended by Russian Prime Minister Mikhail Mishustin; the bridge is named after Soviet officer Yakov Novichenko. NK News analysis notes the bridge combines strategic symbolism — deepening the bilateral axis — with practical geopolitical utility, providing the first permanent road route linking the two countries. KCNA confirmed the opening; Xi Jinping and Vladimir Putin also sent congratulatory messages to Kim Jong Un on North Korea's 78th founding anniversary pledging closer 'strategic' ties.</p>
+              <div style="font-size:11px;color:#6B7280;margin-top:4px;">Yonhap / Reuters / BBC / NK News / Newsis</div>
+            </div>
+            <div class="item-card story-card" style="margin-bottom:12px;padding:14px 16px;background:#fff;border-radius:3px;border-left:3px solid #0047A0;border-top:1px solid #EEF0F3;border-right:1px solid #EEF0F3;border-bottom:1px solid #EEF0F3;">
+              <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#0047A0;font-weight:700;margin-bottom:4px;">US-Korea</div>
+              <h3 style="margin:0 0 6px 0;font-size:16px;font-weight:600;color:#1A222E;font-family:Georgia,serif;line-height:1.4;">
+                <a href="https://en.yna.co.kr/view/AEN20260908011253320" style="color:#1A222E;text-decoration:none;">Seoul dispatches Hormuz assessment team; Lee-Macron agree on joint freedom-of-navigation coordination</a>
+              </h3>
+              <p style="margin:0 0 6px 0;font-size:13px;line-height:1.6;color:#4A5260;">South Korea's Ministry of National Defense dispatched an investigation team to assess conditions in the Strait of Hormuz, while the Blue House clarified that Seoul is examining 'contribution methods' and not considering combat deployment. At the Élysée Palace summit, President Lee and French President Macron agreed to coordinate closely on Hormuz freedom of navigation — Macron describing the multinational mission as 'peaceful' and pledging cooperation 'as soon as consensus is obtained.' A US official separately stated the strait is 'completely open, controlled by the US.'</p>
+              <div style="font-size:11px;color:#6B7280;margin-top:4px;">Yonhap / Reuters / Newsis</div>
+            </div>
+            <div class="item-card story-card" style="margin-bottom:12px;padding:14px 16px;background:#fff;border-radius:3px;border-left:3px solid #0047A0;border-top:1px solid #EEF0F3;border-right:1px solid #EEF0F3;border-bottom:1px solid #EEF0F3;">
+              <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#0047A0;font-weight:700;margin-bottom:4px;">US-Korea</div>
+              <h3 style="margin:0 0 6px 0;font-size:16px;font-weight:600;color:#1A222E;font-family:Georgia,serif;line-height:1.4;">
+                <a href="https://en.yna.co.kr/view/AEN20260908010554315" style="color:#1A222E;text-decoration:none;">Lee-Macron Paris summit: military pacts signed, Macron condemns DPRK support for Russia</a>
+              </h3>
+              <p style="margin:0 0 6px 0;font-size:13px;line-height:1.6;color:#4A5260;">Presidents Lee Jae-myung and Emmanuel Macron signed multiple agreements in Paris covering military information sharing, logistics, and defense industry cooperation; Lee received France's Legion of Honor grand cross. Macron condemned North Korea's support for Russia's war in Ukraine and expressed support for Korean Peninsula peace, while Lee described the two leaders as genuine friends — using the Korean term 'kkopaeng.' Senior business figures including Lee Jae-yong (Samsung), Koo Ja-eun (LG), and Cho Hyun-joon (Hyosung) attended the accompanying business roundtable.</p>
+              <div style="font-size:11px;color:#6B7280;margin-top:4px;">Yonhap / Newsis</div>
             </div>
         </div>
         
 
         <div style="padding:20px 32px;border-bottom:1px solid #EBEBEB;" class="sec">
-          <a name="overnight"></a><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.8px;color:#0047A0;font-family:Arial,sans-serif;margin-bottom:14px;padding-bottom:6px;border-bottom:2px solid #0047A0;">Overnight</div>
+          <a name="overnight"></a><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#0047A0;font-family:Arial,sans-serif;margin-bottom:14px;padding-bottom:6px;border-bottom:2px solid #0047A0;">Overnight</div>
           
             <div class="item-card" style="margin-bottom:10px;padding:12px 14px;background:#fff;border-radius:3px;border-left:3px solid #0047A0;border-top:1px solid #EEF0F3;border-right:1px solid #EEF0F3;border-bottom:1px solid #EEF0F3;">
-              <div style='font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#0047A0;font-weight:700;margin-bottom:4px;'>DPRK &middot; Hankyoreh English</div>
+              <div style='font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#0047A0;font-weight:700;margin-bottom:4px;'>Business &middot; WSJ</div>
               <div style="font-size:14px;font-weight:600;color:#1A222E;font-family:Georgia,serif;line-height:1.4;">
-                <a href="https://news.google.com/rss/articles/CBMifkFVX3lxTE9Da0thZ2drSUFRaDR3d1h6ZTdPYnZpN3pZa0F5WTd0LWJPRGJzcHRuYzFRYWRpY1d6MmtrTmNiY3BnMVU3aWt5bncyMHJrVmdCMjhzWDFOZlRYb1pLN2VlUldfdk9xOW0xU3FoRGlCR3dwY0V2T2xBQnpDV0xHZw?oc=5" style="color:#1A222E;text-decoration:none;">Kim Jong Un vows naval buildup in direct response to Freedom Edge 2026 trilateral drills</a>
+                <a href="https://news.google.com/rss/articles/CBMiggFBVV95cUxORDV4UUhpNERMSmhHemx4SUpNTzRnVkdGcWZXQXBma3MyR1d0Rk5wSW1tc21Udmx2T2J0WENPVEEyVFdsa1lTbmZORzZ6bHI2by1GZjBRTnFOLTJXU1hRSHhnTDRoeVUzM2ZOSV9iQWJtQjRncHNjb3hBVE5WRndrY0Z3?oc=5" style="color:#1A222E;text-decoration:none;">South Korea's inflation rebounds above 3%</a>
               </div>
-              <div style='font-size:12.5px;line-height:1.5;color:#4A5260;margin-top:4px;'>Kim Jong Un explicitly framed the Kang Kon commissioning as a response to the US-ROK-Japan Freedom Edge 2026 exercises that opened simultaneously, vowing to build up naval forces. DPRK's defense minister separately issued a condemnation of the trilateral drills via KCNA. The pairing of naval nuclear declaratory statements with the Freedom Edge opening constitutes the most concentrated DPRK signaling package in weeks, per the KCNA rhetoric tracker.</div>
+              <div style='font-size:13px;line-height:1.5;color:#4A5260;margin-top:4px;'>South Korea's inflation rate rebounded above 3%, the WSJ reported, reversing recent disinflation trends at a time when the Bank of Korea held its benchmark rate at 2.50% in September 2026. The rebound adds pressure on the BOK as KOSPI markets — up 4.61% on September 8 — price in AI-sector optimism alongside the energy price spike with Brent crude at $99.28.</div>
               
             </div>
             <div class="item-card" style="margin-bottom:10px;padding:12px 14px;background:#fff;border-radius:3px;border-left:3px solid #0047A0;border-top:1px solid #EEF0F3;border-right:1px solid #EEF0F3;border-bottom:1px solid #EEF0F3;">
-              <div style='font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#0047A0;font-weight:700;margin-bottom:4px;'>US-Korea &middot; Yonhap English</div>
+              <div style='font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#0047A0;font-weight:700;margin-bottom:4px;'>NK-Russia-China &middot; NK News</div>
               <div style="font-size:14px;font-weight:600;color:#1A222E;font-family:Georgia,serif;line-height:1.4;">
-                <a href="https://en.yna.co.kr/view/AEN20260908010600320" style="color:#1A222E;text-decoration:none;">Washington pressing Seoul to expand investment commitment beyond $350B pledge: ROK lawmaker</a>
+                <a href="https://www.nknews.org/2026/09/how-the-new-north-korea-russia-car-crossing-bridges-symbolism-and-geopolitics/" style="color:#1A222E;text-decoration:none;">NK News analysis: Tumen bridge merges symbolism and geopolitical strategy for Pyongyang and Moscow</a>
               </div>
-              <div style='font-size:12.5px;line-height:1.5;color:#4A5260;margin-top:4px;'>A South Korean lawmaker disclosed September 8 that Washington is pressuring Seoul to commit more than the existing $350 billion investment pledge under the Korea-US Strategic Trade and Investment framework. The National Assembly passed the Special Investment Act on March 12, 2026 (226-8-8) creating the Korea-US Strategic Investment Corporation to channel the fund; no official drawdown figure has been reported to date. The US pressure adds urgency to the Korea, US 6.3GW Texas gas-fired power project currently under consideration as a potential first strategic fund investment.</div>
+              <div style='font-size:13px;line-height:1.5;color:#4A5260;margin-top:4px;'>NK News analysis by Jeongmin Kim examines how the naming of the first NK-Russia road bridge after Yakov Novichenko — a Soviet officer who threw himself on a grenade to save Kim Il Sung's life — deliberately embeds historical legitimacy into the infrastructure. The bridge opening coincides with the DPRK's 78th founding anniversary, Xi and Putin's congratulatory messages to Kim, and Freedom Edge 2026 trilateral drills — compressing multiple alliance-signaling events into a single week.</div>
               
             </div>
             <div class="item-card" style="margin-bottom:10px;padding:12px 14px;background:#fff;border-radius:3px;border-left:3px solid #0047A0;border-top:1px solid #EEF0F3;border-right:1px solid #EEF0F3;border-bottom:1px solid #EEF0F3;">
-              <div style='font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#0047A0;font-weight:700;margin-bottom:4px;'>DPRK &middot; Yonhap English</div>
+              <div style='font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#0047A0;font-weight:700;margin-bottom:4px;'>US-Korea &middot; Foreign Policy</div>
               <div style="font-size:14px;font-weight:600;color:#1A222E;font-family:Georgia,serif;line-height:1.4;">
-                <a href="https://en.yna.co.kr/view/AEN20260908008900315" style="color:#1A222E;text-decoration:none;">North Korea accuses Japan of building war capability, warns of 'enormous misfortune'</a>
+                <a href="https://foreignpolicy.com/2026/09/08/russia-ukraine-war-south-korea-air-defense-interceptors/" style="color:#1A222E;text-decoration:none;">Foreign Policy: Seoul should provide air defense interceptors to Ukraine to prove genuine European partnership</a>
               </div>
-              <div style='font-size:12.5px;line-height:1.5;color:#4A5260;margin-top:4px;'>North Korea's KCNA issued a statement September 8 accusing Japan of trying to build up its war capability and warning of 'enormous misfortune,' a formulation directed at Japan's defense buildup and participation in Freedom Edge 2026. The statement follows DPRK's existing condemnation of trilateral US-ROK-Japan exercises and adds Japan-specific rhetoric to the founding anniversary signaling window. DPRK previously warned Japan in similar terms during past trilateral exercise periods.</div>
-              
-            </div>
-            <div class="item-card" style="margin-bottom:10px;padding:12px 14px;background:#fff;border-radius:3px;border-left:3px solid #0047A0;border-top:1px solid #EEF0F3;border-right:1px solid #EEF0F3;border-bottom:1px solid #EEF0F3;">
-              <div style='font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#0047A0;font-weight:700;margin-bottom:4px;'>Business &middot; Yonhap English</div>
-              <div style="font-size:14px;font-weight:600;color:#1A222E;font-family:Georgia,serif;line-height:1.4;">
-                <a href="https://en.yna.co.kr/view/AEN20260908010700320" style="color:#1A222E;text-decoration:none;">Hanwha Ocean wins 680 billion won frigate contract from Thai Navy</a>
-              </div>
-              <div style='font-size:12.5px;line-height:1.5;color:#4A5260;margin-top:4px;'>South Korean shipbuilder Hanwha Ocean secured a 680 billion won (approximately $508 million) frigate contract from the Royal Thai Navy on September 8, extending the company's Southeast Asian defense export portfolio. The award adds to Hanwha Ocean's ongoing Philly Shipyard expansion ($5B announced Oct 2025) and comes as The Diplomat separately reported South Korea and Japan competing for the US Navy's frigate search. Hanwha Ocean is also a defendant in the Arctic LNG 2 damages claim filed by Russia (Reuters, September 8).</div>
+              <div style='font-size:13px;line-height:1.5;color:#4A5260;margin-top:4px;'>A Foreign Policy piece argues Seoul must supply air defense interceptors to Ukraine rather than confining itself to non-lethal aid, contending that continued restraint risks cementing South Korea's reputation as an opportunist rather than a genuine security partner to Europe. The argument intersects directly with the Lee-Macron summit agreement on defense cooperation and Macron's public condemnation of DPRK weapons transfers to Russia.</div>
               
             </div>
         </div>
@@ -303,11 +344,11 @@
 
         <a name="key-stat"></a>
         <div bgcolor="#1B2A4A" style="padding:18px 32px;background-color:#1B2A4A;color:#fff;border-bottom:1px solid #EAEAEA;text-align:center;" class="sec">
-          <div style="font-size:11px;text-transform:uppercase;letter-spacing:2.5px;color:#8FB6E8;margin-bottom:7px;font-weight:600;">Stat of the Day</div>
-          <div class="key-stat-num" style="font-family:'Courier New',Courier,monospace;font-size:32px;font-weight:700;color:#fff;">4.7 tln won</div>
-          <div style="font-size:12px;color:rgba(255,255,255,0.85);margin-top:5px;font-family:Georgia,serif;">ROK Science Ministry frontier AI model investment</div>
-          <div style="font-size:11px;color:rgba(255,255,255,0.6);margin-top:6px;font-style:italic;max-width:480px;margin-left:auto;margin-right:auto;line-height:1.5;">South Korea's science ministry announced a 4.7 trillion won injection to develop a frontier AI model, timed as Seoul deepens AI partnerships from Paris to San Francisco.</div>
-          <div style='font-family:'Courier New',Courier,monospace;font-size:10px;color:rgba(255,255,255,0.4);margin-top:6px;'>Source: Yonhap English — 'Science ministry to inject 4.7 tln won to develop frontier AI model'</div>
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#8FB6E8;margin-bottom:7px;font-weight:600;">Stat of the Day</div>
+          <div class="key-stat-num" style="font-family:'Courier New',Courier,monospace;font-size:32px;font-weight:700;color:#fff;">78th</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.85);margin-top:5px;font-family:Georgia,serif;">DPRK founding anniversary (9.9절), Sep 9, 2026</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.6);margin-top:6px;font-style:italic;max-width:480px;margin-left:auto;margin-right:auto;line-height:1.5;">North Korea's senior officials visited the Kumsusan Palace of the Sun for the 78th founding anniversary ceremony — Kim Jong Un was absent from the palace visit — coinciding with the Kang Kon commissioning and the opening of Freedom Edge 2026.</div>
+          <div style='font-family:'Courier New',Courier,monospace;font-size:10px;color:rgba(255,255,255,0.4);margin-top:6px;'>Source: 뉴시스 (Korean-language report on 9.9절 palace visit)</div>
         </div>
         
 
@@ -316,105 +357,109 @@
           <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#0A1E38;">
             <tr>
               <td style="padding:12px 32px;">
-                <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.8px;color:#8FB6E8;font-family:Arial,sans-serif;border-bottom:2px solid #CD2E3A;padding-bottom:5px;display:inline-block;">Pyongyang Watch &middot; KCNA</span>
+                <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#8FB6E8;font-family:Arial,sans-serif;border-bottom:2px solid #CD2E3A;padding-bottom:5px;display:inline-block;">Pyongyang Watch &middot; KCNA</span>
               </td>
             </tr>
           </table>
           <div style="padding:16px 32px;background:#0A1E38;color:#E0E0E0;">
             
             
-            <div style='margin-bottom:12px;padding:8px 14px;background:#CD2E3A;color:#fff;border-radius:4px;font-size:12px;font-weight:600;'>WATCH FLAG — Unusual rhetoric or activity detected</div>
-            <div style="padding:8px 12px;background:rgba(255,255,255,0.04);border-radius:4px;margin-bottom:12px;">
+            <div style='margin-bottom:12px;padding:8px 14px;background:#CD2E3A;color:#fff;border-radius:3px;font-size:12px;font-weight:600;'>WATCH FLAG — Unusual rhetoric or activity detected</div>
+            <div style="padding:8px 12px;background:rgba(255,255,255,0.04);border-radius:3px;margin-bottom:12px;">
               <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#7B90AC;margin-bottom:4px;">Kim Jong Un</div>
-              <div style="font-size:13px;color:#E0E0E0;font-weight:600;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#27AE60;margin-right:6px;vertical-align:middle;"></span>Public appearance — Kim Jong Un presided over the commissioning ceremony for the Kang Kon (No. 52) naval destroyer at Wonsan on the east coast, declaring it part of DPRK's nuclear response system; his daughter Kim Ju-ae appeared alongside him.</div>
+              <div style="font-size:13px;color:#E0E0E0;font-weight:600;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#27AE60;margin-right:6px;vertical-align:middle;"></span>Public appearance — Kim Jong Un presided over the commissioning ceremony of the destroyer Kang Kon at Wonsan, declaring it part of the nuclear response system and calling for the navy to be nuclear-armed; his daughter Ju Ae appeared alongside him.</div>
             </div>
-            <div style='margin-bottom:10px;padding:10px 14px;background:rgba(255,255,255,0.04);border-radius:4px;border-left:3px solid #CD2E3A;'>
-              <div style='font-size:13px;color:#E8E8E8;font-style:italic;line-height:1.5;'>&ldquo;I want enemies to be afraid of the new warship's nuclear weapons.&rdquo;</div>
-              <div style='font-size:10px;margin-top:4px;'><strong style='color:#E8697A;'>Kim Jong Un</strong> <span style='color:#7B90AC;'>— North Korea's Kim Jong Un says new destroyer part of nuclear response system — Reuters</span></div>
-            </div><div style='margin-bottom:10px;padding:10px 14px;background:rgba(255,255,255,0.04);border-radius:4px;border-left:3px solid #CD2E3A;'>
-              <div style='font-size:13px;color:#E8E8E8;font-style:italic;line-height:1.5;'>&ldquo;North Korea is building 'overwhelming' power.&rdquo;</div>
-              <div style='font-size:10px;margin-top:4px;'><strong style='color:#E8697A;'>Kim Jong Un</strong> <span style='color:#7B90AC;'>— North Korea vows nuclear-armed navy as US ally drills open — France 24 (via AFP/KCNA)</span></div>
+            <div style='margin-bottom:10px;padding:10px 14px;background:rgba(255,255,255,0.04);border-radius:3px;border-left:3px solid #CD2E3A;'>
+              <div style='font-size:13px;color:#E8E8E8;font-style:italic;line-height:1.5;'>&ldquo;The new destroyer will be part of the nuclear response system.&rdquo;</div>
+              <div style='font-size:10px;margin-top:4px;'><strong style='color:#E8697A;'>Kim Jong Un</strong> <span style='color:#7B90AC;'>— N. Korea commissions nuclear-capable naval destroyer Kang Kon — Yonhap/Reuters</span></div>
             </div>
             <div style="margin-top:4px;">
                   <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#7B90AC;margin-bottom:8px;">Top KCNA Articles</div>
                   <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:8px;"><tr>
                   <td width="24" style="vertical-align:top;font-family:'Courier New',Courier,monospace;font-size:13px;font-weight:700;color:#8FB6E8;padding-top:1px;">1.</td>
                   <td style="vertical-align:top;">
-                    <div style="font-size:13px;font-weight:600;color:#E8E8E8;line-height:1.4;"><a href="https://news.google.com/rss/articles/CBMiWkFVX3lxTE1NQWplSldhaGdzUFFaRUZ2V0Mtbl96UVpZYzQ5UVdka2xMcHhoYjFpRjhKZ2tnUlNRZkU3eDZVMTdkbWJNc0hheGpFeEV4ck02MFE4UE44VmpPQQ" style="color:#E8E8E8;text-decoration:underline;">North Korea commissions nuclear-capable naval destroyer Kang Kon</a> <span style="font-family:'Courier New',Courier,monospace;font-size:10px;font-weight:700;color:#E8697A;letter-spacing:0.5px;">KIM</span></div>
-                    <div style='font-size:12px;color:#A8B6C8;line-height:1.5;margin-top:2px;'>Kim Jong Un presided over the Kang Kon commissioning at Wonsan, designating the destroyer as part of DPRK's nuclear response system and stating he wants enemies to fear its nuclear weapons, with daughter Kim Ju-ae present. <span style='color:#7B90AC;'>— KCNA (Yonhap)</span></div>
+                    <div style="font-size:13px;font-weight:600;color:#E8E8E8;line-height:1.4;"><a href="https://news.google.com/rss/articles/CBMiwgFBVV95cUxPX25JR2NEWEJrNzcxTEozYXl6YWVvQUtSSHZ6eF9zeGtmUHNRTWtDMk5XaVI5azNCdDJ0RXR1aktvQ29sZDVQajVqczNNRmFhRW9zVXR4MUNyWnJEYWMyTkx6eXpFd2N3OHJncGFTdjBaREJ2Vk5Fem9Hcnl3ZVVfam1WZjd2OEVIOGIxcnRGQjdxRUtvb2VKZjVjVjU0bVhiU1IzVm9Cem9EVXNaeEo1d2s1Nl9xaWJlTDVnUVdFb0Y5Z" style="color:#E8E8E8;text-decoration:underline;">North Korea commissions nuclear-capable naval destroyer Kang Kon — Kim declares naval nuclear armament</a> <span style="font-family:'Courier New',Courier,monospace;font-size:10px;font-weight:700;color:#E8697A;letter-spacing:0.5px;">KIM</span></div>
+                    <div style='font-size:12px;color:#A8B6C8;line-height:1.5;margin-top:2px;'>Kim Jong Un commissioned the destroyer Kang Kon at Wonsan, declaring it integrated into the DPRK's nuclear response system and calling for full naval nuclear armament — Kim's daughter Ju Ae was present at the ceremony. <span style='color:#7B90AC;'>— Korea Times / Yonhap</span></div>
                   </td>
                 </tr></table><table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:8px;"><tr>
                   <td width="24" style="vertical-align:top;font-family:'Courier New',Courier,monospace;font-size:13px;font-weight:700;color:#8FB6E8;padding-top:1px;">2.</td>
                   <td style="vertical-align:top;">
-                    <div style="font-size:13px;font-weight:600;color:#E8E8E8;line-height:1.4;"><a href="https://news.google.com/rss/articles/CBMiWkFVX3lxTFB3S3NDVVU1X3dIc2NJR0hxNDQybkFuR0tqMW1obUVMN2RtRVJtN3NkNEFQdXM0cUk1Uk5fYzNFc1RHSV8zOFZrZEo1bl9yOU80T2N4TVFUOUROZw" style="color:#E8E8E8;text-decoration:underline;">North Korea and Russia complete Tumen River road bridge construction</a></div>
-                    <div style='font-size:12px;color:#A8B6C8;line-height:1.5;margin-top:2px;'>KCNA confirmed completion of the road bridge over the Tumen River linking North Korea and Russia, a first-of-its-kind overland road link opening September 7. <span style='color:#7B90AC;'>— KCNA (Yonhap)</span></div>
+                    <div style="font-size:13px;font-weight:600;color:#E8E8E8;line-height:1.4;"><a href="https://en.yna.co.kr/view/AEN20260908001151315" style="color:#E8E8E8;text-decoration:underline;">North Korea and Russia open first road bridge over Tumen River — KCNA confirms</a></div>
+                    <div style='font-size:12px;color:#A8B6C8;line-height:1.5;margin-top:2px;'>KCNA confirmed the completion and opening of the first road bridge between North Korea and Russia over the Tumen River, with Russian PM Mikhail Mishustin attending the ceremony. <span style='color:#7B90AC;'>— KCNA (Yonhap)</span></div>
                   </td>
                 </tr></table><table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:8px;"><tr>
                   <td width="24" style="vertical-align:top;font-family:'Courier New',Courier,monospace;font-size:13px;font-weight:700;color:#8FB6E8;padding-top:1px;">3.</td>
                   <td style="vertical-align:top;">
-                    <div style="font-size:13px;font-weight:600;color:#E8E8E8;line-height:1.4;"><a href="https://news.google.com/rss/articles/CBMixwFBVV95cUxQNmFZakkwVG0zc0I1VVpHWkpiXzVxRF9idmx3Z3ZJZGF1QWc1ZWdtVHp3c3AtcjJjLW5qcmx4QXRlUW9rUFdCX0psbVFPXzZHVm42bzdYLVlTdDNLM1Q2Uy1WaGgyMzVvNWJzQ1NvcHJlc09aWHV6TnFHRUtjSnNXaWVENVh5QmhLR2VsbVBEaHgxaWl0czlPQUhad3Q4REotOFJBVzVOT3pxbEk4amYtNEtzdzRBSGs0cHJpeF83NHU5R3ZMT2o0" style="color:#E8E8E8;text-decoration:underline;">North Korean defence minister criticizes joint military drills by US, Japan and South Korea</a></div>
-                    <div style='font-size:12px;color:#A8B6C8;line-height:1.5;margin-top:2px;'>DPRK's defense minister issued a KCNA condemnation of Freedom Edge 2026, the US-ROK-Japan trilateral multi-domain exercise that opened September 7, framing the drills as a threat requiring DPRK military response. <span style='color:#7B90AC;'>— KCNA (Reuters)</span></div>
+                    <div style="font-size:13px;font-weight:600;color:#E8E8E8;line-height:1.4;"><a href="https://www.nknews.org/2026/09/north-korean-defense-chief-warns-of-powerful-response-to-us-rok-japan-drills/" style="color:#E8E8E8;text-decoration:underline;">DPRK defense minister Kim Song Gi condemns Freedom Edge 2026 drills, threatens 'powerful' response</a></div>
+                    <div style='font-size:12px;color:#A8B6C8;line-height:1.5;margin-top:2px;'>New DPRK defense minister Kim Song Gi issued a statement via KCNA threatening 'more powerful and resolute action' against the US-ROK-Japan trilateral Freedom Edge 2026 exercise. <span style='color:#7B90AC;'>— NK News / KCNA</span></div>
                   </td>
                 </tr></table>
                 </div>
-            <div style='margin-top:14px;padding:10px 14px;background:rgba(255,255,255,0.06);border-radius:4px;border-left:3px solid #8FB6E8;font-size:13px;line-height:1.6;color:#E0E0E0;font-family:Georgia,serif;'><strong style='color:#8FB6E8;'>Bottom line:</strong> Kim Jong Un's explicit nuclear naval declaratory statements at the Kang Kon commissioning — timed to coincide with Freedom Edge 2026 opening and the day before the DPRK's 78th founding anniversary — represent the most concentrated DPRK military signaling package of 2026; watch September 9-10 for additional provocations, parade imagery, or missile activity.</div>
+            <div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.10);"><div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#7B90AC;margin-bottom:8px;">Senior Officials</div><div style='margin-bottom:7px;'><div style='font-size:13px;font-weight:600;color:#E8E8E8;'>Kim Song Gi<span style='color:#7B90AC;'> &middot; DPRK Defense Minister (new)</span></div><div style='font-size:12px;color:#A8B6C8;line-height:1.45;'>Issued statement via KCNA condemning Freedom Edge 2026 trilateral exercises and threatening 'more powerful and resolute action.'</div></div></div>
+            <div style='margin-top:14px;padding:10px 14px;background:rgba(255,255,255,0.06);border-radius:3px;border-left:3px solid #8FB6E8;font-size:13px;line-height:1.6;color:#E0E0E0;font-family:Georgia,serif;'><strong style='color:#8FB6E8;'>Bottom line:</strong> Kim Jong Un personally presided over the Kang Kon commissioning and declared naval nuclear armament — DPRK's most explicit statement yet on nuclear-arming surface warships — timed to Freedom Edge 2026 opening. Watch for a Punggye-ri nuclear test signal around the Sep 9 founding anniversary.</div>
           </div>
         </div>
         
 
         <div style="padding:20px 32px;border-bottom:1px solid #EBEBEB;" class="sec">
-          <a name="rok-gov"></a><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.8px;color:#0047A0;font-family:Arial,sans-serif;margin-bottom:14px;padding-bottom:6px;border-bottom:2px solid #0047A0;">ROK Government</div>
-          <div style="font-size:10px;color:#888;font-family:Arial,sans-serif;margin-top:-10px;margin-bottom:10px;">President + Ministries &middot; Tuesday, September 8, 2026</div>
+          <a name="rok-gov"></a><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#0047A0;font-family:Arial,sans-serif;margin-bottom:14px;padding-bottom:6px;border-bottom:2px solid #0047A0;">ROK Government</div>
+          <div style="font-size:10px;color:#6B7280;font-family:Arial,sans-serif;margin-top:-10px;margin-bottom:10px;">President + Ministries &middot; Tuesday, September 8, 2026</div>
           <div style="padding-top:4px;">
             
             <table width="100%" cellpadding="0" cellspacing="0" border="0" class="gov-grid">
               <tr>
                 <td style="width:50%;padding:8px;vertical-align:top;">
-                  <div style="background:#F5F7FA;border-radius:4px;padding:14px;min-height:100px;">
-                    <div style="margin-bottom:6px;"><span style="font-size:11px;color:#888;">국방부 · </span><span style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:0.3px;">Ministry of National Defense</span></div>
-                    <div style="font-size:14px;font-weight:700;color:#1A222E;line-height:1.3;margin-bottom:6px;">SDD 2026 opens; MND dispatches inspection team to Hormuz Strait</div>
-                    <div style="font-size:12px;line-height:1.5;color:#555;">The 15th Seoul Defense Dialogue opened September 8 at the Grand Lotte Hotel Seoul, with Defense Minister Ahn Gyu-baek delivering the opening address to representatives from 67 countries and international organizations including four defense ministers and six deputy defense ministers. Separately, the MND confirmed it dispatched an investigation team to assess the situation in the Hormuz Strait ahead of a potential deployment decision.</div>
-                    <div style="margin-top:6px;font-size:11px;color:#888;">→ <a href="https://en.yna.co.kr/view/AEN20260908011253320" style="color:#888;text-decoration:none;">Yonhap EN ↗</a></div>
+                  <div style="background:#F5F7FA;border-radius:3px;padding:14px;min-height:100px;">
+                    <div style="margin-bottom:6px;"><span style="font-size:11px;color:#6B7280;">청와대 · </span><span style="font-size:10px;color:#6B7280;text-transform:uppercase;letter-spacing:0.5px;">Blue House / President's Office</span></div>
+                    <div style="font-size:14px;font-weight:700;color:#1A222E;line-height:1.3;margin-bottom:6px;">Lee-Macron summit at Élysée Palace — military cooperation pacts signed, Hormuz coordination agreed</div>
+                    <div style="font-size:12px;color:#4A5260;margin-bottom:4px;">President Lee Jae-myung</div>
+                    <div style="font-size:12px;line-height:1.5;color:#4A5260;">President Lee and French President Macron held a state summit in Paris, signing multiple agreements on military information sharing, logistics, and defense industry cooperation. Lee stated Korea and France will coordinate closely on Hormuz Strait freedom of navigation; NSA Wi Seong-nak briefed that the two leaders also exchanged views on Ukraine and Korean Peninsula issues.</div>
+                    <div style="margin-top:6px;font-size:11px;color:#6B7280;">→ <a href="https://en.yna.co.kr/view/AEN20260908010554315" style="color:#6B7280;text-decoration:none;">Yonhap EN ↗</a></div>
                   </div>
                 </td>
                 <td style="width:50%;padding:8px;vertical-align:top;">
-                  <div style="background:#F5F7FA;border-radius:4px;padding:14px;min-height:100px;">
-                    <div style="margin-bottom:6px;"><span style="font-size:11px;color:#888;">국방부 · </span><span style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:0.3px;">Ministry of National Defense</span></div>
-                    <div style="font-size:14px;font-weight:700;color:#1A222E;line-height:1.3;margin-bottom:6px;">ROK-Czech defense ministers meet on expanding cooperation at SDD margins</div>
-                    <div style="font-size:12px;line-height:1.5;color:#555;">Defense Minister Ahn Gyu-baek met with his Czech counterpart on the sidelines of the Seoul Defense Dialogue to discuss expanding defense cooperation between the two countries.</div>
-                    <div style="margin-top:6px;font-size:11px;color:#888;">→ <a href="https://en.yna.co.kr/view/AEN20260908011000315" style="color:#888;text-decoration:none;">Yonhap EN ↗</a></div>
+                  <div style="background:#F5F7FA;border-radius:3px;padding:14px;min-height:100px;">
+                    <div style="margin-bottom:6px;"><span style="font-size:11px;color:#6B7280;">국방부 · </span><span style="font-size:10px;color:#6B7280;text-transform:uppercase;letter-spacing:0.5px;">Ministry of National Defense</span></div>
+                    <div style="font-size:14px;font-weight:700;color:#1A222E;line-height:1.3;margin-bottom:6px;">MND dispatches assessment team to Strait of Hormuz; SDD opens with 67-country attendance</div>
+                    <div style="font-size:12px;color:#4A5260;margin-bottom:4px;">Defense Minister Ahn Gyu-back</div>
+                    <div style="font-size:12px;line-height:1.5;color:#4A5260;">Defense Minister Ahn Gyu-back announced dispatch of an investigation team to assess the Strait of Hormuz situation, clarifying Seoul is examining 'contribution methods' not combat deployment. Ahn also opened the 2026 Seoul Defense Dialogue (SDD) — 15th edition — attended by defense ministers of four countries, deputy ministers of six countries, and over 1,000 participants from 67 states.</div>
+                    <div style="margin-top:6px;font-size:11px;color:#6B7280;">→ <a href="https://en.yna.co.kr/view/AEN20260908011253320" style="color:#6B7280;text-decoration:none;">Yonhap EN ↗</a></div>
                   </div>
                 </td></tr><tr>
                 <td style="width:50%;padding:8px;vertical-align:top;">
-                  <div style="background:#F5F7FA;border-radius:4px;padding:14px;min-height:100px;">
-                    <div style="margin-bottom:6px;"><span style="font-size:11px;color:#888;">외교부 / 대통령실 · </span><span style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:0.3px;">Ministry of Foreign Affairs / Presidential Office</span></div>
-                    <div style="font-size:14px;font-weight:700;color:#1A222E;line-height:1.3;margin-bottom:6px;">Lee-Macron summit produces 15 cooperation agreements including defense, semiconductors, and nuclear energy</div>
-                    <div style="font-size:12px;line-height:1.5;color:#555;">President Lee Jae-myung and French President Macron signed 15 cooperation documents in Paris on September 8 covering military information sharing, logistics, defense industry cooperation, civil nuclear energy, and semiconductor collaboration — including a Samsung Electronics partnership with French AI startup Mistral AI.</div>
-                    <div style="margin-top:6px;font-size:11px;color:#888;">→ <a href="https://en.yna.co.kr/view/AEN20260908010554315" style="color:#888;text-decoration:none;">Yonhap EN ↗</a></div>
+                  <div style="background:#F5F7FA;border-radius:3px;padding:14px;min-height:100px;">
+                    <div style="margin-bottom:6px;"><span style="font-size:11px;color:#6B7280;">국방부 · </span><span style="font-size:10px;color:#6B7280;text-transform:uppercase;letter-spacing:0.5px;">Ministry of National Defense</span></div>
+                    <div style="font-size:14px;font-weight:700;color:#1A222E;line-height:1.3;margin-bottom:6px;">Ahn calls North Korea's border severing measures 'unprecedentedly strong'; urges dialogue</div>
+                    <div style="font-size:12px;color:#4A5260;margin-bottom:4px;">Defense Minister Ahn Gyu-back</div>
+                    <div style="font-size:12px;line-height:1.5;color:#4A5260;">At the Seoul Defense Dialogue, Ahn stated that since 2024 North Korea has been taking 'unprecedentedly strong' measures to sever ties, including layered fortifications along the border, while calling for resumed inter-Korean dialogue and expressing strong hope for resumption of DPRK-US talks.</div>
+                    <div style="margin-top:6px;font-size:11px;color:#6B7280;">→ <a href="https://www.nknews.org/2026/09/seoul-undeterred-by-north-koreas-unprecedentedly-strong-move-to-cut-ties/" style="color:#6B7280;text-decoration:none;">NK News ↗</a></div>
                   </div>
                 </td>
                 <td style="width:50%;padding:8px;vertical-align:top;">
-                  <div style="background:#F5F7FA;border-radius:4px;padding:14px;min-height:100px;">
-                    <div style="margin-bottom:6px;"><span style="font-size:11px;color:#888;">과학기술정보통신부 · </span><span style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:0.3px;">Ministry of Science and ICT</span></div>
-                    <div style="font-size:14px;font-weight:700;color:#1A222E;line-height:1.3;margin-bottom:6px;">4.7 trillion won announced to develop frontier AI model</div>
-                    <div style="font-size:12px;line-height:1.5;color:#555;">South Korea's science ministry announced plans to invest 4.7 trillion won to develop a frontier AI model, deepening the government's AI industrial policy push following the San Francisco AI Summit commitments in July 2026.</div>
-                    <div style="margin-top:6px;font-size:11px;color:#888;">→ <a href="https://en.yna.co.kr/view/AEN20260908011100320" style="color:#888;text-decoration:none;">Yonhap EN ↗</a></div>
+                  <div style="background:#F5F7FA;border-radius:3px;padding:14px;min-height:100px;">
+                    <div style="margin-bottom:6px;"><span style="font-size:11px;color:#6B7280;">과학기술정보통신부 · </span><span style="font-size:10px;color:#6B7280;text-transform:uppercase;letter-spacing:0.5px;">Ministry of Science and ICT</span></div>
+                    <div style="font-size:14px;font-weight:700;color:#1A222E;line-height:1.3;margin-bottom:6px;">Government announces 4.7 trillion won investment to develop frontier AI model</div>
+                    <div style="font-size:12px;color:#4A5260;margin-bottom:4px;">Science Ministry</div>
+                    <div style="font-size:12px;line-height:1.5;color:#4A5260;">South Korea's science ministry plans to invest 4.7 trillion won to develop a frontier artificial intelligence model, part of the broader national AI competitiveness push aligned with investments from the San Francisco AI Summit.</div>
+                    <div style="margin-top:6px;font-size:11px;color:#6B7280;">→ <a href="https://en.yna.co.kr/view/AEN20260908011100320" style="color:#6B7280;text-decoration:none;">Yonhap EN ↗</a></div>
                   </div>
                 </td></tr><tr>
                 <td style="width:50%;padding:8px;vertical-align:top;">
-                  <div style="background:#F5F7FA;border-radius:4px;padding:14px;min-height:100px;">
-                    <div style="margin-bottom:6px;"><span style="font-size:11px;color:#888;">대통령실 · </span><span style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:0.3px;">Blue House / President's Office</span></div>
+                  <div style="background:#F5F7FA;border-radius:3px;padding:14px;min-height:100px;">
+                    <div style="margin-bottom:6px;"><span style="font-size:11px;color:#6B7280;">청와대 · </span><span style="font-size:10px;color:#6B7280;text-transform:uppercase;letter-spacing:0.5px;">Blue House / President's Office</span></div>
                     <div style="font-size:14px;font-weight:700;color:#1A222E;line-height:1.3;margin-bottom:6px;">Lee nominates former senior prosecutor as inaugural head of new investigation agency</div>
-                    <div style="font-size:12px;line-height:1.5;color:#555;">President Lee Jae-myung nominated a former senior prosecutor as the first head of a newly established investigation agency, announced from Paris during his state visit to France.</div>
-                    <div style="margin-top:6px;font-size:11px;color:#888;">→ <a href="https://en.yna.co.kr/view/AEN20260908000451315" style="color:#888;text-decoration:none;">Yonhap EN ↗</a></div>
+                    <div style="font-size:12px;color:#4A5260;margin-bottom:4px;">President Lee Jae-myung</div>
+                    <div style="font-size:12px;line-height:1.5;color:#4A5260;">President Lee Jae-myung nominated a former senior prosecutor to lead the newly established independent investigation agency, a personnel action drawing attention given the simultaneous controversy over Justice Minister nominee Kim Seung-won's lobbying allegations.</div>
+                    <div style="margin-top:6px;font-size:11px;color:#6B7280;">→ <a href="https://en.yna.co.kr/view/AEN20260908000451315" style="color:#6B7280;text-decoration:none;">Yonhap EN ↗</a></div>
                   </div>
                 </td>
                 <td style="width:50%;padding:8px;vertical-align:top;">
-                  <div style="background:#F5F7FA;border-radius:4px;padding:14px;min-height:100px;">
-                    <div style="margin-bottom:6px;"><span style="font-size:11px;color:#888;">산업통상자원부 · </span><span style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:0.3px;">Ministry of Trade, Industry and Energy / Korea-US Strategic Investment Corporation</span></div>
-                    <div style="font-size:14px;font-weight:700;color:#1A222E;line-height:1.3;margin-bottom:6px;">Korea and US weigh 6.3GW Texas gas-fired power project as first strategic fund investment; 8 nuclear plants under consideration</div>
-                    <div style="font-size:12px;line-height:1.5;color:#555;">South Korea and the US are considering a 6.3GW gas-fired power plant in Texas as a first investment through the Korea-US strategic fund, with separate discussions underway on building eight large nuclear power plants in the US using Korean technology, per Maeil Gyeongje reporting.</div>
-                    <div style="margin-top:6px;font-size:11px;color:#888;">→ <a href="https://news.google.com/rss/articles/CBMiV0FVX3lxTFBPMGpYQS1jLVVLOTZDYzIycFc2QjRHbjFtamxXWGdFMjFLbHhxa0d4a2JaYjctcGEtZC1hRkZ3VXhEMEc0VkdURGo4a19jNEprX2gyYlpfRQ" style="color:#888;text-decoration:none;">매일경제 ↗</a></div>
+                  <div style="background:#F5F7FA;border-radius:3px;padding:14px;min-height:100px;">
+                    <div style="margin-bottom:6px;"><span style="font-size:11px;color:#6B7280;">외교부 · </span><span style="font-size:10px;color:#6B7280;text-transform:uppercase;letter-spacing:0.5px;">Ministry of Foreign Affairs</span></div>
+                    <div style="font-size:14px;font-weight:700;color:#1A222E;line-height:1.3;margin-bottom:6px;">South Korea notifies IAEA of intent to consult on safeguards for nuclear-powered submarines</div>
+                    <div style="font-size:12px;color:#4A5260;margin-bottom:4px;">MOFA</div>
+                    <div style="font-size:12px;line-height:1.5;color:#4A5260;">South Korea formally notified the IAEA of its intent to consult on safeguards arrangements for nuclear-powered submarines, a step that formalizes Seoul's pursuit of the submarine capability under international inspection protocols.</div>
+                    <div style="margin-top:6px;font-size:11px;color:#6B7280;">→ <a href="https://en.yna.co.kr/view/AEN20260908002500315" style="color:#6B7280;text-decoration:none;">Yonhap EN ↗</a></div>
                   </div>
                 </td></tr>
             </table>
@@ -424,9 +469,14 @@
               <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#7F8C8D;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #E8E8E8;">National Assembly</div>
               
                 <div style="margin-bottom:8px;padding-left:12px;border-left:3px solid #7F8C8D;">
-                  <div style="font-size:11px;color:#7F8C8D;font-weight:600;text-transform:uppercase;">National Assembly (general)</div>
-                  <div style="font-size:13px;font-weight:600;color:#1B2A4A;">Independent Rep. Lee Choon-seok indicted for alleged stock trading under borrowed name</div>
-                  <div style="font-size:12px;line-height:1.4;color:#555;">Prosecutors indicted independent Representative Lee Choon-seok, a former Democratic Party lawmaker, on allegations of stock trading conducted under a borrowed name, per Yonhap.</div>
+                  <div style="font-size:11px;color:#7F8C8D;font-weight:600;text-transform:uppercase;">National Assembly Plenary</div>
+                  <div style="font-size:13px;font-weight:600;color:#1B2A4A;">Four-day government interpellation session (대정부질문) begins Sep 9 — political, constitutional reform, cabinet nominees on the agenda</div>
+                  <div style="font-size:12px;line-height:1.4;color:#4A5260;">The National Assembly commenced its government interpellation session on September 9, with ruling DP and opposition PPP clashing over the Kim Seung-won justice minister nomination, constitutional reform, and Supreme Court justice nomination. PPP is mounting a campaign to force withdrawal of Kim and the gender equality minister nominee Yong Hye-in.</div>
+                </div>
+                <div style="margin-bottom:8px;padding-left:12px;border-left:3px solid #7F8C8D;">
+                  <div style="font-size:11px;color:#7F8C8D;font-weight:600;text-transform:uppercase;">PPP Floor Leadership</div>
+                  <div style="font-size:13px;font-weight:600;color:#1B2A4A;">PPP floor leader announces plan to seek measures to bolster nuclear deterrence against DPRK threats</div>
+                  <div style="font-size:12px;line-height:1.4;color:#4A5260;">The People Power Party floor leader stated the party will pursue measures to strengthen nuclear deterrence in response to the DPRK's nuclear-capable destroyer commissioning and ongoing military buildup.</div>
                 </div>
             </div>
           </div>
@@ -434,87 +484,103 @@
         
 
         <div style="padding:20px 32px;border-bottom:1px solid #EBEBEB;" class="sec">
-          <a name="trade"></a><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.8px;color:#0047A0;font-family:Arial,sans-serif;margin-bottom:14px;padding-bottom:6px;border-bottom:2px solid #0047A0;">US-Korea Trade &amp; Investment</div>
-          <div style="font-family:Georgia,serif;font-size:14px;line-height:1.6;color:#2C3540;margin-bottom:6px;">Section 122 surcharge expired Jul 24; Section 301 investigation (launched Mar 11) is now the primary tariff vehicle; sector-specific 232 rates remain in force; $350B pledge has no official drawdown figure reported.</div>
-          <div style="margin-top:6px;"><div style="font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#1B2A4A;padding-bottom:5px;border-bottom:2px solid #CD2E3A;display:inline-block;margin-bottom:12px;">Tariffs</div><div style="margin-bottom:5px;"><span style="font-family:'Courier New',Courier,monospace;font-size:24px;font-weight:700;color:#55607A;letter-spacing:0.5px;vertical-align:middle;">EXPIRED</span></div><div style="font-size:13px;color:#5A6472;line-height:1.5;">Section 122 surcharge lapsed Jul 24; Section 301 now the primary tariff vehicle; sector 232 rates still in force.</div><div style="margin-top:12px;background:#FBF3F0;border:1px solid #F1D9D2;border-left:3px solid #CD2E3A;border-radius:4px;padding:9px 13px;"><div style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#B0212F;font-weight:700;">Watch this date</div><div style="font-size:13px;color:#3D4451;margin-top:2px;">next trigger: Section 301 determination — pending, no fixed date</div></div><div style="border:1px solid #DBE0E6;border-radius:5px;overflow:hidden;margin-top:12px;"><div style="background:#F5F7FA;padding:7px 12px;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#0047A0;font-weight:700;border-bottom:1px solid #DBE0E6;">Sector Rates</div><table width="100%" cellpadding="0" cellspacing="0" border="0" class="tariff-sector"><tr style="border-top:1px solid #E7EBF0;"><td style="padding:7px 12px;font-size:12.5px;font-weight:600;color:#1A222E;">Steel &amp; Aluminum</td><td style="padding:7px 8px;font-size:11px;color:#7A828F;text-transform:uppercase;text-align:right;white-space:nowrap;">Section 232</td><td style="padding:7px 12px 7px 8px;font-family:'Courier New',Courier,monospace;font-size:13px;font-weight:700;color:#CD2E3A;text-align:right;white-space:nowrap;">50%</td></tr><tr style="border-top:1px solid #E7EBF0;"><td style="padding:7px 12px;font-size:12.5px;font-weight:600;color:#1A222E;">Copper</td><td style="padding:7px 8px;font-size:11px;color:#7A828F;text-transform:uppercase;text-align:right;white-space:nowrap;">Section 232</td><td style="padding:7px 12px 7px 8px;font-family:'Courier New',Courier,monospace;font-size:13px;font-weight:700;color:#CD2E3A;text-align:right;white-space:nowrap;">50%</td></tr><tr style="border-top:1px solid #E7EBF0;"><td style="padding:7px 12px;font-size:12.5px;font-weight:600;color:#1A222E;">Automobiles &amp; Auto Parts</td><td style="padding:7px 8px;font-size:11px;color:#7A828F;text-transform:uppercase;text-align:right;white-space:nowrap;">Section 232</td><td style="padding:7px 12px 7px 8px;font-family:'Courier New',Courier,monospace;font-size:13px;font-weight:700;color:#2E7D4F;text-align:right;white-space:nowrap;">15%</td></tr><tr style="border-top:1px solid #E7EBF0;"><td style="padding:7px 12px;font-size:12.5px;font-weight:600;color:#1A222E;">Timber / Lumber / Wood Derivatives</td><td style="padding:7px 8px;font-size:11px;color:#7A828F;text-transform:uppercase;text-align:right;white-space:nowrap;">Section 232</td><td style="padding:7px 12px 7px 8px;font-family:'Courier New',Courier,monospace;font-size:13px;font-weight:700;color:#2E7D4F;text-align:right;white-space:nowrap;">15%</td></tr><tr style="border-top:1px solid #E7EBF0;"><td style="padding:7px 12px;font-size:12.5px;font-weight:600;color:#1A222E;">Semiconductors (advanced logic)</td><td style="padding:7px 8px;font-size:11px;color:#7A828F;text-transform:uppercase;text-align:right;white-space:nowrap;">Section 232 (Proclamation 11002)</td><td style="padding:7px 12px 7px 8px;font-family:'Courier New',Courier,monospace;font-size:13px;font-weight:700;color:#CD2E3A;text-align:right;white-space:nowrap;">25%</td></tr><tr style="border-top:1px solid #E7EBF0;"><td style="padding:7px 12px;font-size:12.5px;font-weight:600;color:#1A222E;">Pharmaceuticals</td><td style="padding:7px 8px;font-size:11px;color:#7A828F;text-transform:uppercase;text-align:right;white-space:nowrap;">Section 232</td><td style="padding:7px 12px 7px 8px;font-family:'Courier New',Courier,monospace;font-size:13px;font-weight:700;color:#CD2E3A;text-align:right;white-space:nowrap;">up to 15%</td></tr><tr style="border-top:1px solid #E7EBF0;"><td style="padding:7px 12px;font-size:12.5px;font-weight:600;color:#1A222E;">Civil Aircraft &amp; Parts</td><td style="padding:7px 8px;font-size:11px;color:#7A828F;text-transform:uppercase;text-align:right;white-space:nowrap;">US-Korea deal exemption</td><td style="padding:7px 12px 7px 8px;font-family:'Courier New',Courier,monospace;font-size:13px;font-weight:700;color:#CD2E3A;text-align:right;white-space:nowrap;">0%</td></tr><tr style="border-top:1px solid #E7EBF0;"><td style="padding:7px 12px;font-size:12.5px;font-weight:600;color:#1A222E;">Generic Pharma / Precursors / Rare Natural Resources</td><td style="padding:7px 8px;font-size:11px;color:#7A828F;text-transform:uppercase;text-align:right;white-space:nowrap;">Aligned Partners list</td><td style="padding:7px 12px 7px 8px;font-family:'Courier New',Courier,monospace;font-size:13px;font-weight:700;color:#CD2E3A;text-align:right;white-space:nowrap;">0%</td></tr></table></div></div><div style="margin-top:18px;"><div style="font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#1B2A4A;padding-bottom:5px;border-bottom:2px solid #CD2E3A;display:inline-block;margin-bottom:12px;">New This Week</div><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding:9px 0;border-top:1px solid #EAEDF1;"><div style="font-size:13.5px;font-weight:700;color:#1A222E;line-height:1.35;"><a href="https://news.google.com/rss/articles/CBMiV0FVX3lxTFBPMGpYQS1jLVVLOTZDYzIycFc2QjRHbjFtamxXWGdFMjFLbHhxa0d4a2JaYjctcGEtZC1hRkZ3VXhEMEc0VkdURGo4a19jNEprX2gyYlpfRQ" style="color:#1A222E;text-decoration:none;">Korea and US weigh 6.3GW Texas gas-fired power project as first strategic fund investment</a><span style="display:inline-block;font-family:'Courier New',Courier,monospace;font-size:11px;font-weight:700;color:#fff;background:#2E7D4F;border-radius:3px;padding:1px 6px;margin-left:6px;">$22B (Hankyoreh estimate)</span><span style="display:inline-block;font-family:'Courier New',Courier,monospace;font-size:10px;font-weight:700;letter-spacing:0.5px;padding:1px 6px;border-radius:3px;background:#E4EFE7;color:#1E7940;margin-left:6px;">New deal</span></div><div style="font-size:12.5px;color:#3D4451;line-height:1.45;margin-top:2px;">South Korea and the US are weighing a 6.3GW gas-fired power plant in Texas as a potential first investment through the Korea-US Strategic Investment Corporation, with South Korea expected to invest approximately $22 billion, per separate Maeil Gyeongje and Hankyoreh reporting.</div><div style="font-size:10.5px;text-transform:uppercase;letter-spacing:0.5px;color:#8A94A6;margin-top:2px;">ROK government / Korea-US Strategic Investment Corporation — US (Texas) &middot; 매일경제</div></td></tr></table></div>
-          <div style="margin-top:14px;padding-top:11px;border-top:1px solid #E4E7EB;font-family:Arial,sans-serif;font-size:11.5px;color:#6B7280;">Investment ledger, pledge tracker and standing policy measures: <a href="https://andysaulim.github.io/Daily-Korea-Digest/trade.html" style="color:#0047A0;text-decoration:none;">full trade reference &#8594;</a></div>
+          <a name="trade"></a><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#0047A0;font-family:Arial,sans-serif;margin-bottom:14px;padding-bottom:6px;border-bottom:2px solid #0047A0;">US-Korea Trade &amp; Investment</div>
+          <div style="font-family:Georgia,serif;font-size:14px;line-height:1.6;color:#2C3540;margin-bottom:6px;">Seoul faces no baseline reciprocal tariff since Section 122 expired Jul 24; steel/aluminum at 50% Section 232 and autos at 15% remain active; Section 301 is now the primary prospective tariff vehicle; the $350B investment pledge has no official drawdown figure.</div>
+          <div style="margin-top:6px;"><div style="font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#1B2A4A;padding-bottom:5px;border-bottom:2px solid #CD2E3A;display:inline-block;margin-bottom:12px;">Tariffs</div><div style="margin-bottom:5px;"><span style="font-family:'Courier New',Courier,monospace;font-size:24px;font-weight:700;color:#55607A;letter-spacing:0.5px;vertical-align:middle;">EXPIRED</span></div><div style="font-size:13px;color:#5A6472;line-height:1.5;">Section 122 surcharge lapsed Jul 24; Section 301 now the primary tariff vehicle; sector 232 rates still in force.</div><div style="margin-top:12px;background:#FBF3F0;border:1px solid #F1D9D2;border-left:3px solid #CD2E3A;border-radius:3px;padding:9px 13px;"><div style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#B0212F;font-weight:700;">Watch this date</div><div style="font-size:13px;color:#3D4451;margin-top:2px;">next trigger: Section 301 determination — pending, no fixed date</div></div><div style="border:1px solid #DBE0E6;border-radius:3px;overflow:hidden;margin-top:12px;"><div style="background:#F5F7FA;padding:7px 12px;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#0047A0;font-weight:700;border-bottom:1px solid #DBE0E6;">Sector Rates</div><table width="100%" cellpadding="0" cellspacing="0" border="0" class="tariff-sector"><tr style="border-top:1px solid #E7EBF0;"><td style="padding:7px 12px;font-size:13px;font-weight:600;color:#1A222E;">Steel &amp; Aluminum</td><td style="padding:7px 8px;font-size:11px;color:#6B7280;text-transform:uppercase;text-align:right;white-space:nowrap;">Section 232</td><td style="padding:7px 12px 7px 8px;font-family:'Courier New',Courier,monospace;font-size:13px;font-weight:700;color:#CD2E3A;text-align:right;white-space:nowrap;">50%</td></tr><tr style="border-top:1px solid #E7EBF0;"><td style="padding:7px 12px;font-size:13px;font-weight:600;color:#1A222E;">Copper</td><td style="padding:7px 8px;font-size:11px;color:#6B7280;text-transform:uppercase;text-align:right;white-space:nowrap;">Section 232</td><td style="padding:7px 12px 7px 8px;font-family:'Courier New',Courier,monospace;font-size:13px;font-weight:700;color:#CD2E3A;text-align:right;white-space:nowrap;">50%</td></tr><tr style="border-top:1px solid #E7EBF0;"><td style="padding:7px 12px;font-size:13px;font-weight:600;color:#1A222E;">Automobiles &amp; Auto Parts</td><td style="padding:7px 8px;font-size:11px;color:#6B7280;text-transform:uppercase;text-align:right;white-space:nowrap;">Section 232</td><td style="padding:7px 12px 7px 8px;font-family:'Courier New',Courier,monospace;font-size:13px;font-weight:700;color:#2E7D4F;text-align:right;white-space:nowrap;">15%</td></tr><tr style="border-top:1px solid #E7EBF0;"><td style="padding:7px 12px;font-size:13px;font-weight:600;color:#1A222E;">Timber / Lumber / Wood Derivatives</td><td style="padding:7px 8px;font-size:11px;color:#6B7280;text-transform:uppercase;text-align:right;white-space:nowrap;">Section 232</td><td style="padding:7px 12px 7px 8px;font-family:'Courier New',Courier,monospace;font-size:13px;font-weight:700;color:#2E7D4F;text-align:right;white-space:nowrap;">15%</td></tr><tr style="border-top:1px solid #E7EBF0;"><td style="padding:7px 12px;font-size:13px;font-weight:600;color:#1A222E;">Semiconductors (advanced logic)</td><td style="padding:7px 8px;font-size:11px;color:#6B7280;text-transform:uppercase;text-align:right;white-space:nowrap;">Section 232 (Proclamation 11002)</td><td style="padding:7px 12px 7px 8px;font-family:'Courier New',Courier,monospace;font-size:13px;font-weight:700;color:#CD2E3A;text-align:right;white-space:nowrap;">25%</td></tr><tr style="border-top:1px solid #E7EBF0;"><td style="padding:7px 12px;font-size:13px;font-weight:600;color:#1A222E;">Pharmaceuticals</td><td style="padding:7px 8px;font-size:11px;color:#6B7280;text-transform:uppercase;text-align:right;white-space:nowrap;">Section 232</td><td style="padding:7px 12px 7px 8px;font-family:'Courier New',Courier,monospace;font-size:13px;font-weight:700;color:#CD2E3A;text-align:right;white-space:nowrap;">up to 15%</td></tr><tr style="border-top:1px solid #E7EBF0;"><td style="padding:7px 12px;font-size:13px;font-weight:600;color:#1A222E;">Civil Aircraft &amp; Parts</td><td style="padding:7px 8px;font-size:11px;color:#6B7280;text-transform:uppercase;text-align:right;white-space:nowrap;">US-Korea deal exemption</td><td style="padding:7px 12px 7px 8px;font-family:'Courier New',Courier,monospace;font-size:13px;font-weight:700;color:#CD2E3A;text-align:right;white-space:nowrap;">0%</td></tr><tr style="border-top:1px solid #E7EBF0;"><td style="padding:7px 12px;font-size:13px;font-weight:600;color:#1A222E;">Generic Pharma / Precursors / Rare Natural Resources</td><td style="padding:7px 8px;font-size:11px;color:#6B7280;text-transform:uppercase;text-align:right;white-space:nowrap;">Aligned Partners list</td><td style="padding:7px 12px 7px 8px;font-family:'Courier New',Courier,monospace;font-size:13px;font-weight:700;color:#CD2E3A;text-align:right;white-space:nowrap;">0%</td></tr></table></div></div><div style="margin-top:18px;"><div style="font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#1B2A4A;padding-bottom:5px;border-bottom:2px solid #CD2E3A;display:inline-block;margin-bottom:12px;">New This Week</div><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding:9px 0;border-top:1px solid #EAEDF1;"><div style="font-size:13px;font-weight:700;color:#1A222E;line-height:1.35;"><a href="https://en.yna.co.kr/view/AEN20260908010900315" style="color:#1A222E;text-decoration:none;">Samsung partners with French AI startup Mistral AI — announced during Lee-Macron summit</a><span style="display:inline-block;font-family:'Courier New',Courier,monospace;font-size:11px;font-weight:700;color:#fff;background:#2E7D4F;border-radius:3px;padding:1px 6px;margin-left:6px;">undisclosed</span><span style="display:inline-block;font-family:'Courier New',Courier,monospace;font-size:10px;font-weight:700;letter-spacing:0.5px;padding:1px 6px;border-radius:3px;background:#E4EFE7;color:#1E7940;margin-left:6px;">New deal</span></div><div style="font-size:13px;color:#3D4451;line-height:1.45;margin-top:2px;">Samsung Electronics signed a partnership with French AI startup Mistral AI to enhance chip operations, announced during President Lee's state visit to Paris — not a direct US-Korea deal but reflects the France bilateral dimension of the US-Korea tech investment axis.</div><div style="font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:#8A94A6;margin-top:2px;">Samsung Electronics / Mistral AI (France) &middot; Yonhap</div></td></tr></table></div>
+          <div style="margin-top:14px;padding-top:11px;border-top:1px solid #E4E7EB;font-family:Arial,sans-serif;font-size:11px;color:#6B7280;">Investment ledger, pledge tracker and standing policy measures: <a href="https://andysaulim.github.io/Daily-Korea-Digest/trade.html" style="color:#0047A0;text-decoration:none;">full trade reference &#8594;</a></div>
         </div>
         
 
         <div style="padding:20px 32px;border-bottom:1px solid #EBEBEB;" class="sec">
-          <a name="business"></a><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.8px;color:#0047A0;font-family:Arial,sans-serif;margin-bottom:14px;padding-bottom:6px;border-bottom:2px solid #0047A0;">Business &amp; Economy</div>
+          <a name="business"></a><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#0047A0;font-family:Arial,sans-serif;margin-bottom:14px;padding-bottom:6px;border-bottom:2px solid #0047A0;">Business &amp; Economy</div>
           
             <div class="item-card" style="margin-bottom:10px;padding:12px 14px;background:#fff;border-radius:3px;border-left:3px solid #0047A0;border-top:1px solid #EEF0F3;border-right:1px solid #EEF0F3;border-bottom:1px solid #EEF0F3;">
-              <div style='font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#0047A0;font-weight:700;margin-bottom:4px;'>manufacturing &middot; Yonhap English</div>
+              <div style='font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#0047A0;font-weight:700;margin-bottom:4px;'>finance &middot; Bloomberg</div>
               <div style="font-size:14px;font-weight:600;color:#1A222E;font-family:Georgia,serif;line-height:1.4;">
-                <a href="https://en.yna.co.kr/view/AEN20260908006251320" style="color:#1A222E;text-decoration:none;">POSCO to invest 480 billion won in automotive steel plant by 2028</a>
+                <a href="https://news.google.com/rss/articles/CBMiswFBVV95cUxQVnV5WWF0WWk0cEVhRF9naFhpcWZtTFRwblIteVZTY2VPWDZWdDMxYjlBVktsbEQ4VldZVUNmeVpMZEx5cFhVOXFVeWRlNW5LYlR4TXVKTnpMY1ZUUkU2VV9weHpaOTVHOHlQVFZNV3hndk82dG0tLWdrNl9QNVZMTUZ4N2xKWl9JU3lSRHJ4ekZtdy1SOTdOdDdCWFBtSThrZUpxazIzRjQtWFpIM1JfcHNFTQ?oc=5" style="color:#1A222E;text-decoration:none;">Samsung buyback highlights Korea's 45% preferred stock discount</a>
               </div>
-              <div style='font-size:12.5px;line-height:1.5;color:#4A5260;margin-top:4px;'>POSCO announced September 8 it will invest 480 billion won (approximately $358 million) in a new automotive steel plant to be completed by 2028, expanding capacity for high-strength steel used in EV manufacturing. The investment comes as POSCO International separately maintains its rare-earth refining partnership with US firm ReElement announced in October 2025.</div>
-              <div style="margin-top:3px;"><span style="display:inline-block;padding:1px 5px;border-radius:3px;font-size:9px;background:#E8E8E8;color:#555;margin-right:3px;">POSCO</span></div>
+              <div style='font-size:13px;line-height:1.5;color:#4A5260;margin-top:4px;'>Bloomberg reports Samsung's buyback program spotlights the persistent 45% discount on Korean preferred shares versus common stock — a structural corporate governance discount that the Lee government's Value-up Program aims to close.</div>
+              <div style="margin-top:3px;"><span style="display:inline-block;padding:1px 5px;border-radius:3px;font-size:10px;background:#E8E8E8;color:#4A5260;margin-right:3px;">Samsung Electronics</span></div>
+            </div>
+            <div class="item-card" style="margin-bottom:10px;padding:12px 14px;background:#fff;border-radius:3px;border-left:3px solid #0047A0;border-top:1px solid #EEF0F3;border-right:1px solid #EEF0F3;border-bottom:1px solid #EEF0F3;">
+              <div style='font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#0047A0;font-weight:700;margin-bottom:4px;'>manufacturing &middot; Yonhap</div>
+              <div style="font-size:14px;font-weight:600;color:#1A222E;font-family:Georgia,serif;line-height:1.4;">
+                <a href="https://en.yna.co.kr/view/AEN20260908006251320" style="color:#1A222E;text-decoration:none;">POSCO to invest 480 billion won in new automotive steel plant by 2028</a>
+              </div>
+              <div style='font-size:13px;line-height:1.5;color:#4A5260;margin-top:4px;'>POSCO announced it will invest 480 billion won to build a new automotive steel plant by 2028, targeting advanced high-strength steel for EV platforms. The investment comes as the company faces a 50% US Section 232 tariff on steel exports with no quota exemption.</div>
+              <div style="margin-top:3px;"><span style="display:inline-block;padding:1px 5px;border-radius:3px;font-size:10px;background:#E8E8E8;color:#4A5260;margin-right:3px;">POSCO</span></div>
+            </div>
+            <div class="item-card" style="margin-bottom:10px;padding:12px 14px;background:#fff;border-radius:3px;border-left:3px solid #0047A0;border-top:1px solid #EEF0F3;border-right:1px solid #EEF0F3;border-bottom:1px solid #EEF0F3;">
+              <div style='font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#0047A0;font-weight:700;margin-bottom:4px;'>manufacturing &middot; Yonhap</div>
+              <div style="font-size:14px;font-weight:600;color:#1A222E;font-family:Georgia,serif;line-height:1.4;">
+                <a href="https://en.yna.co.kr/view/AEN20260908005300320" style="color:#1A222E;text-decoration:none;">HMM secures 4.7 trillion-won shipping contract with Brazil's Vale</a>
+              </div>
+              <div style='font-size:13px;line-height:1.5;color:#4A5260;margin-top:4px;'>South Korean shipper HMM secured a 4.7 trillion won long-term shipping contract with Brazilian mining giant Vale, one of HMM's largest contracts since privatization, covering bulk commodity transport.</div>
+              <div style="margin-top:3px;"><span style="display:inline-block;padding:1px 5px;border-radius:3px;font-size:10px;background:#E8E8E8;color:#4A5260;margin-right:3px;">HMM</span></div>
             </div>
             <div class="item-card" style="margin-bottom:10px;padding:12px 14px;background:#fff;border-radius:3px;border-left:3px solid #CD2E3A;border-top:1px solid #EEF0F3;border-right:1px solid #EEF0F3;border-bottom:1px solid #EEF0F3;">
-              <div style='font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#CD2E3A;font-weight:700;margin-bottom:4px;'>macro &middot; Yonhap English</div>
+              <div style='font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#CD2E3A;font-weight:700;margin-bottom:4px;'>macro &middot; Hankyoreh</div>
               <div style="font-size:14px;font-weight:600;color:#1A222E;font-family:Georgia,serif;line-height:1.4;">
-                <a href="https://en.yna.co.kr/view/AEN20260908006952320" style="color:#1A222E;text-decoration:none;">Seoul shares snap 3-day rise as rate hike concerns weigh on investors</a>
+                <a href="https://www.hani.co.kr/arti/economy/economy_general/1276918.html" style="color:#1A222E;text-decoration:none;">August employment up 184,000; youth employment rate falls for 28th consecutive month</a>
               </div>
-              <div style='font-size:12.5px;line-height:1.5;color:#4A5260;margin-top:4px;'>Seoul equities ended lower Tuesday as investors remained cautious about potential interest rate increases, snapping a three-day winning streak. The BOK rate currently stands at 2.50% following the September 2026 adjustment; rate hike concerns reflect rising Brent crude at $99.31 (+3.15% on September 8).</div>
+              <div style='font-size:13px;line-height:1.5;color:#4A5260;margin-top:4px;'>South Korea's August employment increased by 184,000 jobs, but the youth employment rate fell for the 28th consecutive month — a structural labor market divergence that complicates the government's economic narrative despite the record nominal GDP growth.</div>
               
-            </div>
-            <div class="item-card" style="margin-bottom:10px;padding:12px 14px;background:#fff;border-radius:3px;border-left:3px solid #0047A0;border-top:1px solid #EEF0F3;border-right:1px solid #EEF0F3;border-bottom:1px solid #EEF0F3;">
-              <div style='font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#0047A0;font-weight:700;margin-bottom:4px;'>energy &middot; 매일경제</div>
-              <div style="font-size:14px;font-weight:600;color:#1A222E;font-family:Georgia,serif;line-height:1.4;">
-                <a href="https://news.google.com/rss/articles/CBMiUkFVX3lxTE13UlJUZEFMUGF0RV9MMWR2V1lZRHJLN1pCQTdhZFJ6RDNpbVBITDBBM0t3aUFBVTc2c0Fpd1g4c0FpMUVaeFNtLTl6VmJqdDVoemc?oc=5" style="color:#1A222E;text-decoration:none;">South Korea and US in discussions on building eight large nuclear power plants in the US using Korean technology</a>
-              </div>
-              <div style='font-size:12.5px;line-height:1.5;color:#4A5260;margin-top:4px;'>South Korea and the US are engaged in discussions on constructing eight large nuclear power plants on US soil using Korean nuclear technology, per Maeil Gyeongje, as Seoul's nuclear sector claims an independent value chain from fuel rods through plant construction. The discussion tracks with Korea's emerging civil nuclear export strategy and the Lee administration's energy diplomacy.</div>
-              
-            </div>
-            <div class="item-card" style="margin-bottom:10px;padding:12px 14px;background:#fff;border-radius:3px;border-left:3px solid #0047A0;border-top:1px solid #EEF0F3;border-right:1px solid #EEF0F3;border-bottom:1px solid #EEF0F3;">
-              <div style='font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#0047A0;font-weight:700;margin-bottom:4px;'>tech &middot; Yonhap English</div>
-              <div style="font-size:14px;font-weight:600;color:#1A222E;font-family:Georgia,serif;line-height:1.4;">
-                <a href="https://en.yna.co.kr/view/AEN20260908011300320" style="color:#1A222E;text-decoration:none;">Samsung partners with Mistral AI on chip operations as part of Lee-Macron summit deliverables</a>
-              </div>
-              <div style='font-size:12.5px;line-height:1.5;color:#4A5260;margin-top:4px;'>Samsung Electronics announced a partnership with French AI startup Mistral AI to enhance chip manufacturing operations, formalized as one of 15 cooperation documents signed during President Lee's Paris summit with President Macron. The deal adds a European dimension to Samsung's AI-chip optimization strategy alongside its existing Broadcom HBM and NVIDIA partnerships.</div>
-              <div style="margin-top:3px;"><span style="display:inline-block;padding:1px 5px;border-radius:3px;font-size:9px;background:#E8E8E8;color:#555;margin-right:3px;">Samsung Electronics</span> <span style="display:inline-block;padding:1px 5px;border-radius:3px;font-size:9px;background:#E8E8E8;color:#555;margin-right:3px;">Mistral AI</span></div>
             </div>
         </div>
         
 
         <div style="padding:20px 32px;border-bottom:1px solid #EBEBEB;" class="sec">
-          <a name="nea"></a><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.8px;color:#0047A0;font-family:Arial,sans-serif;margin-bottom:14px;padding-bottom:6px;border-bottom:2px solid #0047A0;">Northeast Asia Watch</div>
+          <a name="nea"></a><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#0047A0;font-family:Arial,sans-serif;margin-bottom:14px;padding-bottom:6px;border-bottom:2px solid #0047A0;">Northeast Asia Watch</div>
           
             <div class="item-card" style="margin-bottom:10px;padding:12px 14px;background:#fff;border-radius:3px;border-left:3px solid #0047A0;border-top:1px solid #EEF0F3;border-right:1px solid #EEF0F3;border-bottom:1px solid #EEF0F3;">
-              <div style='font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#0047A0;font-weight:700;margin-bottom:4px;'>trilateral &middot; Yonhap English</div>
+              <div style='font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#0047A0;font-weight:700;margin-bottom:4px;'>trilateral &middot; Yonhap</div>
               <div style="font-size:14px;font-weight:600;color:#1A222E;font-family:Georgia,serif;line-height:1.4;">
-                <a href="https://en.yna.co.kr/view/AEN20260908010800315" style="color:#1A222E;text-decoration:none;">ROK and Japan senior defense officials reaffirm trilateral cooperation with US at SDD</a>
+                <a href="https://en.yna.co.kr/view/AEN20260908010800315" style="color:#1A222E;text-decoration:none;">ROK-Japan senior defense officials reaffirm trilateral cooperation with US at Seoul forum</a>
               </div>
-              <div style='font-size:12.5px;line-height:1.5;color:#4A5260;margin-top:4px;'>Senior defense officials of South Korea and Japan reaffirmed trilateral cooperation with the United States for regional peace on the sidelines of the Seoul Defense Dialogue on September 8. The reaffirmation coincides with the fourth iteration of Freedom Edge 2026 (September 7-11), the trilateral multi-domain exercise that DPRK's defense minister condemned the same day.</div>
+              <div style='font-size:13px;line-height:1.5;color:#4A5260;margin-top:4px;'>Senior defense officials of South Korea and Japan reaffirmed trilateral military cooperation with the United States at the Seoul Defense Dialogue, framing it as essential for regional peace. The statement coincided with Freedom Edge 2026 (Sep 7-11), the fourth iteration of the US-ROK-Japan multi-domain exercise.</div>
               
             </div>
             <div class="item-card" style="margin-bottom:10px;padding:12px 14px;background:#fff;border-radius:3px;border-left:3px solid #0047A0;border-top:1px solid #EEF0F3;border-right:1px solid #EEF0F3;border-bottom:1px solid #EEF0F3;">
-              <div style='font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#0047A0;font-weight:700;margin-bottom:4px;'>China-Korea &middot; china-diplomatic &middot; 조선일보</div>
+              <div style='font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#0047A0;font-weight:700;margin-bottom:4px;'>Japan-Korea &middot; japan-defense &middot; Yonhap</div>
               <div style="font-size:14px;font-weight:600;color:#1A222E;font-family:Georgia,serif;line-height:1.4;">
-                <a href="https://news.google.com/rss/articles/CBMiiAFBVV95cUxQVWo0NDFCak9Ic2VfVjZxZklOZVNJUmd3aW5EcGtoY0pPeGczbm5TSUlVeVpwNmJPcGVWSHQ0Tk5oMFJKa3R4WHVKcXU4Y2MtQUNuNW5iU21xNTlRaV8zdkY2VzVYWWgyWHZaZld0ajNVcllURnd3NDZzZTk4VVVfN20xWGVZMmx2?oc=5" style="color:#1A222E;text-decoration:none;">Philippines-China clash over South China Sea disrupts Seoul Defense Dialogue sessions</a>
+                <a href="https://en.yna.co.kr/view/AEN20260908008900315" style="color:#1A222E;text-decoration:none;">North Korea accuses Japan of building war capability, warns of 'enormous misfortune'</a>
               </div>
-              <div style='font-size:12.5px;line-height:1.5;color:#4A5260;margin-top:4px;'>A confrontation between Philippine Defense Secretary Teodoro and Chinese officials over an audience note distributed on South China Sea topics disrupted the Seoul Defense Dialogue on September 8, with Teodoro publicly condemning the Chinese action. The incident injects South China Sea territorial tensions into a forum co-hosted by South Korea, a country that has sought to manage Beijing relations carefully since THAAD retaliation began in 2017.</div>
+              <div style='font-size:13px;line-height:1.5;color:#4A5260;margin-top:4px;'>KCNA accused Japan of building offensive war capabilities and warned of 'enormous misfortune,' coinciding with Freedom Edge 2026 trilateral drills and the pro-Pyongyang group in Japan calling cheering for DPRK Asian Games athletes a 'patriotic mission.' The statement adds to the DPRK defense minister's warning against the US-ROK-Japan exercise.</div>
+              
+            </div>
+            <div class="item-card" style="margin-bottom:10px;padding:12px 14px;background:#fff;border-radius:3px;border-left:3px solid #0047A0;border-top:1px solid #EEF0F3;border-right:1px solid #EEF0F3;border-bottom:1px solid #EEF0F3;">
+              <div style='font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#0047A0;font-weight:700;margin-bottom:4px;'>China-Korea &middot; china-diplomatic &middot; Yonhap</div>
+              <div style="font-size:14px;font-weight:600;color:#1A222E;font-family:Georgia,serif;line-height:1.4;">
+                <a href="https://en.yna.co.kr/view/AEN20260909001200315" style="color:#1A222E;text-decoration:none;">Xi and Putin send congratulatory messages to Kim pledging stronger 'strategic' ties on DPRK founding day</a>
+              </div>
+              <div style='font-size:13px;line-height:1.5;color:#4A5260;margin-top:4px;'>Chinese President Xi Jinping and Russian President Vladimir Putin both sent congratulatory messages to Kim Jong Un for North Korea's 78th founding anniversary, pledging to 'strengthen strategic guidance' — the coordination coinciding with the NK-Russia road bridge opening and DPRK destroyer commissioning in the same week.</div>
+              
+            </div>
+            <div class="item-card" style="margin-bottom:10px;padding:12px 14px;background:#fff;border-radius:3px;border-left:3px solid #CD2E3A;border-top:1px solid #EEF0F3;border-right:1px solid #EEF0F3;border-bottom:1px solid #EEF0F3;">
+              <div style='font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#CD2E3A;font-weight:700;margin-bottom:4px;'>China-Korea &middot; china-coercion &middot; Yonhap</div>
+              <div style="font-size:14px;font-weight:600;color:#1A222E;font-family:Georgia,serif;line-height:1.4;">
+                <a href="https://en.yna.co.kr/view/AEN20260908006500315" style="color:#1A222E;text-decoration:none;">Philippine defense chief publicly slams China over South China Sea note at Seoul Defense Dialogue</a>
+              </div>
+              <div style='font-size:13px;line-height:1.5;color:#4A5260;margin-top:4px;'>Philippine Defense Secretary Gilberto Teodoro publicly condemned China at the Seoul Defense Dialogue after China distributed an 'audience note' on the South China Sea, calling it an attempt to interfere with forum proceedings. The confrontation — played out at a Seoul-hosted multilateral security forum — directly implicates South Korea's regional security convening role.</div>
               
             </div>
             <div class="item-card" style="margin-bottom:10px;padding:12px 14px;background:#fff;border-radius:3px;border-left:3px solid #0047A0;border-top:1px solid #EEF0F3;border-right:1px solid #EEF0F3;border-bottom:1px solid #EEF0F3;">
               <div style='font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#0047A0;font-weight:700;margin-bottom:4px;'>Japan-Korea &middot; japan-defense &middot; The Diplomat</div>
               <div style="font-size:14px;font-weight:600;color:#1A222E;font-family:Georgia,serif;line-height:1.4;">
-                <a href="https://thediplomat.com/2026/09/japan-and-south-korea-face-off-again-in-the-us-navys-frigate-search/" style="color:#1A222E;text-decoration:none;">Japan and South Korea face off again in the US Navy's frigate search</a>
+                <a href="https://thediplomat.com/2026/09/japan-and-south-korea-face-off-again-in-the-us-navys-frigate-search/" style="color:#1A222E;text-decoration:none;">Japan and South Korea compete in US Navy frigate search — Chungnam vs. upgraded Mogami class</a>
               </div>
-              <div style='font-size:12.5px;line-height:1.5;color:#4A5260;margin-top:4px;'>The Diplomat reports South Korea holds an industrial head start in the US Navy's frigate competition, but assesses Japan's upgraded Mogami-class entry as a potential stalking horse for a broader Japanese defense export push. The competition has defense-industrial and alliance political dimensions as the US-ROK-Japan trilateral relationship deepens through Freedom Edge and Camp David commitments.</div>
+              <div style='font-size:13px;line-height:1.5;color:#4A5260;margin-top:4px;'>The Diplomat examines the ongoing US Navy frigate competition in which South Korea's Chungnam class holds an industrial head start, while Japan's upgraded Mogami class may function as a stalking horse — with defense-industrial implications for the Japan-Korea bilateral relationship and trilateral interoperability.</div>
               
             </div>
         </div>
         
 
         <div style="padding:20px 32px;border-bottom:1px solid #EBEBEB;" class="sec">
-          <a name="sentiment"></a><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.8px;color:#0047A0;font-family:Arial,sans-serif;margin-bottom:14px;padding-bottom:6px;border-bottom:2px solid #0047A0;">Public Sentiment</div>
+          <a name="sentiment"></a><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#0047A0;font-family:Arial,sans-serif;margin-bottom:14px;padding-bottom:6px;border-bottom:2px solid #0047A0;">Public Sentiment</div>
           <table width="100%" cellpadding="0" cellspacing="0" border="0" class="sentiment-table">
             <tr>
               <td width="42%" valign="top" style="padding:4px 18px 4px 0;border-right:1px solid #E4E7EB;">
-                <div style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:#7A828F;font-family:Arial,sans-serif;">Presidential approval</div>
+                <div style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:#6B7280;font-family:Arial,sans-serif;">Presidential approval</div>
                 <div class="hero-num" style="font-family:Georgia,serif;font-size:42px;font-weight:700;color:#0047A0;line-height:1.05;margin-top:4px;">40% <span style="font-size:18px;color:#A93226;vertical-align:middle;">&#9660;</span></div>
                 <div style="font-size:11px;color:#6B7280;font-family:Arial,sans-serif;margin-top:5px;">Gallup Korea &middot; September 4, 2026</div>
                 
@@ -524,20 +590,20 @@
                   <tr>
                     
                     <td width="33%" valign="top" align="center" style="padding:2px 4px;">
-                      <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#7A828F;font-family:Arial,sans-serif;white-space:nowrap;">Ruling party</div>
-                      <div style="font-size:10px;line-height:1.4;color:#9AA3AE;font-family:Arial,sans-serif;white-space:nowrap;">더불어민주당</div>
+                      <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#6B7280;font-family:Arial,sans-serif;white-space:nowrap;">Ruling party</div>
+                      <div style="font-size:10px;line-height:1.4;color:#6B7280;font-family:Arial,sans-serif;white-space:nowrap;">더불어민주당</div>
                       <div style="font-family:Georgia,serif;font-size:22px;font-weight:700;color:#1A222E;margin-top:6px;line-height:1;">39%</div>
                     </td>
                     
                     <td width="33%" valign="top" align="center" style="padding:2px 4px;">
-                      <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#7A828F;font-family:Arial,sans-serif;white-space:nowrap;">Opposition</div>
-                      <div style="font-size:10px;line-height:1.4;color:#9AA3AE;font-family:Arial,sans-serif;white-space:nowrap;">국민의힘</div>
+                      <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#6B7280;font-family:Arial,sans-serif;white-space:nowrap;">Opposition</div>
+                      <div style="font-size:10px;line-height:1.4;color:#6B7280;font-family:Arial,sans-serif;white-space:nowrap;">국민의힘</div>
                       <div style="font-family:Georgia,serif;font-size:22px;font-weight:700;color:#1A222E;margin-top:6px;line-height:1;">25%</div>
                     </td>
                     
                     <td width="33%" valign="top" align="center" style="padding:2px 4px;">
-                      <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#7A828F;font-family:Arial,sans-serif;white-space:nowrap;">Independents</div>
-                      <div style="font-size:10px;line-height:1.4;color:#9AA3AE;font-family:Arial,sans-serif;white-space:nowrap;">무당층</div>
+                      <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#6B7280;font-family:Arial,sans-serif;white-space:nowrap;">Independents</div>
+                      <div style="font-size:10px;line-height:1.4;color:#6B7280;font-family:Arial,sans-serif;white-space:nowrap;">무당층</div>
                       <div style="font-family:Georgia,serif;font-size:22px;font-weight:700;color:#1A222E;margin-top:6px;line-height:1;">26%</div>
                     </td>
                   </tr>
@@ -547,34 +613,34 @@
           </table>
           
           
-            <div class="sentiment-spotlight" style="margin-top:10px;padding:8px 12px;background:#F0F5FB;border-radius:4px;border-left:3px solid #0047A0;font-size:11px;color:#444;line-height:1.5;">
+            <div class="sentiment-spotlight" style="margin-top:10px;padding:8px 12px;background:#F0F5FB;border-radius:3px;border-left:3px solid #0047A0;font-size:11px;color:#4A5260;line-height:1.5;">
               <strong style="color:#0047A0;">Gallup Korea Spotlight</strong>
-              <span style="font-family:'Courier New',Courier,monospace;font-size:10px;color:#999;margin-left:6px;">August 25-27, 2026</span><br>
-              <span style="font-weight:600;">Security Policy Priorities:</span> Gallup Korea's late-August spotlight covered security policy priorities including OPCON transfer, denuclearization, inter-Korean military balance, and proposed merger of three military academies; Lee Jae-myung's approval stood at 42% (lowest since inauguration) with disapproval first crossing 50%.
+              <span style="font-family:'Courier New',Courier,monospace;font-size:10px;color:#5A6472;margin-left:6px;">August 25-27, 2026</span><br>
+              <span style="font-weight:600;">Security Policy Priorities and Military Reform:</span> Lee Jae-myung's approval stood at 42% in the Aug 25-27 poll (his lowest since inauguration) with disapproval first crossing 50%; the poll covered OPCON transfer, denuclearization, inter-Korean military balance, and proposed military academy merger.
             </div>
           
-            <div class="sentiment-discourse" style="margin-top:8px;padding:6px 10px;background:#FBF0F1;border-radius:4px;border-left:3px solid #CD2E3A;font-size:11px;color:#555;">
-              <strong style="color:#CD2E3A;">Discourse:</strong> Civil society groups and progressive outlets (Hankyoreh) publicly opposed potential ROK troop deployment to the Hormuz Strait on September 8, with organized opposition forming ahead of formal government decision.
+            <div class="sentiment-discourse" style="margin-top:8px;padding:6px 10px;background:#FBF0F1;border-radius:3px;border-left:3px solid #CD2E3A;font-size:11px;color:#4A5260;">
+              <strong style="color:#CD2E3A;">Discourse:</strong> Korean commentary figures — including Chin Joong-kwon of Donggyang University — publicly predicted presidential approval could drop to the 20% range within a month, citing dissatisfaction with cabinet nominations (Kim Seung-won for justice minister, Yong Hye-in for gender equality minister). Both Chosun Ilbo and Hankyoreh editorial boards criticized the nominations. (Newsis, Sep 9)
             </div>
         </div>
         
 
         <div style="padding:20px 32px;border-bottom:1px solid #EBEBEB;" class="sec">
-          <a name="upcoming"></a><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.8px;color:#0047A0;font-family:Arial,sans-serif;margin-bottom:14px;padding-bottom:6px;border-bottom:2px solid #0047A0;">Upcoming</div>
+          <a name="upcoming"></a><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#0047A0;font-family:Arial,sans-serif;margin-bottom:14px;padding-bottom:6px;border-bottom:2px solid #0047A0;">Upcoming</div>
           
             <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-bottom:1px solid #E8E8E8;">
               <tr>
                 <td width="54" style="padding:9px 12px 9px 0;vertical-align:top;">
                   <table cellpadding="0" cellspacing="0" border="0" style="background:#0047A0;">
                     <tr><td align="center" style="padding:4px 0 5px;width:46px;">
-                      <div style="font-family:Arial,sans-serif;font-size:9px;font-weight:700;letter-spacing:1.5px;color:rgba(255,255,255,0.82);">SEP</div>
-                      <div style="font-family:Georgia,serif;font-size:19px;font-weight:700;color:#fff;line-height:1;">9</div>
+                      <div style="font-family:Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;color:rgba(255,255,255,0.82);"></div>
+                      <div style="font-family:Georgia,serif;font-size:19px;font-weight:700;color:#fff;line-height:1;"></div>
                     </td></tr>
                   </table>
                 </td>
                 <td style="padding:9px 0;vertical-align:top;">
-                  <div style="font-family:Georgia,serif;font-size:15px;font-weight:700;color:#1B2A4A;">DPRK 78th Founding Anniversary (정권창건일)</div>
-                  <div style="font-size:12.5px;line-height:1.45;color:#6B7280;margin-top:3px;">September 9 is the DPRK's 78th founding day — a historically active window for military parades, missile tests, or major declaratory statements. Kim Jong Un's Kang Kon commissioning and the NK defense minister's Freedom Edge condemnation on September 7-8 constitute an elevated signaling environment entering this anniversary.</div>
+                  <div style="font-family:Georgia,serif;font-size:15px;font-weight:700;color:#1B2A4A;"></div>
+                  <div style="font-size:13px;line-height:1.45;color:#6B7280;margin-top:3px;"></div>
                 </td>
               </tr>
             </table>
@@ -583,14 +649,14 @@
                 <td width="54" style="padding:9px 12px 9px 0;vertical-align:top;">
                   <table cellpadding="0" cellspacing="0" border="0" style="background:#0047A0;">
                     <tr><td align="center" style="padding:4px 0 5px;width:46px;">
-                      <div style="font-family:Arial,sans-serif;font-size:9px;font-weight:700;letter-spacing:1.5px;color:rgba(255,255,255,0.82);">SEP</div>
-                      <div style="font-family:Georgia,serif;font-size:19px;font-weight:700;color:#fff;line-height:1;">11</div>
+                      <div style="font-family:Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;color:rgba(255,255,255,0.82);"></div>
+                      <div style="font-family:Georgia,serif;font-size:19px;font-weight:700;color:#fff;line-height:1;"></div>
                     </td></tr>
                   </table>
                 </td>
                 <td style="padding:9px 0;vertical-align:top;">
-                  <div style="font-family:Georgia,serif;font-size:15px;font-weight:700;color:#1B2A4A;">Freedom Edge 2026 trilateral exercise concludes</div>
-                  <div style="font-size:12.5px;line-height:1.45;color:#6B7280;margin-top:3px;">The fourth iteration of Freedom Edge — a US-ROK-Japan multi-domain exercise — runs September 7-11 per the US Embassy Seoul. North Korea's defense minister condemned the drills on September 7-8 via KCNA.</div>
+                  <div style="font-family:Georgia,serif;font-size:15px;font-weight:700;color:#1B2A4A;"></div>
+                  <div style="font-size:13px;line-height:1.45;color:#6B7280;margin-top:3px;"></div>
                 </td>
               </tr>
             </table>
@@ -599,14 +665,14 @@
                 <td width="54" style="padding:9px 12px 9px 0;vertical-align:top;">
                   <table cellpadding="0" cellspacing="0" border="0" style="background:#0047A0;">
                     <tr><td align="center" style="padding:4px 0 5px;width:46px;">
-                      <div style="font-family:Arial,sans-serif;font-size:9px;font-weight:700;letter-spacing:1.5px;color:rgba(255,255,255,0.82);">SEP</div>
-                      <div style="font-family:Georgia,serif;font-size:19px;font-weight:700;color:#fff;line-height:1;">9</div>
+                      <div style="font-family:Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;color:rgba(255,255,255,0.82);"></div>
+                      <div style="font-family:Georgia,serif;font-size:19px;font-weight:700;color:#fff;line-height:1;"></div>
                     </td></tr>
                   </table>
                 </td>
                 <td style="padding:9px 0;vertical-align:top;">
-                  <div style="font-family:Georgia,serif;font-size:15px;font-weight:700;color:#1B2A4A;">Seoul Defense Dialogue (SDD) continues — Day 2</div>
-                  <div style="font-size:12.5px;line-height:1.45;color:#6B7280;margin-top:3px;">The 15th Seoul Defense Dialogue runs September 7-9 at the Grand Lotte Hotel Seoul under the theme 'Toward New Coexistence in an Era of Chaos,' with 67 countries and international organizations represented. ROK MND confirmed four defense ministers and six deputy defense ministers are attending.</div>
+                  <div style="font-family:Georgia,serif;font-size:15px;font-weight:700;color:#1B2A4A;"></div>
+                  <div style="font-size:13px;line-height:1.45;color:#6B7280;margin-top:3px;"></div>
                 </td>
               </tr>
             </table>
@@ -615,30 +681,14 @@
                 <td width="54" style="padding:9px 12px 9px 0;vertical-align:top;">
                   <table cellpadding="0" cellspacing="0" border="0" style="background:#0047A0;">
                     <tr><td align="center" style="padding:4px 0 5px;width:46px;">
-                      <div style="font-family:Arial,sans-serif;font-size:9px;font-weight:700;letter-spacing:1.5px;color:rgba(255,255,255,0.82);">OCT</div>
-                      <div style="font-family:Georgia,serif;font-size:19px;font-weight:700;color:#fff;line-height:1;">10</div>
+                      <div style="font-family:Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;color:rgba(255,255,255,0.82);"></div>
+                      <div style="font-family:Georgia,serif;font-size:19px;font-weight:700;color:#fff;line-height:1;"></div>
                     </td></tr>
                   </table>
                 </td>
                 <td style="padding:9px 0;vertical-align:top;">
-                  <div style="font-family:Georgia,serif;font-size:15px;font-weight:700;color:#1B2A4A;">DPRK Workers' Party Founding Day</div>
-                  <div style="font-size:12.5px;line-height:1.45;color:#6B7280;margin-top:3px;">October 10 is the Korean Workers' Party founding anniversary — historically accompanied by military displays, missile tests, or major political events. Watch for DPRK escalatory signaling in the September-October window.</div>
-                </td>
-              </tr>
-            </table>
-            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-bottom:1px solid #E8E8E8;">
-              <tr>
-                <td width="54" style="padding:9px 12px 9px 0;vertical-align:top;">
-                  <table cellpadding="0" cellspacing="0" border="0" style="background:#0047A0;">
-                    <tr><td align="center" style="padding:4px 0 5px;width:46px;">
-                      <div style="font-family:Arial,sans-serif;font-size:9px;font-weight:700;letter-spacing:1.5px;color:rgba(255,255,255,0.82);">SEP</div>
-                      <div style="font-family:Georgia,serif;font-size:19px;font-weight:700;color:#fff;line-height:1;">19</div>
-                    </td></tr>
-                  </table>
-                </td>
-                <td style="padding:9px 0;vertical-align:top;">
-                  <div style="font-family:Georgia,serif;font-size:15px;font-weight:700;color:#1B2A4A;">Section 301 Determination — No Fixed Date</div>
-                  <div style="font-size:12.5px;line-height:1.45;color:#6B7280;margin-top:3px;">USTR Section 301 investigation (launched March 11, 2026) against 16 trading partners including South Korea continues; no fixed determination date set. This is the primary tariff legal vehicle following the Section 122 surcharge expiry on July 24, 2026.</div>
+                  <div style="font-family:Georgia,serif;font-size:15px;font-weight:700;color:#1B2A4A;"></div>
+                  <div style="font-size:13px;line-height:1.45;color:#6B7280;margin-top:3px;"></div>
                 </td>
               </tr>
             </table>
@@ -646,131 +696,93 @@
         
 
         <div style="padding:20px 32px;border-bottom:1px solid #EBEBEB;" class="sec">
-          <a name="wire"></a><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.8px;color:#0047A0;font-family:Arial,sans-serif;margin-bottom:14px;padding-bottom:6px;border-bottom:2px solid #0047A0;">The Wire</div>
+          <a name="wire"></a><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#0047A0;font-family:Arial,sans-serif;margin-bottom:14px;padding-bottom:6px;border-bottom:2px solid #0047A0;">The Wire</div>
           
-            <div class="item-card" style="margin-bottom:10px;padding:12px 14px;background:#fff;border-radius:3px;border-left:3px solid #CD2E3A;border-top:1px solid #EEF0F3;border-right:1px solid #EEF0F3;border-bottom:1px solid #EEF0F3;">
-              <div style='font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#CD2E3A;font-weight:700;margin-bottom:4px;'>Trilateral &middot; Yonhap English</div>
+            <div class="item-card" style="margin-bottom:10px;padding:12px 14px;background:#fff;border-radius:3px;border-left:3px solid #0047A0;border-top:1px solid #EEF0F3;border-right:1px solid #EEF0F3;border-bottom:1px solid #EEF0F3;">
+              <div style='font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#0047A0;font-weight:700;margin-bottom:4px;'>US-Korea &middot; Yonhap</div>
               <div style="font-size:14px;font-weight:600;color:#1A222E;font-family:Georgia,serif;line-height:1.4;">
-                <a href="https://en.yna.co.kr/view/AEN20260908006551315" style="color:#1A222E;text-decoration:none;">Philippine defense chief slams China over audience note distributed at Seoul Defense Dialogue</a>
+                <a href="https://en.yna.co.kr/view/AEN20260908002500315" style="color:#1A222E;text-decoration:none;">South Korea notifies IAEA of intent to consult on nuclear-powered submarine safeguards</a>
               </div>
-              <div style='font-size:12.5px;line-height:1.5;color:#4A5260;margin-top:4px;'>Philippine Defense Secretary Gilberto Teodoro publicly condemned China at the Seoul Defense Dialogue after Chinese officials distributed a note to audience members during South China Sea-related sessions, calling the act an attempt to manipulate the forum. The incident drew significant attention at a security conference attended by 67 countries, injecting South China Sea tensions directly into a forum focused on Korean Peninsula and regional security.</div>
+              <div style='font-size:13px;line-height:1.5;color:#4A5260;margin-top:4px;'>South Korea formally notified the IAEA it intends to consult on safeguards arrangements for nuclear-powered submarines, a formal step under international nuclear inspection protocols that advances Seoul's capability pursuit.</div>
               
             </div>
             <div class="item-card" style="margin-bottom:10px;padding:12px 14px;background:#fff;border-radius:3px;border-left:3px solid #0047A0;border-top:1px solid #EEF0F3;border-right:1px solid #EEF0F3;border-bottom:1px solid #EEF0F3;">
-              <div style='font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#0047A0;font-weight:700;margin-bottom:4px;'>US-Korea &middot; Yonhap English</div>
+              <div style='font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#0047A0;font-weight:700;margin-bottom:4px;'>Business &middot; Bloomberg</div>
               <div style="font-size:14px;font-weight:600;color:#1A222E;font-family:Georgia,serif;line-height:1.4;">
-                <a href="https://en.yna.co.kr/view/AEN20260908006400320" style="color:#1A222E;text-decoration:none;">ROK government to launch tabletop exercise on supply chain uncertainties this week</a>
+                <a href="https://news.google.com/rss/articles/CBMiswFBVV95cUxOaEJEWUNaazdPbnpIekp5ZWpOa1MwazFOTGp4ZXNoZmpkVGtzaEc2cWh0NHZLbnpOWEE0NGM4VHZEdFFtU2NYTDBUemRfMEZfZW93V2YybW5tT0tNTDZhZHgycHFFZ3BHWUY3T1EtMGdremg4azZ1S285MzEyS3J0aDh2c2lfZFgzektLdmN4dS05T1VBa1RSTE5MS1lKX2FPMGRkQjNDUndIdy1uYlRVbEpGcw?oc=5" style="color:#1A222E;text-decoration:none;">Korea Zinc shareholder battle heats up as shareholders vote on control</a>
               </div>
-              <div style='font-size:12.5px;line-height:1.5;color:#4A5260;margin-top:4px;'>South Korea's government announced September 8 it will conduct a tabletop exercise this week to assess and address supply chain vulnerabilities, a resilience measure accelerated by ongoing US tariff uncertainty and critical mineral supply chain exposure.</div>
+              <div style='font-size:13px;line-height:1.5;color:#4A5260;margin-top:4px;'>Bloomberg reports the battle for control of Korea Zinc escalated as shareholders voted, continuing a months-long governance dispute over the critical minerals company that holds strategic value for both Seoul's industrial supply chain and its US investment commitments.</div>
               
             </div>
             <div class="item-card" style="margin-bottom:10px;padding:12px 14px;background:#fff;border-radius:3px;border-left:3px solid #0047A0;border-top:1px solid #EEF0F3;border-right:1px solid #EEF0F3;border-bottom:1px solid #EEF0F3;">
-              <div style='font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#0047A0;font-weight:700;margin-bottom:4px;'>Energy &middot; 매일경제</div>
+              <div style='font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#0047A0;font-weight:700;margin-bottom:4px;'>Technology &middot; Bloomberg</div>
               <div style="font-size:14px;font-weight:600;color:#1A222E;font-family:Georgia,serif;line-height:1.4;">
-                <a href="https://news.google.com/rss/articles/CBMiU0FVX3lxTE1JV0oxc2hGMVhLNW1rSDdwaThXOERWakpMT0hmOXRBVHpjVnVKRkNIZmhrQjUyMlk0QzU2czQxRWFrNjhaSU10SUptMUpLZmxRd2NJ?oc=5" style="color:#1A222E;text-decoration:none;">Korean nuclear power achieves independent value chain from fuel rods to construction — new export engine</a>
+                <a href="https://news.google.com/rss/articles/CBMitgFBVV95cUxOWGJrMDFnRGxjcUc1eklfclhDbkYxS19QaVNpMzhTc21jR3hUenlJeFk5enp5Nkg3SUJ0bW40cl95VV94U3B0eVlVcUNKalg5T1F2a0Q3MDQzOTZYM0NNTTNOMEtkVnpaX1U1ODRUcXEzTEFWb0xoaTd0dVQtN2w2ZU9KWEdSaEVrLXByaktaVy1hZWFlZDFPRXRyai1HVlpPaFh3ZmY5R09VVWxDVWxGYUFfUm5nZw?oc=5" style="color:#1A222E;text-decoration:none;">Korean battery sector pivots to humanoid robots as next growth engine</a>
               </div>
-              <div style='font-size:12.5px;line-height:1.5;color:#4A5260;margin-top:4px;'>Maeil Gyeongje reported September 8 that South Korea's nuclear power sector has achieved an independent value chain spanning fuel rod production through plant construction, positioning civil nuclear energy as a major new export engine. The development is tied to ROK-US discussions on building eight large nuclear power plants in the US using Korean technology.</div>
-              
-            </div>
-            <div class="item-card" style="margin-bottom:10px;padding:12px 14px;background:#fff;border-radius:3px;border-left:3px solid #CD2E3A;border-top:1px solid #EEF0F3;border-right:1px solid #EEF0F3;border-bottom:1px solid #EEF0F3;">
-              <div style='font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#CD2E3A;font-weight:700;margin-bottom:4px;'>Japan-Korea &middot; Yonhap English</div>
-              <div style="font-size:14px;font-weight:600;color:#1A222E;font-family:Georgia,serif;line-height:1.4;">
-                <a href="https://en.yna.co.kr/view/AEN20260908006600315" style="color:#1A222E;text-decoration:none;">Pro-Pyongyang group in Japan calls cheering for NK athletes at Asian Games a 'patriotic' mission</a>
-              </div>
-              <div style='font-size:12.5px;line-height:1.5;color:#4A5260;margin-top:4px;'>A pro-North Korea organization in Japan called for mobilized support for North Korean athletes at the upcoming Asian Games, framing attendance and cheering as a patriotic obligation. North Korean athletes arrived in Beijing en route to the Games in Japan, per Mainichi, with ideology drills conducted before departure per Daily NK.</div>
+              <div style='font-size:13px;line-height:1.5;color:#4A5260;margin-top:4px;'>Bloomberg reports South Korean battery makers are positioning humanoid robotics as a key next-generation growth sector, building on EV battery expertise as EV market growth slows globally.</div>
               
             </div>
             <div class="item-card" style="margin-bottom:10px;padding:12px 14px;background:#fff;border-radius:3px;border-left:3px solid #0047A0;border-top:1px solid #EEF0F3;border-right:1px solid #EEF0F3;border-bottom:1px solid #EEF0F3;">
-              <div style='font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#0047A0;font-weight:700;margin-bottom:4px;'>US-Korea &middot; Hankyoreh English</div>
+              <div style='font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#0047A0;font-weight:700;margin-bottom:4px;'>Technology &middot; FT</div>
               <div style="font-size:14px;font-weight:600;color:#1A222E;font-family:Georgia,serif;line-height:1.4;">
-                <a href="https://news.google.com/rss/articles/CBMie0FVX3lxTE8tNFVwcFlIZzF2WkY3eHk2VlJ1NFZPeGx1YXc4eXFNSWVYSVAzQ1F0MjlJMHNMa2s2SnNPSGxaZlpaVmhPd1lTckh5SzVOTnBreUVnX1Y2MHR0T3R2aXRsdHlzV2dWWDZ5RDlnYXdHX19MY25zWk9iRHdqTQ?oc=5" style="color:#1A222E;text-decoration:none;">Korea expected to invest $22 billion in gas-fired plant in Texas as part of tariff deal</a>
+                <a href="https://news.google.com/rss/articles/CBMihAFBVV95cUxNVW9ncDYwQ0ZvRDlCYll4bGZHX1Vock1STXJMWElwbE1iQXlsMEtWa3RiNTREY0JFRWlRbDhjTWtBdVcxNXlTaUQ3MXdvVGU1dk0wZFAySGVWdm95UWJIX3MzeFZHU0c2cURrN2tkLWMxWUMyQk5QUE9rSHpGTWJDZERsTEk?oc=5" style="color:#1A222E;text-decoration:none;">South Korea's AI property boom puts pressure on president</a>
               </div>
-              <div style='font-size:12.5px;line-height:1.5;color:#4A5260;margin-top:4px;'>South Korea is expected to invest approximately $22 billion in a gas-fired power plant in Texas as a component of the broader US-Korea trade and investment framework, per Hankyoreh, consistent with the 6.3GW Texas power project reported by Maeil Gyeongje. The investment would be structured through the Korea-US Strategic Investment Corporation established by the March 2026 Special Investment Act.</div>
+              <div style='font-size:13px;line-height:1.5;color:#4A5260;margin-top:4px;'>The Financial Times reports that South Korea's AI-driven data center construction and property demand boom is generating political pressure on President Lee Jae-myung, as AI infrastructure expansion intersects with housing and land-use concerns in the Seoul metropolitan area.</div>
               
             </div>
         </div>
         
 
         <div style="padding:20px 32px;border-bottom:1px solid #EBEBEB;" class="sec">
-          <a name="analysis"></a><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.8px;color:#0047A0;font-family:Arial,sans-serif;margin-bottom:14px;padding-bottom:6px;border-bottom:2px solid #0047A0;">Analysis</div>
-          <div style="margin-bottom:14px;padding:12px 14px;background:#EEF3F9;border-radius:6px;border-left:3px solid #0047A0;"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#0047A0;margin-bottom:9px;">Officials on X</div><div style="margin-bottom:9px;padding-bottom:9px;border-bottom:1px solid #E1E8F0;"><div style="font-size:12px;font-weight:600;color:#1A222E;">ROK Ministry of National Defense <span style="color:#8A94A6;font-weight:400;">@ROK_MND</span></div><div style="font-size:12.5px;color:#33404F;line-height:1.45;margin:2px 0 3px;">&ldquo;The 15th Seoul Defense Dialogue (SDD) opened September 8 at the Grand Lotte Hotel Seoul. Running under the theme 'Toward New Coexistence in an Era of Chaos,' the SDD runs September 7-9 with 67 countries and international organizations represented, including four defense ministers and six deputy defense ministers. Defense Minister Ahn Gyu-baek's opening address was followed by a presidential video message and prime minister keynote.&rdquo;</div><div style="font-size:11px;color:#0047A0;line-height:1.4;margin-bottom:3px;"><strong>Context:</strong> The SDD opening coincides with Freedom Edge 2026 (Sep 7-11) and the DPRK Kang Kon commissioning — the most concentrated simultaneous security signaling in the peninsula since the Ulchi Freedom Shield 2026 window in August.</div><a href="https://x.com/ROK_MND/status/2097250873416290698" style="font-size:10px;color:#0047A0;text-decoration:none;">View on X &#8594;</a></div><div style="margin-bottom:9px;padding-bottom:9px;border-bottom:1px solid #E1E8F0;"><div style="font-size:12px;font-weight:600;color:#1A222E;">US Embassy Seoul <span style="color:#8A94A6;font-weight:400;">@USEmbassySeoul</span></div><div style="font-size:12.5px;color:#33404F;line-height:1.45;margin:2px 0 3px;">&ldquo;Freedom Edge 2026, the US-ROK-Japan trilateral multi-domain exercise, officially began. The opening ceremony emphasized joint objectives, combined readiness, interoperability, and the importance of sustained trilateral cooperation built on mutual trust. The exercise runs September 7-11 and is the fourth iteration of Freedom Edge.&rdquo;</div><div style="font-size:11px;color:#0047A0;line-height:1.4;margin-bottom:3px;"><strong>Context:</strong> Freedom Edge 2026 opening coincides with the DPRK Kang Kon commissioning and Kim Jong Un's nuclear declaratory statements — DPRK's defense minister condemned the drills via KCNA on the same day.</div><a href="https://x.com/USEmbassySeoul/status/2097206304221626371" style="font-size:10px;color:#0047A0;text-decoration:none;">View on X &#8594;</a></div><div style="margin-bottom:9px;padding-bottom:9px;border-bottom:1px solid #E1E8F0;"><div style="font-size:12px;font-weight:600;color:#1A222E;">President Lee Jae-myung <span style="color:#8A94A6;font-weight:400;">@Jaemyung_Lee</span></div><div style="font-size:12.5px;color:#33404F;line-height:1.45;margin:2px 0 3px;">&ldquo;France fought alongside the Republic of Korea as part of the UN forces during the Korean War, protecting our freedom together. At the Arc de Triomphe's Tomb of the Unknown Soldier in Paris, I paid tribute to the nameless heroes who crossed borders to defend peace. Their noble sacrifice is the firm foundation of the freedom and peace we enjoy today.&rdquo;</div><div style="font-size:11px;color:#0047A0;line-height:1.4;margin-bottom:3px;"><strong>Context:</strong> Posted during Lee's state visit to Paris; he retweeted French President Macron's welcome post, marking their bilateral summit day on which 15 cooperation agreements were signed.</div><a href="https://x.com/Jaemyung_Lee/status/2097308468332081636" style="font-size:10px;color:#0047A0;text-decoration:none;">View on X &#8594;</a></div><div style="font-size:10px;color:#8A94A6;line-height:1.4;margin-top:2px;">Direct posts by tracked official accounts, attributed as posted. Not independently verified beyond the post.</div></div>
+          <a name="analysis"></a><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#0047A0;font-family:Arial,sans-serif;margin-bottom:14px;padding-bottom:6px;border-bottom:2px solid #0047A0;">Analysis</div>
+          <div style="margin-bottom:14px;padding:12px 14px;background:#EEF3F9;border-radius:6px;border-left:3px solid #0047A0;"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#0047A0;margin-bottom:9px;">Officials on X</div><div style="margin-bottom:9px;padding-bottom:9px;border-bottom:1px solid #E1E8F0;"><div style="font-size:12px;font-weight:600;color:#1A222E;">ROK Ministry of National Defense <span style="color:#8A94A6;font-weight:400;">@ROK_MND</span></div><div style="font-size:13px;color:#33404F;line-height:1.45;margin:2px 0 3px;">&ldquo;The 2026 Seoul Defense Dialogue (SDD) opening ceremony was held this morning at The Grand Lotte Seoul. The 15th SDD, themed 'Toward New Coexistence in an Age of Chaos,' runs Sep 7-9, with attendance by defense ministers of 4 countries, deputy ministers of 6 countries, and over 1,000 participants from 67 states and international organizations.&rdquo;</div><div style="font-size:11px;color:#0047A0;line-height:1.4;margin-bottom:3px;"><strong>Context:</strong> Defense Minister Ahn's opening remarks — 'Chaos is another name for crisis, but also an opportunity to advance toward a new order' — were delivered at the same event where he disclosed DPRK's 'unprecedentedly strong' border severing measures.</div><a href="https://x.com/ROK_MND/status/2097250873416290698" style="font-size:10px;color:#0047A0;text-decoration:none;">View on X &#8594;</a></div><div style="margin-bottom:9px;padding-bottom:9px;border-bottom:1px solid #E1E8F0;"><div style="font-size:12px;font-weight:600;color:#1A222E;">US Embassy Seoul <span style="color:#8A94A6;font-weight:400;">@USEmbassySeoul</span></div><div style="font-size:13px;color:#33404F;line-height:1.45;margin:2px 0 3px;">&ldquo;Freedom Edge 2026, the US-ROK-Japan trilateral multi-domain exercise, has officially commenced. The fourth Freedom Edge exercise runs September 7-11 and emphasizes joint readiness, interoperability, and mutual trust among the three nations.&rdquo;</div><div style="font-size:11px;color:#0047A0;line-height:1.4;margin-bottom:3px;"><strong>Context:</strong> Freedom Edge 2026 opening coincided with DPRK defense minister Kim Song Gi's warning statement and the Kang Kon destroyer commissioning at Wonsan — Pyongyang timed all three events within the exercise window.</div><a href="https://x.com/USEmbassySeoul/status/2097206304221626371" style="font-size:10px;color:#0047A0;text-decoration:none;">View on X &#8594;</a></div><div style="margin-bottom:9px;padding-bottom:9px;border-bottom:1px solid #E1E8F0;"><div style="font-size:12px;font-weight:600;color:#1A222E;">President Lee Jae-myung <span style="color:#8A94A6;font-weight:400;">@Jaemyung_Lee</span></div><div style="font-size:13px;color:#33404F;line-height:1.45;margin:2px 0 3px;">&ldquo;France fought alongside the Republic of Korea as part of the UN forces during the Korean War. I paid tribute at the Tomb of the Unknown Soldier under the Arc de Triomphe — the noble sacrifice of nameless heroes forms the solid foundation of the freedom and peace we enjoy today.&rdquo;</div><div style="font-size:11px;color:#0047A0;line-height:1.4;margin-bottom:3px;"><strong>Context:</strong> Post accompanied Lee's state visit activities in Paris; France is one of the UN Command contributing nations, and the tribute was part of the ceremonial program for the ROK-France state visit on Sep 8.</div><a href="https://x.com/Jaemyung_Lee/status/2097308468332081636" style="font-size:10px;color:#0047A0;text-decoration:none;">View on X &#8594;</a></div><div style="font-size:10px;color:#8A94A6;line-height:1.4;margin-top:2px;">Direct posts by tracked official accounts, attributed as posted. Not independently verified beyond the post.</div></div>
             <div style="margin-bottom:12px;padding-left:12px;border-left:3px solid #0047A0;">
-              <div style="font-size:11px;color:#888;">Korea Economic Institute of America</div>
+              <div style="font-size:11px;color:#6B7280;">KEIA</div>
               <div style="font-size:13px;font-weight:600;color:#1A222E;">
                 <a href="https://news.google.com/rss/articles/CBMikgFBVV95cUxNNEtPWjhTUG1WQ2c4Wl9DNUpKOGRqMms2VnQyT2lVa2hHcXNveGEyWmx0aThyd3JURkdZclU0YnloREZ4a1pfRkpMR0Faa01ydkZxdnZQdEhCNEtBSWQtMERlWVVfRTNqMG1RZmV1QWlQYXdURURFZV95NXdzc293MTZjeWhQMlF5cHRMdVRYRk1CUQ?oc=5" style="color:#1A222E;text-decoration:none;">North Korean Traders Are Quietly Engaging Chinese Capitalists</a>
               </div>
-              <div style="font-size:12px;line-height:1.4;color:#555;">The KEIA piece documents North Korean traders reestablishing contact with Chinese capitalists in a manner that bypasses official bilateral economic mechanisms, consistent with the NK Pro satellite imagery showing renewed smuggling routes at the NK-China border (July 2026). The analysis suggests this informal channel is emerging as a sanctions-pressure relief valve. The pattern connects to Sinuiju–Dandong crossing activity and the broader DPRK economic reopening under Kim Jong Un's post-COVID strategy.</div>
-              <div style='font-size:11px;color:#0047A0;margin-top:3px;'><strong>So what:</strong> Directly relevant to UN sanctions enforcement monitoring and the CSIS Korea Chair's NK economy tracking; informs whether DPRK's nuclear program financing is finding alternative channels.</div>
-            </div>
-            <div style="margin-bottom:12px;padding-left:12px;border-left:3px solid #0047A0;">
-              <div style="font-size:11px;color:#888;">Foreign Policy</div>
-              <div style="font-size:13px;font-weight:600;color:#1A222E;">
-                <a href="https://foreignpolicy.com/2026/09/08/russia-ukraine-war-south-korea-air-defense-interceptors/" style="color:#1A222E;text-decoration:none;">South Korea Should Help Defend Ukraine's Skies</a>
-              </div>
-              <div style="font-size:12px;line-height:1.4;color:#555;">The piece argues South Korea's Europe policy credibility requires tangible military support to Ukraine beyond economic assistance, engaging directly with the debate over whether Seoul can transfer air defense systems without provoking Moscow. The argument is timely given the Lee-Macron summit's defense cooperation agreements signed the same day. The piece implicitly addresses the tension between Seoul's deepening European security engagement and its ongoing exposure to Russian retaliation threats, including Moscow's Arctic LNG 2 suit against Hanwha.</div>
-              <div style='font-size:11px;color:#0047A0;margin-top:3px;'><strong>So what:</strong> Contributes to the active ROK government deliberation on Ukraine military assistance and the broader question of South Korea's defense export policy conditionality.</div>
-            </div>
-            <div style="margin-bottom:12px;padding-left:12px;border-left:3px solid #0047A0;">
-              <div style="font-size:11px;color:#888;">Sejong Institute</div>
-              <div style="font-size:13px;font-weight:600;color:#1A222E;">
-                <a href="https://news.google.com/rss/articles/CBMifEFVX3lxTE1xMlR2MmpRQ1A2UWo4MXFmb29rUmFvLWlsWFhSRE1JNTJMWGM1YnE1amlqY0FrbFlITWN0bW9aQ2owOVQtTlNES3VqUTlrc19QV0NQQjRyNF93Z1k4SzI1ZTk2NWJNQ2VydjZ4bllyYWxNWFZfMENRamdXbGg?oc=5" style="color:#1A222E;text-decoration:none;">[Policy Forum] Korean Peninsula and Northeast Asia Regional Security</a>
-              </div>
-              <div style="font-size:12px;line-height:1.4;color:#555;">The Sejong Institute policy forum examines the interplay between DPRK nuclear development and the broader Northeast Asia regional security architecture, engaging Korean and regional scholars on structural responses. The forum's timing coincides with Kim Jong Un's Kang Kon nuclear declaratory statements and the DPRK founding anniversary watch window. Sejong is a leading ROK government-linked think tank with close ties to the presidential foreign policy advisory process.</div>
-              <div style='font-size:11px;color:#0047A0;margin-top:3px;'><strong>So what:</strong> Informs ROK government deliberations on inter-Korean engagement strategy and the multilateral security framework ahead of likely UNGA-season diplomatic signaling.</div>
+              <div style="font-size:12px;line-height:1.4;color:#4A5260;">KEIA analysis examines how DPRK traders are quietly establishing commercial relationships with Chinese entrepreneurs, operating in informal economic spaces that formal sanctions monitoring does not fully capture. The piece provides ground-level texture on DPRK economic opening not visible from satellite imagery or official trade data, relevant to the sanctions enforcement debate and the Sinuiju-Dandong reopening.</div>
+              <div style='font-size:11px;color:#0047A0;margin-top:3px;'><strong>So what:</strong> Directly relevant to UN Panel of Experts successor body deliberations on sanctions effectiveness and the Sinuiju-Dandong passenger rail resumption (Mar 2026) as a new vector for informal trade flows.</div>
             </div>
         </div>
         
 
         <div style="padding:20px 32px;border-bottom:1px solid #EBEBEB;" class="sec">
-          <a name="satellite"></a><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.8px;color:#0047A0;font-family:Arial,sans-serif;margin-bottom:14px;padding-bottom:6px;border-bottom:2px solid #0047A0;">Satellite &amp; Location Watch</div>
-          <div style="font-size:11px;color:#888;margin-top:6px;margin-bottom:12px;">2 of 11 sites at elevated or alert status</div>
+          <a name="satellite"></a><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#0047A0;font-family:Arial,sans-serif;margin-bottom:14px;padding-bottom:6px;border-bottom:2px solid #0047A0;">Satellite &amp; Location Watch</div>
+          <div style="font-size:11px;color:#6B7280;margin-top:6px;margin-bottom:12px;">3 of 11 sites at elevated or alert status</div>
           
             <div style="margin-bottom:20px;padding:16px;border-left:3px solid #0047A0;">
-              <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:#0047A0;font-weight:600;margin-bottom:6px;">International Business Times / DailyNK · Sep 08 — DPRK nuclear facility flood threat; reservoir drought worsening</div>
-              <div style="font-size:17px;font-weight:700;color:#1A222E;line-height:1.3;margin-bottom:8px;">Satellite images reveal North Korean nuclear facility threatened by flood conditions; separate imagery shows worsening reservoir drought nationwide</div>
-              <div style="font-size:13px;line-height:1.6;color:#444;">International Business Times reported that satellite images reveal a North Korean nuclear facility threatened by flood conditions as of September 8, consistent with the broader flood and landslide events observed along the NK-Russia border region at end of August. Separately, DailyNK published satellite imagery showing reservoir drought worsening across North Korea, adding an agricultural and water-security dimension to the imagery picture. Both datasets are consistent with the elevated operational tempo and environmental stress observed at monitored DPRK facilities throughout August–September 2026.</div>
-              <div style='margin-top:6px;font-size:11px;color:#888;'>→ Yongbyon Nuclear Complex</div>
-              <div style='margin-top:8px;'><a href="https://news.google.com/rss/articles/CBMinwFBVV95cUxPbU5aOWFGaGRBYXpoTjdZLWgtakpEYkNmMTBrd1VZNzdhN0k2ZkZkOHlRQVgxX1BsMTExWWNualY0Vm1xX0lVSmRkbG1sMk9pQ1IzU002dDRWMTdDMVRkSExBVGQ0dDR1MmxZY1ExR3pZcmh0eDFuYk05NTdKdEVnd3RKVHJhZFRhWUFuLWN4RnFCb2xzNWtqX3BrdDN0YmM" style="font-size:11px;font-family:monospace;color:#888;text-decoration:none;">International Business Times — DPRK nuclear facility flood threat ↗</a> &middot; <a href="https://news.google.com/rss/articles/CBMihwFBVV95cUxOUG5TRzNnd3QyVmhhTHRFc0xwNFBYMXdNaFd4RUcwWTZmTHdCTjRwWGNoU3hTNHlwa2Y2VjZFY2NTd2Z1cl9vOTNOX1Q3djNzZnJQcGx1a2RGRkw3TXpHdUd1cmJ4Q3Rqcy1mNFRTNk03TUVzU1o0el9neTVDSnBLa2psRU9vQW8" style="font-size:11px;font-family:monospace;color:#888;text-decoration:none;">DailyNK — Reservoir drought satellite imagery ↗</a></div>
+              <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:#0047A0;font-weight:600;margin-bottom:6px;">Daily NK / International Business Times · Sep 8, 2026 — DPRK reservoir drought and nuclear facility flood risk</div>
+              <div style="font-size:17px;font-weight:700;color:#1A222E;line-height:1.3;margin-bottom:8px;">Satellite imagery shows drought-worsened reservoirs across North Korea; separate imagery flags flood threat near nuclear facility.</div>
+              <div style="font-size:13px;line-height:1.6;color:#4A5260;">Daily NK reported satellite imagery showing reservoir drought conditions worsening across North Korea as of early September 2026. A separate International Business Times report cited satellite imagery revealing flooding near a North Korean nuclear facility. Neither report specifies which nuclear complex by name in the available summaries.</div>
+              <div style='margin-top:6px;font-size:11px;color:#6B7280;'>→ Yongbyon Nuclear Complex · Punggye-ri Nuclear Test Site</div>
+              <div style='margin-top:8px;'><a href="https://news.google.com/rss/articles/CBMihwFBVV95cUxOUG5TRzNnd3QyVmhhTHRFc0xwNFBYMXdNaFd4RUcwWTZmTHdCTjRwWGNoU3hTNHlwa2Y2VjZFY2NTd2Z1cl9vOTNOX1Q3djNzZnJQcGx1a2RGRkw3TXpHdUd1cmJ4Q3Rqcy1mNFRTNk03TUVzU1o0el9neTVDSnBLa2psRU9vQW8" style="font-size:11px;font-family:monospace;color:#6B7280;text-decoration:none;">Daily NK — Reservoir drought imagery ↗</a> &middot; <a href="https://news.google.com/rss/articles/CBMinwFBVV95cUxPbU5aOWFGaGRBYXpoTjdZLWgtakpEYkNmMTBrd1VZNzdhN0k2ZkZkOHlRQVgxX1BsMTExWWNualY0Vm1xX0lVSmRkbG1sMk9pQ1IzU002dDRWMTdDMVRkSExBVGQ0dDR1MmxZY1ExR3pZcmh0eDFuYk05NTdKdEVnd3RKVHJhZFRhWUFuLWN4RnFCb2xzNWtqX3BrdDN0YmM" style="font-size:11px;font-family:monospace;color:#6B7280;text-decoration:none;">IBT — Nuclear facility flood threat ↗</a></div>
             </div>
           <table width="100%" cellpadding="0" cellspacing="0" border="0" class="loc-grid">
             <tr>
                 <td style="width:50%;padding:4px;vertical-align:top;">
-                  <div style="background:#FBF0F1;border-radius:4px;padding:10px 12px;border-left:3px solid #CD2E3A;">
+                  <div style="background:#FBF0F1;border-radius:3px;padding:10px 12px;border-left:3px solid #CD2E3A;">
                     <div style="font-size:12px;font-weight:700;color:#1A222E;margin-bottom:2px;">Yongbyon Nuclear Complex &nbsp;<span style="font-family:'Courier New',Courier,monospace;font-size:11px;font-weight:700;color:#CD2E3A;letter-spacing:0.5px;">ELEVATED &#9650;</span></div>
-                    <div style="font-size:11px;line-height:1.4;color:#555;margin-top:4px;">38 North published analysis Jul 16 of North Korea's expanding uranium and conventional missile production, consistent with Kim Jong Un's formal July 11-12 directive to expand nuclear forces 'both in quality and quantity.' Apr 2026: Enrichment building expansion complete, new centrifuge hall operational. 5 MWe reactor and IRT-2000 both running. Thermal signatures consistent with increased plutonium/HEU production. DailyNK satellite imagery (Aug 21) shows growing waste buildup at the uranium plant, consistent with sustained operational tempo. Sep 8: International Business Times reports satellite images reveal a North Korean nuclear facility threatened by flood conditions.</div>
-                    <div style="font-family:'Courier New',Courier,monospace;font-size:11px;color:#999;margin-top:4px;">as of 2026-09-08</div>
+                    <div style="font-size:11px;line-height:1.4;color:#4A5260;margin-top:4px;">Apr 2026: Enrichment building expansion complete, new centrifuge hall operational. 5 MWe reactor and IRT-2000 both running. Thermal signatures consistent with increased plutonium/HEU production.</div>
+                    <div style="font-family:'Courier New',Courier,monospace;font-size:11px;color:#6B7280;margin-top:4px;">as of 2026-09</div>
                   </div>
                 </td>
                 <td style="width:50%;padding:4px;vertical-align:top;">
-                  <div style="background:#F5F6F7;border-radius:4px;padding:10px 12px;border-left:3px solid #7F8C8D;">
-                    <div style="font-size:12px;font-weight:700;color:#1A222E;margin-bottom:2px;">Tumangang–Khasan (NK-Russia border) &nbsp;<span style="font-family:'Courier New',Courier,monospace;font-size:11px;font-weight:700;color:#7F8C8D;letter-spacing:0.5px;">MONITORING &#9650;</span></div>
-                    <div style="font-size:11px;line-height:1.4;color:#555;margin-top:4px;">Russia and North Korea opened their first road bridge over the Tumen River in a completion ceremony on September 7, per Russian state media (TASS, Interfax) and NK News. 38 North satellite imagery published Aug 25 showed construction had made significant further progress toward an opening; the crossing was assessed as largely ready with finishing touches underway. NK Pro satellite imagery (Sep 4) showed landslides and floods in the NK-Russia border region from Aug 31-Sep 1 that may have disrupted transport links.</div>
-                    <div style="font-family:'Courier New',Courier,monospace;font-size:11px;color:#999;margin-top:4px;">as of 2026-09-07</div>
+                  <div style="background:#FBE9EA;border-radius:3px;padding:10px 12px;border-left:3px solid #CD2E3A;">
+                    <div style="font-size:12px;font-weight:700;color:#1A222E;margin-bottom:2px;">Tumangang–Khasan (NK-Russia border) &nbsp;<span style="font-family:'Courier New',Courier,monospace;font-size:11px;font-weight:700;color:#CD2E3A;letter-spacing:0.5px;">ALERT &#9650;</span></div>
+                    <div style="font-size:11px;line-height:1.4;color:#4A5260;margin-top:4px;">Sep 8, 2026: The first road bridge over the Tumen River between North Korea and Russia was formally opened at a ceremony attended by Russian PM Mikhail Mishustin; the bridge is named after Soviet officer Yakov Novichenko. This constitutes a new permanent road link across the shared border, the first of its kind.</div>
+                    <div style="font-family:'Courier New',Courier,monospace;font-size:11px;color:#6B7280;margin-top:4px;">as of 2026-09-08</div>
                   </div>
                 </td></tr><tr>
                 <td style="width:50%;padding:4px;vertical-align:top;">
-                  <div style="background:#F5F6F7;border-radius:4px;padding:10px 12px;border-left:3px solid #7F8C8D;">
-                    <div style="font-size:12px;font-weight:700;color:#1A222E;margin-bottom:2px;">Sinuiju–Dandong (NK-China border) &nbsp;<span style="font-family:'Courier New',Courier,monospace;font-size:11px;font-weight:700;color:#7F8C8D;letter-spacing:0.5px;">MONITORING &#9650;</span></div>
-                    <div style="font-size:11px;line-height:1.4;color:#555;margin-top:4px;">38 North satellite imagery (Sep 2, 2026) shows North Korea has made significant progress on a new trade facility at Sinuiju after years of delay, consistent with preparations to operationalize the New Yalu River Bridge crossing. Mar 12, 2026: Cross-border passenger train service resumed between Sinuiju and Dandong after COVID-era suspension. NK Pro satellite imagery analysis (Jul 7, 2026) shows over a dozen makeshift smuggling routes across the NK-China border that went quiet since late 2025 have appeared active again.</div>
-                    <div style="font-family:'Courier New',Courier,monospace;font-size:11px;color:#999;margin-top:4px;">as of 2026-09-02</div>
-                  </div>
-                </td>
-                <td style="width:50%;padding:4px;vertical-align:top;">
-                  <div style="background:#F5F6F7;border-radius:4px;padding:10px 12px;border-left:3px solid #7F8C8D;">
-                    <div style="font-size:12px;font-weight:700;color:#1A222E;margin-bottom:2px;">Yellow Sea NLL &nbsp;<span style="font-family:'Courier New',Courier,monospace;font-size:11px;font-weight:700;color:#7F8C8D;letter-spacing:0.5px;">MONITORING &#9650;</span></div>
-                    <div style="font-size:11px;line-height:1.4;color:#555;margin-top:4px;">NK Pro Planet Labs imagery (Aug 19) confirms new construction has begun on a west coast island near Nampho, assessed as preparation for a new naval base to host large warships under development. DailyNK satellite imagery (Aug 13) confirms North Korea is fortifying its side of the DMZ, consistent with elevated military activity. NK Pro Planet Labs imagery (Aug 7) confirmed at least 380 homes destroyed at a North Korean military base close to the South Korean border after a dam appeared to break in late July. South Korean forces fired warning shots after North Korean troops briefly crossed the MDL last week (Yonhap, Aug 16). DailyNK (Aug 28) published satellite imagery showing mine drainage approaching Kangnyong Bay on North Korea's west coast.</div>
-                    <div style="font-family:'Courier New',Courier,monospace;font-size:11px;color:#999;margin-top:4px;">as of 2026-08-28</div>
-                  </div>
-                </td></tr><tr>
-                <td style="width:50%;padding:4px;vertical-align:top;">
-                  <div style="background:#F5F6F7;border-radius:4px;padding:10px 12px;border-left:3px solid #7F8C8D;">
+                  <div style="background:#F5F6F7;border-radius:3px;padding:10px 12px;border-left:3px solid #7F8C8D;">
                     <div style="font-size:12px;font-weight:700;color:#1A222E;margin-bottom:2px;">Vostochny/Dunai (Russian Far East) &nbsp;<span style="font-family:'Courier New',Courier,monospace;font-size:11px;font-weight:700;color:#7F8C8D;letter-spacing:0.5px;">MONITORING &#9650;</span></div>
-                    <div style="font-size:11px;line-height:1.4;color:#555;margin-top:4px;">Russia and North Korea held a completion ceremony on September 7 for their first road bridge over the Tumen River, per NK News and Reuters. Russian checkpoint by North Korea car bridge was 65% completed per Russian authorities (NK News, Aug 28); bridge formally opened Sep 7. Jan 2026: Arms shipments slowed due to ice — one Russian vessel (likely Angara or Lady R) visited Rason, docked Jan 14 at arms export berth. Cargo routed to Vostochny. Since Sep 2023: 64 voyages by 4 vessels delivered ~15,800 containers from Rajin to Vostochny/Dunai.</div>
-                    <div style="font-family:'Courier New',Courier,monospace;font-size:11px;color:#999;margin-top:4px;">as of 2026-09-07</div>
+                    <div style="font-size:11px;line-height:1.4;color:#4A5260;margin-top:4px;">Jan 2026: Arms shipments slowed due to ice — one Russian vessel (likely Angara or Lady R) visited Rason, docked Jan 14 at arms export berth. Cargo routed to Vostochny. Since Sep 2023: 64 voyages by 4 vessels (Angara, Maria, Maya-1, Lady R) delivered ~15,800 containers (~4.2-5.8M munitions) from Rajin to Vostochny/Dunai. Road bridge now open, providing first permanent road route to supplement existing rail.</div>
+                    <div style="font-family:'Courier New',Courier,monospace;font-size:11px;color:#6B7280;margin-top:4px;">as of 2026-09-08</div>
                   </div>
                 </td><td style="width:50%;padding:4px;"></td></tr>
           </table>
-          <div style="font-size:11.5px;color:#8A9199;margin-top:10px;padding-top:9px;border-top:1px solid #EAEAEA;">6 other monitored sites: no new imagery in the last 30 days &middot; oldest report 2026-01.</div>
+          <div style="font-size:11px;color:#8A9199;margin-top:10px;padding-top:9px;border-top:1px solid #EAEAEA;">8 other monitored sites: no new imagery in the last 30 days &middot; oldest report 2025-05.</div>
         </div>
         
 
@@ -781,25 +793,25 @@
              mail clients block images by default, and a blocked logo is a
              broken logo. This always renders, scales, and stays legible in
              dark mode. -->
-        <table cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto;"><tr>
-          <td style="padding-right:12px;font-family:Georgia,'Times New Roman',serif;font-size:26px;letter-spacing:3px;color:#FFFFFF;line-height:1;">CSIS</td>
-          <td style="border-left:1px solid rgba(255,255,255,0.45);padding:2px 12px;font-family:Arial,sans-serif;font-size:9px;letter-spacing:1.4px;text-transform:uppercase;color:rgba(255,255,255,0.82);line-height:1.35;text-align:left;">Geopolitics and Foreign<br>Policy Department</td>
-          <td style="border-left:1px solid rgba(255,255,255,0.45);padding:2px 0 2px 12px;font-family:Arial,sans-serif;font-size:9px;letter-spacing:1.4px;text-transform:uppercase;color:rgba(255,255,255,0.82);line-height:1.35;text-align:left;">Korea<br>Chair</td>
+        <table class="lockup" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto;"><tr>
+          <td style="padding-right:12px;font-family:Georgia,'Times New Roman',serif;font-size:26px;letter-spacing:2px;color:#FFFFFF;line-height:1;">CSIS</td>
+          <td style="border-left:1px solid rgba(255,255,255,0.45);padding:2px 12px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.82);line-height:1.35;text-align:left;">Geopolitics and Foreign<br>Policy Department</td>
+          <td style="border-left:1px solid rgba(255,255,255,0.45);padding:2px 0 2px 12px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.82);line-height:1.35;text-align:left;">Korea<br>Chair</td>
         </tr></table>
-        <div style="font-family:Georgia,serif;font-size:12.5px;color:rgba(255,255,255,0.62);margin-top:12px;">Center for Strategic and International Studies &middot; Washington, DC</div>
+        <div style="font-family:Georgia,serif;font-size:13px;color:rgba(255,255,255,0.62);margin-top:12px;">Center for Strategic and International Studies &middot; Washington, DC</div>
         <div style="margin-top:9px;font-family:Arial,sans-serif;font-size:11px;">
           <a href="https://andysaulim.github.io/Daily-Korea-Digest/latest.html" style="color:#8FB6E8;text-decoration:none;">Read online</a> &nbsp;&middot;&nbsp;
           <a href="https://andysaulim.github.io/Daily-Korea-Digest/archive.html" style="color:#8FB6E8;text-decoration:none;">Archive</a>
         </div>
       </td></tr>
       <tr><td style="padding:12px 32px 10px;">
-        <div style="border-top:1px solid rgba(255,255,255,0.14);padding-top:11px;font-family:Arial,sans-serif;font-size:10.5px;line-height:1.55;color:rgba(255,255,255,0.52);">
+        <div style="border-top:1px solid rgba(255,255,255,0.14);padding-top:11px;font-family:Arial,sans-serif;font-size:11px;line-height:1.55;color:rgba(255,255,255,0.52);">
           This newsletter is automatically generated, so it may contain errors. Please check all information and sources before citing.
           To report errors or other issues, please contact Andy Lim at <a href="mailto:alim@csis.org" style="color:rgba(255,255,255,0.78);">alim@csis.org</a>.
         </div>
       </td></tr>
       <tr><td style="padding:0 32px 18px;text-align:center;">
-        <div style="font-family:'Courier New',Courier,monospace;font-size:10px;color:rgba(255,255,255,0.35);margin-bottom:7px;">generated 5:44 PM ET</div>
+        <div style="font-family:'Courier New',Courier,monospace;font-size:10px;color:rgba(255,255,255,0.35);margin-bottom:7px;">generated 7:15 PM ET</div>
         <a href="#top" style="font-family:Arial,sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#8FB6E8;text-decoration:none;">&#8593; Back to top</a>
       </td></tr>
     </table>
