@@ -184,14 +184,18 @@ def render(digest: dict) -> str:
     web_url = digest.get("web_url", "")
     sections = []
 
-    # ── 0. View in Browser bar (+ full-color PDF link) ────────────────────
+    # ── 0. View in Browser bar (Read online · Print / PDF · Archive) ──────
     if web_url:
-        pdf_url = web_url[:-len("latest.html")] + "latest.pdf" if web_url.endswith("latest.html") else ""
-        pdf_link = (f' &nbsp;&middot;&nbsp; <a href="{_esc(pdf_url)}" style="color:#2980B9;text-decoration:none;">Download PDF &#8595;</a>'
-                    if pdf_url else "")
+        base = web_url[:-len("latest.html")] if web_url.endswith("latest.html") else ""
+        _a = ('color:#2980B9;text-decoration:none;white-space:nowrap;')
+        links = [f'<a href="{_esc(web_url)}" style="{_a}">Read online &#8594;</a>']
+        if base:
+            links.append(f'<a href="{_esc(base + "latest.pdf")}" style="{_a}">Print / PDF &#8595;</a>')
+            links.append(f'<a href="{_esc(base + "archive.html")}" style="{_a}">Archive</a>')
+        sep = '&nbsp;&nbsp;&middot;&nbsp;&nbsp;'
         sections.append(f"""
         <div style="background:#F0F0F0;padding:6px 32px;text-align:center;font-size:11px;color:#888;" class="sec">
-          Email not rendering? <a href="{_esc(web_url)}" style="color:#2980B9;text-decoration:none;">Read online &#8594;</a>{pdf_link}
+          {sep.join(links)}
         </div>
         """)
 
