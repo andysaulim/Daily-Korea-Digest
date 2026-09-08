@@ -127,6 +127,23 @@ TIER1_FEEDS = {
     "ROK MOFA":           _gnews("site:mofa.go.kr"),
     "ROK MOTIE":          _gnews("Korea+site:motie.go.kr"),
     "ROK MND":            _gnews("site:mnd.go.kr"),
+    # ── Primary ROK government sources. The brief previously carried only
+    #    MOFA, MOTIE and MND, so the Presidential Office, the Unification
+    #    Ministry, the finance ministry, defence acquisition and the National
+    #    Assembly were reaching it secondhand through the press or not at all.
+    "ROK Presidential Office": _gnews("site:president.go.kr"),
+    "ROK Unification Ministry": _gnews("site:unikorea.go.kr"),
+    "ROK MOEF":           _gnews("site:moef.go.kr"),
+    "ROK DAPA":           _gnews("site:dapa.go.kr"),
+    "ROK National Assembly": _gnews("site:assembly.go.kr"),
+    # Prosecution and the courts drive the ROK political cycle; indictments and
+    # rulings were previously picked up only after the dailies wrote them up.
+    "ROK Prosecution Service": _gnews("site:spo.go.kr"),
+    "ROK Courts":         _gnews("site:scourt.go.kr"),
+    # DART is the financial supervisory disclosure system. Samsung, Hyundai and
+    # SK file there before they announce, so this is corporate news at source
+    # rather than through the business dailies.
+    "DART disclosures":   _gnews("%EC%A0%84%EC%9E%90%EA%B3%B5%EC%8B%9C+OR+site:dart.fss.or.kr"),
     "Japan MOFA":         _gnews("Korea+site:mofa.go.jp"),
     # ── US Economic agencies ────────────────────────────────────────────
     "Dept of Commerce":   _gnews("Korea+site:commerce.gov"),
