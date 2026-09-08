@@ -315,6 +315,11 @@ def render(digest: dict) -> str:
     </table>
     """)
 
+    # ── 2c. Section navigation. Emitted as a placeholder here and resolved
+    #      after every section is built, so links are only offered for
+    #      sections that actually rendered. ─────────────────────────────────
+    sections.append("%%NAV%%")
+
     # ── 3. Morning Memo (top 3 at a glance) ─────────────────────────────────
     memo_items = digest.get("morning_memo") or []
     if memo_items:
@@ -1595,7 +1600,24 @@ def render(digest: dict) -> str:
     </table>
     """)
 
+    # Resolve the navigation placeholder now that every section is known. At a
+    # 1,600-2,000 word target the brief is too long to scan end to end and the
+    # only link was "back to top". A quiet day that drops sections simply gets
+    # fewer links, and fewer than four suppresses the row entirely.
+    _NAV = [("Top Stories", "overnight"), ("Pyongyang", "kcna"),
+            ("Trade", "trade"), ("Markets", "business"),
+            ("Polling", "sentiment"), ("Upcoming", "upcoming"),
+            ("Analysis", "analysis"), ("Satellite", "satellite")]
     body = "\n".join(sections)
+    _links = [f'<a href="#{_a}" style="color:{TAEGUK_BLUE};text-decoration:none;white-space:nowrap;">{_l}</a>'
+              for _l, _a in _NAV if f'a name="{_a}"' in body]
+    _nav_html = ""
+    if len(_links) >= 4:
+        _nav_html = ('<div style="background:#F7F8FA;border-bottom:1px solid #E4E7EB;'
+                     'padding:8px 32px;text-align:center;font-family:Arial,sans-serif;'
+                     'font-size:11px;line-height:1.9;color:#9AA3AE;" class="sec">'
+                     + ' &nbsp;&middot;&nbsp; '.join(_links) + '</div>')
+    body = body.replace("%%NAV%%", _nav_html)
 
     return f"""<!DOCTYPE html>
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
