@@ -369,7 +369,10 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
         "top_stories":       (2, 4),
         "overnight_items":   (3, 6),
         "business_economy":  (0, 6),
-        "calendar_watch":    (4, 5),
+        # No minimum: the prompt no longer forces four events, because the
+        # verified-date list had been overtaken by time and a hard floor
+        # against an empty list is what produces invented dates.
+        "calendar_watch":    (0, 5),
         "also_today":        (0, 6),
         "northeast_asia":    (0, 6),
         "social_statements": (0, 6),

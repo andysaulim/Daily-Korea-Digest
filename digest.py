@@ -293,10 +293,85 @@ def _build_kcna_summary_block(payload: dict) -> str:
     return "\n".join(lines)
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# What reaches the model
+# ─────────────────────────────────────────────────────────────────────────────
+# The prompt carries a bounded number of articles per tier. Everything past
+# the cut is invisible to the model — it cannot cite, rank or mention an
+# article it never received.
+#
+# That cut used to be `articles[:60]` against a list ordered by nothing at
+# all. `_fetch_feeds_parallel` fills its results dict in `as_completed` order,
+# so tier 1 arrived sorted by network latency: whichever feed answered fastest
+# went first. A slow Presidential Office response could land past position 60
+# and never reach the model, while a fast, thin feed filled the budget.
+#
+# Two rules in the system prompt were quietly unenforceable as a result. The
+# mandatory-inclusion rule says a WSJ or FT article MUST appear in the brief,
+# and the primary-source rule says to prefer a ministry release over reporting
+# about it — but neither can hold if the article is not in the prompt.
+#
+# Articles are now banded by editorial priority and, within a band, taken one
+# per source before any source gets a second. A prolific wire cannot crowd out
+# every other outlet, and the sources the rules depend on are seen first.
+
+_PROMPT_PRESTIGE = {
+    "wsj", "wall street journal", "washington post", "wapo", "new york times",
+    "nyt", "bloomberg", "financial times", "ft", "economist", "cnn", "reuters",
+    "cnbc", "ap ", "associated press", "nikkei",
+}
+_PROMPT_SPECIALIST = {
+    "38 north", "38north", "beyond parallel", "nk news", "nk pro", "daily nk",
+    "armscontrolwonk", "arms control wonk", "accessdprk", "kcna watch",
+}
+
+
+def _prompt_band(article: dict) -> int:
+    """Lower is seen first. Bands, not scores: the ordering has to be
+    explicable to an editor, and a weighted score is not."""
+    source = str(article.get("source", "")).lower()
+    # 0 — primary documents. A ministry release outranks reporting about it.
+    if source.startswith("rok ") or source in {
+            "usfk", "state dept", "pentagon", "white house", "ustr",
+            "bank of korea", "statistics korea", "korea customs", "korea.net",
+            "federal register kr", "dart disclosures", "dept of treasury"}:
+        return 0
+    # 1 — outlets a prompt rule declares mandatory. If these are not in the
+    #     prompt the rule silently does nothing.
+    if any(p in source for p in _PROMPT_PRESTIGE):
+        return 1
+    if any(p in source for p in _PROMPT_SPECIALIST):
+        return 1
+    # 2 — a flagged Korea correspondent's byline.
+    if article.get("flagged_journalist"):
+        return 2
+    # 3 — Korean-language pieces we fetched the body of; the prompt calls
+    #     these the richest material in the feed and asks the model to prefer
+    #     them, so they should not be competing for scraps at the bottom.
+    if article.get("fulltext"):
+        return 3
+    if str(article.get("lang", "")).upper() == "KO":
+        return 4
+    return 5
+
+
+def rank_for_prompt(articles: list) -> list:
+    """Order articles so the truncation that follows is editorial, not random."""
+    seen: dict[str, int] = {}
+    keyed = []
+    for i, a in enumerate(articles):
+        source = str(a.get("source", ""))
+        nth = seen.get(source, 0)
+        seen[source] = nth + 1
+        keyed.append(((_prompt_band(a), nth, i), a))
+    keyed.sort(key=lambda kv: kv[0])
+    return [a for _, a in keyed]
+
+
 def build_user_prompt(payload: dict, date_str: str, db_context: str = "",
                       recent_coverage: str = "") -> str:
-    def tier_json(articles: list, max_items: int = 60) -> str:
-        trimmed = articles[:max_items]
+    def tier_json(articles: list, max_items: int = 140) -> str:
+        trimmed = rank_for_prompt(articles)[:max_items]
         result = []
         for a in trimmed:
             item = {
@@ -533,7 +608,7 @@ For EACH article, return:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 TIER 2: OP-EDS & PRESTIGE COMMENTARY
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-{tier_json(payload.get("tier2", []), max_items=30)}
+{tier_json(payload.get("tier2", []), max_items=45)}
 IMPORTANT: NK News / NK Pro is a NEWS source, not an op-ed outlet. NK News / NK Pro articles belong in top_stories or overnight_items, NOT in opeds_today.
 ANTI-HALLUCINATION — OP-EDS: Only include op-eds/commentary that appear as actual articles in the input data above with a real URL. Do NOT fabricate generic think tank entries (e.g. "CFR analysis examines South Korea's security challenges" or "Brookings paper argues for alliance modernization") when no such article exists in today's feed. If no qualifying Tier 2 articles are in today's batch, return an empty opeds_today array. An empty section is always better than a fabricated entry.
 For EACH piece: url, source, headline (the EXACT title of the article as published — do NOT paraphrase or summarize), prestige_tier, authors, korea_primary, relevance_score, central_argument, summary, policy_so_what.

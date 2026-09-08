@@ -125,12 +125,47 @@ def check_named_institutions_exist() -> list[str]:
     return problems
 
 
+def check_mandatory_outlets_reach_the_prompt() -> list[str]:
+    """A rule cannot bind on an article the model never receives.
+
+    Tier 1 used to be truncated to the first 60 articles of a list ordered by
+    network latency, so on a busy day the WSJ, FT and Joint Chiefs items the
+    prompt's mandatory rules depend on simply were not in the prompt.
+    """
+    import random
+    volumes = [("Yonhap English", 34), ("Korea Herald", 22), ("연합뉴스", 28),
+               ("조선일보", 19), ("Reuters Korea", 4), ("WSJ Korea", 2),
+               ("FT Korea", 1), ("NYT Korea", 2), ("38 North", 1),
+               ("ROK Presidential Office", 3), ("ROK MOFA", 4),
+               ("ROK Policy Briefing", 9), ("ROK Joint Chiefs", 2),
+               ("USTR", 1), ("JTBC", 11), ("KBS", 14), ("매일경제", 17)]
+    articles = [{"source": src, "title": f"{src} {i}", "url": f"https://x/{src}/{i}",
+                 "summary": "", "lang": "EN"}
+                for src, n in volumes for i in range(n)]
+    random.Random(11).shuffle(articles)
+
+    ranked = digest.rank_for_prompt(articles)[:140]
+    present = {a["source"] for a in ranked}
+    must = ["WSJ Korea", "FT Korea", "NYT Korea", "Reuters Korea", "38 North",
+            "ROK Presidential Office", "ROK MOFA", "ROK Policy Briefing",
+            "ROK Joint Chiefs", "USTR"]
+    problems = [f"{m} would not reach the prompt" for m in must if m not in present]
+
+    # The first slots must go to primary documents, not to whichever wire
+    # happened to answer first.
+    head = [a["source"] for a in ranked[:10]]
+    if not any(h.startswith("ROK ") or h == "USTR" for h in head):
+        problems.append("no primary source in the first ten articles of the prompt")
+    return problems
+
+
 CHECKS = [
     ("prestige rule is enforceable", check_prestige_rule_is_enforceable),
     ("primary ROK sources reach the model", check_primary_sources_reach_the_model),
     ("Korean ministry headlines survive", check_korean_headlines_survive),
     ("filter still rejects world news", check_filter_still_rejects_world_news),
     ("named institutions have feeds", check_named_institutions_exist),
+    ("mandatory outlets reach the prompt", check_mandatory_outlets_reach_the_prompt),
 ]
 
 
