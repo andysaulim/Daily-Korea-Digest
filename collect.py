@@ -21,6 +21,17 @@ def _gnews(query: str) -> str:
     return f"https://news.google.com/rss/search?q={query}&hl=en-US&gl=US&ceid=US:en"
 
 
+def _native(native_url: str, gnews_query: str) -> list:
+    """A feed defined as: try the outlet's own RSS, fall back to Google News.
+
+    The fallback is what makes this safe to write for a URL nobody could
+    verify. If the native path is wrong or the outlet moves it, that candidate
+    returns nothing and the Google News search still answers, which is exactly
+    what the feed did before.
+    """
+    return [native_url, _gnews(gnews_query)]
+
+
 def _resolve_gnews_url(url: str) -> str:
     """Turn an opaque Google-News RSS link into the real article URL.
 
@@ -68,35 +79,35 @@ def load_gallup_baseline() -> dict:
 
 TIER1_FEEDS = {
     # ── Korean English-language dailies ────────────────────────────────────
-    # Both papers redesigned their sites and moved their feeds. The legacy
-    # paths below have been returning zero articles — Korea Herald is a
-    # designated MAJOR_FEED, so that failure was load-bearing and silent.
-    # The current paths are added alongside rather than swapped in, because
-    # they could not be verified from the build environment: if a new path is
-    # wrong it simply stays empty, and the feed-health line in the run log now
-    # says which of the pair is actually delivering. Retire the loser then.
-    "Korea Herald":       "https://www.koreaherald.com/common/rss_xml.php?ct=102",
-    "Korea Herald RSS":   "https://www.koreaherald.com/rss",
-    "Korea Times":        "https://www.koreatimes.co.kr/www/rss/nation.xml",
-    "Korea Times RSS":    "https://feed.koreatimes.co.kr/k/allnews.xml",
-    "Yonhap English":     "https://en.yna.co.kr/RSS/news.xml",
+    # Both papers redesigned and moved their feeds; the legacy paths have been
+    # returning zero, and Korea Herald is a designated MAJOR_FEED, so that
+    # failure was load-bearing and silent. Rather than guess which path is
+    # right from an environment that cannot reach either, both are listed with
+    # the Google News search last. Whichever answers first is used.
+    "Korea Herald":       ["https://www.koreaherald.com/rss",
+                           "https://www.koreaherald.com/common/rss_xml.php?ct=102",
+                           _gnews("site:koreaherald.com")],
+    "Korea Times":        ["https://feed.koreatimes.co.kr/k/allnews.xml",
+                           "https://www.koreatimes.co.kr/www/rss/nation.xml",
+                           _gnews("site:koreatimes.co.kr")],
+    "Yonhap English":    _native("https://en.yna.co.kr/RSS/news.xml", "site:en.yna.co.kr"),
     "JoongAng Daily":     _gnews("Korea+site:koreajoongangdaily.joins.com"),
     "Chosun English":     _gnews("Korea+site:english.chosun.com"),
     "Hankyoreh English":  _gnews("Korea+site:english.hani.co.kr"),
     "Dong-A English":     _gnews("Korea+site:donga.com/en"),
-    "NK News":            "https://www.nknews.org/feed/",
+    "NK News":           _native("https://www.nknews.org/feed/", "site:nknews.org"),
     # ── Korean-language feeds (Claude translates during analysis) ──────────
-    "조선일보":            _gnews("site:chosun.com+-english"),
-    "한겨레":              _gnews("site:hani.co.kr+-english"),
-    "동아일보":            _gnews("site:donga.com+-en"),
+    "조선일보":            _native("https://www.chosun.com/arc/outboundfeeds/rss/?outputType=xml", "site:chosun.com+-english"),
+    "한겨레":              _native("https://www.hani.co.kr/rss/", "site:hani.co.kr+-english"),
+    "동아일보":            _native("https://rss.donga.com/total.xml", "site:donga.com"),
     "MBN":                _gnews("Korea+site:mbn.co.kr"),
-    "중앙일보":            _gnews("site:joongang.co.kr"),
-    "한국일보":            _gnews("site:hankookilbo.com"),
-    "뉴시스":              _gnews("site:newsis.com"),
+    "중앙일보":            _native("https://rss.joins.com/joins_news_list.xml", "site:joongang.co.kr"),
+    "한국일보":            _native("https://www.hankookilbo.com/rss/total", "site:hankookilbo.com"),
+    "뉴시스":              _native("https://www.newsis.com/RSS/politics.xml", "site:newsis.com"),
     "서울신문":            _gnews("site:seoul.co.kr"),
-    "경향신문":            _gnews("site:khan.co.kr"),
+    "경향신문":            _native("https://www.khan.co.kr/rss/rssdata/total_news.xml", "site:khan.co.kr"),
     "뉴스1":              _gnews("site:news1.kr"),
-    "연합뉴스":            _gnews("site:yna.co.kr+-en"),
+    "연합뉴스":            _native("https://www.yna.co.kr/RSS/news.xml", "site:yna.co.kr+-en"),
     # ── Korean broadcast & cable news ────────────────────────────────────
     "JTBC":               _gnews("site:news.jtbc.co.kr"),
     "KBS":                _gnews("site:news.kbs.co.kr"),
@@ -106,36 +117,36 @@ TIER1_FEEDS = {
     "Channel A":          _gnews("Korea+site:channela.com"),
     "Arirang News":       _gnews("Korea+site:arirang.com"),
     # ── Korean business dailies ──────────────────────────────────────────
-    "매일경제":            _gnews("site:mk.co.kr"),
-    "한국경제":            _gnews("site:hankyung.com"),
+    "매일경제":            _native("https://www.mk.co.kr/rss/30000001/", "site:mk.co.kr"),
+    "한국경제":            _native("https://www.hankyung.com/feed/all-news", "site:hankyung.com"),
     "Korea Economic Daily": _gnews("Korea+site:kedglobal.com"),
     # ── Major international — Korea correspondents ────────────────────────
     "WSJ Korea":          _gnews("Korea+site:wsj.com"),
     "NYT Korea":          _gnews("Korea+site:nytimes.com"),
     "WaPo Korea":         _gnews("Korea+site:washingtonpost.com"),
     "FT Korea":           _gnews("Korea+site:ft.com"),
-    "Reuters Korea":      _gnews("Korea+site:reuters.com"),
-    "AP Korea":           _gnews("Korea+site:apnews.com"),
+    "Reuters Korea":      _native("https://www.reutersagency.com/feed/?best-topics=political-general&post_type=best", "Korea+site:reuters.com"),
+    "AP Korea":           _native("https://apnews.com/index.rss", "Korea+site:apnews.com"),
     "Bloomberg Korea":    _gnews("Korea+site:bloomberg.com"),
-    "BBC Korea":          _gnews("Korea+site:bbc.com"),
+    "BBC Korea":          _native("https://feeds.bbci.co.uk/news/world/asia/rss.xml", "Korea+site:bbc.com"),
     "CNN Korea":          _gnews("Korea+site:cnn.com"),
     "CNBC Korea":         _gnews("Korea+site:cnbc.com"),
-    "Economist Korea":    _gnews("Korea+site:economist.com"),
-    "Guardian Korea":     _gnews("Korea+site:theguardian.com"),
+    "Economist Korea":    _native("https://www.economist.com/asia/rss.xml", "Korea+site:economist.com"),
+    "Guardian Korea":     _native("https://www.theguardian.com/world/south-korea/rss", "Korea+site:theguardian.com"),
     "Al Jazeera Korea":   _gnews("Korea+site:aljazeera.com"),
     # ── Regional Asia ─────────────────────────────────────────────────────
-    "Nikkei Korea":       _gnews("Korea+site:asia.nikkei.com"),
-    "Japan Times Korea":  _gnews("Korea+site:japantimes.co.jp"),
-    "SCMP Korea":         _gnews("Korea+site:scmp.com"),
+    "Nikkei Korea":       _native("https://asia.nikkei.com/rss/feed/nar", "Korea+site:asia.nikkei.com"),
+    "Japan Times Korea":  _native("https://www.japantimes.co.jp/feed/", "Korea+site:japantimes.co.jp"),
+    "SCMP Korea":         _native("https://www.scmp.com/rss/4/feed", "Korea+site:scmp.com"),
     "Kyodo Korea":        _gnews("Korea+site:english.kyodonews.net"),
     "Mainichi Korea":     _gnews("Korea+site:mainichi.jp/english"),
     "Asahi Korea":        _gnews("Korea+site:asahi.com/ajw"),
     "CNA Korea":          _gnews("Korea+site:channelnewsasia.com"),
     # ── ROK/US Government ─────────────────────────────────────────────────
     "White House":        _gnews("Korea+site:whitehouse.gov"),
-    "State Dept":         _gnews("Korea+site:state.gov"),
-    "Pentagon":           _gnews("Korea+site:defense.gov"),
-    "Stars and Stripes":  _gnews("Korea+site:stripes.com"),
+    "State Dept":         _native("https://www.state.gov/rss-feed/press-releases/feed/", "Korea+site:state.gov"),
+    "Pentagon":           _native("https://www.defense.gov/DesktopModules/ArticleCS/RSS.ashx?ContentType=1&Site=945&max=40", "Korea+site:defense.gov"),
+    "Stars and Stripes":  _native("https://www.stripes.com/rss/pacific.rss", "Korea+site:stripes.com"),
     # ── ROK/Japan Government ─────────────────────────────────────────────
     "USFK":               _gnews("site:usfk.mil"),
     "ROK MOFA":           _gnews("site:mofa.go.kr"),
@@ -161,7 +172,7 @@ TIER1_FEEDS = {
     # korea.kr (정책브리핑) is the whole-of-government aggregator: every
     # ministry's press release lands there, same day, in one native feed.
     # Its absence was why eleven ROK bodies had to be scraped through Google.
-    "ROK Policy Briefing": "https://www.korea.kr/rss/policy.xml",
+    "ROK Policy Briefing": _native("https://www.korea.kr/rss/policy.xml", "site:korea.kr"),
     "Korea.net":          _gnews("site:korea.net"),
     # The Joint Chiefs are the originating source for every DPRK launch
     # detection. The brief was getting those secondhand from Yonhap.
@@ -340,8 +351,7 @@ KOREA_NATIVE_FEEDS = {
     "MBN", "JTBC", "KBS", "MBC", "SBS", "YTN", "Channel A", "Arirang News",
     "매일경제", "한국경제", "서울경제", "머니투데이",
     # English-language Korea desks whose entire output is Korea
-    "Yonhap English", "Korea Herald", "Korea Herald RSS",
-    "Korea Times", "Korea Times RSS", "Korea JoongAng Daily",
+    "Yonhap English", "Korea Herald", "Korea Times", "Korea JoongAng Daily",
     "Korea Economic Daily", "Dong-A English", "Chosun English",
     "Hankyoreh English", "Pressian",
 }
@@ -383,6 +393,8 @@ MAX_WORKERS = 25  # Thread pool size for parallel fetching
 # SOURCE HEALTH TRACKING (per-run, not persistent)
 # ─────────────────────────────────────────────────────────────────────────────
 _source_health = {}  # {feed_name: {articles: int, success: bool, error_msg: str|None}}
+_feed_source_used = {}  # {url: "native"|"google-news"} — which candidate answered
+_unresolved_urls = []   # sources whose Google News link would not decode
 
 MAJOR_FEEDS = {"Yonhap English", "Korea Herald", "Reuters Korea", "AP Korea"}
 
@@ -391,8 +403,9 @@ MAJOR_FEEDS = {"Yonhap English", "Korea Herald", "Reuters Korea", "AP Korea"}
 # HELPERS
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _parse_feed(url: str) -> list:
-    for attempt in range(3):
+def _parse_one(url: str, retries: int = 3) -> list:
+    """Fetch and parse a single feed URL. Never raises; returns [] on failure."""
+    for attempt in range(retries):
         try:
             resp = requests.get(url, timeout=REQUEST_TIMEOUT, headers=HEADERS)
             if resp.status_code in (401, 403):
@@ -401,14 +414,49 @@ def _parse_feed(url: str) -> list:
             resp.raise_for_status()
             return feedparser.parse(resp.content).entries
         except (requests.ConnectionError, requests.Timeout) as e:
-            if attempt < 2:
+            if attempt < retries - 1:
                 time.sleep(2 * (attempt + 1))
                 continue
-            print(f"    ⚠  Feed error (after 3 tries): {e}")
+            print(f"    ⚠  Feed error (after {retries} tries): {e}")
             return []
         except Exception as e:
             print(f"    ⚠  Feed error: {e}")
             return []
+    return []
+
+
+def _parse_feed(url) -> list:
+    """Fetch a feed that may be defined as several candidate URLs.
+
+    Nearly every feed in this file is a Google News `site:` search rather than
+    the outlet's own RSS. That made the whole brief depend on one service:
+    a Google News change or rate-limit takes almost every source at once, and
+    there is no partial degradation — the brief simply arrives thin, with no
+    signal that anything broke.
+
+    A feed can now be a list of URLs, tried in order. Put the outlet's native
+    feed first and the Google News search last. Two useful properties follow:
+
+    - The brief stops depending on a single upstream. When a native feed
+      works, Google News is not touched.
+    - A native URL that is wrong or has moved costs nothing. It returns no
+      items and the next candidate answers. That matters because outlets
+      restructure their feeds without notice, and it is what makes it safe to
+      add a native URL that could not be verified at the time it was written.
+
+    The first candidate to return items wins. `_feed_source_used` records
+    which one, so the run log can show how much of the brief still rests on
+    Google News.
+    """
+    candidates = [url] if isinstance(url, str) else list(url)
+    for i, candidate in enumerate(candidates):
+        # Only the last candidate is worth three attempts; earlier ones should
+        # fail fast so a dead native URL does not add six seconds per feed.
+        entries = _parse_one(candidate, retries=3 if i == len(candidates) - 1 else 1)
+        if entries:
+            _feed_source_used[candidate] = ("native" if "news.google.com" not in candidate
+                                            else "google-news")
+            return entries
     return []
 
 
@@ -461,7 +509,14 @@ def _clean_summary(summary: str, title: str) -> str:
 
 def _entry_to_article(entry, source: str, lang: str = "EN", extra: dict | None = None) -> dict:
     title = entry.get("title", "").strip()
-    link = _resolve_gnews_url(entry.get("link", "").strip())
+    _raw_link = entry.get("link", "").strip()
+    link = _resolve_gnews_url(_raw_link)
+    # Google's newer article IDs are fully opaque and cannot be decoded, so the
+    # reader gets a news.google.com redirect instead of the publisher's page.
+    # Counting them makes the cost of the Google News dependency visible rather
+    # than leaving it as a vague worry.
+    if "news.google.com" in link and "/articles/" in link:
+        _unresolved_urls.append(source)
     summary = entry.get("summary", entry.get("description", "")).strip()
     summary = re.sub(r"<[^>]+>", " ", summary)
     summary = re.sub(r"\s+", " ", summary).strip()
@@ -1705,6 +1760,8 @@ def _collect_sentiment() -> dict:
 def collect() -> dict:
     """Run all tier collectors + market data and return combined payload."""
     _source_health.clear()  # Reset health tracking for this run
+    _feed_source_used.clear()
+    _unresolved_urls.clear()
     print("\n📡  Collecting Korea news from 100+ sources (parallel)...")
 
     # Run all collectors concurrently — each already uses internal thread pools
@@ -1794,6 +1851,8 @@ def collect() -> dict:
         "market_indicators": results["markets"],
         "sentiment_baseline": results["sentiment"],
         "x_signals": x_signals,
+        "feed_source_used": dict(_feed_source_used),
+        "unresolved_url_count": len(_unresolved_urls),
         "source_health": {
             "total_feeds": total_feeds,
             "feeds_with_data": feeds_with_data,

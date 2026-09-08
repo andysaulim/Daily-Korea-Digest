@@ -159,6 +159,64 @@ def check_mandatory_outlets_reach_the_prompt() -> list[str]:
     return problems
 
 
+# Tier-1 feeds carrying a publisher feed of their own, not just a Google News
+# search. Raise this number as feeds are converted; never lower it. The point
+# is a ratchet: the brief got into trouble by depending on one service for
+# almost every source, and that share should only ever improve.
+MIN_FEEDS_WITH_NATIVE_PATH = 26
+
+
+def check_google_news_dependence_not_regressing() -> list[str]:
+    """Guard the migration away from a single upstream.
+
+    Nearly the whole feed list was Google News `site:` searches, so one change
+    or rate-limit upstream took almost every source at once, with no partial
+    degradation — the brief simply arrived thin. Feeds are ordered candidate
+    lists now, native first and the search last, so a native path that is
+    wrong or has moved costs nothing.
+
+    This does not demand a native feed for every source, which would be a
+    fiction: many of these outlets publish no usable RSS. It demands that the
+    number already converted does not go backwards.
+    """
+    have_native = [n for n, v in collect.TIER1_FEEDS.items()
+                   if not isinstance(v, str) and any("news.google.com" not in u for u in v)]
+    if len(have_native) < MIN_FEEDS_WITH_NATIVE_PATH:
+        return [f"only {len(have_native)} tier-1 feeds have a native path, "
+                f"down from {MIN_FEEDS_WITH_NATIVE_PATH} — a conversion was reverted"]
+    return []
+
+
+def check_native_feeds_come_first() -> list[str]:
+    """A candidate list must not put Google News ahead of a native feed."""
+    problems = []
+    for name, value in collect.TIER1_FEEDS.items():
+        if isinstance(value, str):
+            continue
+        seen_google = False
+        for url in value:
+            is_google = "news.google.com" in url
+            if seen_google and not is_google:
+                problems.append(f"{name!r} tries Google News before a native feed")
+                break
+            seen_google = seen_google or is_google
+    return problems
+
+
+def check_major_feeds_have_native_paths() -> list[str]:
+    """The feeds the brief leans on hardest should not rest on one service."""
+    problems = []
+    for name in collect.MAJOR_FEEDS:
+        value = collect.TIER1_FEEDS.get(name)
+        if value is None:
+            problems.append(f"MAJOR_FEEDS names {name!r} but no such feed exists")
+            continue
+        urls = [value] if isinstance(value, str) else value
+        if not any("news.google.com" not in u for u in urls):
+            problems.append(f"major feed {name!r} has no native candidate")
+    return problems
+
+
 CHECKS = [
     ("prestige rule is enforceable", check_prestige_rule_is_enforceable),
     ("primary ROK sources reach the model", check_primary_sources_reach_the_model),
@@ -166,6 +224,9 @@ CHECKS = [
     ("filter still rejects world news", check_filter_still_rejects_world_news),
     ("named institutions have feeds", check_named_institutions_exist),
     ("mandatory outlets reach the prompt", check_mandatory_outlets_reach_the_prompt),
+    ("Google News dependence not regressing", check_google_news_dependence_not_regressing),
+    ("native feeds are tried first", check_native_feeds_come_first),
+    ("major feeds have native paths", check_major_feeds_have_native_paths),
 ]
 
 

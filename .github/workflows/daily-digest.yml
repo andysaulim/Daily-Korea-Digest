@@ -60,6 +60,7 @@ jobs:
             kim_tracker.json
             kcna_tracker.json
             bp_tracker.json
+            feed_health.json
             metrics.jsonl
           key: tracker-data-v1
           restore-keys: |
@@ -137,6 +138,7 @@ jobs:
             kim_tracker.json
             kcna_tracker.json
             bp_tracker.json
+            feed_health.json
             metrics.jsonl
           key: tracker-data-v1-${{ github.run_id }}
 

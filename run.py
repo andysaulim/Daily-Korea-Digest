@@ -1123,6 +1123,21 @@ def main():
             print(f"    ⚠  Under half the feed list returned anything — "
                   f"check for a Google News block before trusting this issue.")
 
+        _unres = (payload or {}).get("unresolved_url_count") or 0
+        if _unres:
+            print(f"    {_unres} article link(s) stayed as Google News redirects "
+                  f"(publisher URL could not be decoded)")
+
+        # Silence across runs is what separates a dead feed from a quiet one.
+        try:
+            import feed_health
+            for _line in feed_health.update_and_report(
+                    _health.get("per_source") or {},
+                    (payload or {}).get("feed_source_used") or {}):
+                print(f"    {_line}")
+        except Exception as _e:
+            print(f"    (feed health unavailable: {_e})")
+
     if args.dry_run:
         print("\n  --dry-run: stopping after collection. See collected.json")
         return
