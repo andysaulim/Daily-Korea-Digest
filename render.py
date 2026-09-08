@@ -362,7 +362,6 @@ def render(digest: dict) -> str:
             cat = _esc(_str(story.get("category_tag", story.get("category", ""))))
             headline = _esc(story.get("headline", ""))
             body = _esc(story.get("body", ""))
-            so_what = _esc(story.get("so_what", ""))
             pattern = _esc(story.get("pattern_note", ""))
             src_line = _esc(_clean_src(story.get("src_line", story.get("source", ""))))
             url = story.get("url", "")
@@ -374,7 +373,6 @@ def render(digest: dict) -> str:
                 {_link_or_text(headline, url, style="color:" + INK + ";text-decoration:none;")}
               </h3>
               <p style="margin:0 0 8px 0;font-size:13px;line-height:1.6;color:#444;">{body}</p>
-              {"<p style='margin:0 0 6px 0;font-size:12px;line-height:1.5;color:#4A5260;border-left:2px solid " + TAEGUK_BLUE + ";padding-left:10px;'><strong style='color:" + TAEGUK_BLUE + ";text-transform:uppercase;font-size:11px;letter-spacing:1px;'>So what</strong> — " + so_what + "</p>" if so_what else ""}
               {"<p style='margin:0 0 6px 0;font-size:12px;line-height:1.5;color:#4A5260;'><strong>Pattern:</strong> " + pattern + "</p>" if pattern else ""}
               <div style="font-size:10px;color:#AAA;margin-top:6px;">{src_line}</div>
             </div>"""
@@ -658,7 +656,6 @@ def render(digest: dict) -> str:
             {gov_grid_html}
             {pers_html}
             {asm_html}
-            {cal_html}
           </div>
         </div>
         """)
@@ -1175,7 +1172,7 @@ def render(digest: dict) -> str:
 
         sections.append(f"""
         <div {_SEC}>
-          <a name="sentiment"></a>{_sec_label("Public Sentiment Tracker")}
+          <a name="sentiment"></a>{_sec_label("Public Sentiment")}
           <table width="100%" cellpadding="0" cellspacing="0" border="0" class="sentiment-table">
             <tr>
               {_sentiment_cell("Presidential Approval", approval)}
@@ -1187,6 +1184,36 @@ def render(digest: dict) -> str:
           {stale_html}
           {spotlight_html}
           {discourse_html}
+        </div>
+        """)
+
+    # ── 12d. Upcoming (promoted out of ROK Government — the forward look
+    #         is what readers act on and should not sit inside a ministry
+    #         roundup). Same data key, its own section, before The Wire. ──
+    if calendar_watch:
+        up_rows = ""
+        for cal in calendar_watch:
+            up_rows += f"""
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-bottom:1px solid #E8E8E8;">
+              <tr>
+                <td width="54" style="padding:9px 12px 9px 0;vertical-align:top;">
+                  <table cellpadding="0" cellspacing="0" border="0" style="background:{TAEGUK_BLUE};">
+                    <tr><td align="center" style="padding:4px 0 5px;width:46px;">
+                      <div style="font-family:Arial,sans-serif;font-size:9px;font-weight:700;letter-spacing:1.5px;color:rgba(255,255,255,0.82);">{_esc(cal.get("month", ""))}</div>
+                      <div style="font-family:Georgia,serif;font-size:19px;font-weight:700;color:#fff;line-height:1;">{_esc(str(cal.get("day", "")))}</div>
+                    </td></tr>
+                  </table>
+                </td>
+                <td style="padding:9px 0;vertical-align:top;">
+                  <div style="font-family:Georgia,serif;font-size:15px;font-weight:700;color:#1B2A4A;">{_esc(cal.get("headline", ""))}</div>
+                  <div style="font-size:12.5px;line-height:1.45;color:#6B7280;margin-top:3px;">{_esc(cal.get("detail", ""))}</div>
+                </td>
+              </tr>
+            </table>"""
+        sections.append(f"""
+        <div {_SEC}>
+          <a name="upcoming"></a>{_sec_label("Upcoming")}
+          {up_rows}
         </div>
         """)
 
@@ -1320,7 +1347,7 @@ def render(digest: dict) -> str:
         if sa_html.strip():
             sections.append(f"""
         <div {_SEC}>
-          <a name="analysis"></a>{_sec_label("Statements &amp; Analysis")}
+          <a name="analysis"></a>{_sec_label("Analysis")}
           {sa_html}
         </div>
         """)
