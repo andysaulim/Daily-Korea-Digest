@@ -1319,12 +1319,40 @@ def render(digest: dict) -> str:
     # ── 12c. Public Sentiment Tracker ──────────────────────────────────
     sentiment = digest.get("public_sentiment") or {}
     if sentiment and any(sentiment.values()):
+        # The measured change against the previous survey, from the series the
+        # pipeline already stores. The tile used to show a bare arrow taken
+        # from the model's own `trend` field: a direction with no magnitude
+        # and no way to tell which survey it was measured against, which is
+        # what made "vs prior" meaningless.
+        try:
+            from poll_history import delta as _poll_delta
+            _delta = _poll_delta()
+        except Exception:
+            _delta = None
+
         def _trend_mark(trend):
             if trend == "up":
                 return f' <span style="font-size:18px;color:{UP_GREEN};vertical-align:middle;">&#9650;</span>'
             if trend == "down":
                 return f' <span style="font-size:18px;color:{DOWN_RED};vertical-align:middle;">&#9660;</span>'
             return ""
+
+        def _delta_line():
+            """One line under the approval figure: the change and its baseline."""
+            if not _delta:
+                return ""
+            pts, prior_label = _delta
+            if pts > 0:
+                mark, colour, sign = "&#9650;", UP_GREEN, "+"
+            elif pts < 0:
+                mark, colour, sign = "&#9660;", DOWN_RED, ""
+            else:
+                mark, colour, sign = "&mdash;", MUTE, ""
+            against = f" vs {_esc(prior_label)}" if prior_label else " vs prior survey"
+            return (f'<div style="font-family:Arial,sans-serif;font-size:11px;'
+                    f'color:{colour};margin-top:4px;white-space:nowrap;">'
+                    f'{mark} {sign}{abs(pts) if pts else 0:g} pts'
+                    f'<span style="color:{MUTE};">{against}</span></div>')
 
         def _party_short(data, fallback):
             """The party's short English name, from the model when it sent one."""
@@ -1414,6 +1442,7 @@ def render(digest: dict) -> str:
               <td width="42%" valign="top" style="padding:4px 18px 4px 0;border-right:1px solid #E4E7EB;">
                 <div style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:#6B7280;font-family:Arial,sans-serif;">Presidential approval</div>
                 <div class="hero-num" style="font-family:Georgia,serif;font-size:42px;font-weight:700;color:{TAEGUK_BLUE};line-height:1.05;margin-top:4px;">{_esc(str(approval.get("value") or "--"))}{_trend_mark(approval.get("trend"))}</div>
+                {_delta_line()}
                 <div style="font-size:11px;color:#6B7280;font-family:Arial,sans-serif;margin-top:5px;">{_esc(str(approval.get("source") or ""))}{" &middot; " + _esc(str(approval.get("last_updated") or "")) if approval.get("last_updated") else ""}</div>
                 {"<div style='margin-top:9px;'>" + _spark_html + "</div>" if _spark_html else ""}
               </td>

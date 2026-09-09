@@ -57,6 +57,25 @@ def history() -> list[dict]:
     return out
 
 
+def delta() -> tuple[float, str] | None:
+    """Change in approval from the previous survey to the latest, and its date.
+
+    Returns (points_change, previous_survey_label) or None when fewer than two
+    surveys are on record. The renderer showed a bare up/down arrow taken from
+    the model's own `trend` field: direction with no magnitude, and no way to
+    tell which survey it was measured against. This is the arithmetic, from
+    the series the pipeline already stores.
+    """
+    series = history()
+    if len(series) < 2:
+        return None
+    latest, prior = series[-1], series[-2]
+    a, b = _pct(latest.get("approval")), _pct(prior.get("approval"))
+    if a is None or b is None:
+        return None
+    return round(a - b, 1), str(prior.get("label") or prior.get("date") or "")
+
+
 def record(sort_key: str, approval, label: str = "",
            baseline: dict | None = None) -> dict | None:
     """Append one point if `sort_key` is a survey we have not recorded.
