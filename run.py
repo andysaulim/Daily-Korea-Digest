@@ -24,6 +24,15 @@ from digest import _count_digest_words
 WORD_CEILING = 2400
 
 
+def _count_rendered_words_of(html: str) -> int:
+    """The reader's word count: what render() stamps into the masthead.
+
+    Imported lazily so run.py keeps working if render is mid-edit.
+    """
+    from render import _count_rendered_words
+    return _count_rendered_words(html.split("<body", 1)[-1])
+
+
 
 # Gmail stops rendering a message body past roughly 102 KB and shows
 # "[Message clipped]" with a link. The brief is long by design, so this is a
@@ -1496,14 +1505,40 @@ def main():
     # loses on a heavy news day; this drops whole items from the end of the
     # weaker sections until the brief fits. Nothing is rewritten, so what
     # survives is exactly what the model wrote against its sources.
+    # Trim against the count the READER is shown, not the one the digest
+    # happens to expose. These are two different numbers: _count_digest_words
+    # walks the JSON fields, _count_rendered_words walks the assembled body,
+    # and the second runs about a quarter higher because it sees text the
+    # first never visits. The ceiling governed the first while the masthead
+    # printed the second, so a brief could sit inside an 8-minute budget by
+    # the trimmer's reckoning and tell the reader 14 minutes — which is what
+    # shipped this morning at 3,518 words against a 2,400 ceiling.
+    #
+    # Rendering inside the trimmer's search would be the exact fix and far too
+    # slow: plan() re-counts after every dropped item. Instead render once,
+    # measure the real ratio between the two counts, and trim against a
+    # digest-word ceiling scaled by it. One extra render, and the number the
+    # reader sees is the number that was enforced.
     try:
         import length_budget
-        for _line in length_budget.apply(digest_data, _count_digest_words, WORD_CEILING):
+        _probe = render(digest_data)
+        _rendered = _count_rendered_words_of(_probe)
+        _digest_words = _count_digest_words(digest_data) or 1
+        _ratio = max(1.0, _rendered / _digest_words)
+        _effective = int(WORD_CEILING / _ratio)
+        if _rendered > WORD_CEILING:
+            print(f"  📏  rendered {_rendered} words vs the {WORD_CEILING} ceiling "
+                  f"({_ratio:.2f}x the digest count); trimming to {_effective} digest-words")
+        for _line in length_budget.apply(digest_data, _count_digest_words, _effective):
             print(f"  {_line}")
     except Exception as _e:
         print(f"  (length budget unavailable: {_e})")
 
     html = render(digest_data)
+    _final = _count_rendered_words_of(html)
+    if _final > WORD_CEILING:
+        print(f"  ⚠  still {_final} rendered words after trimming; the sections "
+              f"that may not be trimmed are carrying the excess")
     for _line in check_email_size(html):
         print(f"   {'⚠' if 'CRITICAL' not in _line else '✖'}  {_line}")
 

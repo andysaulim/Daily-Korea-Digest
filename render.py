@@ -455,9 +455,9 @@ def render(digest: dict) -> str:
     # ── 1. Header ────────────────────────────────────────────────────────
     sections.append(f"""
     <a name="top" id="top"></a>
-    <div bgcolor="{BAND}" style="background-color:{BAND};color:#fff;padding:16px 32px 16px;border-bottom:1px solid rgba(255,255,255,0.18);" class="sec">
+    <div bgcolor="{BAND}" style="background-color:{BAND};color:#fff;padding:16px 32px 16px;border-bottom:1px solid rgba(255,255,255,0.18);" class="sec mast-band">
       <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
-        <td style="vertical-align:top;">
+        <td class="mast-main" style="vertical-align:top;">
           <div style="font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.78);margin-bottom:7px;">CSIS Korea Chair</div>
           <h1 style="margin:0 0 4px 0;font-size:26px;font-weight:700;font-family:Georgia,'Times New Roman',serif;color:#fff;letter-spacing:0.5px;">
             Korea Daily Brief
@@ -2079,6 +2079,7 @@ def render(digest: dict) -> str:
          only masthead that never shrank, so it ran wider than its neighbours
          on the same screen. */
       h1 {{ font-size:22px !important; }}
+      .mast-main {{ display:block !important; width:100% !important; }}
       .mast-meta {{ display:block !important; text-align:left !important;
         padding-top:8px !important; }}
       .mast-meta div {{ white-space:normal !important; }}

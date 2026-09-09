@@ -285,7 +285,9 @@ def send(html: str, re_line: Optional[str] = None, subject: Optional[str] = None
     # that does the work. Naming the person as well as the desk makes a Gmail
     # address read as deliberate rather than as an oversight, and it is the
     # name a recipient is looking for when they scan an inbox at 6 AM.
-    from_name = _env("DIGEST_FROM_NAME", "Andy Lim · CSIS Korea Chair")
+    # The chair, not a person: the four briefs sort together in an inbox and
+    # the sender is the desk that publishes, not whoever happens to run it.
+    from_name = _env("DIGEST_FROM_NAME", "CSIS Korea Chair")
     msg["From"] = f"{from_name} <{from_addr}>"
     if reply_to:
         msg["Reply-To"] = f"Andy Lim <{reply_to}>"
