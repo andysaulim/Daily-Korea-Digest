@@ -19,6 +19,34 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from digest import _count_digest_words
 
 
+# An eight-minute read. An issue once shipped at 3,518 words because the
+# section maximums permitted 3,680 between them and nothing capped the total.
+WORD_CEILING = 2400
+
+# Per-section (minimum, maximum) item counts. These, not the prompt's target,
+# are what actually bounds the length of the brief.
+SECTION_CAPS = {
+    "top_stories":       (2, 4),
+    "overnight_items":   (6, 8),
+    "business_economy":  (0, 4),
+    # No minimum: the prompt no longer forces four events, because the
+    # verified-date list had been overtaken by time and a hard floor
+    # against an empty list is what produces invented dates.
+    "calendar_watch":    (0, 5),
+    "also_today":        (0, 6),
+    "northeast_asia":    (0, 4),
+    "social_statements": (0, 3),
+    "rok_government":    (0, 4),
+    "rok_assembly":      (0, 3),
+    "opeds_today":       (0, 3),
+    "academic_today":    (0, 2),
+    "rok_personnel":     (0, 3),
+    "morning_memo":      (3, 3),
+    "on_this_day":       (0, 1),
+}
+
+
+
 def _check_url(url: str, timeout: float = 5.0) -> tuple[str, bool, str]:
     """HEAD-check a URL; returns (url, ok, reason).
     Only flags 404/410 (definitively dead). Treats 403/405/429 as OK
@@ -365,25 +393,6 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
     warnings = []
 
     # ── Section count checks (hard caps) ─────────────────────────────────
-    SECTION_CAPS = {
-        "top_stories":       (2, 4),
-        "overnight_items":   (6, 12),
-        "business_economy":  (0, 6),
-        # No minimum: the prompt no longer forces four events, because the
-        # verified-date list had been overtaken by time and a hard floor
-        # against an empty list is what produces invented dates.
-        "calendar_watch":    (0, 5),
-        "also_today":        (0, 6),
-        "northeast_asia":    (0, 6),
-        "social_statements": (0, 6),
-        "rok_government":    (0, 6),
-        "rok_assembly":      (0, 6),
-        "opeds_today":       (0, 6),
-        "academic_today":    (0, 6),
-        "rok_personnel":     (0, 6),
-        "morning_memo":      (3, 3),
-        "on_this_day":       (0, 1),
-    }
     for section_key, (min_ct, max_ct) in SECTION_CAPS.items():
         items = digest.get(section_key) or []
         label = section_key.upper().replace("_", " ")
@@ -410,11 +419,16 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
     # warning band is what pulls the model toward the 1,600-word target.
     word_count = _count_digest_words(digest)
     if word_count < 1100:
-        warnings.append(f"WORD COUNT CRITICAL: ~{word_count} words (HARD MINIMUM 1100 — newsletter is too short)")
+        warnings.append(f"WORD COUNT CRITICAL: ~{word_count} words (hard minimum 1100 — the brief is too short)")
     elif word_count < 1600:
         warnings.append(f"WORD COUNT CRITICAL: ~{word_count} words (hard minimum 1600)")
-    elif word_count < 1850:
-        warnings.append(f"WORD COUNT: ~{word_count} words (target 2000 for an 8-min read)")
+    elif word_count < 1700:
+        warnings.append(f"WORD COUNT: ~{word_count} words (band is 1900-2200)")
+    elif word_count > WORD_CEILING:
+        # Not fatal: length_budget trims to the ceiling before rendering. This
+        # says the model is consistently over and its caps want another look.
+        warnings.append(f"WORD COUNT: ~{word_count} words, over the {WORD_CEILING} ceiling "
+                        f"— items will be trimmed before send")
 
     # ── KCNA delta should exist but is non-blocking ────────────────────────
     kcna = digest.get("kcna_delta")
@@ -1318,6 +1332,18 @@ def main():
                                    if _date_slug in _dates else len(_dates) + 1)
     except (OSError, json.JSONDecodeError, ValueError, TypeError):
         pass
+
+    # The ceiling, enforced before rendering. Asking the model to be shorter is
+    # a preference that competes with every other instruction in the prompt and
+    # loses on a heavy news day; this drops whole items from the end of the
+    # weaker sections until the brief fits. Nothing is rewritten, so what
+    # survives is exactly what the model wrote against its sources.
+    try:
+        import length_budget
+        for _line in length_budget.apply(digest_data, _count_digest_words, WORD_CEILING):
+            print(f"  {_line}")
+    except Exception as _e:
+        print(f"  (length budget unavailable: {_e})")
 
     html = render(digest_data)
 

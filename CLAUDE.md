@@ -27,6 +27,8 @@ Orchestrated by `run.py`. Triggered via external cron (cron-job.org) → GitHub 
 | `weekly.py` | Friday "Week in Review" synthesis from the week's 7 daily digests |
 | `update_readme.py` | Auto-updates README with latest run stats |
 | `feed_health.py` | Per-feed delivery streaks across runs — flags feeds silent 3+ runs |
+| `length_budget.py` | Trims items from weaker sections when the brief runs over its ceiling |
+| `korea_calendar.py` | Fixed observances, computed from today's date rather than recalled |
 | `test_sources.py` | Guards the prompt's source claims against the actual feed list |
 | `test_render_visual.py` | Measures contrast, typeface count and mobile overflow in a browser |
 
@@ -71,6 +73,21 @@ consecutive runs is reported in the run log with the date it last delivered.
 Check that before assuming a source is covered.
 
 Run `python test_sources.py` after any change here.
+
+## Length
+
+Target band **1,900-2,200 words**, hard ceiling **2,400** (`run.WORD_CEILING`).
+
+Length is decided by `run.SECTION_CAPS`, not by the prompt's target. An issue
+shipped at 3,518 words because the caps permitted about 3,680 between them and
+nothing capped the total. Raise a cap only after checking what it does to the
+sum; `test_sources.py` fails if the caps drift far above the ceiling.
+
+`length_budget.py` is the enforcement. If the brief is over after the model
+writes it, whole items are dropped from the end of the weaker sections in a
+fixed order until it fits. Top stories and the morning memo are never trimmed.
+Nothing is rewritten, so what survives is what the model wrote against its
+sources.
 
 ## Feed Tiers
 

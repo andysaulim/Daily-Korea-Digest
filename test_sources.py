@@ -217,6 +217,49 @@ def check_major_feeds_have_native_paths() -> list[str]:
     return problems
 
 
+def check_length_has_a_ceiling() -> list[str]:
+    """The section maximums must not permit far more than the target.
+
+    An issue shipped at 3,518 words against a 2,000 target. The pipeline had a
+    floor and no ceiling, and the section maximums permitted about 3,680 words
+    between them, so nothing stopped the brief filling them.
+    """
+    import run
+    import length_budget
+    from digest import _count_digest_words
+
+    problems = []
+    # Roughly how long an item in each section runs, measured from real issues.
+    per_item = {"top_stories": 55, "overnight_items": 24, "business_economy": 40,
+                "northeast_asia": 40, "also_today": 24, "rok_government": 36,
+                "rok_assembly": 30, "rok_personnel": 28, "opeds_today": 44,
+                "academic_today": 44, "social_statements": 40, "morning_memo": 26}
+    permitted = sum(hi * per_item.get(name, 25)
+                    for name, (_lo, hi) in run.SECTION_CAPS.items())
+    permitted += 400          # kcna, trade, key stat, on this day
+    if permitted > run.WORD_CEILING + 300:
+        problems.append(f"section caps permit about {permitted} words against a "
+                        f"{run.WORD_CEILING} ceiling — the caps, not the prompt, "
+                        f"are what decides length")
+
+    # And the trim must actually bring an over-long day under, without ever
+    # touching the sections that are the brief.
+    def _mk(n, words):
+        return [{"body_text": " ".join(["w"] * words)} for _ in range(n)]
+    over = {"top_stories": _mk(4, 90), "overnight_items": _mk(12, 40),
+            "business_economy": _mk(6, 60), "northeast_asia": _mk(6, 60),
+            "also_today": _mk(6, 40), "rok_government": _mk(6, 55),
+            "rok_assembly": _mk(6, 45), "rok_personnel": _mk(6, 42),
+            "opeds_today": _mk(6, 60), "academic_today": _mk(6, 70),
+            "social_statements": _mk(6, 55)}
+    length_budget.apply(over, _count_digest_words, run.WORD_CEILING)
+    if _count_digest_words(over) > run.WORD_CEILING:
+        problems.append("length_budget did not bring an over-long digest under the ceiling")
+    if len(over["top_stories"]) != 4:
+        problems.append("length_budget trimmed top_stories, which is the brief itself")
+    return problems
+
+
 CHECKS = [
     ("prestige rule is enforceable", check_prestige_rule_is_enforceable),
     ("primary ROK sources reach the model", check_primary_sources_reach_the_model),
@@ -227,6 +270,7 @@ CHECKS = [
     ("Google News dependence not regressing", check_google_news_dependence_not_regressing),
     ("native feeds are tried first", check_native_feeds_come_first),
     ("major feeds have native paths", check_major_feeds_have_native_paths),
+    ("length has a ceiling", check_length_has_a_ceiling),
 ]
 
 
