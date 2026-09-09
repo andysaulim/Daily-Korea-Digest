@@ -26,6 +26,7 @@ NOTE: The past is not backfillable — raw collected data before this module's
 first run was already discarded. The corpus accumulates from deployment forward.
 """
 import json
+import os
 import re
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -45,6 +46,45 @@ _SUMMARY_CAP = 800
 # GitHub Pages base for corpus read-back. Overridable via WEB_URL env at the
 # call site; this is the production default.
 PAGES_CORPUS_BASE = "https://andysaulim.github.io/Daily-Korea-Digest/corpus"
+
+
+def _published(path: Path, fallback):
+    """Read a published JSON file: local if present, otherwise from Pages.
+
+    `public/` is gitignored and the Actions runner starts clean, so none of
+    these files exist locally at the start of a run. Every writer here read
+    the local path, found nothing, started empty, appended today and wrote a
+    single-day file — and the Pages deploy, which keeps files it is not
+    publishing but overwrites the ones it is, replaced the accumulated index
+    with that stub. The corpus and the archive both looked one day old however
+    long the brief had been running.
+
+    Returns (data, trustworthy). When trustworthy is False the caller must not
+    write, because writing would destroy a history it could not read.
+    """
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        if data:
+            return data, True
+    except (OSError, json.JSONDecodeError):
+        pass
+
+    base = (os.environ.get("WEB_URL", "").rstrip("/") or "").strip()
+    base = f"{base}/corpus" if base else PAGES_CORPUS_BASE
+    try:
+        import requests
+        resp = requests.get(f"{base}/{path.name}", timeout=12)
+        if resp.ok:
+            data = resp.json()
+            if isinstance(data, type(fallback)):
+                return data, True
+        # A 404 is normal the first time a month's shard is created.
+        if resp.status_code == 404:
+            return fallback, True
+    except Exception as exc:
+        print(f"    ⚠  {path.name} unreachable ({exc}); not rewriting it this run")
+        return fallback, False
+    return fallback, False
 
 
 def _norm_url(url) -> str:
@@ -164,15 +204,13 @@ def update_month_index(records: list, date_slug: str, corpus_dir: Path) -> Path:
     drops any existing rows for date_slug first)."""
     month = date_slug[:7]  # YYYY-MM
     path = corpus_dir / f"index_{month}.json"
-    try:
-        rows = json.loads(path.read_text(encoding="utf-8"))
-        if not isinstance(rows, list):
-            rows = []
-    except (FileNotFoundError, json.JSONDecodeError):
-        rows = []
+    rows, ok = _published(path, [])
+    if not isinstance(rows, list):
+        rows, ok = [], ok
     rows = [r for r in rows if r.get("date") != date_slug]
     rows.extend(_index_row(r, date_slug) for r in records)
-    path.write_text(json.dumps(rows, ensure_ascii=False), encoding="utf-8")
+    if ok:
+        path.write_text(json.dumps(rows, ensure_ascii=False), encoding="utf-8")
     return path
 
 
@@ -180,13 +218,11 @@ def update_manifest(date_slug: str, records: list, corpus_dir: Path) -> Path:
     """Maintain corpus/manifest.json — a thin index of available days and
     shards for the search UI. Mirrors run.py's archive.json upsert logic."""
     path = corpus_dir / "manifest.json"
-    try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-        if not isinstance(data, dict):
-            data = {}
-    except (FileNotFoundError, json.JSONDecodeError):
-        data = {}
-    days = [d for d in data.get("days", []) if d.get("date") != date_slug]
+    data, ok = _published(path, {})
+    if not isinstance(data, dict):
+        data, ok = {}, ok
+    days = [d for d in data.get("days", [])
+            if isinstance(d, dict) and d.get("date") != date_slug]
     days.append({
         "date": date_slug,
         "total": len(records),
@@ -194,12 +230,18 @@ def update_manifest(date_slug: str, records: list, corpus_dir: Path) -> Path:
         "shard": f"index_{date_slug[:7]}.json",
         "daily": f"{date_slug}.json",
     })
-    days.sort(key=lambda d: d["date"], reverse=True)
-    shards = sorted({d["shard"] for d in days}, reverse=True)
+    days.sort(key=lambda d: str(d.get("date") or ""), reverse=True)
+    # Days now come from the published manifest as well as from this run, so
+    # the shape is no longer guaranteed by the code that wrote it.
+    shards = sorted({d["shard"] for d in days if isinstance(d, dict) and d.get("shard")},
+                    reverse=True)
     data["days"] = days
     data["shards"] = shards
     data["updated"] = datetime.now(timezone.utc).isoformat()
-    path.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
+    if ok:
+        path.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
+    else:
+        print("    ⚠  corpus manifest NOT rewritten — prior days could not be read")
     return path
 
 

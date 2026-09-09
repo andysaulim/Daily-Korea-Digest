@@ -23,6 +23,52 @@ from digest import _count_digest_words
 # section maximums permitted 3,680 between them and nothing capped the total.
 WORD_CEILING = 2400
 
+
+def load_archive_entries(local_path, web_base: str = "") -> tuple[list, bool]:
+    """The published archive manifest, and whether it is trustworthy.
+
+    `public/` is gitignored and the Actions runner starts clean, so
+    archive.json does not exist locally at the start of a run. The old code
+    read it, caught FileNotFoundError, started from an empty list, appended
+    today and wrote a one-entry file. The Pages deploy uses keep_files, which
+    preserves the accumulated digest_*.html pages but still overwrites any
+    file being published — so every run replaced a growing manifest with a
+    stub, and the archive page listed exactly one issue no matter how many had
+    been sent. The issue number was computed from the same list, so it never
+    advanced either.
+
+    Local first, since a manual run may have one. Otherwise fetch the
+    published copy. The boolean is what protects the manifest: if neither is
+    available, the caller must not write, because writing would clobber a
+    history it could not read.
+    """
+    try:
+        entries = json.loads(local_path.read_text(encoding="utf-8"))
+        if isinstance(entries, list) and entries:
+            return entries, True
+    except (OSError, json.JSONDecodeError):
+        pass
+
+    base = (web_base or os.environ.get("WEB_URL", "")).rstrip("/")
+    if not base:
+        return [], False
+    try:
+        import requests
+        resp = requests.get(f"{base}/archive.json", timeout=15)
+        if resp.ok:
+            entries = resp.json()
+            if isinstance(entries, list):
+                print(f"  📚  Archive: {len(entries)} prior issues fetched from the "
+                      f"published site")
+                return entries, True
+        print(f"  ⚠  Archive manifest fetch returned {resp.status_code}; "
+              f"leaving the published archive untouched this run")
+    except Exception as exc:
+        print(f"  ⚠  Archive manifest unreachable ({exc}); leaving the published "
+              f"archive untouched this run")
+    return [], False
+
+
 # Per-section (minimum, maximum) item counts. These, not the prompt's target,
 # are what actually bounds the length of the brief.
 SECTION_CAPS = {
@@ -1325,12 +1371,13 @@ def main():
     # re-runs: a re-run of an issue already in the manifest reuses its number
     # instead of advancing past it.
     _date_slug = datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d")
+    _archive_entries, _archive_ok = load_archive_entries(
+        Path("public") / "archive.json", os.environ.get("WEB_URL", ""))
     try:
-        _entries = json.loads((Path("public") / "archive.json").read_text(encoding="utf-8"))
-        _dates = sorted({e.get("date") for e in _entries if e.get("date")})
+        _dates = sorted({e.get("date") for e in _archive_entries if e.get("date")})
         digest_data["issue_no"] = (_dates.index(_date_slug) + 1
                                    if _date_slug in _dates else len(_dates) + 1)
-    except (OSError, json.JSONDecodeError, ValueError, TypeError):
+    except (ValueError, TypeError):
         pass
 
     # The ceiling, enforced before rendering. Asking the model to be shorter is
@@ -1393,10 +1440,7 @@ def main():
 
     # ── Maintain archive manifest (archive.json) ────────────────────────────
     archive_json_path = archive_dir / "archive.json"
-    try:
-        archive_entries = json.loads(archive_json_path.read_text(encoding="utf-8"))
-    except (FileNotFoundError, json.JSONDecodeError):
-        archive_entries = []
+    archive_entries = list(_archive_entries)
 
     # Remove any existing entry for today (idempotent re-runs)
     archive_entries = [e for e in archive_entries if e.get("date") != date_slug]
@@ -1409,10 +1453,21 @@ def main():
                        or _count_digest_words(digest_data),
         "url": f"digest_{date_slug}.html",
     })
-    archive_json_path.write_text(
-        json.dumps(archive_entries, ensure_ascii=False, indent=2),
-        encoding="utf-8",
-    )
+    if _archive_ok or not archive_json_path.exists():
+        archive_entries.sort(key=lambda e: str(e.get("date") or ""))
+        archive_json_path.write_text(
+            json.dumps(archive_entries, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        print(f"  📚  Archive manifest: {len(archive_entries)} issues")
+    else:
+        # The published history could not be read, so publishing a manifest
+        # built without it would delete every prior issue from the archive
+        # page. Today's digest_*.html is still deployed and keep_files keeps
+        # the rest; only the index is skipped, and the next healthy run
+        # rebuilds it.
+        print("  ⚠  Archive manifest NOT written — prior issues could not be "
+              "read, and overwriting would drop them from the archive page")
 
     # ── Persistent article corpus ──────────────────────────────────────────
     # Record every collected article (not just the ~15-30 that shipped) as a

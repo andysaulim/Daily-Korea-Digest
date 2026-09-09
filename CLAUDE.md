@@ -89,6 +89,24 @@ fixed order until it fits. Top stories and the morning memo are never trimmed.
 Nothing is rewritten, so what survives is what the model wrote against its
 sources.
 
+## The archive and the corpus
+
+`public/` is gitignored and the Actions runner starts clean, so **none of the
+published index files exist locally when a run begins**. Any code that reads
+one, finds nothing, starts empty and writes it back will silently destroy the
+history: the Pages deploy keeps files it is not publishing but overwrites the
+ones it is. That is what happened to `archive.json` and to
+`corpus/manifest.json` — both were rebuilt from scratch every run, so the
+archive page listed one issue and the issue number never advanced, however
+many briefs had been sent.
+
+Anything under `public/` that accumulates across runs must be read from the
+published site first (`run.load_archive_entries`, `corpus._published`) and
+**must not be written at all when that read fails**. Writing a file built
+without the history is worse than not writing it: today's `digest_*.html` is
+deployed either way and keep_files preserves the rest, so skipping the index
+costs one day of listing, while writing a stub costs all of them.
+
 ## Feed Tiers
 
 - **Tier 1 (News, 24h window)**: Korea Herald, Reuters, WSJ, NYT, Bloomberg, Yonhap, JTBC, Global Times, Xinhua, TASS; ROK primary sources (Presidential Office, MOFA, MND, Unification, MOEF, MOTIE, DAPA, Joint Chiefs, National Assembly, Prosecution, Courts, Bank of Korea, KOSTAT, Customs, DART, korea.kr); Korean-language dailies (조선·중앙·동아·한겨레·경향·한국일보·연합·뉴시스) and broadcast
