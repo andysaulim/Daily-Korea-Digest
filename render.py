@@ -410,9 +410,16 @@ def render(digest: dict) -> str:
     _footer_trade = ""
     _b = web_url[:-len("latest.html")] if web_url.endswith("latest.html") else ""
     archive_url = (_b + "archive.html") if _b else web_url
+    # Built where the other two footer links are built, so all three carry the
+    # same pill. It was still a plain underlined-less link and sat next to two
+    # buttons looking like an afterthought.
+    _foot_btn = ('display:inline-block;padding:6px 15px;margin:0 4px;'
+                 'font-family:Arial,sans-serif;font-size:11px;font-weight:700;'
+                 'letter-spacing:0.5px;color:#14181F;background:#FFFFFF;'
+                 'border-radius:14px;text-decoration:none;white-space:nowrap;')
     if _b:
-        _footer_trade = (f' &nbsp;&middot;&nbsp; <a href="{_b}trade.html" '
-                         f'style="color:rgba(255,255,255,0.95);text-decoration:none;">Trade reference</a>')
+        _footer_trade = (f'<a href="{_b}trade.html" '
+                         f'style="{_foot_btn}">Trade reference</a>')
     sections = []
 
     # ── 0. View in Browser bar (Read online · Print / PDF · Archive) ──────
@@ -455,8 +462,7 @@ def render(digest: dict) -> str:
           <h1 style="margin:0 0 4px 0;font-size:28px;font-weight:700;font-family:Georgia,'Times New Roman',serif;color:#fff;letter-spacing:0.5px;">
             Korea Daily Brief
           </h1>
-          <div style="margin-top:3px;font-family:Arial,sans-serif;font-size:11px;letter-spacing:0.5px;color:rgba(255,255,255,0.62);">The Korean Peninsula, every weekday morning</div>
-          <div style="margin-top:9px;font-size:16px;font-weight:400;color:rgba(255,255,255,0.85);font-family:Georgia,serif;">{_esc(date_str)}</div>
+          <div style="margin-top:2px;font-size:16px;font-weight:400;color:rgba(255,255,255,0.85);font-family:Georgia,serif;">{_esc(date_str)}</div>
         </td>
         <td class="mast-meta" style="vertical-align:bottom;text-align:right;">
           <div style="font-family:Arial,sans-serif;font-size:11px;letter-spacing:0.5px;color:rgba(255,255,255,0.72);white-space:nowrap;">{_issue_meta}%%WORDS%% words &middot; %%READMIN%% min read</div>
@@ -1921,10 +1927,6 @@ def render(digest: dict) -> str:
         <div style="font-family:Georgia,serif;font-size:14px;line-height:1.55;color:rgba(255,255,255,0.88);"><strong style="color:{BLUE_ON_NAVY};">{otd_date}</strong> &nbsp; {otd_event}</div>
         {"<div style='font-family:Georgia,serif;font-size:13px;color:rgba(255,255,255,0.6);font-style:italic;margin-top:5px;'>" + otd_rel + "</div>" if otd_rel else ""}
       </td></tr>"""
-    _foot_btn = ('display:inline-block;padding:6px 15px;margin:0 4px;'
-                 'font-family:Arial,sans-serif;font-size:11px;font-weight:700;'
-                 'letter-spacing:0.5px;color:#14181F;background:#FFFFFF;'
-                 'border-radius:14px;text-decoration:none;white-space:nowrap;')
     sections.append(f"""
     <!-- Black, not the band colour. The accent belongs to the masthead: used
          at both ends it stops being identity and becomes decoration, and the
