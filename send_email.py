@@ -181,7 +181,7 @@ def build_subject(re_line: Optional[str] = None, lead: Optional[str] = None,
                   now=None, limit: int = 78) -> str:
     """The subject line.
 
-    House format: "CSIS Korea Daily Brief | September 9, 2026". A daily brief
+    House format: "Korea Daily Brief | Tuesday, September 8, 2026". A daily brief
     that arrives at the same hour every morning is found by its name, filtered
     by its name, and searched by its name, so the name comes first and the
     date is spelled out rather than left as digits.
@@ -196,8 +196,8 @@ def build_subject(re_line: Optional[str] = None, lead: Optional[str] = None,
     """
     from zoneinfo import ZoneInfo
     now = now or datetime.now(ZoneInfo("America/New_York"))
-    date_str = now.strftime("%B %-d, %Y")
-    base = f"CSIS Korea Daily Brief | {date_str}"
+    date_str = now.strftime("%A, %B %-d, %Y")
+    base = f"Korea Daily Brief | {date_str}"
 
     if (os.environ.get("DIGEST_SUBJECT_STYLE") or "").strip().lower() != "lead":
         return base

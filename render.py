@@ -147,7 +147,7 @@ _DARK_EXEMPT = {
     "#F0F0F0",  # retired utility band; kept so an old copy still maps
     # The KCNA panel and the market strip are dark grounds in both schemes,
     # so their type and status dots are already light-on-dark.
-    "#E0E0E0", "#E8E8E8", "#A8B6C8", "#A0AEC0", "#D8DEE8",
+    "#E0E0E0", "#E8E8E8", "#F0F0F0", "#C8D4E2", "#9FB3CC", "#A0AEC0", "#D8DEE8",
     "#27AE60", "#C0392B", "#69C88E", "#E8697A",
 }
 
@@ -167,7 +167,7 @@ def _dark_mode_css() -> str:
         "      .wrapper .sec { background:#1E2126 !important; border-bottom-color:#4A526073D !important; }",
         "      .wrapper .nav-row { background:#1A1D22 !important; border-bottom-color:#4A526073D !important; }",
         "      .wrapper h1, .wrapper h2, .wrapper h3 { color:#E8E6E1 !important; }",
-        "      .wrapper .footer { background:#04182F !important; }",
+        "      .wrapper .footer { background:#062A5E !important; }",
         "      .wrapper .kcna-dark, .wrapper .kcna-dark table, .wrapper .kcna-dark > div { background:#0A1E38 !important; }",
         "      .wrapper .item-card, .wrapper .story-card, .wrapper .gov-grid div, .wrapper .loc-grid div { background:#262A30 !important; border-color:#4A526073D !important; }",
         "      .wrapper .sentiment-spotlight { background:#16222F !important; }",
@@ -206,12 +206,8 @@ def _check_dark_coverage(html: str) -> list[str]:
 
 
 def _color_bar(css_class: str) -> str:
-    colors = {
-        "cb-navy": TAEGUK_BLUE, "cb-red": TAEGUK_RED, "cb-lt": TAEGUK_BLUE,
-        "cb-mid": "#7F8C8D", "cb-nkch": TAEGUK_RED, "cb-tech": TAEGUK_BLUE,
-        "cb-biz": TAEGUK_BLUE,
-    }
-    return colors.get(css_class, TAEGUK_BLUE)
+    # Only two states are worth signalling: ordinary and alert.
+    return TAEGUK_RED if css_class in ("cb-red", "cb-nkch") else TAEGUK_BLUE
 
 
 def _social_badge(badge_class: str) -> str:
@@ -224,12 +220,12 @@ def _arrow(val) -> str:
     try:
         val = float(val)
     except (TypeError, ValueError):
-        return '<span style="color:#7B90AC;">—</span>'
+        return '<span style="color:#9FB3CC;">—</span>'
     if val > 0:
         return f'<span style="color:#69C88E;">&#9650; +{val:.1f}%</span>'
     elif val < 0:
         return f'<span style="color:#E8697A;">&#9660; {val:.1f}%</span>'
-    return '<span style="color:#7B90AC;">— flat</span>'
+    return '<span style="color:#9FB3CC;">— flat</span>'
 
 
 
@@ -269,12 +265,16 @@ def _subhead(text: str) -> str:
 def _compact_row(cat: str, headline: str, url: str, src: str, body: str = "") -> str:
     """One scannable line: category, headline, source. Used where a section
     carries breadth rather than depth."""
-    tail = f'<span style="color:#6B7280;"> &mdash; {body}</span>' if body else ""
-    line = (f'<td style="padding:7px 0;vertical-align:top;font-family:Georgia,serif;'
-            f'font-size:13px;line-height:1.45;color:{INK};border-bottom:1px solid #EEF0F3;">'
-            f'{_link_or_text(headline, url)}{tail}'
-            f'<span style="font-family:Arial,sans-serif;font-size:11px;color:#6B7280;">'
-            f' &middot; {src}</span></td>')
+    # Headline on its own line, note and source under it. Run together with an
+    # em-dash they wrapped into one grey paragraph and the eye could not find
+    # where the headline stopped.
+    under = " &middot; ".join(x for x in (body, src) if x)
+    line = (f'<td style="padding:8px 0;vertical-align:top;border-bottom:1px solid #EEF0F3;">'
+            f'<div style="font-family:Georgia,serif;font-size:14px;font-weight:600;'
+            f'line-height:1.4;color:{INK};">{_link_or_text(headline, url)}</div>'
+            + (f'<div style="font-family:Arial,sans-serif;font-size:11px;line-height:1.5;'
+               f'color:#6B7280;margin-top:2px;">{under}</div>' if under else "")
+            + '</td>')
     if not cat:
         # Under a group heading the category is already stated, so the column
         # would be an empty indent on every row.
@@ -356,7 +356,7 @@ def render(digest: dict) -> str:
     archive_url = (_b + "archive.html") if _b else web_url
     if _b:
         _footer_trade = (f' &nbsp;&middot;&nbsp; <a href="{_b}trade.html" '
-                         f'style="color:#8FB6E8;text-decoration:none;">Trade reference</a>')
+                         f'style="color:rgba(255,255,255,0.95);text-decoration:none;">Trade reference</a>')
     sections = []
 
     # ── 0. View in Browser bar (Read online · Print / PDF · Archive) ──────
@@ -460,7 +460,7 @@ def render(digest: dict) -> str:
             <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:10px;">
               <tr>
                 <td width="28" style="vertical-align:top;padding-top:2px;">
-                  <div style="width:24px;height:24px;border-radius:50%;background:{TAEGUK_BLUE};color:#FFFFFF;text-align:center;line-height:24px;font-size:12px;font-weight:700;font-family:Georgia,serif;">{num}</div>
+                  <div style="width:24px;height:24px;border-radius:50%;background:{TAEGUK_BLUE};color:#FFFFFF;text-align:center;line-height:24px;font-size:13px;font-weight:700;font-family:Georgia,serif;">{num}</div>
                 </td>
                 <td style="padding-left:10px;vertical-align:top;">
                   <div style="font-size:14px;line-height:1.6;color:#2C3E50;font-family:Georgia,serif;">{memo_text}</div>
@@ -552,12 +552,16 @@ def render(digest: dict) -> str:
     if key_stat and key_stat.get("number") is not None and key_stat.get("number") != "":
         sections.append(f"""
         <a name="key-stat"></a>
-        <div bgcolor="{NAVY}" style="padding:18px 32px;background-color:{NAVY};color:#fff;border-bottom:1px solid #EAEAEA;text-align:center;" class="sec">
-          <div style="font-size:11px;text-transform:uppercase;letter-spacing:2px;color:{BLUE_ON_NAVY};margin-bottom:7px;font-weight:600;">Stat of the Day</div>
-          <div class="key-stat-num" style="font-family:{MONO};font-size:32px;font-weight:700;color:#fff;">{_esc(str(key_stat.get("number", "")))}</div>
-          <div style="font-size:12px;color:rgba(255,255,255,0.85);margin-top:5px;font-family:Georgia,serif;">{_esc(key_stat.get("label", ""))}</div>
-          <div style="font-size:11px;color:rgba(255,255,255,0.6);margin-top:6px;font-style:italic;max-width:480px;margin-left:auto;margin-right:auto;line-height:1.5;">{_esc(key_stat.get("context", ""))}</div>
-          {"<div style='font-family:" + MONO + ";font-size:10px;color:rgba(255,255,255,0.4);margin-top:6px;'>Source: " + _esc(key_stat.get("source", "")) + "</div>" if key_stat.get("source") else ""}
+        <div {_SEC}>
+          {_sec_label("Stat of the Day")}
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#EEF3F9;border-left:3px solid {TAEGUK_BLUE};border-radius:3px;">
+            <tr><td style="padding:14px 16px;">
+              <div style="font-family:Georgia,serif;font-size:26px;font-weight:700;color:{TAEGUK_BLUE};line-height:1;">{_esc(str(key_stat.get("number", "")))}</div>
+              <div style="font-family:Georgia,serif;font-size:14px;color:{INK};margin-top:5px;line-height:1.4;">{_esc(key_stat.get("label", ""))}</div>
+              {"<div style='font-family:Georgia,serif;font-size:13px;color:#4A5260;margin-top:4px;line-height:1.5;'>" + _esc(key_stat.get("context", "")) + "</div>" if key_stat.get("context") else ""}
+              {"<div style='font-family:Arial,sans-serif;font-size:11px;color:#55607A;margin-top:7px;'>" + _esc(key_stat.get("source", "")) + "</div>" if key_stat.get("source") else ""}
+            </td></tr>
+          </table>
         </div>
         """)
 
@@ -598,7 +602,7 @@ def render(digest: dict) -> str:
             if not qt:
                 continue
             speaker_line = f"<strong style='color:{RED_ON_NAVY};'>{speaker}</strong>"
-            src_line = f" <span style='color:#7B90AC;'>— {src_art}</span>" if src_art else ""
+            src_line = f" <span style='color:#9FB3CC;'>— {src_art}</span>" if src_art else ""
             quotes_html += f"""<div style='margin-bottom:10px;padding:1px 0 1px 14px;border-left:3px solid {TAEGUK_RED};'>
               <div style='font-size:13px;font-family:Georgia,serif;color:#E8E8E8;font-style:italic;line-height:1.5;'>&ldquo;{qt}&rdquo;</div>
               <div style='font-size:10px;margin-top:4px;'>{speaker_line}{src_line}</div>
@@ -615,17 +619,17 @@ def render(digest: dict) -> str:
             o_act = _esc(off.get("activity", ""))
             if not o_name or not o_act:
                 continue
-            role_line = (f"<span style='color:#7B90AC;'> &middot; {o_role}</span>"
+            role_line = (f"<span style='color:#9FB3CC;'> &middot; {o_role}</span>"
                          if o_role else "")
             senior_rows += (
                 f"<div style='margin-bottom:7px;'>"
                 f"<div style='font-size:13px;font-weight:600;font-family:Georgia,serif;color:#E8E8E8;'>{o_name}{role_line}</div>"
-                f"<div style='font-size:12px;font-family:Georgia,serif;color:#A8B6C8;line-height:1.45;'>{o_act}</div>"
+                f"<div style='font-size:13px;font-family:Georgia,serif;color:#C8D4E2;line-height:1.45;'>{o_act}</div>"
                 f"</div>")
         if senior_rows:
             seniors_html = (
                 f'<div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.10);">'
-                f'<div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#7B90AC;margin-bottom:8px;">Senior Officials</div>'
+                f'<div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#9FB3CC;margin-bottom:8px;">Senior Officials</div>'
                 f'{senior_rows}</div>')
 
         # Top 3 KCNA articles — Kim-related items ranked first by the prompt
@@ -643,17 +647,17 @@ def render(digest: dict) -> str:
                 kim_badge = (f' <span style="font-family:Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:0.5px;'
                              f'color:{RED_ON_NAVY};letter-spacing:0.5px;">KIM</span>'
                              if art.get("kim_related") else "")
-                src_tag = f" <span style='color:#7B90AC;'>— {a_src}</span>" if a_src else ""
+                src_tag = f" <span style='color:#9FB3CC;'>— {a_src}</span>" if a_src else ""
                 art_items += f"""<table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:8px;"><tr>
                   <td width="24" style="vertical-align:top;font-family:Arial,sans-serif;font-size:13px;font-weight:700;color:{BLUE_ON_NAVY};padding-top:1px;">{i}.</td>
                   <td style="vertical-align:top;">
                     <div style="font-size:13px;font-weight:600;font-family:Georgia,serif;color:#E8E8E8;line-height:1.4;">{_link_or_text(a_headline, a_url, style="font-family:Georgia,serif;color:#E8E8E8;text-decoration:underline;")}{kim_badge}</div>
-                    {"<div style='font-size:12px;font-family:Georgia,serif;color:#A8B6C8;line-height:1.5;margin-top:2px;'>" + a_summary + src_tag + "</div>" if a_summary else ""}
+                    {"<div style='font-size:13px;font-family:Georgia,serif;color:#C8D4E2;line-height:1.5;margin-top:2px;'>" + a_summary + src_tag + "</div>" if a_summary else ""}
                   </td>
                 </tr></table>"""
             if art_items:
                 articles_html = f"""<div style="margin-top:4px;">
-                  <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#7B90AC;margin-bottom:8px;">Top KCNA Articles</div>
+                  <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#9FB3CC;margin-bottom:8px;">Top KCNA Articles</div>
                   {art_items}
                 </div>"""
 
@@ -668,12 +672,12 @@ def render(digest: dict) -> str:
             </tr>
           </table>
           <div style="padding:16px 32px;background:{NAVY_PANEL};font-family:Georgia,serif;color:#E0E0E0;">
-            {"<div style='margin-bottom:12px;padding:8px 14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);border-radius:3px;font-size:12px;font-family:Georgia,serif;color:#A8B6C8;'>No new KCNA dispatches ingested today &mdash; showing last known status.</div>" if data_unavailable else ""}
-            {"<div style='margin-bottom:12px;padding:8px 14px;background:" + TAEGUK_RED + ";color:#fff;border-radius:3px;font-size:12px;font-weight:600;'>Complete KCNA silence today</div>" if silence else ""}
+            {"<div style='margin-bottom:12px;padding:8px 14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);border-radius:3px;font-size:13px;font-family:Georgia,serif;color:#C8D4E2;'>No new KCNA dispatches ingested today &mdash; showing last known status.</div>" if data_unavailable else ""}
+            {"<div style='margin-bottom:12px;padding:8px 14px;background:" + TAEGUK_RED + ";color:#fff;border-radius:3px;font-size:13px;font-weight:600;'>Complete KCNA silence today</div>" if silence else ""}
             <div style="padding:0 0 12px;margin-bottom:14px;border-bottom:1px solid rgba(255,255,255,0.14);">
-              <span style="font-family:Arial,sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:#7B90AC;">Kim Jong Un</span>
+              <span style="font-family:Arial,sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:#9FB3CC;">Kim Jong Un</span>
               {"<span style='display:inline-block;margin-left:8px;padding:1px 7px;border-radius:3px;background:" + TAEGUK_RED + ";color:#fff;font-family:Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:1px;'>WATCH FLAG</span>" if watch and not silence and not data_unavailable else ""}
-              <div style="font-size:15px;color:#E8E6E1;font-weight:600;margin-top:4px;">{kim_icon}{kim_line}</div>
+              <div style="font-size:14px;color:#E8E6E1;font-weight:600;margin-top:4px;">{kim_icon}{kim_line}</div>
             </div>
             {quotes_html}
             {articles_html}
@@ -712,7 +716,7 @@ def render(digest: dict) -> str:
                 # showed only the ministry, so the name was thrown away.
                 official = _esc(item.get("official", ""))
                 official_line = (
-                    f'<div style="font-size:12px;font-family:Georgia,serif;color:#4A5260;margin-bottom:4px;">{official}</div>'
+                    f'<div style="font-size:13px;font-family:Georgia,serif;color:#4A5260;margin-bottom:4px;">{official}</div>'
                     if official and official.lower() not in ("none", "null", "n/a") else "")
                 ministry_header = ""
                 if ministry_korean:
@@ -753,7 +757,7 @@ def render(digest: dict) -> str:
                     <div style="margin-bottom:6px;">{ministry_header}</div>
                     <div style="font-size:14px;font-weight:700;color:{INK};line-height:1.3;margin-bottom:6px;">{_esc(action)}</div>
                     {official_line}
-                    <div style="font-size:12px;line-height:1.5;font-family:Georgia,serif;color:#4A5260;">{_esc(detail)}</div>
+                    <div style="font-size:13px;line-height:1.5;font-family:Georgia,serif;color:#4A5260;">{_esc(detail)}</div>
                     {src_link}
                   </div>
                 </td>"""
@@ -786,7 +790,7 @@ def render(digest: dict) -> str:
                     </td>
                     <td style="padding:10px 0;vertical-align:top;">
                       <div style="font-size:13px;font-weight:600;color:#1B2A4A;margin-bottom:2px;">{cal_headline}</div>
-                      <div style="font-size:12px;line-height:1.4;font-family:Georgia,serif;color:#4A5260;">{cal_detail}</div>
+                      <div style="font-size:13px;line-height:1.4;font-family:Georgia,serif;color:#4A5260;">{cal_detail}</div>
                     </td>
                   </tr>
                 </table>"""
@@ -815,8 +819,8 @@ def render(digest: dict) -> str:
                 pers_items += f"""
                 <div style="margin-bottom:10px;padding-left:12px;border-left:3px solid {a_color};">
                   <div style="font-size:13px;font-weight:600;color:#1B2A4A;">{name}{action_badge}</div>
-                  <div style="font-size:12px;font-family:Georgia,serif;color:#4A5260;">{position}</div>
-                  <div style="font-size:12px;line-height:1.4;font-family:Georgia,serif;color:#4A5260;">{detail}</div>
+                  <div style="font-size:13px;font-family:Georgia,serif;color:#4A5260;">{position}</div>
+                  <div style="font-size:13px;line-height:1.4;font-family:Georgia,serif;color:#4A5260;">{detail}</div>
                   {pred_line}
                 </div>"""
             pers_html = f"""
@@ -837,7 +841,7 @@ def render(digest: dict) -> str:
                 asm_items += f"""
                 <div style="margin-bottom:11px;padding-left:12px;border-left:3px solid #C9D2DE;">
                   <div style="font-family:Georgia,serif;font-size:14px;font-weight:600;color:{INK};line-height:1.35;">{action}</div>
-                  <div style="font-size:12px;color:#6B7280;margin-top:2px;">{committee}</div>
+                  <div style="font-size:13px;color:#6B7280;margin-top:2px;">{committee}</div>
                   <div style="font-size:13px;line-height:1.5;font-family:Georgia,serif;color:#4A5260;margin-top:3px;">{detail}</div>
                 </div>"""
             asm_html = f"""
@@ -881,7 +885,7 @@ def render(digest: dict) -> str:
                 chal_color = TAEGUK_RED if "People Power" in chal or "PPP" in chal else TAEGUK_BLUE
                 race_rows += f"""
                 <tr style="border-bottom:1px solid #E8E8E8;">
-                  <td style="padding:6px 8px 6px 0;font-size:12px;font-weight:600;color:{INK};width:30%;">{region}</td>
+                  <td style="padding:6px 8px 6px 0;font-size:13px;font-weight:600;color:{INK};width:30%;">{region}</td>
                   <td style="padding:6px 4px;font-size:11px;vertical-align:middle;">
                     <span style="color:{inc_color};font-weight:600;">{inc}</span> vs <span style="color:{chal_color};font-weight:600;">{chal}</span>
                   </td>
@@ -938,7 +942,7 @@ def render(digest: dict) -> str:
                         f'color:#2C3540;margin-bottom:6px;">{state_of_play}</div>')
 
         _pillar_h = (lambda label, accent=TAEGUK_RED:
-            f'<div style="font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;'
+            f'<div style="font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;'
             f'color:{NAVY};padding-bottom:5px;border-bottom:2px solid {accent};display:inline-block;'
             f'margin-bottom:12px;">{label}</div>')
         _box = (lambda inner:
@@ -992,12 +996,12 @@ def render(digest: dict) -> str:
             # Number and short pill share one line; the note gets its OWN
             # full-width line below (so it can never wrap into a narrow column).
             if _has_rate:
-                _hero_lead = (f'<span style="font-family:{MONO};font-size:32px;font-weight:700;color:{TAEGUK_RED};vertical-align:middle;">{h_rate}</span>'
+                _hero_lead = (f'<span style="font-family:{MONO};font-size:26px;font-weight:700;color:{TAEGUK_RED};vertical-align:middle;">{h_rate}</span>'
                               + (f'&nbsp;&nbsp;{status_pill}' if status_pill else ''))
             else:
                 # Status is the hero (e.g. EXPIRED), muted — not a red percentage.
                 _sw = _esc(_h_key if _h_key in _status_pill else (h_status.strip() or "—"))
-                _hero_lead = f'<span style="font-family:Georgia,serif;font-size:24px;font-weight:700;color:#55607A;letter-spacing:0.5px;vertical-align:middle;">{_sw}</span>'
+                _hero_lead = f'<span style="font-family:Georgia,serif;font-size:22px;font-weight:700;color:#55607A;letter-spacing:0.5px;vertical-align:middle;">{_sw}</span>'
             hero = (f'<div style="margin-bottom:5px;">{_hero_lead}</div>'
                     f'<div style="font-size:13px;color:#5A6472;line-height:1.5;">{note_text}</div>')
 
@@ -1029,7 +1033,7 @@ def render(digest: dict) -> str:
                 sec_rows += (f'<tr style="border-top:1px solid #E7EBF0;">'
                              f'<td style="padding:7px 12px;font-size:13px;font-weight:600;color:{INK};">{_esc(sr.get("sector",""))}</td>'
                              f'<td style="padding:7px 8px;font-size:11px;color:#6B7280;text-transform:uppercase;text-align:right;white-space:nowrap;">{_esc(sr.get("authority",""))}</td>'
-                             f'<td style="padding:7px 12px 7px 8px;font-family:{MONO};font-size:13px;font-weight:700;color:{_sec_colors.get(sr_st, TAEGUK_RED)};text-align:right;white-space:nowrap;">{_esc(str(sr.get("rate","")))}</td>'
+                             f'<td style="padding:7px 12px 7px 8px;font-family:Georgia,serif;font-size:14px;font-weight:700;color:{_sec_colors.get(sr_st, TAEGUK_RED)};text-align:right;white-space:nowrap;">{_esc(str(sr.get("rate","")))}</td>'
                              f'</tr>')
             sector_box = ""
             if sec_rows:
@@ -1061,7 +1065,7 @@ def render(digest: dict) -> str:
                 if len(latest) > 60:
                     latest = latest[:57].rstrip() + "…"
                 bar = (f'<div style="font-size:13px;font-family:Georgia,serif;color:#4A5260;margin-bottom:7px;">'
-                       f'<span style="font-family:{MONO};color:{NAVY};font-size:15px;font-weight:700;">{_esc(announced)}</span> '
+                       f'<span style="font-family:{MONO};color:{NAVY};font-size:14px;font-weight:700;">{_esc(announced)}</span> '
                        f'announced of {pledged} pledged &middot; {pct_int}% fulfilled</div>'
                        f'<div style="background:#E7EBF0;border-radius:6px;height:16px;overflow:hidden;">'
                        f'<div style="background:{TAEGUK_BLUE};width:{bar_w}%;height:100%;border-radius:6px 0 0 6px;"></div></div>'
@@ -1073,7 +1077,7 @@ def render(digest: dict) -> str:
                     "No official drawdown figure reported; individual Korean corporate "
                     "US investments are tracked separately and are not pledge tranches.")
                 bar = (f'<div><span style="font-family:{MONO};color:{NAVY};font-size:22px;font-weight:700;">{pledged}</span>'
-                       f'<span style="font-size:12px;color:#6B7280;"> &nbsp;pledged</span></div>'
+                       f'<span style="font-size:13px;color:#6B7280;"> &nbsp;pledged</span></div>'
                        f'<div style="font-size:13px;color:#5A6472;line-height:1.55;margin-top:6px;">{note}</div>')
 
             # Deal table only lists deals officially attributed to the pledge
@@ -1085,7 +1089,7 @@ def render(digest: dict) -> str:
                               f'<td style="padding:7px 12px;font-size:13px;color:{INK};"><span style="font-weight:600;">{_esc(kd.get("company",""))}</span>'
                               + (f' <span style="color:#6B7280;font-size:11px;">{sect}</span>' if sect else "")
                               + f'</td>'
-                              f'<td style="padding:7px 12px 7px 8px;font-family:{MONO};font-size:12px;font-weight:700;color:{UP_GREEN};text-align:right;white-space:nowrap;">{_esc(kd.get("value",""))}</td>'
+                              f'<td style="padding:7px 12px 7px 8px;font-family:Georgia,serif;font-size:13px;font-weight:700;color:{UP_GREEN};text-align:right;white-space:nowrap;">{_esc(kd.get("value",""))}</td>'
                               f'</tr>')
             deal_box = ""
             if deal_rows:
@@ -1135,7 +1139,7 @@ def render(digest: dict) -> str:
                                f'<span style="font-weight:600;">{ent}</span>{chip}'
                                + (f'<div style="font-size:11px;color:#6B7280;margin-top:1px;">{sect}</div>' if sect else "")
                                + f'</td>'
-                               f'<td style="padding:6px 0;font-family:{MONO};font-size:12px;font-weight:700;color:{NAVY};'
+                               f'<td style="padding:6px 0;font-family:{MONO};font-size:13px;font-weight:700;color:{NAVY};'
                                f'text-align:right;white-space:nowrap;vertical-align:top;">{val or "&mdash;"}</td></tr>')
                 blocks += (f'<div style="font-size:11px;font-weight:700;letter-spacing:0.5px;color:{color};'
                            f'margin:12px 0 2px;">{lbl}</div>'
@@ -1198,7 +1202,7 @@ def render(digest: dict) -> str:
             meta = " &middot; ".join(b for b in (agency, status_span) if b)
             pol_rows += (f'<tr><td style="padding:8px 0;border-top:1px solid #EAEDF1;">'
                          f'<div style="font-size:13px;font-weight:600;color:{INK};line-height:1.35;">{head}</div>'
-                         + (f'<div style="font-size:12px;font-family:Georgia,serif;color:#4A5260;line-height:1.45;margin-top:2px;">{detail_text}</div>' if detail_text else "")
+                         + (f'<div style="font-size:13px;font-family:Georgia,serif;color:#4A5260;line-height:1.45;margin-top:2px;">{detail_text}</div>' if detail_text else "")
                          + (f'<div style="font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:#6B7280;margin-top:2px;">{meta}</div>' if meta else "")
                          + '</td></tr>')
         if pol_rows:
@@ -1230,7 +1234,7 @@ def render(digest: dict) -> str:
                     f'Full trade reference &#8594;</span>'
                     f'<span style="display:block;font-family:Georgia,serif;font-size:13px;'
                     f'color:{INK};margin-top:4px;line-height:1.45;">Investment ledger, pledge '
-                    f'tracker and standing policy measures. Rebuilt every run.</span></a></div>')
+                    f'tracker and standing policy measures.</span></a></div>')
         digest["_trade_standing_html"] = "".join(standing)
         sections.append(f"""
         <div {_SEC}>
@@ -1441,12 +1445,12 @@ def render(digest: dict) -> str:
                   <table cellpadding="0" cellspacing="0" border="0" style="background:{TAEGUK_BLUE};">
                     <tr><td align="center" style="padding:4px 0 5px;width:46px;">
                       <div style="font-family:Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;color:rgba(255,255,255,0.82);">{_esc(cal.get("month", ""))}</div>
-                      <div style="font-family:Georgia,serif;font-size:19px;font-weight:700;color:#fff;line-height:1;">{_esc(str(cal.get("day", "")))}</div>
+                      <div style="font-family:Georgia,serif;font-size:16px;font-weight:700;color:#fff;line-height:1;">{_esc(str(cal.get("day", "")))}</div>
                     </td></tr>
                   </table>
                 </td>
                 <td style="padding:9px 0;vertical-align:top;">
-                  <div style="font-family:Georgia,serif;font-size:15px;font-weight:700;color:#1B2A4A;">{_esc(cal.get("headline", ""))}</div>
+                  <div style="font-family:Georgia,serif;font-size:14px;font-weight:700;color:#1B2A4A;">{_esc(cal.get("headline", ""))}</div>
                   <div style="font-family:Georgia,serif;font-size:13px;line-height:1.45;color:#4A5260;margin-top:3px;">{_esc(cal.get("detail", ""))}</div>
                 </td>
               </tr>
@@ -1517,7 +1521,7 @@ def render(digest: dict) -> str:
                 link = (f'<a href="{_esc(url)}" style="font-size:10px;color:{TAEGUK_BLUE};text-decoration:none;">View on X &#8594;</a>'
                         if url and str(url).startswith("http") else "")
                 xp_html += (f'<div style="margin-bottom:9px;padding-bottom:9px;border-bottom:1px solid #E1E8F0;">'
-                            f'<div style="font-size:12px;font-weight:600;color:{INK};">{name}'
+                            f'<div style="font-size:13px;font-weight:600;color:{INK};">{name}'
                             + (f' <span style="color:#55607A;font-weight:400;">@{handle}</span>' if handle else "")
                             + f'</div>'
                             f'<div style="font-size:13px;font-family:Georgia,serif;color:#2C3E50;line-height:1.45;margin:2px 0 3px;">&ldquo;{post}&rdquo;</div>'
@@ -1550,7 +1554,7 @@ def render(digest: dict) -> str:
                     <div style="width:36px;height:36px;border-radius:50%;background:{badge_color};color:#fff;text-align:center;line-height:36px;font-size:13px;font-weight:700;">{initials}</div>
                   </td>
                   <td style="padding-left:8px;vertical-align:middle;">
-                    <div style="font-size:12px;font-weight:600;color:{INK};">{who}</div>
+                    <div style="font-size:13px;font-weight:600;color:{INK};">{who}</div>
                     <div style="font-size:10px;color:#6B7280;">{handle}</div>
                   </td>
                 </tr>
@@ -1598,7 +1602,7 @@ def render(digest: dict) -> str:
             <div style="margin-bottom:13px;padding-left:12px;border-left:3px solid #55607A;">
               <div style="font-family:Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#55607A;">{src}{_tier_chip}</div>
               {title_html}
-              <div style="font-size:12px;line-height:1.4;font-family:Georgia,serif;color:#4A5260;">{summary}</div>
+              <div style="font-size:13px;line-height:1.4;font-family:Georgia,serif;color:#4A5260;">{summary}</div>
               {"<div style='font-size:11px;color:" + TAEGUK_BLUE + ";margin-top:3px;'><strong>Implication:</strong> " + implication + "</div>" if implication else ""}
               {read_link}
             </div>"""
@@ -1765,7 +1769,7 @@ def render(digest: dict) -> str:
                 row_cards += f"""
                 <td style="width:50%;padding:4px;vertical-align:top;">
                   <div style="background:{b_bg};border-radius:3px;padding:10px 12px;border-left:3px solid {b_color};">
-                    <div style="font-size:12px;font-weight:700;color:{INK};margin-bottom:2px;">{name} &nbsp;{status_badge}</div>
+                    <div style="font-size:13px;font-weight:700;color:{INK};margin-bottom:2px;">{name} &nbsp;{status_badge}</div>
                     {note_html}
                     {last_html}
                   </div>
@@ -1797,20 +1801,20 @@ def render(digest: dict) -> str:
         otd_rel = _esc(item.get("relevance", ""))
         otd_footer = f"""
         <div style="text-align:left;margin-bottom:18px;padding:12px 16px;background:rgba(143,182,232,0.10);border-radius:3px;border-left:2px solid {BLUE_ON_NAVY};">
-          <div style="font-size:10px;text-transform:uppercase;letter-spacing:2px;color:{BLUE_ON_NAVY};margin-bottom:6px;font-weight:600;">On This Day &middot; <span style="font-family:{MONO};">{otd_date}</span></div>
-          <div style="font-size:12px;color:rgba(255,255,255,0.85);line-height:1.5;font-family:Georgia,serif;">{otd_event}</div>
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,0.95);margin-bottom:6px;font-weight:600;">On This Day &middot; <span style="font-family:{MONO};">{otd_date}</span></div>
+          <div style="font-size:13px;color:rgba(255,255,255,0.85);line-height:1.5;font-family:Georgia,serif;">{otd_event}</div>
           <div style="font-size:11px;color:rgba(255,255,255,0.6);font-style:italic;margin-top:4px;line-height:1.4;">{otd_rel}</div>
         </div>"""
     otd_block = ""
     if on_this_day:
         otd_block = f"""
       <tr><td style="padding:20px 32px 8px;">
-        <div style="font-family:Arial,sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:{BLUE_ON_NAVY};padding-bottom:7px;margin-bottom:11px;border-bottom:1px solid rgba(255,255,255,0.18);">On This Day</div>
+        <div style="font-family:Arial,sans-serif;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,0.95);padding-bottom:7px;margin-bottom:11px;border-bottom:1px solid rgba(255,255,255,0.18);">On This Day</div>
         <div style="font-family:Georgia,serif;font-size:14px;line-height:1.55;color:rgba(255,255,255,0.88);"><strong style="color:{BLUE_ON_NAVY};">{otd_date}</strong> &nbsp; {otd_event}</div>
         {"<div style='font-family:Georgia,serif;font-size:13px;color:rgba(255,255,255,0.6);font-style:italic;margin-top:5px;'>" + otd_rel + "</div>" if otd_rel else ""}
       </td></tr>"""
     sections.append(f"""
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:{NAVY};border-top:3px solid {BAND};" class="sec footer">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" class="sec footer" style="background:{BAND};border-top:3px solid {TAEGUK_RED};">
       {otd_block}
       <tr><td style="padding:18px 32px 6px;text-align:center;">
         <!-- CSIS Korea Chair lockup, built in HTML rather than as an image:
@@ -1822,21 +1826,21 @@ def render(digest: dict) -> str:
           <td style="border-left:1px solid rgba(255,255,255,0.45);padding:2px 12px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.82);line-height:1.35;text-align:left;">Geopolitics and Foreign<br>Policy Department</td>
           <td style="border-left:1px solid rgba(255,255,255,0.45);padding:2px 0 2px 12px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.82);line-height:1.35;text-align:left;">Korea<br>Chair</td>
         </tr></table>
-        <div style="font-family:Georgia,serif;font-size:13px;color:rgba(255,255,255,0.62);margin-top:12px;">Center for Strategic and International Studies &middot; Washington, DC</div>
+        <div style="font-family:Georgia,serif;font-size:13px;color:rgba(255,255,255,0.72);margin-top:12px;">Washington, DC &middot; csis.org</div>
         <div style="margin-top:11px;font-family:Arial,sans-serif;font-size:11px;letter-spacing:0.5px;">
-          <a href="{_esc(web_url)}" style="color:{BLUE_ON_NAVY};text-decoration:none;">Read online</a> &nbsp;&middot;&nbsp;
-          <a href="{_esc(archive_url)}" style="color:{BLUE_ON_NAVY};text-decoration:none;">Past issues</a>{_footer_trade}
+          <a href="{_esc(web_url)}" style="color:rgba(255,255,255,0.95);text-decoration:none;">Read online</a> &nbsp;&middot;&nbsp;
+          <a href="{_esc(archive_url)}" style="color:rgba(255,255,255,0.95);text-decoration:none;">Past issues</a>{_footer_trade}
         </div>
       </td></tr>
-      <tr><td style="padding:12px 32px 10px;">
-        <div style="border-top:1px solid rgba(255,255,255,0.14);padding-top:12px;text-align:left;font-family:Georgia,serif;font-size:12px;line-height:1.6;color:rgba(255,255,255,0.52);">
+      <tr><td style="padding:14px 32px 10px;text-align:center;">
+        <div style="border-top:1px solid rgba(255,255,255,0.14);padding-top:12px;text-align:center;font-family:Georgia,serif;font-size:13px;line-height:1.6;color:rgba(255,255,255,0.82);">
           This newsletter is automatically generated, so it may contain errors. Please check all information and sources before citing.
-          To report errors or other issues, please contact Andy Lim at <a href="mailto:alim@csis.org" style="color:rgba(255,255,255,0.78);">alim@csis.org</a>.
+          To report errors or other issues, please contact Andy Lim at <a href="mailto:alim@csis.org" style="color:rgba(255,255,255,0.95);">alim@csis.org</a>.
         </div>
       </td></tr>
-      <tr><td style="padding:0 32px 18px;text-align:left;">
-        <div style="font-family:Arial,sans-serif;font-size:10px;letter-spacing:0.5px;color:rgba(255,255,255,0.38);margin-bottom:9px;">{_issue_meta}generated {gen_time}</div>
-        <a href="#top" style="font-family:Arial,sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:{BLUE_ON_NAVY};text-decoration:none;">&#8593; Back to top</a>
+      <tr><td style="padding:0 32px 20px;text-align:center;">
+        <div style="font-family:Arial,sans-serif;font-size:10px;letter-spacing:0.5px;color:rgba(255,255,255,0.70);margin-bottom:9px;">{_issue_meta}generated {gen_time}</div>
+        <a href="#top" style="font-family:Arial,sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.95);text-decoration:none;">&#8593; Back to top</a>
       </td></tr>
     </table>
     """)
@@ -1938,7 +1942,7 @@ def render(digest: dict) -> str:
       .sec, .footer {{ padding:16px 16px !important; }}
       /* (A4) Masthead keeps presence on phones */
       h1 {{ font-size:22px !important; }}
-      h2 {{ font-size:12px !important; }}
+      h2 {{ font-size:13px !important; }}
       h3 {{ font-size:14px !important; }}
       .key-stat-num {{ font-size:26px !important; }}
       /* (A10) Market strip STAYS 3-across on mobile — smaller mono, tighter pad */
@@ -1948,7 +1952,7 @@ def render(digest: dict) -> str:
       /* (A11) Grids stack — declared once each */
       .loc-grid td, .gov-grid td {{ display:block !important; width:100% !important; padding:5px 0 !important; }}
       .loc-grid tr, .gov-grid tr {{ display:block !important; }}
-      .loc-grid div[style*="font-size:11px"] {{ font-size:12px !important; }}
+      .loc-grid div[style*="font-size:11px"] {{ font-size:13px !important; }}
       /* Calendar watch */
       .cal-table td[width="50"] {{ width:40px !important; padding:8px 6px 8px 0 !important; }}
       .cal-date {{ font-size:16px !important; }}
@@ -1964,8 +1968,8 @@ def render(digest: dict) -> str:
         box-sizing:border-box !important; padding:8px 2px !important; text-align:center !important; }}
       /* Trade dashboard strip — stays 3-across like the market strip */
       .trade-dash td {{ padding:9px 4px 10px !important; }}
-      .trade-dash span[style*="font-size:24px"] {{ font-size:18px !important; }}
-      .trade-dash span[style*="font-size:12px"] {{ font-size:11px !important; }}
+      .trade-dash span[style*="font-size:22px"] {{ font-size:18px !important; }}
+      .trade-dash span[style*="font-size:13px"] {{ font-size:11px !important; }}
       /* Tariff sector + trade policy tables — stack */
       .tariff-sector td, .trade-policy td {{ display:block !important; width:100% !important; padding:3px 8px !important; white-space:normal !important; }}
       .tariff-sector tr {{ display:block !important; border-bottom:1px solid #F0E0E0 !important; padding:4px 0 !important; }}
