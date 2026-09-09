@@ -277,7 +277,9 @@ def _emphasis(text: str) -> str:
 _SEC = 'style="padding:20px 32px;border-bottom:1px solid #EBEBEB;" class="sec"'
 
 
-def _sec_label(label: str, color: str = TAEGUK_BLUE) -> str:
+RING_ON_DARK = "#167EFF"   # the accent, lightened to read on the black bar
+
+def _sec_label(label: str, color: str = RING_ON_DARK) -> str:
     """A section bar: black field, an accent ring, a white letterspaced label.
 
     The label used to be small coloured type over a hairline rule. In a
@@ -306,6 +308,7 @@ def _sec_label(label: str, color: str = TAEGUK_BLUE) -> str:
         '</td></tr></table>')
 
 
+
 def _subhead(text: str) -> str:
     """A group label inside a section.
 
@@ -319,27 +322,28 @@ def _subhead(text: str) -> str:
 
 
 def _compact_row(cat: str, headline: str, url: str, src: str, body: str = "") -> str:
-    """One scannable line: category, headline, source. Used where a section
-    carries breadth rather than depth."""
-    # Headline on its own line, note and source under it. Run together with an
-    # em-dash they wrapped into one grey paragraph and the eye could not find
-    # where the headline stopped.
-    under = " &middot; ".join(x for x in (body, src) if x)
-    line = (f'<td style="padding:8px 0;vertical-align:top;border-bottom:1px solid #EEF0F3;">'
-            f'<div style="font-family:Georgia,serif;font-size:14px;font-weight:600;'
-            f'line-height:1.4;color:{INK};">{_link_or_text(headline, url)}</div>'
-            + (f'<div style="font-family:Arial,sans-serif;font-size:11px;line-height:1.5;'
-               f'color:#6B7280;margin-top:2px;">{under}</div>' if under else "")
-            + '</td>')
-    if not cat:
-        # Under a group heading the category is already stated, so the column
-        # would be an empty indent on every row.
-        return f'<tr>{line}</tr>'
-    return (f'<tr>'
-            f'<td style="padding:7px 10px 7px 0;vertical-align:top;white-space:nowrap;'
-            f'font-family:Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:0.5px;'
-            f'text-transform:uppercase;color:{TAEGUK_BLUE};border-bottom:1px solid #EEF0F3;">{cat}</td>'
-            f'{line}</tr>')
+    """One wire item, in the same shape as every other news item in the brief.
+
+    This was a two-column table: a category cell on the left, headline and a
+    grey meta line on the right. It read as a different kind of object from
+    the sections around it — the eye had to change mode to scan it, which is
+    the opposite of what a wire is for.
+
+    It is now the house item: a rule down the left, TAG · SOURCE in small grey
+    caps, the headline, then the body. Same as the sections that read tightest,
+    so The Wire scans like the rest of the brief instead of like a table.
+    """
+    tag_line = " &middot; ".join(x for x in (cat, src) if x)
+    return (f'<div style="margin-bottom:11px;padding-left:12px;'
+            f'border-left:3px solid {TAEGUK_BLUE};">'
+            + (f'<div style="font-family:Arial,sans-serif;font-size:10px;color:{MUTE};'
+               f'text-transform:uppercase;letter-spacing:1px;font-weight:600;'
+               f'margin-bottom:2px;">{tag_line}</div>' if tag_line else "")
+            + f'<div style="font-family:Georgia,serif;font-size:14px;font-weight:600;'
+              f'color:{INK};line-height:1.4;">{_link_or_text(headline, url)}</div>'
+            + (f'<div style="font-family:Georgia,serif;font-size:13px;line-height:1.5;'
+               f'color:#4A5260;margin-top:2px;">{body}</div>' if body else "")
+            + '</div>')
 
 
 def _item_block(cat: str, src: str, headline: str, body: str, url: str,
@@ -1582,8 +1586,7 @@ def render(digest: dict) -> str:
                              body=_esc(i.get("body_text", "")))
                 for i in _items)
             wire_html += ((_subhead(_esc(_cat)) if _multi else "")
-                          + f'<table width="100%" cellpadding="0" cellspacing="0" '
-                            f'border="0" class="flash-table">{rows}</table>')
+                          + rows)
         sections.append(f"""
         <div {_SEC}>
           <a name="wire" id="wire"></a>{_sec_label("The Wire")}
