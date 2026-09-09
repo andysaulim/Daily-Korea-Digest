@@ -177,7 +177,51 @@ def _parse_recipients(raw: str) -> list:
     return out
 
 
+def build_subject(re_line: Optional[str] = None, lead: Optional[str] = None,
+                  now=None, limit: int = 78) -> str:
+    """The subject line, which competes for attention at 6 AM.
+
+    It used to read "Korea Daily Brief · 09/08/2026 — " and then whatever
+    survived of the RE line at 100 characters. Three problems. The first
+    twenty characters, the part a phone actually shows, said only that this
+    was the same brief it is every morning. The numeric date repeated what the
+    client already stamps on the message. And the RE line is a list of
+    fragments, so truncating it at a fixed count cut mid-item and often
+    mid-word.
+
+    This leads with the news. A short label keeps it searchable and filterable,
+    then the lead story, then the date in words if it still fits. Truncation
+    falls on a word boundary, and the whole line stays inside the width most
+    desktop clients show.
+    """
+    from zoneinfo import ZoneInfo
+    now = now or datetime.now(ZoneInfo("America/New_York"))
+    date_str = now.strftime("%b %-d")
+
+    # The lead story if the caller has one, otherwise the first RE fragment,
+    # which is the same editorial judgement one step removed.
+    headline = (lead or "").strip()
+    if not headline and re_line:
+        headline = re.split(r"\s*[·•|]\s*|\s+—\s+", re_line.strip())[0].strip()
+    headline = re.sub(r"\s+", " ", headline).rstrip(" .")
+
+    prefix = "Korea Brief"
+    if not headline:
+        return f"{prefix} · {date_str}"
+
+    tail = f" · {date_str}"
+    room = limit - len(prefix) - 2 - len(tail)
+    if len(headline) > room:
+        cut = headline[:room]
+        # Never end mid-word; drop back to the last space and mark the cut.
+        if " " in cut:
+            cut = cut[:cut.rindex(" ")]
+        headline = cut.rstrip(" ,;:") + "…"
+    return f"{prefix}: {headline}{tail}"
+
+
 def send(html: str, re_line: Optional[str] = None, subject: Optional[str] = None,
+         lead: Optional[str] = None,
          recipients: Optional[list] = None):
     """
     Send the digest HTML via Gmail SMTP.
@@ -220,15 +264,7 @@ def send(html: str, re_line: Optional[str] = None, subject: Optional[str] = None
             "secret for stray punctuation or a missing address.")
 
     if subject is None:
-        from zoneinfo import ZoneInfo
-        date_str = datetime.now(ZoneInfo("America/New_York")).strftime("%m/%d/%Y")
-        if re_line:
-            # Truncate RE: line for subject (max ~120 chars total)
-            max_re = 100
-            re_short = re_line[:max_re] + ("..." if len(re_line) > max_re else "")
-            subject = f"Korea Daily Brief · {date_str} — {re_short}"
-        else:
-            subject = f"Korea Daily Brief · {date_str}"
+        subject = build_subject(re_line=re_line, lead=lead)
 
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject

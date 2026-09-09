@@ -254,6 +254,38 @@ def _sec_label(label: str, color: str = TAEGUK_BLUE) -> str:
             f'{label}</div>')
 
 
+def _subhead(text: str) -> str:
+    """A group label inside a section.
+
+    ROK Government already grouped its contents this way; Analysis and The
+    Wire did not, which is why both read as undifferentiated streams.
+    """
+    return (f'<div style="font-family:Arial,sans-serif;font-size:11px;font-weight:700;'
+            f'text-transform:uppercase;letter-spacing:1.5px;color:#55607A;'
+            f'margin:18px 0 9px;padding-bottom:5px;border-bottom:1px solid #E4E7EB;">'
+            f'{text}</div>')
+
+
+def _compact_row(cat: str, headline: str, url: str, src: str, body: str = "") -> str:
+    """One scannable line: category, headline, source. Used where a section
+    carries breadth rather than depth."""
+    tail = f'<span style="color:#6B7280;"> &mdash; {body}</span>' if body else ""
+    line = (f'<td style="padding:7px 0;vertical-align:top;font-family:Georgia,serif;'
+            f'font-size:13px;line-height:1.45;color:{INK};border-bottom:1px solid #EEF0F3;">'
+            f'{_link_or_text(headline, url)}{tail}'
+            f'<span style="font-family:Arial,sans-serif;font-size:11px;color:#6B7280;">'
+            f' &middot; {src}</span></td>')
+    if not cat:
+        # Under a group heading the category is already stated, so the column
+        # would be an empty indent on every row.
+        return f'<tr>{line}</tr>'
+    return (f'<tr>'
+            f'<td style="padding:7px 10px 7px 0;vertical-align:top;white-space:nowrap;'
+            f'font-family:Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:0.5px;'
+            f'text-transform:uppercase;color:{TAEGUK_BLUE};border-bottom:1px solid #EEF0F3;">{cat}</td>'
+            f'{line}</tr>')
+
+
 def _item_block(cat: str, src: str, headline: str, body: str, url: str,
                  bar_color: str = TAEGUK_BLUE, extra_html: str = "") -> str:
     """One card treatment for every list item in the brief.
@@ -1429,16 +1461,24 @@ def render(digest: dict) -> str:
     # ── 13. The Wire (Also Today — secondary news) ────────────────────
     combined_also = digest.get("also_today") or []
     if combined_also:
-        wire_html = ""
+        _groups = {}
         for item in combined_also:
-            wire_html += _item_block(
-                cat=_esc(_str(item.get("category", ""))),
-                src=_esc(_clean_src(item.get("source", ""))),
-                headline=_esc(item.get("headline", "")),
-                body=_esc(item.get("body_text", "")),
-                url=item.get("url", ""),
-                bar_color=_color_bar(_str(item.get("color_bar_class", ""))),
-            )
+            key = _str(item.get("category", "")).strip() or "Other"
+            _groups.setdefault(key.title(), []).append(item)
+        wire_html = ""
+        # One group heading beats a category badge repeated on every row.
+        _multi = len(_groups) > 1
+        for _cat, _items in _groups.items():
+            rows = "".join(
+                _compact_row(cat="" if _multi else _esc(_cat),
+                             headline=_esc(i.get("headline", "")),
+                             url=i.get("url", ""),
+                             src=_esc(_clean_src(i.get("source", ""))),
+                             body=_esc(i.get("body_text", "")))
+                for i in _items)
+            wire_html += ((_subhead(_esc(_cat)) if _multi else "")
+                          + f'<table width="100%" cellpadding="0" cellspacing="0" '
+                            f'border="0" class="flash-table">{rows}</table>')
         sections.append(f"""
         <div {_SEC}>
           <a name="wire"></a>{_sec_label("The Wire")}
@@ -1519,7 +1559,10 @@ def render(digest: dict) -> str:
               {"<p style='margin:0;font-size:11px;color:" + TAEGUK_BLUE + ";'><strong>Analyst:</strong> " + note + "</p>" if note else ""}
               {source_link}
             </div>"""
-        # Op-Eds
+        # Op-Eds. A column and a peer-reviewed paper are different kinds of
+        # evidence; the section used to run them together behind one rule.
+        if opeds:
+            sa_html += _subhead("Commentary")
         for op in opeds:
             src = _esc(op.get("source", ""))
             title = _esc(op.get("headline", op.get("title", op.get("central_argument", ""))))
@@ -1527,15 +1570,17 @@ def render(digest: dict) -> str:
             so_what = _esc(op.get("policy_so_what", ""))
             url = op.get("url", "")
             sa_html += f"""
-            <div style="margin-bottom:12px;padding-left:12px;border-left:3px solid {TAEGUK_BLUE};">
-              <div style="font-size:11px;color:#6B7280;">{src}</div>
-              <div style="font-size:13px;font-weight:600;color:{INK};">
+            <div style="margin-bottom:13px;padding-left:12px;border-left:3px solid {TAEGUK_BLUE};">
+              <div style="font-family:Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:{TAEGUK_BLUE};">{src}</div>
+              <div style="font-family:Georgia,serif;font-size:14px;font-weight:600;color:{INK};line-height:1.35;margin-top:2px;">
                 {_link_or_text(title, url)}
               </div>
-              <div style="font-size:12px;line-height:1.4;font-family:Georgia,serif;color:#4A5260;">{summary}</div>
+              <div style="font-size:13px;line-height:1.5;font-family:Georgia,serif;color:#4A5260;margin-top:3px;">{summary}</div>
               {"<div style='font-size:11px;color:" + TAEGUK_BLUE + ";margin-top:3px;'><strong>So what:</strong> " + so_what + "</div>" if so_what else ""}
             </div>"""
         # Academic
+        if academic:
+            sa_html += _subhead("Research")
         for a in academic:
             src = _esc(a.get("source", ""))
             tier = _esc(a.get("journal_tier", ""))
@@ -1544,10 +1589,14 @@ def render(digest: dict) -> str:
             implication = _esc(a.get("policy_implication", ""))
             url = a.get("url", "")
             read_link = f'<a href="{_esc(url)}" style="font-size:11px;color:{TAEGUK_BLUE};">Read &#8594;</a>' if url and url != "#" and url.startswith("http") else ""
-            title_html = f'<div style="font-size:13px;font-weight:600;color:{INK};margin-bottom:4px;">{_link_or_text(title, url)}</div>' if title else ""
+            title_html = f'<div style="font-family:Georgia,serif;font-size:14px;font-weight:600;color:{INK};line-height:1.35;margin:2px 0 3px;">{_link_or_text(title, url)}</div>' if title else ""
+            _tier_chip = (f'<span style="display:inline-block;margin-left:6px;padding:1px 6px;'
+                          f'border-radius:3px;background:#E7EBF0;font-family:Arial,sans-serif;'
+                          f'font-size:10px;font-weight:700;letter-spacing:0.5px;color:#55607A;">{tier}</span>'
+                          if tier else "")
             sa_html += f"""
-            <div style="margin-bottom:12px;padding-left:12px;border-left:3px solid {TAEGUK_BLUE};">
-              <div style="font-size:11px;color:#6B7280;">{src} &middot; {tier}</div>
+            <div style="margin-bottom:13px;padding-left:12px;border-left:3px solid #55607A;">
+              <div style="font-family:Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#55607A;">{src}{_tier_chip}</div>
               {title_html}
               <div style="font-size:12px;line-height:1.4;font-family:Georgia,serif;color:#4A5260;">{summary}</div>
               {"<div style='font-size:11px;color:" + TAEGUK_BLUE + ";margin-top:3px;'><strong>Implication:</strong> " + implication + "</div>" if implication else ""}

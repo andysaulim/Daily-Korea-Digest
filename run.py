@@ -1422,7 +1422,11 @@ def main():
             print("\n⚠️  DIGEST_TO not set — email will only go to sender's own address")
         from send_email import send
         re_line = digest_data.get("re_line")
-        send(html, re_line=re_line)
+        # The lead story is the subject line's best asset: it is the one thing
+        # that tells a reader at 6 AM whether to open this now.
+        _top = (digest_data.get("top_stories") or [{}])[0]
+        _lead = (_top.get("headline") or "").strip() if isinstance(_top, dict) else ""
+        send(html, re_line=re_line, lead=_lead)
 
     # ── Step 5: Pipeline health checks ─────────────────────────────────────
     health_report = {}
