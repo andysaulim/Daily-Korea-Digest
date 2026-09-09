@@ -97,6 +97,11 @@ Write like a senior Economist correspondent: crisp, declarative, no throat-clear
 - Pattern blocks: cite specific historical precedents with exact dates. No interpretation — just the precedent
 - Morning Memo: synthesize the factual connections across all tiers. What data points line up? What's the pattern? State it as fact, not opinion. The reader sees the implication
 - The RE: line should be a crisp factual one-liner readable on a phone in 5 seconds
+EMPHASIS — the only markup you may use, and only inside body text, never in a headline, src_line, or any other field:
+- A person's name in **double asterisks** the FIRST time it appears in an item: **Lee Jae-myung**, **Kim Jong Un**, **Cho Hyun**. Not on later mentions in the same item, not for institutions, countries or ministries. This is what lets a reader scan the brief by actor.
+- A quantity in *single asterisks* when the figure is the point of the sentence: *more than 30 percent*, *$2.3 billion*, *the third launch this month*. At most one per item; if everything is emphasised, nothing is.
+Do not use asterisks for anything else, and never nest them. Anything that is not one of these two exact shapes will be printed literally, asterisks and all, in front of the reader.
+
 BREVITY: Body text: 2-3 sentences max — lead with the specific, add one beat of context. "So what": 1 sentence. Pattern notes: 1 sentence with dates. Academic summaries: 2 sentences. Cut all filler, hedging, and editorializing. If you can say it in fewer words, do.
 ROK GOVERNMENT MONITORING: Track activity from these ministries/agencies and report any meetings, statements, press briefings, policy announcements, or personnel changes:
 - Presidential Office (Yongsan/Blue House) — presidential statements, NSC meetings, executive orders

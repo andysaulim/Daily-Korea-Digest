@@ -140,6 +140,10 @@ _DARK_EXEMPT = {
     "#0047A0", "#0052B4", "#1B2A4A", "#051F3D", "#0A1E38", "#2E3644",
     "#EBEBEB", "#E4E7EB", "#E8E8E8", "#EEF0F3", "#D5DAE1", "#F2F3F5",
     "#5A6472",  # badge fill — legible in both schemes, needs no variant
+    # The section bar and the footer are already black with white type, and
+    # the pill buttons are dark type on a white fill. All read correctly in
+    # either scheme, so none of them needs a dark variant.
+    "#14181F",
     # Status-chip fills: a saturated ground with white type, readable either way.
     "#CD2E3A", "#2E7D4F", "#A93226", "#B26A00",
     # The dark palette's own values, so re-scanning a dark rule is not a miss.
@@ -169,7 +173,9 @@ def _dark_mode_css() -> str:
         "      .wrapper .sec { background:#1E2126 !important; border-bottom-color:#3A4048 !important; }",
         "      .wrapper .nav-row { background:#1A1D22 !important; border-bottom-color:#3A4048 !important; }",
         "      .wrapper h1, .wrapper h2, .wrapper h3 { color:#E8E6E1 !important; }",
-        "      .wrapper .footer { background:#062A5E !important; }",
+        "      .wrapper .footer { background:#0B0E13 !important; }",
+        "      .wrapper .footer-end { background:#1a1a1a !important; }",
+        "      .wrapper .sec-bar { background:#0B0E13 !important; }",
         "      .wrapper .kcna-dark, .wrapper .kcna-dark table, .wrapper .kcna-dark > div { background:#0A1E38 !important; }",
         "      .wrapper .item-card, .wrapper .story-card, .wrapper .gov-grid div, .wrapper .loc-grid div { background:#262A30 !important; border-color:#3A4048 !important; }",
         "      .wrapper .sentiment-spotlight { background:#16222F !important; }",
@@ -249,15 +255,55 @@ def _link_or_text(text: str, url: str,
     return text
 
 
+
+def _emphasis(text: str) -> str:
+    """Turn the model's **bold** and *italic* marks into tags, after escaping.
+
+    Names and figures are what a reader scans a policy brief for, so the
+    prompt asks for a person's name in **double asterisks** on first mention
+    and a quantity in *single* ones. The model cannot emit HTML — every field
+    goes through _esc() first — so this converts a narrow, fixed convention
+    afterwards. Anything that is not one of these two exact shapes stays
+    literal text, which is what keeps the escaping meaningful.
+    """
+    import re as _re
+    text = _re.sub(r"\*\*(?!\s)([^*]{1,80}?)(?<!\s)\*\*",
+                   r'<strong style="font-weight:700;">\1</strong>', text)
+    text = _re.sub(r"(?<![*\w])\*(?!\s)([^*]{1,60}?)(?<!\s)\*(?![*\w])",
+                   r"<em>\1</em>", text)
+    return text
+
 # ── Section padding helper (responsive via class) ────────────────────────
 _SEC = 'style="padding:20px 32px;border-bottom:1px solid #EBEBEB;" class="sec"'
 
 
 def _sec_label(label: str, color: str = TAEGUK_BLUE) -> str:
-    return (f'<div style="font-size:11px;font-weight:700;text-transform:uppercase;'
-            f'letter-spacing:1.5px;color:{color};font-family:Arial,sans-serif;'
-            f'margin-bottom:14px;padding-bottom:6px;border-bottom:2px solid {color};">'
-            f'{label}</div>')
+    """A section bar: black field, an accent ring, a white letterspaced label.
+
+    The label used to be small coloured type over a hairline rule. In a
+    2,000-word brief with a dozen sections that gave the reader no stop
+    between them: the sections blurred into one another and a scan found no
+    purchase. This is a hard stop.
+
+    Black rather than each edition's own colour. Four editions with four
+    coloured bars would read as decoration; black reads as structure, and the
+    accent lands as one deliberate mark instead of a whole field. It is also
+    the only colour that leaves the masthead as the single place a reader
+    meets the edition's identity.
+
+    Solid background and a text glyph, so it survives clients that block
+    images and clients that drop background images.
+    """
+    return (
+        '<table width="100%" cellpadding="0" cellspacing="0" border="0" '
+        'class="sec-bar" style="background:#14181F;margin-bottom:14px;">'
+        '<tr><td style="padding:9px 14px;">'
+        f'<span style="font-family:Arial,sans-serif;font-size:12px;color:{color};'
+        'line-height:1;vertical-align:middle;margin-right:9px;">&#9675;</span>'
+        '<span style="font-family:Arial,sans-serif;font-size:11px;font-weight:700;'
+        'text-transform:uppercase;letter-spacing:2px;color:#FFFFFF;'
+        f'vertical-align:middle;">{label}</span>'
+        '</td></tr></table>')
 
 
 def _subhead(text: str) -> str:
@@ -372,10 +418,13 @@ def render(digest: dict) -> str:
     # ── 0. View in Browser bar (Read online · Print / PDF · Archive) ──────
     if web_url:
         base = web_url[:-len("latest.html")] if web_url.endswith("latest.html") else ""
-        _a = ('display:inline-block;padding:4px 12px;margin:0 2px;'  # util-btn
+        # A solid pill. A translucent fill behind a hairline border renders
+        # unpredictably across clients and reads as tentative; a filled
+        # button reads as something you press.
+        _a = ('display:inline-block;padding:6px 14px;margin:0 3px;'  # util-btn
               'font-family:Arial,sans-serif;font-size:11px;font-weight:700;'
-              'letter-spacing:0.5px;color:rgba(255,255,255,0.92);background:rgba(255,255,255,0.10);'
-              'border:1px solid rgba(255,255,255,0.22);border-radius:3px;'
+              'letter-spacing:0.5px;color:#14181F;background:#FFFFFF;'
+              'border-radius:14px;'
               'text-decoration:none;white-space:nowrap;')
         links = [f'<a href="{_esc(web_url)}" style="{_a}">Read online</a>']
         if base:
@@ -406,7 +455,8 @@ def render(digest: dict) -> str:
           <h1 style="margin:0 0 4px 0;font-size:28px;font-weight:700;font-family:Georgia,'Times New Roman',serif;color:#fff;letter-spacing:0.5px;">
             Korea Daily Brief
           </h1>
-          <div style="margin-top:2px;font-size:16px;font-weight:400;color:rgba(255,255,255,0.85);font-family:Georgia,serif;">{_esc(date_str)}</div>
+          <div style="margin-top:3px;font-family:Arial,sans-serif;font-size:11px;letter-spacing:0.5px;color:rgba(255,255,255,0.62);">The Korean Peninsula, every weekday morning</div>
+          <div style="margin-top:9px;font-size:16px;font-weight:400;color:rgba(255,255,255,0.85);font-family:Georgia,serif;">{_esc(date_str)}</div>
         </td>
         <td class="mast-meta" style="vertical-align:bottom;text-align:right;">
           <div style="font-family:Arial,sans-serif;font-size:11px;letter-spacing:0.5px;color:rgba(255,255,255,0.72);white-space:nowrap;">{_issue_meta}%%WORDS%% words &middot; %%READMIN%% min read</div>
@@ -496,7 +546,7 @@ def render(digest: dict) -> str:
         for story in top_stories:
             cat = _esc(_str(story.get("category_tag", story.get("category", ""))))
             headline = _esc(story.get("headline", ""))
-            body = _esc(story.get("body", ""))
+            body = _emphasis(_esc(story.get("body", "")))
             src_line = _esc(_clean_src(story.get("src_line", story.get("source", ""))))
             url = story.get("url", "")
             cat_badge = f'<div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:{TAEGUK_BLUE};font-weight:700;margin-bottom:4px;">{cat}</div>' if cat else ""
@@ -524,7 +574,7 @@ def render(digest: dict) -> str:
             cat_raw = _str(item.get("category", ""))
             cat = _esc(cat_raw)
             headline = _esc(item.get("headline", ""))
-            body = _esc(item.get("body_text", ""))
+            body = _emphasis(_esc(item.get("body_text", "")))
             src = _esc(_clean_src(item.get("source", "")))
             url = item.get("url", "")
             # A scan list, not a second Top Stories. One rule down the left,
@@ -1277,7 +1327,7 @@ def render(digest: dict) -> str:
                 cat=_esc(_str(item.get("category", item.get("sector", "")))),
                 src=_esc(_clean_src(item.get("source", ""))),
                 headline=_esc(item.get("headline", "")),
-                body=_esc(item.get("body_text", "")),
+                body=_emphasis(_esc(item.get("body_text", ""))),
                 url=item.get("url", ""),
                 bar_color=biz_sector_colors.get(_str(item.get("sector", "")), TAEGUK_BLUE),
                 extra_html=company_tags,
@@ -1303,7 +1353,7 @@ def render(digest: dict) -> str:
             cat_raw = _str(item.get("category", ""))
             cat = _esc(cat_raw)
             headline = _esc(item.get("headline", ""))
-            body = _esc(item.get("body_text", ""))
+            body = _emphasis(_esc(item.get("body_text", "")))
             src = _esc(_clean_src(item.get("source", "")))
             url = item.get("url", "")
             region = _str(item.get("region_tag", ""))
@@ -1871,34 +1921,54 @@ def render(digest: dict) -> str:
         <div style="font-family:Georgia,serif;font-size:14px;line-height:1.55;color:rgba(255,255,255,0.88);"><strong style="color:{BLUE_ON_NAVY};">{otd_date}</strong> &nbsp; {otd_event}</div>
         {"<div style='font-family:Georgia,serif;font-size:13px;color:rgba(255,255,255,0.6);font-style:italic;margin-top:5px;'>" + otd_rel + "</div>" if otd_rel else ""}
       </td></tr>"""
+    _foot_btn = ('display:inline-block;padding:6px 15px;margin:0 4px;'
+                 'font-family:Arial,sans-serif;font-size:11px;font-weight:700;'
+                 'letter-spacing:0.5px;color:#14181F;background:#FFFFFF;'
+                 'border-radius:14px;text-decoration:none;white-space:nowrap;')
     sections.append(f"""
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" class="sec footer" style="background:{BAND};border-top:3px solid {TAEGUK_RED};">
+    <!-- Black, not the band colour. The accent belongs to the masthead: used
+         at both ends it stops being identity and becomes decoration, and the
+         brief gains a second thing competing for the eye at the moment it
+         should be closing. The hierarchy runs identity, then why you have
+         this, then what you can do with it, then the legal line — and the
+         legal line breaks onto white so the document ends rather than
+         trailing off. -->
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" class="sec footer" style="background:#14181F;border-top:3px solid {TAEGUK_RED};">
       {otd_block}
-      <tr><td style="padding:18px 32px 6px;text-align:center;">
+      <tr><td style="padding:26px 32px 6px;text-align:center;">
         <!-- CSIS Korea Chair lockup, built in HTML rather than as an image:
              mail clients block images by default, and a blocked logo is a
              broken logo. This always renders, scales, and stays legible in
              dark mode. -->
         <table class="lockup" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto;"><tr>
-          <td style="padding-right:12px;font-family:Georgia,'Times New Roman',serif;font-size:26px;letter-spacing:2px;color:#FFFFFF;line-height:1;">CSIS</td>
-          <td style="border-left:1px solid rgba(255,255,255,0.45);padding:2px 12px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.82);line-height:1.35;text-align:left;">Geopolitics and Foreign<br>Policy Department</td>
-          <td style="border-left:1px solid rgba(255,255,255,0.45);padding:2px 0 2px 12px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.82);line-height:1.35;text-align:left;">Korea<br>Chair</td>
+          <td style="padding-right:14px;font-family:Georgia,'Times New Roman',serif;font-size:38px;letter-spacing:3px;color:#FFFFFF;line-height:1;">CSIS</td>
+          <td style="border-left:1px solid rgba(255,255,255,0.45);padding:3px 14px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.82);line-height:1.4;text-align:left;">Geopolitics and Foreign<br>Policy Department</td>
+          <td style="border-left:1px solid rgba(255,255,255,0.45);padding:3px 0 3px 14px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.82);line-height:1.4;text-align:left;">Korea<br>Chair</td>
         </tr></table>
-        <div style="font-family:Georgia,serif;font-size:13px;color:rgba(255,255,255,0.72);margin-top:12px;">Washington, D.C.</div>
-        <div style="margin-top:11px;font-family:Arial,sans-serif;font-size:11px;letter-spacing:0.5px;">
-          <a href="{_esc(web_url)}" style="color:rgba(255,255,255,0.95);text-decoration:none;">Read online</a> &nbsp;&middot;&nbsp;
-          <a href="{_esc(archive_url)}" style="color:rgba(255,255,255,0.95);text-decoration:none;">Past issues</a>{_footer_trade}
+        <div style="font-family:Georgia,serif;font-size:13px;color:rgba(255,255,255,0.72);margin-top:14px;">Washington, D.C.</div>
+      </td></tr>
+      <tr><td style="padding:16px 32px 4px;text-align:center;">
+        <div style="font-family:Georgia,serif;font-size:13px;line-height:1.6;color:rgba(255,255,255,0.80);max-width:520px;margin:0 auto;">
+          You are receiving the Korea Daily Brief as a member of the CSIS Korea Chair distribution list.
         </div>
       </td></tr>
-      <tr><td style="padding:14px 32px 10px;text-align:center;">
-        <div style="border-top:1px solid rgba(255,255,255,0.14);padding-top:12px;text-align:center;font-family:Georgia,serif;font-size:13px;line-height:1.6;color:rgba(255,255,255,0.82);">
+      <tr><td style="padding:14px 32px 4px;text-align:center;">
+        <a href="{_esc(web_url)}" style="{_foot_btn}">Read online</a>
+        <a href="{_esc(archive_url)}" style="{_foot_btn}">Past issues</a>{_footer_trade}
+      </td></tr>
+      <tr><td style="padding:18px 32px 22px;text-align:center;">
+        <div style="border-top:1px solid rgba(255,255,255,0.14);padding-top:14px;text-align:center;font-family:Georgia,serif;font-size:13px;line-height:1.6;color:rgba(255,255,255,0.72);max-width:520px;margin:0 auto;">
           This newsletter is automatically generated, so it may contain errors. Please check all information and sources before citing.
           To report errors or other issues, please contact Andy Lim at <a href="mailto:alim@csis.org" style="color:rgba(255,255,255,0.95);">alim@csis.org</a>.
         </div>
+        <div style="margin-top:16px;">
+          <a href="#top" style="font-family:Arial,sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.95);text-decoration:none;">&#8593; Back to top</a>
+        </div>
       </td></tr>
-      <tr><td style="padding:0 32px 20px;text-align:center;">
-        <div style="font-family:Arial,sans-serif;font-size:10px;letter-spacing:0.5px;color:rgba(255,255,255,0.70);margin-bottom:9px;">{_issue_meta}generated {gen_time}</div>
-        <a href="#top" style="font-family:Arial,sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.95);text-decoration:none;">&#8593; Back to top</a>
+    </table>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" class="footer-end" style="background:#FFFFFF;">
+      <tr><td style="padding:12px 32px 18px;text-align:center;font-family:Arial,sans-serif;font-size:10px;letter-spacing:0.5px;color:#6B7280;">
+        &copy; {now.year} Center for Strategic and International Studies &nbsp;&middot;&nbsp; {_issue_meta}generated {gen_time}
       </td></tr>
     </table>
     """)

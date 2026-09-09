@@ -319,8 +319,36 @@ def check_colours_are_colours() -> list[str]:
     return [f"{h} is not a valid hex colour" for h in sorted(bad)]
 
 
+def check_emphasis_cannot_inject() -> list[str]:
+    """The **bold** convention must not become an HTML hole.
+
+    The model cannot emit markup: every field is escaped first, and only then
+    are the two exact asterisk shapes converted. This proves both halves —
+    that a tag in the model's output stays inert text, and that a malformed
+    mark is printed literally rather than opening something.
+    """
+    import render
+    problems = []
+    out = render._emphasis(render._esc('<script>x</script> **a** *b* a*b*c **un closed'))
+    if "<script" in out:
+        problems.append("a tag in model output survived into the page")
+    if "<strong" not in out or "<em>" not in out:
+        problems.append("the emphasis convention stopped working")
+    if "a*b*c" not in out:
+        problems.append("asterisks inside a word are being converted")
+    if "**un closed" not in out:
+        problems.append("an unclosed mark is not left literal")
+    # The prompt has to ask for it, or the renderer converts a mark nothing writes.
+    from pathlib import Path
+    src = Path("digest.py").read_text(encoding="utf-8")
+    if "EMPHASIS —" not in src:
+        problems.append("digest.py no longer states the emphasis convention")
+    return problems
+
+
 CHECKS = [
     ("prestige rule is enforceable", check_prestige_rule_is_enforceable),
+    ("emphasis cannot inject markup", check_emphasis_cannot_inject),
     ("nav links land where they say", check_nav_links_land_where_they_say),
     ("hex colours are well formed", check_colours_are_colours),
     ("primary ROK sources reach the model", check_primary_sources_reach_the_model),
