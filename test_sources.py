@@ -346,8 +346,36 @@ def check_emphasis_cannot_inject() -> list[str]:
     return problems
 
 
+def check_masthead_is_mobile_safe() -> list[str]:
+    """The nameplate must shrink on a phone, and the meta line must stack.
+
+    All four briefs drifted apart here without anyone noticing, because a
+    masthead only looks wrong on a device none of the checks used: one never
+    shrank at all, one had no mobile rule and kept its desktop columns side by
+    side on a 390px screen, and one dropped its nameplate to 16px. The sizes
+    are asserted rather than compared so a change has to be deliberate.
+    """
+    import re, render
+    problems = []
+    html = render.render({"re_line": "x", "morning_memo": ["a", "b", "c"]})
+    desktop = re.search(r"<h1[^>]*font-size:(\d+)px", html)
+    if not desktop:
+        return ["no <h1> in the masthead"]
+    if desktop.group(1) != "26":
+        problems.append(f"desktop nameplate is {desktop.group(1)}px, the house size is 26px")
+    phone = re.findall(r"max-width:\s*6[0-9]0px[^@]*?h1 \{ font-size:(\d+)px", html, re.S)
+    if not phone:
+        problems.append("no phone rule shrinks the nameplate")
+    elif phone[0] != "22":
+        problems.append(f"phone nameplate is {phone[0]}px, the house size is 22px")
+    if not re.search(r"max-width:\s*6[0-9]0px[^@]*?mast-meta[^@]*?display:block", html, re.S):
+        problems.append("the meta cell does not stack under the nameplate on a phone")
+    return problems
+
+
 CHECKS = [
     ("prestige rule is enforceable", check_prestige_rule_is_enforceable),
+    ("masthead is mobile-safe", check_masthead_is_mobile_safe),
     ("emphasis cannot inject markup", check_emphasis_cannot_inject),
     ("nav links land where they say", check_nav_links_land_where_they_say),
     ("hex colours are well formed", check_colours_are_colours),

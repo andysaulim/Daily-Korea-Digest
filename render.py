@@ -459,7 +459,7 @@ def render(digest: dict) -> str:
       <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
         <td style="vertical-align:top;">
           <div style="font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.78);margin-bottom:7px;">CSIS Korea Chair</div>
-          <h1 style="margin:0 0 4px 0;font-size:28px;font-weight:700;font-family:Georgia,'Times New Roman',serif;color:#fff;letter-spacing:0.5px;">
+          <h1 style="margin:0 0 4px 0;font-size:26px;font-weight:700;font-family:Georgia,'Times New Roman',serif;color:#fff;letter-spacing:0.5px;">
             Korea Daily Brief
           </h1>
           <div style="margin-top:2px;font-size:16px;font-weight:400;color:rgba(255,255,255,0.85);font-family:Georgia,serif;">{_esc(date_str)}</div>
@@ -2075,6 +2075,10 @@ def render(digest: dict) -> str:
          min-content width of its cells, so the whole 680px wrapper stopped at
          about 325px and every section inherited that floor: the brief scrolled
          sideways on a 320px screen. Stacked under the date it wraps freely. */
+      /* One nameplate size on a phone across all four briefs. This was the
+         only masthead that never shrank, so it ran wider than its neighbours
+         on the same screen. */
+      h1 {{ font-size:22px !important; }}
       .mast-meta {{ display:block !important; text-align:left !important;
         padding-top:8px !important; }}
       .mast-meta div {{ white-space:normal !important; }}
