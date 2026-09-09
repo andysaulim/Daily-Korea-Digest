@@ -817,15 +817,21 @@ def render(digest: dict) -> str:
                                 'border-top:1px solid #E1E6ED;font-family:Arial,sans-serif;'
                                 'font-size:11px;line-height:1.7;color:#6B7280;">'
                                 + "<br>".join(_rows) + "</div>")
+                # Same fill treatment as the location cards: min-height sets a
+                # floor but does not make a short card match a tall one beside
+                # it, so the row still went ragged whenever two ministries said
+                # different amounts.
                 row_cards += f"""
-                <td style="width:50%;padding:8px;vertical-align:top;">
-                  <div style="background:#F5F7FA;border-radius:3px;padding:14px;min-height:100px;">
-                    <div style="margin-bottom:6px;">{ministry_header}</div>
-                    <div style="font-size:14px;font-weight:700;color:{INK};line-height:1.3;margin-bottom:6px;">{_esc(action)}</div>
-                    {official_line}
-                    <div style="font-size:13px;line-height:1.5;font-family:Georgia,serif;color:#4A5260;">{_esc(detail)}</div>
-                    {src_link}
-                  </div>
+                <td style="width:50%;padding:8px;vertical-align:top;" height="100%">
+                  <table width="100%" cellpadding="0" cellspacing="0" border="0" height="100%" style="height:100%;">
+                    <tr><td style="background:#F5F7FA;border-radius:3px;padding:14px;vertical-align:top;">
+                      <div style="margin-bottom:6px;">{ministry_header}</div>
+                      <div style="font-size:14px;font-weight:700;color:{INK};line-height:1.3;margin-bottom:6px;">{_esc(action)}</div>
+                      {official_line}
+                      <div style="font-size:13px;line-height:1.5;font-family:Georgia,serif;color:#4A5260;">{_emphasis(_esc(detail))}</div>
+                      {src_link}
+                    </td></tr>
+                  </table>
                 </td>"""
             if len(rok_gov) - i == 1:
                 row_cards += '<td style="width:50%;padding:8px;"></td>'
@@ -1665,8 +1671,7 @@ def render(digest: dict) -> str:
         for op in opeds:
             src = _esc(op.get("source", ""))
             title = _esc(op.get("headline", op.get("title", op.get("central_argument", ""))))
-            summary = _esc(op.get("summary", ""))
-            so_what = _esc(op.get("policy_so_what", ""))
+            summary = _emphasis(_esc(op.get("summary", "")))
             url = op.get("url", "")
             sa_html += f"""
             <div style="margin-bottom:13px;padding-left:12px;border-left:3px solid {TAEGUK_BLUE};">
@@ -1675,7 +1680,6 @@ def render(digest: dict) -> str:
                 {_link_or_text(title, url)}
               </div>
               <div style="font-size:13px;line-height:1.5;font-family:Georgia,serif;color:#4A5260;margin-top:3px;">{summary}</div>
-              {"<div style='font-size:11px;color:" + TAEGUK_BLUE + ";margin-top:3px;'><strong>So what:</strong> " + so_what + "</div>" if so_what else ""}
             </div>"""
         # Academic
         if academic:
@@ -1880,13 +1884,21 @@ def render(digest: dict) -> str:
                              f'{stale_flag}</div>'
                              if last_source_date and last_source_date != "unknown" else "")
                 row_cards += f"""
-                <td style="width:50%;padding:4px;vertical-align:top;">
-                  <div style="background:{b_bg};border:1px solid #E4E7EB;border-left:3px solid {b_color};border-radius:3px;padding:11px 13px;">
-                    {status_badge}
-                    <div style="font-family:Georgia,serif;font-size:14px;font-weight:700;color:{INK};line-height:1.3;">{name}</div>
-                    {note_html}
-                    {last_html}
-                  </div>
+                <td style="width:50%;padding:4px;vertical-align:top;" height="100%">
+                  <!-- The card fills its cell. Two <td>s in a row are already
+                       the same height, but a <div> inside one only grows to fit
+                       its own text, so a short note left a stub card beside a
+                       tall one and the row looked broken. A nested table set to
+                       height:100% stretches, which is the one way to do this
+                       that Outlook honours. -->
+                  <table width="100%" cellpadding="0" cellspacing="0" border="0" height="100%" style="height:100%;">
+                    <tr><td style="background:{b_bg};border:1px solid #E4E7EB;border-left:3px solid {b_color};border-radius:3px;padding:11px 13px;vertical-align:top;">
+                      {status_badge}
+                      <div style="font-family:Georgia,serif;font-size:14px;font-weight:700;color:{INK};line-height:1.3;">{name}</div>
+                      {note_html}
+                      {last_html}
+                    </td></tr>
+                  </table>
                 </td>"""
             if len(locations) - i == 1:
                 row_cards += '<td style="width:50%;padding:4px;"></td>'

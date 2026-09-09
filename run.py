@@ -24,6 +24,33 @@ from digest import _count_digest_words
 WORD_CEILING = 2400
 
 
+
+# Gmail stops rendering a message body past roughly 102 KB and shows
+# "[Message clipped]" with a link. The brief is long by design, so this is a
+# live risk rather than a theoretical one: a clipped brief hides everything
+# below the fold, and the reader has no way to tell what is missing.
+GMAIL_CLIP_BYTES = 102_400
+EMAIL_BYTES_WARN = 78_000
+EMAIL_BYTES_CRITICAL = 96_000
+
+
+def check_email_size(html: str) -> list[str]:
+    """Warn, then block, before Gmail would clip the body.
+
+    Measures encoded bytes rather than string length: Korean, Japanese and
+    Chinese text costs three bytes a character, so a character count would
+    understate a brief in exactly the editions most likely to be long.
+    """
+    n = len(html.encode("utf-8"))
+    pct = 100 * n / GMAIL_CLIP_BYTES
+    if n >= EMAIL_BYTES_CRITICAL:
+        return [f"CRITICAL EMAIL SIZE: {n:,} bytes ({pct:.0f}% of Gmail's "
+                f"{GMAIL_CLIP_BYTES:,}-byte clipping limit); the brief would be "
+                f"truncated mid-item."]
+    if n >= EMAIL_BYTES_WARN:
+        return [f"EMAIL SIZE: {n:,} bytes ({pct:.0f}% of Gmail's clipping limit)"]
+    return []
+
 def load_archive_entries(local_path, web_base: str = "") -> tuple[list, bool]:
     """The published archive manifest, and whether it is trustworthy.
 
@@ -1477,6 +1504,8 @@ def main():
         print(f"  (length budget unavailable: {_e})")
 
     html = render(digest_data)
+    for _line in check_email_size(html):
+        print(f"   {'⚠' if 'CRITICAL' not in _line else '✖'}  {_line}")
 
     # Standing trade reference page. render() stashes the blocks it moved out
     # of the daily brief; this publishes them alongside the archive so the
