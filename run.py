@@ -69,6 +69,48 @@ def load_archive_entries(local_path, web_base: str = "") -> tuple[list, bool]:
     return [], False
 
 
+def backfill_archive_entries(entries: list, web_base: str = "") -> list:
+    """Recover issues the destroyed manifest lost, from the pages themselves.
+
+    Every brief ever sent is still published at its own dated URL — the Pages
+    deploy keeps files it is not publishing. What the old rebuild-from-empty
+    bug destroyed was only the index. So a manifest that has come back with a
+    couple of entries is not evidence that a couple of issues were sent; it is
+    evidence of the last stub written before the bug was fixed, and the issue
+    number computed from it says No. 1 forever.
+
+    This asks the site which dated pages exist and merges the answers in. It
+    runs only while the manifest is still short, so it costs a few hundred HEAD
+    requests once and nothing afterwards. A page that does not answer is simply
+    not added: an unreachable site is not evidence that an issue is gone, and
+    nothing here removes an entry.
+    """
+    if len(entries) >= _BACKFILL_BELOW:
+        return entries
+    base = (web_base or os.environ.get("WEB_URL", "")).rstrip("/")
+    if not base:
+        return entries
+    try:
+        from datetime import date, timedelta
+        import rebuild_archive
+        today = datetime.now(ZoneInfo("America/New_York")).date()
+        found = rebuild_archive.probe(base, today - timedelta(days=_BACKFILL_DAYS), today)
+        merged = rebuild_archive.merge(entries, found, base)
+    except Exception as exc:
+        print(f"  ⚠  Archive backfill skipped ({exc})")
+        return entries
+    if len(merged) > len(entries):
+        print(f"  📚  Archive backfill: {len(entries)} -> {len(merged)} issues "
+              f"recovered from pages still published")
+    return merged
+
+
+# How short a manifest has to be before it is treated as the stub the old bug
+# left behind, and how far back to look for pages it lost.
+_BACKFILL_BELOW = 5
+_BACKFILL_DAYS = 400
+
+
 # Per-section (minimum, maximum) item counts. These, not the prompt's target,
 # are what actually bounds the length of the brief.
 SECTION_CAPS = {
@@ -1412,6 +1454,9 @@ def main():
     _date_slug = datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d")
     _archive_entries, _archive_ok = load_archive_entries(
         Path("public") / "archive.json", os.environ.get("WEB_URL", ""))
+    if _archive_ok:
+        _archive_entries = backfill_archive_entries(
+            _archive_entries, os.environ.get("WEB_URL", ""))
     try:
         _dates = sorted({e.get("date") for e in _archive_entries if e.get("date")})
         digest_data["issue_no"] = (_dates.index(_date_slug) + 1
