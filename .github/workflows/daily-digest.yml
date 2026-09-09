@@ -90,6 +90,13 @@ jobs:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASS: ${{ secrets.GMAIL_APP_PASS }}
           DIGEST_TO: ${{ secrets.DIGEST_TO }}
+          # Optional. Unset is fine: send_email.py already defaults the reply
+          # and visible-to addresses to alim@csis.org. GMAIL_FROM only works
+          # once that address is verified in Gmail under Send mail as —
+          # otherwise Gmail rewrites the From header back to the account.
+          GMAIL_FROM: ${{ secrets.GMAIL_FROM }}
+          DIGEST_REPLY_TO: ${{ secrets.DIGEST_REPLY_TO }}
+          DIGEST_VISIBLE_TO: ${{ secrets.DIGEST_VISIBLE_TO }}
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
           X_SCRAPER_KEY: ${{ secrets.X_SCRAPER_KEY }}
           WEB_URL: https://andysaulim.github.io/Daily-Korea-Digest

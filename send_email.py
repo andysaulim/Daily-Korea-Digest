@@ -184,14 +184,21 @@ def send(html: str, re_line: Optional[str] = None, subject: Optional[str] = None
         raise RuntimeError("Missing GMAIL_USER or GMAIL_APP_PASS environment variables")
     gmail_user = gmail_user.strip()
     gmail_pass = gmail_pass.strip()
-    from_addr = os.environ.get("GMAIL_FROM", gmail_user).strip()
+    # A GitHub Actions secret that is not set arrives as an empty string, not
+    # as an absent key, so os.environ.get(..., default) returns "" and the
+    # default never applies. Unset and empty must mean the same thing here, or
+    # adding an optional secret to the workflow silently blanks a header.
+    def _env(name: str, default: str = "") -> str:
+        return (os.environ.get(name) or "").strip() or default
+
+    from_addr = _env("GMAIL_FROM", gmail_user)
     # Replies go to the desk, not to the mailbox that happens to send. Gmail
     # will only put an unverified alias in From, so the personal address stays
     # there while Reply-To and the visible To carry the work address — a reader
     # hitting reply reaches alim@csis.org without anyone having to notice.
-    reply_to = os.environ.get("DIGEST_REPLY_TO", "alim@csis.org").strip()
-    display_to = os.environ.get("DIGEST_VISIBLE_TO", reply_to).strip()
-    to_str = os.environ.get("DIGEST_TO", gmail_user)
+    reply_to = _env("DIGEST_REPLY_TO", "alim@csis.org")
+    display_to = _env("DIGEST_VISIBLE_TO", reply_to)
+    to_str = _env("DIGEST_TO", gmail_user)
 
     if recipients is None:
         recipients = _parse_recipients(to_str)
