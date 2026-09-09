@@ -788,9 +788,15 @@ def _repair_digest_urls(digest: dict, payload: dict) -> list[str]:
         for item in items:
             url = (item.get("url") or "").strip()
             headline = (item.get("headline") or item.get("translated_title")
-                        or item.get("title") or "").strip()
+                        or item.get("title") or item.get("who") or "").strip()
+            # Quoted statements carry their text in different fields. Without
+            # these, every social_statements item looked headline-less and
+            # body-less and was dropped as garbage — the whole section, every
+            # run, four items a night, and the words that went with them are
+            # part of why the brief kept landing under its floor.
             body = (item.get("body") or item.get("body_text")
-                    or item.get("summary") or item.get("detail") or "").strip()
+                    or item.get("summary") or item.get("detail")
+                    or item.get("quote_text") or item.get("activity") or "").strip()
 
             # Drop garbage: no headline AND no body — never restore this
             if not headline and len(body) < 20:
