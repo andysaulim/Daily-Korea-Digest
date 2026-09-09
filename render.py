@@ -140,6 +140,10 @@ _DARK_EXEMPT = {
     "#0047A0", "#0052B4", "#1B2A4A", "#051F3D", "#0A1E38", "#2E3644",
     "#EBEBEB", "#E4E7EB", "#E8E8E8", "#EEF0F3", "#D5DAE1", "#F2F3F5",
     "#5A6472",  # badge fill — legible in both schemes, needs no variant
+    # The section-bar ring: already a lightened accent chosen to clear 4.5:1
+    # on the black bar, and the bar is black in both schemes, so it needs no
+    # dark variant of its own.
+    "#167EFF",
     # The section bar and the footer are already black with white type, and
     # the pill buttons are dark type on a white fill. All read correctly in
     # either scheme, so none of them needs a dark variant.
