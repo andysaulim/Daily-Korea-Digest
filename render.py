@@ -1928,6 +1928,9 @@ def render(digest: dict) -> str:
       /* Let everything flow across page breaks — avoiding breaks pushes content
          that doesn't fit to the next page, leaving big empty gaps. */
       * {{ page-break-inside: auto !important; }}
+      /* Chrome is interface, not brief: a printed page carrying a "Read
+         online" button bar and a jump menu is printing the controls. */
+      .util-row, .nav-row, .no-print {{ display:none !important; }}
     }}
     /* Mobile responsive — one declaration per pattern; no duplicates.
        Fixes from the Q3 2026 mobile audit are marked (A#). */
