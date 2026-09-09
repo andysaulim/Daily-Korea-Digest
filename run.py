@@ -73,7 +73,12 @@ def load_archive_entries(local_path, web_base: str = "") -> tuple[list, bool]:
 # are what actually bounds the length of the brief.
 SECTION_CAPS = {
     "top_stories":       (2, 4),
-    "overnight_items":   (6, 8),
+    # Minimum 3, not 6. A minimum is the one condition that still forces a full
+    # regeneration, so it has to mean "not worth sending", not "fewer than I
+    # would like". Raised to 6 yesterday; a run that came back with fewer
+    # tripped it, threw away a usable brief and started over. The prompt still
+    # asks for 6-8, which is where a preference belongs.
+    "overnight_items":   (3, 8),
     "business_economy":  (0, 6),
     # No minimum: the prompt no longer forces four events, because the
     # verified-date list had been overtaken by time and a hard floor
