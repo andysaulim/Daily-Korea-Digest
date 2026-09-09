@@ -77,6 +77,13 @@ jobs:
         if: steps.guard.outputs.should_run == 'true'
         run: pip install -r requirements.txt
 
+      # Between install and send, so a regression stops the run instead of
+      # reaching the list. NOT continue-on-error: a failing check is a reason
+      # to hold the brief, which is the whole point of having one.
+      - name: Offline checks
+        if: steps.guard.outputs.should_run == 'true'
+        run: python3 test_sources.py
+
       - name: Install Chromium for PDF export
         if: steps.guard.outputs.should_run == 'true'
         continue-on-error: true
