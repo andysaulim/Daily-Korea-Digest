@@ -174,7 +174,9 @@ def send(html: str, re_line: Optional[str] = None, subject: Optional[str] = None
       GMAIL_APP_PASS  — 16-char Gmail App Password
       DIGEST_TO       — recipient list, separated by commas, semicolons, or newlines
     Optional:
-      GMAIL_FROM      — sending alias (defaults to GMAIL_USER)
+      GMAIL_FROM        — sending alias (defaults to GMAIL_USER)
+      DIGEST_REPLY_TO   — address replies go to (defaults to alim@csis.org)
+      DIGEST_VISIBLE_TO — address shown on the To line (defaults to the reply address)
     """
     gmail_user = os.environ.get("GMAIL_USER")
     gmail_pass = os.environ.get("GMAIL_APP_PASS")
@@ -183,6 +185,12 @@ def send(html: str, re_line: Optional[str] = None, subject: Optional[str] = None
     gmail_user = gmail_user.strip()
     gmail_pass = gmail_pass.strip()
     from_addr = os.environ.get("GMAIL_FROM", gmail_user).strip()
+    # Replies go to the desk, not to the mailbox that happens to send. Gmail
+    # will only put an unverified alias in From, so the personal address stays
+    # there while Reply-To and the visible To carry the work address — a reader
+    # hitting reply reaches alim@csis.org without anyone having to notice.
+    reply_to = os.environ.get("DIGEST_REPLY_TO", "alim@csis.org").strip()
+    display_to = os.environ.get("DIGEST_VISIBLE_TO", reply_to).strip()
     to_str = os.environ.get("DIGEST_TO", gmail_user)
 
     if recipients is None:
@@ -206,7 +214,11 @@ def send(html: str, re_line: Optional[str] = None, subject: Optional[str] = None
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
     msg["From"] = f"CSIS Korea Chair <{from_addr}>"
-    msg["To"] = from_addr
+    if reply_to:
+        msg["Reply-To"] = f"Andy Lim <{reply_to}>"
+    # Everyone is BCC'd, so this header is only what recipients see on the To
+    # line. It should read as the desk, not as a personal Gmail address.
+    msg["To"] = f"CSIS Korea Chair <{display_to}>" if display_to else from_addr
     # BCC recipients are NOT added as a header — they are passed only to
     # sendmail() so they receive the email without being visible to others.
 

@@ -367,7 +367,7 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
     # ── Section count checks (hard caps) ─────────────────────────────────
     SECTION_CAPS = {
         "top_stories":       (2, 4),
-        "overnight_items":   (3, 6),
+        "overnight_items":   (6, 12),
         "business_economy":  (0, 6),
         # No minimum: the prompt no longer forces four events, because the
         # verified-date list had been overtaken by time and a hard floor
@@ -412,7 +412,9 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
     if word_count < 1100:
         warnings.append(f"WORD COUNT CRITICAL: ~{word_count} words (HARD MINIMUM 1100 — newsletter is too short)")
     elif word_count < 1600:
-        warnings.append(f"WORD COUNT: ~{word_count} words (target 1600-2000 for a 7-min read)")
+        warnings.append(f"WORD COUNT CRITICAL: ~{word_count} words (hard minimum 1600)")
+    elif word_count < 1850:
+        warnings.append(f"WORD COUNT: ~{word_count} words (target 2000 for an 8-min read)")
 
     # ── KCNA delta should exist but is non-blocking ────────────────────────
     kcna = digest.get("kcna_delta")
