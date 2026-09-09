@@ -11,6 +11,11 @@ with the news.
 
 The page reuses the blocks `render.py` already built, so there is one
 implementation of each and no chance of the two drifting apart.
+
+Its own frame has to be kept in step by hand, and was not: the brief moved to
+a blue nameplate and this page kept the navy one it replaced, so a reader
+following the link arrived somewhere that looked like a different product.
+Match any masthead change here as well.
 """
 from __future__ import annotations
 
@@ -46,14 +51,12 @@ def build(standing_html: str, *, date_str: str = "", web_base: str = "") -> str:
 </style></head>
 <body>
 <div class="wrap">
-  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:{BAND};">
-    <tr><td class="pad" style="padding:7px 32px 8px;font-family:{SANS};font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:#fff;">CSIS Korea Chair</td></tr>
-  </table>
-  <div class="pad" style="background:{NAVY};color:#fff;padding:20px 32px 18px;">
-    <h1 style="margin:0 0 4px;font-family:{SERIF};font-size:26px;font-weight:700;">US–Korea Trade Reference</h1>
+  <div class="pad" style="background:{BAND};color:#fff;padding:16px 32px 16px;">
+    <div style="font-family:{SANS};font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.78);margin-bottom:7px;">CSIS Korea Chair</div>
+    <h1 style="margin:0 0 4px;font-family:{SERIF};font-size:26px;font-weight:700;">US&ndash;Korea Trade Reference</h1>
     <div style="font-family:{SERIF};font-size:15px;color:rgba(255,255,255,0.85);">Standing status &middot; rebuilt daily</div>
   </div>
-  <div class="pad" style="padding:18px 32px 8px;font-family:{SANS};font-size:12px;line-height:1.6;color:#6B7280;border-bottom:1px solid #E4E7EB;">
+  <div class="pad" style="padding:18px 32px 12px;font-family:{SERIF};font-size:13px;line-height:1.65;color:#4A5260;border-bottom:1px solid #E4E7EB;">
     The investment ledger, pledge tracker and standing policy measures below change
     monthly at most. They are published here rather than in the daily brief so the
     brief can carry what changed today. This page is regenerated on every run.
@@ -64,7 +67,7 @@ def build(standing_html: str, *, date_str: str = "", web_base: str = "") -> str:
   </div>
   <div class="pad" style="padding:16px 32px 22px;border-top:1px solid #E4E7EB;font-family:{SANS};font-size:11.5px;color:#9AA3AE;">
     {back}
-    <div style="margin-top:10px;line-height:1.55;">
+    <div style="font-family:{SERIF};font-size:12px;margin-top:10px;line-height:1.6;">
       This page is automatically generated, so it may contain errors. Please check all
       information and sources before citing. To report errors or other issues, please
       contact Andy Lim at <a href="mailto:alim@csis.org" style="color:{BAND};">alim@csis.org</a>.

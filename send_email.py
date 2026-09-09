@@ -70,6 +70,8 @@ def _html_to_plain_text(html: str) -> str:
             return url
         return f"{link_text} ({url})"
     text = re.sub(r'<a[^>]+href="([^"]*)"[^>]*>(.*?)</a>', _link_replace, text, flags=re.DOTALL | re.IGNORECASE)
+    # Adjacent links ran together as "Read online (url)Download PDF (url)".
+    text = re.sub(r'\)(?=[A-Z])', ')  ', text)
 
     # Convert <li> to   - item
     def _li_replace(m):
@@ -85,8 +87,13 @@ def _html_to_plain_text(html: str) -> str:
     text = re.sub(r'</div>', '\n', text, flags=re.IGNORECASE)
     text = re.sub(r'</tr>', '\n', text, flags=re.IGNORECASE)
 
-    # Convert <td> separators to " | " for table readability
-    text = re.sub(r'<td[^>]*>', ' | ', text, flags=re.IGNORECASE)
+    # Cells are separated by a space, not a pipe. This brief is built from
+    # nested layout tables — the masthead, every section, the footer — so a
+    # pipe per cell produced pages of stray "  |" lines with nothing beside
+    # them. A space keeps the one case that reads well (the market strip on
+    # one line: "KOSPI 6,562.72 +1.4%") without inventing table rules that are
+    # not there.
+    text = re.sub(r'<td[^>]*>', ' ', text, flags=re.IGNORECASE)
 
     # Convert <hr> to a separator line
     text = re.sub(r'<hr[^>]*/?>', '\n' + '-' * 50 + '\n', text, flags=re.IGNORECASE)
@@ -120,10 +127,15 @@ def _html_to_plain_text(html: str) -> str:
     text = re.sub(r'&#(\d+);|&#x([0-9a-fA-F]+);', _decode_numeric, text)
 
     # Collapse multiple blank lines to at most two
-    text = re.sub(r'\n{4,}', '\n\n\n', text)
+    text = re.sub(r'\n{3,}', '\n\n', text)
 
     # Collapse multiple spaces on a line (but preserve leading whitespace for list items)
     text = re.sub(r'[^\S\n]{3,}', '  ', text)
+
+    # Drop lines left holding only separator punctuation after tag stripping.
+    text = "\n".join("" if re.fullmatch(r"[\s|·*—–-]*", ln) else ln
+                     for ln in text.split("\n"))
+    text = re.sub(r'\n{3,}', '\n\n', text)
 
     # Clean up lines: strip trailing whitespace per line
     lines = [line.rstrip() for line in text.split('\n')]

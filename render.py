@@ -367,7 +367,7 @@ def render(digest: dict) -> str:
           <div style="margin-top:2px;font-size:16px;font-weight:400;color:rgba(255,255,255,0.85);font-family:Georgia,serif;">{_esc(date_str)}</div>
         </td>
         <td class="mast-meta" style="vertical-align:bottom;text-align:right;">
-          <div style="font-family:{MONO};font-size:11px;color:rgba(255,255,255,0.72);white-space:nowrap;">{_issue_meta}%%WORDS%% words &middot; %%READMIN%% min read</div>
+          <div style="font-family:Arial,sans-serif;font-size:11px;letter-spacing:0.5px;color:rgba(255,255,255,0.72);white-space:nowrap;">{_issue_meta}%%WORDS%% words &middot; %%READMIN%% min read</div>
         </td>
       </tr></table>
       {"<div style='margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.28);font-size:13px;color:rgba(255,255,255,0.92);font-family:Georgia,serif;line-height:1.55;'><strong style='color:#FFFFFF;font-size:11px;letter-spacing:1.5px;font-family:Arial,sans-serif;'>RE:</strong>&nbsp; " + re_line + "</div>" if re_line else ""}
@@ -406,7 +406,7 @@ def render(digest: dict) -> str:
             <td width="25%" align="center" style="padding:11px 6px 13px;border-left:1px solid rgba(255,255,255,0.10);">
               <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#8FA0B5;">BOK Rate</div>
               <div style="font-family:{MONO};font-size:16px;font-weight:700;margin-top:3px;">{_esc(str(bok_rate.get("value", "—")))}</div>
-              <div style="font-family:{MONO};font-size:11px;margin-top:2px;"><span style="color:#8FA0B5;">{_esc(str(bok_rate.get("last_change", "")))}</span></div>
+              <div style="font-family:Arial,sans-serif;font-size:11px;margin-top:2px;"><span style="color:#8FA0B5;">{_esc(str(bok_rate.get("last_change", "")))}</span></div>
             </td>
           </tr>
         </table>
@@ -608,12 +608,12 @@ def render(digest: dict) -> str:
                 a_summary = _esc(art.get("summary", ""))
                 a_src = _esc(art.get("source", ""))
                 a_url = art.get("url", "")
-                kim_badge = (f' <span style="font-family:{MONO};font-size:10px;font-weight:700;'
+                kim_badge = (f' <span style="font-family:Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:0.5px;'
                              f'color:{RED_ON_NAVY};letter-spacing:0.5px;">KIM</span>'
                              if art.get("kim_related") else "")
                 src_tag = f" <span style='color:#7B90AC;'>— {a_src}</span>" if a_src else ""
                 art_items += f"""<table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:8px;"><tr>
-                  <td width="24" style="vertical-align:top;font-family:{MONO};font-size:13px;font-weight:700;color:{BLUE_ON_NAVY};padding-top:1px;">{i}.</td>
+                  <td width="24" style="vertical-align:top;font-family:Arial,sans-serif;font-size:13px;font-weight:700;color:{BLUE_ON_NAVY};padding-top:1px;">{i}.</td>
                   <td style="vertical-align:top;">
                     <div style="font-size:13px;font-weight:600;font-family:Georgia,serif;color:#E8E8E8;line-height:1.4;">{_link_or_text(a_headline, a_url, style="font-family:Georgia,serif;color:#E8E8E8;text-decoration:underline;")}{kim_badge}</div>
                     {"<div style='font-size:12px;font-family:Georgia,serif;color:#A8B6C8;line-height:1.5;margin-top:2px;'>" + a_summary + src_tag + "</div>" if a_summary else ""}
@@ -873,7 +873,7 @@ def render(digest: dict) -> str:
           <a name="election"></a>{_sec_label("Election Tracker")}
           <div style="margin-top:6px;">
             <span style="font-size:18px;font-weight:700;color:{INK};">{e_name}</span>
-            <span style="display:inline-block;padding:2px 10px;border-radius:3px;font-family:{MONO};font-size:11px;font-weight:700;color:#fff;background:{urgency_color};margin-left:10px;vertical-align:middle;">{e_days} DAYS</span>
+            <span style="display:inline-block;padding:2px 10px;border-radius:3px;font-family:Arial,sans-serif;letter-spacing:0.5px;font-size:11px;font-weight:700;color:#fff;background:{urgency_color};margin-left:10px;vertical-align:middle;">{e_days} DAYS</span>
           </div>
           <div style="font-size:11px;color:#6B7280;margin-top:4px;">{e_date}</div>
           <div style="font-size:13px;line-height:1.6;font-family:Georgia,serif;color:#4A5260;margin-top:8px;">{e_summary}</div>
@@ -951,7 +951,7 @@ def render(digest: dict) -> str:
             note_text = h_note or "US baseline reciprocal rate on ROK goods"
             if _h_key in _status_pill:
                 pill_bg, pill_fg = _status_pill[_h_key]
-                status_pill = (f'<span style="display:inline-block;font-family:{MONO};font-size:11px;font-weight:700;'
+                status_pill = (f'<span style="display:inline-block;font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:0.5px;'
                                f'letter-spacing:0.5px;padding:2px 8px;border-radius:3px;background:{pill_bg};color:{pill_fg};">{_esc(_h_key)}</span>')
             elif h_status.strip():
                 # long/free-form status -> fold into the note so it reads normally
@@ -965,7 +965,7 @@ def render(digest: dict) -> str:
             else:
                 # Status is the hero (e.g. EXPIRED), muted — not a red percentage.
                 _sw = _esc(_h_key if _h_key in _status_pill else (h_status.strip() or "—"))
-                _hero_lead = f'<span style="font-family:{MONO};font-size:24px;font-weight:700;color:#55607A;letter-spacing:0.5px;vertical-align:middle;">{_sw}</span>'
+                _hero_lead = f'<span style="font-family:Georgia,serif;font-size:24px;font-weight:700;color:#55607A;letter-spacing:0.5px;vertical-align:middle;">{_sw}</span>'
             hero = (f'<div style="margin-bottom:5px;">{_hero_lead}</div>'
                     f'<div style="font-size:13px;color:#5A6472;line-height:1.5;">{note_text}</div>')
 
@@ -1095,7 +1095,7 @@ def render(digest: dict) -> str:
                     chip = ""
                     if st:
                         cbg, cfg = _status_chip.get(st, ("#F1F4F8", "#55607A"))
-                        chip = (f'<span style="display:inline-block;font-family:{MONO};font-size:10px;font-weight:700;'
+                        chip = (f'<span style="display:inline-block;font-family:Arial,sans-serif;letter-spacing:0.5px;font-size:10px;font-weight:700;'
                                 f'letter-spacing:0.5px;padding:1px 5px;border-radius:3px;background:{cbg};color:{cfg};'
                                 f'margin-left:6px;vertical-align:middle;">{_esc(st.upper())}</span>')
                     r_html += (f'<tr style="border-top:1px solid #EAEDF1;">'
@@ -1162,7 +1162,7 @@ def render(digest: dict) -> str:
             item_url = tr.get("url", "")
             st_color = _pol_colors.get(st, "#7F8C8D")
             head = _link_or_text(item_text, item_url, style="color:" + INK + ";text-decoration:none;")
-            status_span = f'<span style="font-family:{MONO};color:{st_color};font-weight:700;">{_esc(st)}</span>'
+            status_span = f'<span style="font-family:Arial,sans-serif;font-weight:700;letter-spacing:0.5px;color:{st_color};">{_esc(st)}</span>'
             meta = " &middot; ".join(b for b in (agency, status_span) if b)
             pol_rows += (f'<tr><td style="padding:8px 0;border-top:1px solid #EAEDF1;">'
                          f'<div style="font-size:13px;font-weight:600;color:{INK};line-height:1.35;">{head}</div>'
@@ -1336,7 +1336,7 @@ def render(digest: dict) -> str:
             spotlight_html = f"""
             <div class="sentiment-spotlight" style="margin-top:10px;padding:8px 12px;background:#F0F5FB;border-radius:3px;border-left:3px solid {TAEGUK_BLUE};font-size:11px;font-family:Georgia,serif;color:#4A5260;line-height:1.5;">
               <strong style="color:{TAEGUK_BLUE};">Gallup Korea Spotlight</strong>
-              <span style="font-family:{MONO};font-size:10px;color:#5A6472;margin-left:6px;">{poll_date}</span><br>
+              <span style="font-family:Arial,sans-serif;font-size:10px;color:#5A6472;margin-left:6px;">{poll_date}</span><br>
               <span style="font-weight:600;">{topic}:</span> {finding}
             </div>"""
 
@@ -1688,7 +1688,7 @@ def render(digest: dict) -> str:
                     b_label += " &#9650;"
                 elif direction == "down":
                     b_label += " &#9660;"
-                status_badge = f'<span style="font-family:{MONO};font-size:11px;font-weight:700;color:{b_color};letter-spacing:0.5px;">{b_label}</span>'
+                status_badge = f'<span style="font-family:Arial,sans-serif;font-size:11px;font-weight:700;color:{b_color};letter-spacing:0.5px;">{b_label}</span>'
                 # Note rendering — style differently for carried-forward vs active
                 note_html = ""
                 if note and "no new reporting" in note.lower():
@@ -1710,7 +1710,7 @@ def render(digest: dict) -> str:
                                           f'(~{_age // 30} mo)</span>')
                     except (ValueError, TypeError):
                         pass
-                last_html = (f'<div style="font-family:{MONO};font-size:11px;color:#6B7280;margin-top:4px;">'
+                last_html = (f'<div style="font-family:Arial,sans-serif;font-size:11px;color:#6B7280;margin-top:4px;">'
                              f'as of {last_source_date}{stale_flag}</div>'
                              if last_source_date and last_source_date != "unknown" else "")
                 row_cards += f"""
@@ -1786,7 +1786,7 @@ def render(digest: dict) -> str:
         </div>
       </td></tr>
       <tr><td style="padding:0 32px 18px;text-align:left;">
-        <div style="font-family:{MONO};font-size:10px;color:rgba(255,255,255,0.38);margin-bottom:9px;">{_issue_meta}generated {gen_time}</div>
+        <div style="font-family:Arial,sans-serif;font-size:10px;letter-spacing:0.5px;color:rgba(255,255,255,0.38);margin-bottom:9px;">{_issue_meta}generated {gen_time}</div>
         <a href="#top" style="font-family:Arial,sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:{BLUE_ON_NAVY};text-decoration:none;">&#8593; Back to top</a>
       </td></tr>
     </table>
