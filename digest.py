@@ -1050,6 +1050,8 @@ def generate_digest(payload: dict, db_context: str = "",
             else:
                 print(f"  ✅  Digest generated: ~{word_count} words, {top_count} top stories, "
                       f"{overnight_count} overnight items")
+                # Recorded so run.py can report what cleanup removes afterwards.
+                digest["_words_at_generation"] = word_count
             return digest
 
         except (anthropic.APIError,) + _RETRYABLE_API_ERRORS as e:
@@ -1133,6 +1135,7 @@ def regenerate_digest(payload: dict, previous_digest: dict,
         new_word_count = _count_digest_words(digest)
         top_count = len(digest.get("top_stories") or [])
         overnight_count = len(digest.get("overnight_items") or [])
+        digest["_words_at_generation"] = new_word_count
         print(f"  ✅  Re-generated: ~{new_word_count} words, {top_count} top stories, "
               f"{overnight_count} overnight items")
         return digest

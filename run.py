@@ -74,15 +74,15 @@ def load_archive_entries(local_path, web_base: str = "") -> tuple[list, bool]:
 SECTION_CAPS = {
     "top_stories":       (2, 4),
     "overnight_items":   (6, 8),
-    "business_economy":  (0, 4),
+    "business_economy":  (0, 6),
     # No minimum: the prompt no longer forces four events, because the
     # verified-date list had been overtaken by time and a hard floor
     # against an empty list is what produces invented dates.
     "calendar_watch":    (0, 5),
     "also_today":        (0, 6),
-    "northeast_asia":    (0, 4),
+    "northeast_asia":    (0, 5),
     "social_statements": (0, 3),
-    "rok_government":    (0, 4),
+    "rok_government":    (0, 6),
     "rok_assembly":      (0, 3),
     "opeds_today":       (0, 3),
     "academic_today":    (0, 2),
@@ -438,14 +438,27 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
     """Pre-send quality gate. Returns list of warnings (empty = all clear)."""
     warnings = []
 
-    # ── Section count checks (hard caps) ─────────────────────────────────
+    # ── Section counts ───────────────────────────────────────────────────
+    # Too FEW items is worth a regeneration: missing reporting cannot be
+    # conjured from the digest we have. Too MANY is not — it is one slice.
+    #
+    # Treating an overage as critical caused a real send failure. A run
+    # produced a perfectly good brief with six government items against a cap
+    # of four; that tripped a full regeneration, which came back with zero
+    # overnight items, which tripped another, which came back 370 words under
+    # the floor. Three regenerations, two dollars, and no brief sent — from a
+    # first attempt whose only fault was two extra items that could have been
+    # dropped in a line of code.
     for section_key, (min_ct, max_ct) in SECTION_CAPS.items():
         items = digest.get(section_key) or []
         label = section_key.upper().replace("_", " ")
         if min_ct and len(items) < min_ct:
             warnings.append(f"{label} CRITICAL: only {len(items)} (min {min_ct})")
         elif len(items) > max_ct:
-            warnings.append(f"{label} CRITICAL: {len(items)} items (max {max_ct})")
+            # The model is asked to order by importance within a section, so
+            # the tail is what it ranked lowest.
+            digest[section_key] = items[:max_ct]
+            warnings.append(f"{label}: {len(items)} items trimmed to {max_ct}")
 
     # ── Morning memo uniqueness check ───────────────────────────────────
     memo_items = digest.get("morning_memo") or []
@@ -1288,6 +1301,21 @@ def main():
 
     validation_passed = False
     for validation_attempt in range(1 + MAX_VALIDATION_RETRIES):
+        # The generation message reports the word count before cleanup, and
+        # cleanup then drops items: duplicates, articles whose URL could not be
+        # repaired, placeholder names, off-date entries. One run printed 2,359
+        # words at generation and 1,689 at validation, which reads like a bug
+        # in one of the counters. Both were right; 670 words had been removed
+        # in between. Saying so turns a confusing gap into a diagnostic — a
+        # large drop means the model is producing a lot the pipeline rejects.
+        _words_now = _count_digest_words(digest_data)
+        _words_gen = digest_data.get("_words_at_generation")
+        if isinstance(_words_gen, int) and _words_gen > _words_now:
+            _lost = _words_gen - _words_now
+            print(f"  🧮  Cleanup removed {_lost} words ({_words_gen} generated, "
+                  f"{_words_now} after dedup and URL repair"
+                  + (f" — {100*_lost/_words_gen:.0f}% of the brief)" if _words_gen else ")"))
+
         # ── Step 2a: Pre-send validation gate ─────────────────────────────────
         validation_warnings = validate_digest(digest_data, payload=payload)
         critical_warnings = [w for w in validation_warnings if "CRITICAL" in w]
