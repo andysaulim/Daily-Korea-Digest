@@ -720,7 +720,8 @@ Return ONLY valid JSON. No markdown fences, no preamble."""
 # MAIN DIGEST FUNCTION
 # ─────────────────────────────────────────────────────────────────────────────
 _TEXT_FIELDS = ("body", "body_text", "summary", "detail", "quote_text",
-                "central_argument", "analyst_note")
+                "central_argument", "analyst_note", "action", "event",
+                "relevance", "activity", "finding")
 
 
 def _count_digest_words(digest: dict) -> int:
@@ -734,18 +735,37 @@ def _count_digest_words(digest: dict) -> int:
                     words += len(v.split())
         elif isinstance(mi, str):
             words += len(mi.split())
+    # Every section that reaches the page. The ministry actions, the trade
+    # status, the calendar, the official posts and On This Day were all
+    # missing, so this under-reported the brief while separately counting
+    # so_what and pattern_note, which had been removed from it. The published
+    # figure was wrong in both directions at once.
     for section_key in ("top_stories", "overnight_items", "also_today", "business_economy",
                          "opeds_today", "academic_today", "social_statements",
-                         "northeast_asia"):
+                         "northeast_asia", "rok_government", "rok_assembly",
+                         "rok_personnel", "calendar_watch", "official_x_posts",
+                         "on_this_day", "bp_locations"):
         for item in (digest.get(section_key) or []):
+            if not isinstance(item, dict):
+                words += len(str(item).split())
+                continue
             for field in _TEXT_FIELDS:
                 val = item.get(field, "")
                 if val:
                     words += len(str(val).split())
     kcna = digest.get("kcna_delta") or {}
-    val = kcna.get("bottom_line", "")
-    if val:
-        words += len(str(val).split())
+    for field in ("bottom_line",):
+        val = kcna.get(field, "")
+        if val:
+            words += len(str(val).split())
+    for off in (kcna.get("senior_officials") or []):
+        if isinstance(off, dict):
+            words += len(str(off.get("activity", "")).split())
+    for quote in (kcna.get("key_quotes") or []):
+        if isinstance(quote, dict):
+            words += len(str(quote.get("quote", "")).split())
+    deals = digest.get("us_korea_deals") or {}
+    words += len(str(deals.get("state_of_play", "")).split())
     return words
 
 

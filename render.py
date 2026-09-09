@@ -264,22 +264,33 @@ def _item_block(cat: str, src: str, headline: str, body: str, url: str,
             </div>"""
 
 
-def _estimate_word_count(digest: dict) -> int:
-    """Rough word count across all text fields for 'X min read' estimate."""
-    words = 0
-    for mi in (digest.get("morning_memo") or []):
-        words += len(str(mi).split())
-    words += len(str(digest.get("re_line", "")).split())
-    for section_key in ("top_stories", "overnight_items", "also_today", "business_economy",
-                         "opeds_today", "academic_today", "social_statements",
-                         "northeast_asia"):
-        for item in (digest.get(section_key) or []):
-            for field in ("body", "body_text", "summary", "detail", "quote_text",
-                          "central_argument", "analyst_note"):
-                words += len(str(item.get(field, "")).split())
-    kcna = digest.get("kcna_delta") or {}
-    words += len(str(kcna.get("bottom_line", "")).split())
-    return words
+_CHROME_WORDS = _re.compile(
+    r"For Internal Use Only|Read online|Download PDF|Past issues|Back to top|"
+    r"Top Stories|Pyongyang|Trade|Markets|Polling|Upcoming|"
+    r"Center for Strategic and International Studies", _re.I)
+
+
+def _count_rendered_words(html_body: str) -> int:
+    """Count the words a reader actually sees.
+
+    The old estimate walked the digest dict and summed a fixed list of fields.
+    It was wrong in both directions at once: it counted `so_what` and
+    `pattern_note`, which were removed from the brief but stayed in the schema,
+    while missing the ministry actions, trade status, calendar, official posts
+    and On This Day, all of which do render. The published word count and the
+    "X min read" beside it were both fiction, and the word-floor check in
+    run.py was measuring the wrong number.
+
+    Counting the assembled HTML cannot drift from what ships. Chrome — the
+    utility links, the section nav, the footer lockup — is excluded so the
+    figure reflects the brief, not the furniture.
+    """
+    text = _re.sub(r"<(script|style)[^>]*>.*?</\1>", " ", html_body, flags=_re.S | _re.I)
+    text = _re.sub(r"<[^>]+>", " ", text)
+    text = text.replace("&middot;", " ").replace("&nbsp;", " ").replace("&amp;", "&")
+    text = _CHROME_WORDS.sub(" ", text)
+    text = _re.sub(r"\s+", " ", text)
+    return len([w for w in text.split() if any(c.isalnum() for c in w)])
 
 
 def render(digest: dict) -> str:
@@ -288,12 +299,12 @@ def render(digest: dict) -> str:
     date_str = now.strftime("%A, %B %-d, %Y")  # Thursday, March 20, 2026
     gen_time = now.strftime("%-I:%M %p ET")
     re_line = _esc(digest.get("re_line", ""))
-    word_count = _estimate_word_count(digest)
+    word_count = 0          # resolved from the assembled body; see %%WORDS%%
     # Issue number, when run.py supplied one, so the brief is citable.
     _issue_no = digest.get("issue_no")
     _issue_meta = (f'No. {int(_issue_no)} &middot; '
                    if isinstance(_issue_no, (int, float)) and _issue_no > 0 else "")
-    read_min = max(1, round(word_count / 250))
+    read_min = 0
 
     web_url = digest.get("web_url", "")
     _b = web_url[:-len("latest.html")] if web_url.endswith("latest.html") else ""
@@ -341,7 +352,7 @@ def render(digest: dict) -> str:
           <div style="margin-top:2px;font-size:16px;font-weight:400;color:rgba(255,255,255,0.85);font-family:Georgia,serif;">{_esc(date_str)}</div>
         </td>
         <td class="mast-meta" style="vertical-align:bottom;text-align:right;">
-          <div style="font-family:{MONO};font-size:11px;color:rgba(255,255,255,0.50);white-space:nowrap;">{_issue_meta}{word_count:,} words &middot; {read_min} min read</div>
+          <div style="font-family:{MONO};font-size:11px;color:rgba(255,255,255,0.50);white-space:nowrap;">{_issue_meta}%%WORDS%% words &middot; %%READMIN%% min read</div>
         </td>
       </tr></table>
       {"<div style='margin-top:14px;padding-top:12px;border-top:1px solid rgba(205,46,58,0.45);font-size:13px;color:rgba(255,255,255,0.92);font-family:Georgia,serif;line-height:1.55;'><strong style='color:" + RED_ON_NAVY + ";font-size:11px;letter-spacing:1.5px;font-family:Arial,sans-serif;'>RE:</strong>&nbsp; " + re_line + "</div>" if re_line else ""}
@@ -1715,6 +1726,13 @@ def render(digest: dict) -> str:
                      'font-size:11px;line-height:1.9;color:#6B7280;" class="sec">'
                      + ' &nbsp;&middot;&nbsp; '.join(_links) + '</div>')
     body = body.replace("%%NAV%%", _nav_html)
+
+    # Count what the body actually says, then stamp it into the masthead.
+    word_count = _count_rendered_words(body)
+    read_min = max(1, round(word_count / 250))
+    body = (body.replace("%%WORDS%%", f"{word_count:,}")
+                .replace("%%READMIN%%", str(read_min)))
+    digest["_word_count"] = word_count      # run.py's floor check reads this
 
     return f"""<!DOCTYPE html>
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">

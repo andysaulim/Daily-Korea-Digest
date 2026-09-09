@@ -1377,7 +1377,8 @@ def main():
         "date": date_slug,
         "headline_re": digest_data.get("re_line", ""),
         "top_stories_count": len(digest_data.get("top_stories") or []),
-        "word_count": _count_digest_words(digest_data),
+        "word_count": digest_data.get("_word_count")
+                       or _count_digest_words(digest_data),
         "url": f"digest_{date_slug}.html",
     })
     archive_json_path.write_text(
@@ -1433,7 +1434,8 @@ def main():
     try:
         metrics = {
             "date": date_slug,
-            "word_count": _count_digest_words(digest_data),
+            "word_count": digest_data.get("_word_count")
+                       or _count_digest_words(digest_data),
             "top_stories": len(digest_data.get("top_stories") or []),
             "overnight_items": len(digest_data.get("overnight_items") or []),
             "business_economy": len(digest_data.get("business_economy") or []),
