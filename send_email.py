@@ -179,46 +179,45 @@ def _parse_recipients(raw: str) -> list:
 
 def build_subject(re_line: Optional[str] = None, lead: Optional[str] = None,
                   now=None, limit: int = 78) -> str:
-    """The subject line, which competes for attention at 6 AM.
+    """The subject line.
 
-    It used to read "Korea Daily Brief · 09/08/2026 — " and then whatever
-    survived of the RE line at 100 characters. Three problems. The first
-    twenty characters, the part a phone actually shows, said only that this
-    was the same brief it is every morning. The numeric date repeated what the
-    client already stamps on the message. And the RE line is a list of
-    fragments, so truncating it at a fixed count cut mid-item and often
-    mid-word.
+    House format: "CSIS Korea Daily Brief | September 9, 2026". A daily brief
+    that arrives at the same hour every morning is found by its name, filtered
+    by its name, and searched by its name, so the name comes first and the
+    date is spelled out rather than left as digits.
 
-    This leads with the news. A short label keeps it searchable and filterable,
-    then the lead story, then the date in words if it still fits. Truncation
-    falls on a word boundary, and the whole line stays inside the width most
-    desktop clients show.
+    It replaced "Korea Daily Brief · 09/08/2026 — " followed by whatever
+    survived of the RE line at a hundred characters, which cut mid-item and
+    often mid-word because the RE line is a list of fragments.
+
+    Setting DIGEST_SUBJECT_STYLE=lead puts the day's lead story after the
+    date instead, for anyone who would rather the subject argue for opening it
+    than name itself. Truncation there falls on a word boundary.
     """
     from zoneinfo import ZoneInfo
     now = now or datetime.now(ZoneInfo("America/New_York"))
-    date_str = now.strftime("%b %-d")
+    date_str = now.strftime("%B %-d, %Y")
+    base = f"CSIS Korea Daily Brief | {date_str}"
 
-    # The lead story if the caller has one, otherwise the first RE fragment,
-    # which is the same editorial judgement one step removed.
+    if (os.environ.get("DIGEST_SUBJECT_STYLE") or "").strip().lower() != "lead":
+        return base
+
     headline = (lead or "").strip()
     if not headline and re_line:
         headline = re.split(r"\s*[·•|]\s*|\s+—\s+", re_line.strip())[0].strip()
     headline = re.sub(r"\s+", " ", headline).rstrip(" .")
-
-    prefix = "Korea Brief"
     if not headline:
-        return f"{prefix} · {date_str}"
+        return base
 
-    tail = f" · {date_str}"
-    room = limit - len(prefix) - 2 - len(tail)
+    room = limit - len(base) - 3
+    if room < 24:
+        return base
     if len(headline) > room:
         cut = headline[:room]
-        # Never end mid-word; drop back to the last space and mark the cut.
         if " " in cut:
             cut = cut[:cut.rindex(" ")]
         headline = cut.rstrip(" ,;:") + "…"
-    return f"{prefix}: {headline}{tail}"
-
+    return f"{base} — {headline}"
 
 def send(html: str, re_line: Optional[str] = None, subject: Optional[str] = None,
          lead: Optional[str] = None,
@@ -233,6 +232,10 @@ def send(html: str, re_line: Optional[str] = None, subject: Optional[str] = None
       GMAIL_FROM        — sending alias (defaults to GMAIL_USER)
       DIGEST_REPLY_TO   — address replies go to (defaults to alim@csis.org)
       DIGEST_VISIBLE_TO — address shown on the To line (defaults to the reply address)
+      DIGEST_FROM_NAME  — display name in the inbox (defaults to "Andy Lim · CSIS Korea Chair")
+      SMTP_HOST/PORT/USER — send through another server, e.g. the institution's
+                        own, which is the only way to make From the work
+                        address when a Gmail alias is not available
     """
     gmail_user = os.environ.get("GMAIL_USER")
     gmail_pass = os.environ.get("GMAIL_APP_PASS")
@@ -248,6 +251,15 @@ def send(html: str, re_line: Optional[str] = None, subject: Optional[str] = None
         return (os.environ.get(name) or "").strip() or default
 
     from_addr = _env("GMAIL_FROM", gmail_user)
+    smtp_host = _env("SMTP_HOST", "smtp.gmail.com")
+    try:
+        smtp_port = int(_env("SMTP_PORT", "465"))
+    except ValueError:
+        smtp_port = 465
+    smtp_user = _env("SMTP_USER", gmail_user)
+    # On the institution's own server the envelope sender is the account that
+    # authenticated, which is also the address the brief should appear from.
+    envelope_from = from_addr if smtp_host != "smtp.gmail.com" else gmail_user
     # Replies go to the desk, not to the mailbox that happens to send. Gmail
     # will only put an unverified alias in From, so the personal address stays
     # there while Reply-To and the visible To carry the work address — a reader
@@ -268,7 +280,13 @@ def send(html: str, re_line: Optional[str] = None, subject: Optional[str] = None
 
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
-    msg["From"] = f"CSIS Korea Chair <{from_addr}>"
+    # Nearly every client lists the display name and hides the address behind
+    # it, so when the sending address cannot be changed the label is the part
+    # that does the work. Naming the person as well as the desk makes a Gmail
+    # address read as deliberate rather than as an oversight, and it is the
+    # name a recipient is looking for when they scan an inbox at 6 AM.
+    from_name = _env("DIGEST_FROM_NAME", "Andy Lim · CSIS Korea Chair")
+    msg["From"] = f"{from_name} <{from_addr}>"
     if reply_to:
         msg["Reply-To"] = f"Andy Lim <{reply_to}>"
     # Everyone is BCC'd, so this header is only what recipients see on the To
@@ -285,9 +303,24 @@ def send(html: str, re_line: Optional[str] = None, subject: Optional[str] = None
     max_retries = 3
     for attempt in range(max_retries):
         try:
-            with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=30) as server:
-                server.login(gmail_user, gmail_pass)
-                server.sendmail(gmail_user, recipients, msg.as_string())
+            # Hardcoding Gmail meant the From address could never be the work
+            # address, because Gmail refuses to send as an alias it has not
+            # verified and that verification is not always available. Pointing
+            # SMTP_HOST at the institution's own server is the real fix: the
+            # brief then sends as alim@csis.org natively, with no alias
+            # involved. Microsoft 365 is smtp.office365.com on port 587, which
+            # needs STARTTLS rather than implicit SSL, so both are supported.
+            if smtp_port == 465:
+                with smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=30) as server:
+                    server.login(smtp_user, gmail_pass)
+                    server.sendmail(envelope_from, recipients, msg.as_string())
+            else:
+                with smtplib.SMTP(smtp_host, smtp_port, timeout=30) as server:
+                    server.ehlo()
+                    server.starttls()
+                    server.ehlo()
+                    server.login(smtp_user, gmail_pass)
+                    server.sendmail(envelope_from, recipients, msg.as_string())
             print(f"  ✅  Sent: {subject}")
             return
         except smtplib.SMTPAuthenticationError as e:

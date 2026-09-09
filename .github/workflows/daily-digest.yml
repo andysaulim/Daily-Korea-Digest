@@ -97,6 +97,14 @@ jobs:
           GMAIL_FROM: ${{ secrets.GMAIL_FROM }}
           DIGEST_REPLY_TO: ${{ secrets.DIGEST_REPLY_TO }}
           DIGEST_VISIBLE_TO: ${{ secrets.DIGEST_VISIBLE_TO }}
+          DIGEST_FROM_NAME: ${{ secrets.DIGEST_FROM_NAME }}
+          DIGEST_SUBJECT_STYLE: ${{ vars.DIGEST_SUBJECT_STYLE }}
+          # Set these three to send through the institution's own server, which
+          # is the only way to make the From address alim@csis.org when a Gmail
+          # alias cannot be verified. Port 587 uses STARTTLS, 465 uses SSL.
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
           X_SCRAPER_KEY: ${{ secrets.X_SCRAPER_KEY }}
           WEB_URL: https://andysaulim.github.io/Daily-Korea-Digest
