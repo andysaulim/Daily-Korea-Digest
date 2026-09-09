@@ -2161,7 +2161,7 @@ def render(digest: dict) -> str:
     }}
     /* Tablet breakpoint — tighten padding, keep grids side-by-side */
     @media only screen and (min-width: 621px) and (max-width: 768px) {{
-      .wrapper {{ width:100% !important; }}
+      .wrapper {{ width:100% !important; max-width:680px !important; }}
       .sec, .footer {{ padding:16px 22px !important; }}
       h1 {{ font-size:22px !important; }}
       .deal-card {{ padding:12px 0 !important; }}
@@ -2186,7 +2186,7 @@ def render(digest: dict) -> str:
     <tr>
       <td align="center" valign="top" style="padding:0;">
         <!--[if mso]><table width="680" cellpadding="0" cellspacing="0" border="0" align="center"><tr><td><![endif]-->
-        <table role="presentation" class="wrapper" width="680" cellpadding="0" cellspacing="0" border="0" align="center" style="width:680px;max-width:680px;margin:0 auto;background:#FFFFFF;font-family:Arial,Helvetica,sans-serif;box-shadow:0 2px 20px rgba(0,0,0,0.08);">
+        <table role="presentation" class="wrapper" width="680" cellpadding="0" cellspacing="0" border="0" align="center" style="width:680px;max-width:100%;margin:0 auto;background:#FFFFFF;font-family:Arial,Helvetica,sans-serif;box-shadow:0 2px 20px rgba(0,0,0,0.08);">
           <tr>
             <td style="padding:0;">
               {body}
