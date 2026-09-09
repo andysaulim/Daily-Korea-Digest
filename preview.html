@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Korea Daily Brief &mdash; Wednesday, September 9, 2026</title>
+  <style type="text/css">
+    /* Reset */
+    body, table, td, div, p { margin:0; padding:0; }
+    img { border:0; display:block; }
+    /* Print - keep FULL colors and the exact on-screen look; only drop page
+       chrome (shadow, page margins). print-color-adjust forces browsers to
+       print background colors instead of stripping them. Works when printing
+       the archived web page or the email via the browser's Print / Save as PDF. */
+    @page { margin: 12mm; }
+    @media print {
+      * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+      html, body { background:#FFFFFF !important; }
+      .wrapper { box-shadow:none !important; width:680px !important; max-width:680px !important; margin:0 auto !important; }
+      a { text-decoration:none !important; }
+      /* Let everything flow across page breaks - avoiding breaks pushes content
+         that doesn't fit to the next page, leaving big empty gaps. */
+      * { page-break-inside: auto !important; }
+      /* Chrome is interface, not brief: a printed page carrying a "Read
+         online" button bar and a jump menu is printing the controls. */
+      .util-row, .nav-row, .no-print { display:none !important; }
+    }
+    /* Mobile responsive - one declaration per pattern; no duplicates.
+       Fixes from the Q3 2026 mobile audit are marked (A#). */
+    @media only screen and (max-width: 620px) {
+      /* Notice and links will not sit side by side on a phone.
+         No width:100% here: a table cell set to display:block already fills
+         its row, and 100% plus horizontal padding is measured content-box,
+         which pushed the whole document 28px wider than the screen and gave
+         every section a horizontal scrollbar. */
+      .util-row .util-cell { display:block !important; text-align:center !important;
+        padding:5px 8px !important; white-space:normal !important; }
+      .flash-table td { display:block !important; width:100% !important;
+        border-bottom:0 !important; padding:2px 0 !important; }
+      .flash-table tr { display:block !important; padding:6px 0 !important;
+        border-bottom:1px solid #EEF0F3 !important; }
+      .util-row .util-cell a { padding:4px 7px !important; margin:1px !important;
+        font-size:11px !important; letter-spacing:0.3px !important; }
+      .wrapper { width:100% !important; }
+      /* The metadata line is nowrap, so sitting beside the title it set a
+         211px floor on the masthead row. A table cannot shrink below the
+         min-content width of its cells, so the whole 680px wrapper stopped at
+         about 325px and every section inherited that floor: the brief scrolled
+         sideways on a 320px screen. Stacked under the date it wraps freely. */
+      /* One nameplate size on a phone across all four briefs. This was the
+         only masthead that never shrank, so it ran wider than its neighbours
+         on the same screen. */
+      h1 { font-size:22px !important; }
+      .mast-main { display:block !important; width:100% !important; }
+      .mast-meta { display:block !important; text-align:left !important;
+        padding-top:8px !important; }
+      .mast-meta div { white-space:normal !important; }
+      /* The CSIS lockup is three cells side by side with rules between them.
+         Its min-content width is 293px, which with the footer padding put a
+         325px floor under the whole table - the last thing still forcing a
+         320px screen to scroll sideways. Stacked and centred it costs three
+         short lines and fits any screen. */
+      .lockup td { display:block !important; border-left:0 !important;
+        text-align:center !important; padding:3px 0 !important; }
+      /* Public Sentiment put the approval hero and three party tiles in one
+         row. On a phone that left each tile 72px, so "RULING PARTY" and
+         "OPPOSITION" ran into each other. Hero above, tiles below, each tile
+         then has about 114px and the labels sit clear. */
+      .sentiment-table > tbody > tr > td { display:block !important;
+        width:100% !important; border-right:0 !important;
+        padding:0 0 12px 0 !important; }
+      .sentiment-table > tbody > tr > td + td { padding:12px 0 0 0 !important;
+        border-top:1px solid #E4E7EB !important; }
+      /* 9px labels are too small to read on a phone. */
+      .cal-table div[style*="font-size:10px"], .lockup td { font-size:10px !important; }
+      .sec, .footer { padding:16px 16px !important; }
+      /* (A4) Masthead keeps presence on phones */
+      h1 { font-size:22px !important; }
+      h2 { font-size:13px !important; }
+      h3 { font-size:14px !important; }
+      .key-stat-num { font-size:26px !important; }
+      /* (A10) Market strip STAYS 3-across on mobile - smaller mono, tighter pad */
+      .mkt-table td { padding:8px 4px 10px !important; }
+      .mkt-table div[style*="font-size:16px"] { font-size:14px !important; }
+      .mkt-table div[style*="font-size:14px"] { font-size:13px !important; }
+      /* (A11) Grids stack - declared once each */
+      .loc-grid td, .gov-grid td { display:block !important; width:100% !important; padding:5px 0 !important; }
+      .loc-grid tr, .gov-grid tr { display:block !important; }
+      .loc-grid div[style*="font-size:10px"] { font-size:11px !important; }
+      /* Calendar watch */
+      .cal-table td[width="50"] { width:40px !important; padding:8px 6px 8px 0 !important; }
+      .cal-date { font-size:16px !important; }
+      /* Deal / business cards */
+      .deal-card { padding:10px 0 !important; }
+      .deal-breakdown td { display:block !important; width:100% !important; padding:2px 8px !important; font-size:11px !important; white-space:normal !important; }
+      .deal-breakdown tr { display:block !important; border-bottom:1px solid #E8EDF3 !important; padding:4px 0 !important; }
+      /* Party tiles, three across under the approval hero. This rule dates
+         from the old four-equal-column layout and still said 47%, which put
+         two tiles on one line and orphaned the third. The outer cells are
+         handled by the stacking rule above, whose selector is more specific. */
+      .sentiment-table table td { display:inline-block !important; width:32% !important;
+        box-sizing:border-box !important; padding:8px 2px !important; text-align:center !important; }
+      /* Trade dashboard strip - stays 3-across like the market strip */
+      .trade-dash td { padding:9px 4px 10px !important; }
+      .trade-dash span[style*="font-size:22px"] { font-size:18px !important; }
+      .trade-dash span[style*="font-size:13px"] { font-size:11px !important; }
+      /* Tariff sector + trade policy tables - stack */
+      .tariff-sector td, .trade-policy td { display:block !important; width:100% !important; padding:3px 8px !important; white-space:normal !important; }
+      .tariff-sector tr { display:block !important; border-bottom:1px solid #F0E0E0 !important; padding:4px 0 !important; }
+      .trade-policy tr { display:block !important; border-bottom:1px solid #E8E8E8 !important; padding:6px 0 !important; }
+      /* Story cards */
+      .story-card { padding:12px 10px !important; }
+      /* (A3) Overflow safety */
+      p, div, td { word-wrap:break-word !important; overflow-wrap:break-word !important; }
+      /* KCNA dark panel */
+      .kcna-dark td { padding-left:16px !important; padding-right:16px !important; }
+      .kcna-dark > div { padding:16px 16px !important; }
+      .kcna-dark table td { white-space:normal !important; word-break:break-word !important; }
+      /* (A2) Legibility floor - real declarations only */
+      body, td, div, p, span { -webkit-text-size-adjust:100%; }
+      div[style*="font-size:10px"], span[style*="font-size:10px"] { font-size:11px !important; }
+      /* (A1) Touch targets via min-height alone; no line-height bloat */
+      a { min-height:44px; }
+      p a, div a, td a { min-height:auto; padding:6px 0; }
+      img { max-width:100% !important; height:auto !important; }
+    }
+    /* Tablet breakpoint - tighten padding, keep grids side-by-side */
+    @media only screen and (min-width: 621px) and (max-width: 768px) {
+      .wrapper { width:100% !important; max-width:680px !important; }
+      .sec, .footer { padding:16px 22px !important; }
+      h1 { font-size:22px !important; }
+      .deal-card { padding:12px 0 !important; }
+      /* (A5) Market strip numbers don't collide at 621px */
+      .mkt-table td { padding:10px 10px 12px !important; }
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background:#121212 !important; }
+      .wrapper { background:#1a1a1a !important; }
+      .wrapper .sec { background:#1E2126 !important; border-bottom-color:#3A4048 !important; }
+      .wrapper .nav-row { background:#1A1D22 !important; border-bottom-color:#3A4048 !important; }
+      .wrapper h1, .wrapper h2, .wrapper h3 { color:#E8E6E1 !important; }
+      .wrapper .footer { background:#0B0E13 !important; }
+      .wrapper .footer-end { background:#1a1a1a !important; }
+      .wrapper .sec-bar { background:#0B0E13 !important; }
+      .wrapper .kcna-dark, .wrapper .kcna-dark table, .wrapper .kcna-dark > div { background:#0A1E38 !important; }
+      .wrapper .item-card, .wrapper .story-card, .wrapper .gov-grid div, .wrapper .loc-grid div { background:#262A30 !important; border-color:#3A4048 !important; }
+      .wrapper .sentiment-spotlight { background:#16222F !important; }
+      .wrapper .sentiment-discourse { background:#2A1518 !important; }
+      .wrapper .mkt-table td { border-color:rgba(255,255,255,0.08) !important; }
+      .wrapper .sentiment-table td, .wrapper .cal-table { border-color:#3A4048 !important; }
+      .wrapper td[style*="border-bottom:1px solid #E8E8E8"], .wrapper table[style*="border-bottom:1px solid #E8E8E8"] { border-color:#3A4048 !important; }
+      .wrapper [style*="color:#0047A0"] { color:#7FB0F0 !important; }
+      .wrapper [style*="color:#1A222E"] { color:#E8E6E1 !important; }
+      .wrapper [style*="color:#1B2A4A"] { color:#D5D8DC !important; }
+      .wrapper [style*="color:#2C3E50"] { color:#D5D8DC !important; }
+      .wrapper [style*="color:#2C3540"] { color:#D5D8DC !important; }
+      .wrapper [style*="color:#4A5260"] { color:#C4C8CE !important; }
+      .wrapper [style*="color:#55607A"] { color:#C4C8CE !important; }
+      .wrapper [style*="color:#5A6472"] { color:#C4C8CE !important; }
+      .wrapper [style*="color:#6B7280"] { color:#9AA3AE !important; }
+      .wrapper [style*="color:#CD2E3A"] { color:#F08A94 !important; }
+      .wrapper [style*="color:#A93226"] { color:#F08A94 !important; }
+      .wrapper [style*="color:#2E7D4F"] { color:#5FBF87 !important; }
+      .wrapper [style*="color:#9A5B00"] { color:#E0A64A !important; }
+      .wrapper [style*="background:#fff"] { background-color:#262A30 !important; }
+      .wrapper [style*="background:#FFFFFF"] { background-color:#262A30 !important; }
+      .wrapper [style*="background:#F0F0F0"] { background-color:#2A2E34 !important; }
+      .wrapper [style*="background:#F7F8FA"] { background-color:#1A1D22 !important; }
+      .wrapper [style*="background:#F5F7FA"] { background-color:#22262C !important; }
+      .wrapper [style*="background:#EDF2FA"] { background-color:#1C2A3E !important; }
+      .wrapper [style*="background:#F0F5FB"] { background-color:#16222F !important; }
+      .wrapper [style*="background:#FBF0F1"] { background-color:#2A1518 !important; }
+      .wrapper [style*="background:#FFFDF7"] { background-color:#2A2519 !important; }
+      .wrapper [style*="background:#FFF8F8"] { background-color:#2A1B1C !important; }
+      .wrapper [style*="background:#FBF3F0"] { background-color:#2A1D15 !important; }
+      .wrapper [style*="background:#EEF3F9"] { background-color:#1C2A3E !important; }
+      .wrapper [style*="background:#E7EBF0"] { background-color:#22262C !important; }
+      .wrapper [style*="background:#E4EFE7"] { background-color:#16281C !important; }
+      .wrapper [style*="background:#F8F9FA"] { background-color:#22262C !important; }
+      .wrapper .pill { background:#E8E6E1 !important; color:#14181F !important; }
+    }
+  </style>
+  <!--[if mso]>
+  <style type="text/css">
+    table { border-collapse:collapse; }
+    .wrapper { width:680px; }
+  </style>
+  <![endif]-->
+</head>
+<body style="margin:0;padding:0;background:#F2F3F5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;">
+  <!-- Centered fixed-width TABLE wrapper (not a max-width div): survives when
+       a client strips the <style> block on forward/reply, so the layout keeps
+       its shape. The .wrapper class lets the mobile media query flex it to
+       100% while the <style> block is present. -->
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0;padding:0;background:#F2F3F5;">
+    <tr>
+      <td align="center" valign="top" style="padding:0;">
+        <!--[if mso]><table width="680" cellpadding="0" cellspacing="0" border="0" align="center"><tr><td><![endif]-->
+        <table role="presentation" class="wrapper" width="680" cellpadding="0" cellspacing="0" border="0" align="center" style="width:680px;max-width:100%;margin:0 auto;background:#FFFFFF;font-family:Arial,Helvetica,sans-serif;box-shadow:0 2px 20px rgba(0,0,0,0.08);">
+          <tr>
+            <td style="padding:0;">
+              
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#2E3644;" class="util-row">
+          <tr>
+            <td class="util-cell" style="padding:7px 32px;font-family:Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.72);white-space:nowrap;">For Internal Use Only</td>
+            <td class="util-cell" align="right" style="padding:5px 32px 5px 0;text-align:right;"><a class="pill" href="https://andysaulim.github.io/Daily-Korea-Digest/latest.html" style="display:inline-block;padding:6px 14px;margin:0 3px;font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:0.5px;color:#14181F;background:#FFFFFF;border-radius:14px;text-decoration:none;white-space:nowrap;">Read online</a><a class="pill" href="https://andysaulim.github.io/Daily-Korea-Digest/latest.pdf" style="display:inline-block;padding:6px 14px;margin:0 3px;font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:0.5px;color:#14181F;background:#FFFFFF;border-radius:14px;text-decoration:none;white-space:nowrap;">Download PDF</a><a class="pill" href="https://andysaulim.github.io/Daily-Korea-Digest/archive.html" style="display:inline-block;padding:6px 14px;margin:0 3px;font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:0.5px;color:#14181F;background:#FFFFFF;border-radius:14px;text-decoration:none;white-space:nowrap;">Past issues</a></td>
+          </tr>
+        </table>
+        
+
+    <a name="top" id="top"></a>
+    <div bgcolor="#0052B4" style="background-color:#0052B4;color:#fff;padding:16px 32px 16px;border-bottom:1px solid rgba(255,255,255,0.18);" class="sec mast-band">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+        <td class="mast-main" style="vertical-align:top;">
+          <div style="font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.78);margin-bottom:7px;">CSIS Korea Chair</div>
+          <h1 style="margin:0 0 4px 0;font-size:26px;font-weight:700;font-family:Georgia,'Times New Roman',serif;color:#fff;letter-spacing:0.5px;">
+            Korea Daily Brief
+          </h1>
+          <div style="margin-top:2px;font-size:16px;font-weight:400;color:rgba(255,255,255,0.85);font-family:Georgia,serif;">Wednesday, September 9, 2026</div>
+        </td>
+        <td class="mast-meta" style="vertical-align:bottom;text-align:right;">
+          <div style="font-family:Arial,sans-serif;font-size:11px;letter-spacing:0.5px;color:rgba(255,255,255,0.72);white-space:nowrap;">No. 168 &middot; 553 words &middot; 2 min read</div>
+        </td>
+      </tr></table>
+      <div style='margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.28);font-size:13px;color:rgba(255,255,255,0.92);font-family:Georgia,serif;line-height:1.55;'><strong style='color:#FFFFFF;font-size:11px;letter-spacing:1.5px;font-family:Arial,sans-serif;'>RE:</strong>&nbsp; DPRK destroyer commissioned · Kang Kon enters East Sea · Lee in Paris</div>
+    </div>
+    
+
+        <a name="markets" id="markets"></a>
+        <table class="mkt-table" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#051F3D;color:#fff;border-bottom:1px solid rgba(255,255,255,0.10);">
+          <tr>
+            <td width="25%" align="center" style="padding:11px 6px 13px;">
+              <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#8FA0B5;">KOSPI</div>
+              <div style="font-family:'Courier New',Courier,monospace;font-size:16px;font-weight:700;margin-top:3px;">2,714.30</div>
+              <div style="font-family:'Courier New',Courier,monospace;font-size:11px;margin-top:2px;"><span style="color:#69C88E;">&#9650; +0.8%</span></div>
+            </td>
+            <td width="25%" align="center" style="padding:11px 6px 13px;border-left:1px solid rgba(255,255,255,0.10);">
+              <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#8FA0B5;">USD/KRW</div>
+              <div style="font-family:'Courier New',Courier,monospace;font-size:16px;font-weight:700;margin-top:3px;">1,338.20</div>
+              <div style="font-family:'Courier New',Courier,monospace;font-size:11px;margin-top:2px;"><span style="color:#E8697A;">&#9660; -0.3%</span></div>
+            </td>
+            <td width="25%" align="center" style="padding:11px 6px 13px;border-left:1px solid rgba(255,255,255,0.10);">
+              <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#8FA0B5;">Brent</div>
+              <div style="font-family:'Courier New',Courier,monospace;font-size:16px;font-weight:700;margin-top:3px;">$72.40</div>
+              <div style="font-family:'Courier New',Courier,monospace;font-size:11px;margin-top:2px;"><span style="color:#E8697A;">&#9660; -1.1%</span></div>
+            </td>
+            <td width="25%" align="center" style="padding:11px 6px 13px;border-left:1px solid rgba(255,255,255,0.10);">
+              <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#8FA0B5;">BOK Rate</div>
+              <div style="font-family:'Courier New',Courier,monospace;font-size:16px;font-weight:700;margin-top:3px;">—</div>
+              <div style="font-family:Arial,sans-serif;font-size:11px;margin-top:2px;"><span style="color:#8FA0B5;"></span></div>
+            </td>
+          </tr>
+        </table>
+        
+<div class="nav-row sec" style="background:#F7F8FA;border-bottom:1px solid #E4E7EB;padding:9px 32px;text-align:center;font-family:Arial,sans-serif;font-size:11px;line-height:1.9;color:#6B7280;"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#6B7280;">In this issue &nbsp;</span><a href="#top-stories" style="color:#0047A0;text-decoration:underline;text-underline-offset:2px;white-space:nowrap;">Top Stories</a> &nbsp;&middot;&nbsp; <a href="#overnight" style="color:#0047A0;text-decoration:underline;text-underline-offset:2px;white-space:nowrap;">Overnight</a> &nbsp;&middot;&nbsp; <a href="#rok-gov" style="color:#0047A0;text-decoration:underline;text-underline-offset:2px;white-space:nowrap;">Seoul</a> &nbsp;&middot;&nbsp; <a href="#sentiment" style="color:#0047A0;text-decoration:underline;text-underline-offset:2px;white-space:nowrap;">Polling</a> &nbsp;&middot;&nbsp; <a href="#upcoming" style="color:#0047A0;text-decoration:underline;text-underline-offset:2px;white-space:nowrap;">Upcoming</a> &nbsp;&middot;&nbsp; <a href="#satellite" style="color:#0047A0;text-decoration:underline;text-underline-offset:2px;white-space:nowrap;">Satellite</a></div>
+
+        <div style="padding:18px 32px 6px;" class="sec">
+          <a name="memo" id="memo"></a>
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" class="glance-panel" style="background:#EDF2FA;border-left:3px solid #0047A0;">
+            <tr><td style="padding:0;"><table width="100%" cellpadding="0" cellspacing="0" border="0" class="sec-bar" style="background:#14181F;margin-bottom:14px;"><tr><td style="padding:9px 14px;"><span style="font-family:Arial,sans-serif;font-size:12px;color:#167EFF;line-height:1;vertical-align:middle;margin-right:9px;">&#9675;</span><span style="font-family:Arial,sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#FFFFFF;vertical-align:middle;">Today at a Glance</span></td></tr></table></td></tr>
+            <tr><td style="padding:0 20px 8px;">
+              
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:10px;">
+              <tr>
+                <td width="28" style="vertical-align:top;padding-top:2px;">
+                  <div style="width:24px;height:24px;border-radius:50%;background:#0047A0;color:#FFFFFF;text-align:center;line-height:24px;font-size:13px;font-weight:700;font-family:Georgia,serif;">1</div>
+                </td>
+                <td style="padding-left:10px;vertical-align:top;">
+                  <div style="font-size:14px;line-height:1.6;color:#2C3E50;font-family:Georgia,serif;"><strong style="font-weight:700;">Lee Jae-myung</strong> approved a defence request up <em>more than 8 percent</em>, the largest single-year rise since 2017.</div>
+                </td>
+              </tr>
+            </table>
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:10px;">
+              <tr>
+                <td width="28" style="vertical-align:top;padding-top:2px;">
+                  <div style="width:24px;height:24px;border-radius:50%;background:#0047A0;color:#FFFFFF;text-align:center;line-height:24px;font-size:13px;font-weight:700;font-family:Georgia,serif;">2</div>
+                </td>
+                <td style="padding-left:10px;vertical-align:top;">
+                  <div style="font-size:14px;line-height:1.6;color:#2C3E50;font-family:Georgia,serif;"><strong style="font-weight:700;">Kim Jong Un</strong> has not appeared publicly in twelve days.</div>
+                </td>
+              </tr>
+            </table>
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:10px;">
+              <tr>
+                <td width="28" style="vertical-align:top;padding-top:2px;">
+                  <div style="width:24px;height:24px;border-radius:50%;background:#0047A0;color:#FFFFFF;text-align:center;line-height:24px;font-size:13px;font-weight:700;font-family:Georgia,serif;">3</div>
+                </td>
+                <td style="padding-left:10px;vertical-align:top;">
+                  <div style="font-size:14px;line-height:1.6;color:#2C3E50;font-family:Georgia,serif;">Seoul and Washington opened a fourth round of tariff talks with no joint statement.</div>
+                </td>
+              </tr>
+            </table>
+            </td></tr>
+          </table>
+        </div>
+        
+
+        <div style="padding:20px 32px;border-bottom:1px solid #EBEBEB;" class="sec">
+          <a name="top-stories" id="top-stories"></a><table width="100%" cellpadding="0" cellspacing="0" border="0" class="sec-bar" style="background:#14181F;margin-bottom:14px;"><tr><td style="padding:9px 14px;"><span style="font-family:Arial,sans-serif;font-size:12px;color:#167EFF;line-height:1;vertical-align:middle;margin-right:9px;">&#9675;</span><span style="font-family:Arial,sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#FFFFFF;vertical-align:middle;">Top Stories</span></td></tr></table>
+          
+            <div class="item-card story-card" style="margin-bottom:12px;padding:14px 16px;background:#fff;border-radius:3px;border-left:3px solid #0047A0;border-top:1px solid #EEF0F3;border-right:1px solid #EEF0F3;border-bottom:1px solid #EEF0F3;">
+              <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#0047A0;font-weight:700;margin-bottom:4px;">Security</div>
+              <h3 style="margin:0 0 6px 0;font-size:16px;font-weight:600;color:#1A222E;font-family:Georgia,serif;line-height:1.4;">
+                <a href="https://example.org/1" style="color:#1B2A4A;text-decoration:underline;text-underline-offset:2px;">Cabinet clears record defence request</a>
+              </h3>
+              <p style="margin:0 0 6px 0;font-size:13px;line-height:1.6;font-family:Georgia,serif;color:#4A5260;"><strong style="font-weight:700;">Lee Jae-myung</strong> approved a 2027 request rising <em>more than 8 percent</em>. The National Assembly takes it up next month.</p>
+              <div style="font-size:11px;color:#6B7280;margin-top:4px;">per Yonhap: &quot;Cabinet approves record defence budget&quot;</div>
+            </div>
+            <div class="item-card story-card" style="margin-bottom:12px;padding:14px 16px;background:#fff;border-radius:3px;border-left:3px solid #0047A0;border-top:1px solid #EEF0F3;border-right:1px solid #EEF0F3;border-bottom:1px solid #EEF0F3;">
+              <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#0047A0;font-weight:700;margin-bottom:4px;">Economy</div>
+              <h3 style="margin:0 0 6px 0;font-size:16px;font-weight:600;color:#1A222E;font-family:Georgia,serif;line-height:1.4;">
+                <a href="https://example.org/2" style="color:#1B2A4A;text-decoration:underline;text-underline-offset:2px;">Bank of Korea holds at 2.50 percent</a>
+              </h3>
+              <p style="margin:0 0 6px 0;font-size:13px;line-height:1.6;font-family:Georgia,serif;color:#4A5260;">The board held for a third meeting, citing household debt. Governor <strong style="font-weight:700;">Rhee Chang-yong</strong> said the bar for a cut had risen.</p>
+              <div style="font-size:11px;color:#6B7280;margin-top:4px;">per Reuters: &quot;Bank of Korea holds&quot;</div>
+            </div>
+        </div>
+        
+
+        <div style="padding:20px 32px;border-bottom:1px solid #EBEBEB;" class="sec">
+          <a name="overnight" id="overnight"></a><table width="100%" cellpadding="0" cellspacing="0" border="0" class="sec-bar" style="background:#14181F;margin-bottom:14px;"><tr><td style="padding:9px 14px;"><span style="font-family:Arial,sans-serif;font-size:12px;color:#167EFF;line-height:1;vertical-align:middle;margin-right:9px;">&#9675;</span><span style="font-family:Arial,sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#FFFFFF;vertical-align:middle;">Overnight</span></td></tr></table>
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" class="flash-table" style="border-top:2px solid #0047A0;"><tr><td style="padding:7px 10px 7px 0;vertical-align:top;white-space:nowrap;font-family:Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#0047A0;border-bottom:1px solid #EEF0F3;">DPRK</td><td style="padding:7px 0;vertical-align:top;font-family:Georgia,serif;font-size:13px;line-height:1.45;color:#1A222E;border-bottom:1px solid #EEF0F3;"><a href="https://example.org/3" style="color:#1B2A4A;text-decoration:underline;text-underline-offset:2px;">KCNA marks the founding anniversary without a parade</a><span style="color:#6B7280;"> &mdash; No military display reported.</span><span style="font-family:Arial,sans-serif;font-size:11px;color:#6B7280;"> &middot; KCNA Watch</span></td></tr><tr><td style="padding:7px 10px 7px 0;vertical-align:top;white-space:nowrap;font-family:Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#0047A0;border-bottom:1px solid #EEF0F3;">Trade</td><td style="padding:7px 0;vertical-align:top;font-family:Georgia,serif;font-size:13px;line-height:1.45;color:#1A222E;border-bottom:1px solid #EEF0F3;"><a href="https://example.org/4" style="color:#1B2A4A;text-decoration:underline;text-underline-offset:2px;">Fourth round of tariff talks opens</a><span style="color:#6B7280;"> &mdash; No joint statement issued.</span><span style="font-family:Arial,sans-serif;font-size:11px;color:#6B7280;"> &middot; Korea Herald</span></td></tr><tr><td style="padding:7px 10px 7px 0;vertical-align:top;white-space:nowrap;font-family:Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;color:#0047A0;border-bottom:1px solid #EEF0F3;">Region</td><td style="padding:7px 0;vertical-align:top;font-family:Georgia,serif;font-size:13px;line-height:1.45;color:#1A222E;border-bottom:1px solid #EEF0F3;"><a href="https://example.org/5" style="color:#1B2A4A;text-decoration:underline;text-underline-offset:2px;">Japan and China resume maritime consultations</a><span style="color:#6B7280;"> &mdash; First meeting since March.</span><span style="font-family:Arial,sans-serif;font-size:11px;color:#6B7280;"> &middot; Kyodo</span></td></tr></table>
+        </div>
+        
+
+        <a name="key-stat" id="key-stat"></a>
+        <div style="padding:20px 32px;border-bottom:1px solid #EBEBEB;" class="sec">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" class="sec-bar" style="background:#14181F;margin-bottom:14px;"><tr><td style="padding:9px 14px;"><span style="font-family:Arial,sans-serif;font-size:12px;color:#167EFF;line-height:1;vertical-align:middle;margin-right:9px;">&#9675;</span><span style="font-family:Arial,sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#FFFFFF;vertical-align:middle;">Stat of the Day</span></td></tr></table>
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#EEF3F9;border-left:3px solid #0047A0;border-radius:3px;">
+            <tr><td style="padding:14px 16px;">
+              <div style="font-family:Georgia,serif;font-size:26px;font-weight:700;color:#0047A0;line-height:1;">8.2%</div>
+              <div style="font-family:Georgia,serif;font-size:14px;color:#1A222E;margin-top:5px;line-height:1.4;">Rise in the 2027 defence budget request</div>
+              <div style='font-family:Georgia,serif;font-size:13px;color:#4A5260;margin-top:4px;line-height:1.5;'>Largest single-year increase since 2017.</div>
+              <div style='font-family:Arial,sans-serif;font-size:11px;color:#55607A;margin-top:7px;'>Ministry of Economy and Finance</div>
+            </td></tr>
+          </table>
+        </div>
+        
+
+        <div style="padding:20px 32px;border-bottom:1px solid #EBEBEB;" class="sec">
+          <a name="rok-gov" id="rok-gov"></a><table width="100%" cellpadding="0" cellspacing="0" border="0" class="sec-bar" style="background:#14181F;margin-bottom:14px;"><tr><td style="padding:9px 14px;"><span style="font-family:Arial,sans-serif;font-size:12px;color:#167EFF;line-height:1;vertical-align:middle;margin-right:9px;">&#9675;</span><span style="font-family:Arial,sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#FFFFFF;vertical-align:middle;">ROK Government</span></td></tr></table>
+          <div style="font-size:10px;color:#6B7280;font-family:Arial,sans-serif;margin-top:-10px;margin-bottom:10px;">President + Ministries &middot; </div>
+          <div style="padding-top:4px;">
+            
+            
+            
+          </div>
+        </div>
+        
+
+        <div style="padding:20px 32px;border-bottom:1px solid #EBEBEB;" class="sec">
+          <a name="sentiment" id="sentiment"></a><table width="100%" cellpadding="0" cellspacing="0" border="0" class="sec-bar" style="background:#14181F;margin-bottom:14px;"><tr><td style="padding:9px 14px;"><span style="font-family:Arial,sans-serif;font-size:12px;color:#167EFF;line-height:1;vertical-align:middle;margin-right:9px;">&#9675;</span><span style="font-family:Arial,sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#FFFFFF;vertical-align:middle;">Public Sentiment</span></td></tr></table>
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" class="sentiment-table">
+            <tr>
+              <td width="42%" valign="top" style="padding:4px 18px 4px 0;border-right:1px solid #E4E7EB;">
+                <div style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:#6B7280;font-family:Arial,sans-serif;">Presidential approval</div>
+                <div class="hero-num" style="font-family:Georgia,serif;font-size:42px;font-weight:700;color:#0047A0;line-height:1.05;margin-top:4px;">40%</div>
+                <div style="font-family:Arial,sans-serif;font-size:11px;color:#A93226;margin-top:4px;white-space:nowrap;">&#9660; 2 pts<span style="color:#6B7280;"> vs Aug 25-27</span></div>
+                <div style="font-size:11px;color:#6B7280;font-family:Arial,sans-serif;margin-top:5px;">Gallup Korea &middot; Sep 4, 2026</div>
+                
+              </td>
+              <td valign="top" style="padding:4px 0 4px 18px;">
+                <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    
+                    <td width="33%" valign="top" align="center" style="padding:2px 4px;">
+                      <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#6B7280;font-family:Arial,sans-serif;white-space:nowrap;">Ruling</div>
+                      <div style="font-size:11px;line-height:1.4;color:#6B7280;font-family:Arial,sans-serif;">Democratic</div>
+                      <div style="font-family:Georgia,serif;font-size:22px;font-weight:700;color:#1A222E;margin-top:6px;line-height:1;">38%</div>
+                    </td>
+                    
+                    <td width="33%" valign="top" align="center" style="padding:2px 4px;">
+                      <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#6B7280;font-family:Arial,sans-serif;white-space:nowrap;">Opposition</div>
+                      <div style="font-size:11px;line-height:1.4;color:#6B7280;font-family:Arial,sans-serif;">People Power</div>
+                      <div style="font-family:Georgia,serif;font-size:22px;font-weight:700;color:#1A222E;margin-top:6px;line-height:1;">31%</div>
+                    </td>
+                    
+                    <td width="33%" valign="top" align="center" style="padding:2px 4px;">
+                      <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#6B7280;font-family:Arial,sans-serif;white-space:nowrap;">Independents</div>
+                      <div style="font-size:11px;line-height:1.4;color:#6B7280;font-family:Arial,sans-serif;">&nbsp;</div>
+                      <div style="font-family:Georgia,serif;font-size:22px;font-weight:700;color:#1A222E;margin-top:6px;line-height:1;">24%</div>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+          
+          
+          
+        </div>
+        
+
+        <div style="padding:20px 32px;border-bottom:1px solid #EBEBEB;" class="sec">
+          <a name="upcoming" id="upcoming"></a><table width="100%" cellpadding="0" cellspacing="0" border="0" class="sec-bar" style="background:#14181F;margin-bottom:14px;"><tr><td style="padding:9px 14px;"><span style="font-family:Arial,sans-serif;font-size:12px;color:#167EFF;line-height:1;vertical-align:middle;margin-right:9px;">&#9675;</span><span style="font-family:Arial,sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#FFFFFF;vertical-align:middle;">Upcoming</span></td></tr></table>
+          
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-bottom:1px solid #E8E8E8;">
+              <tr>
+                <td width="54" style="padding:9px 12px 9px 0;vertical-align:top;">
+                  <table cellpadding="0" cellspacing="0" border="0" style="background:#0047A0;">
+                    <tr><td align="center" style="padding:4px 0 5px;width:46px;">
+                      <div style="font-family:Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;color:rgba(255,255,255,0.82);">Sep</div>
+                      <div style="font-family:Georgia,serif;font-size:16px;font-weight:700;color:#fff;line-height:1;">9</div>
+                    </td></tr>
+                  </table>
+                </td>
+                <td style="padding:9px 0;vertical-align:top;">
+                  <div style="font-family:Georgia,serif;font-size:14px;font-weight:700;color:#1B2A4A;">DPRK founding day</div>
+                  <div style="font-family:Georgia,serif;font-size:13px;line-height:1.45;color:#4A5260;margin-top:3px;">Parades and weapons displays have historically clustered on this date.</div>
+                </td>
+              </tr>
+            </table>
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-bottom:1px solid #E8E8E8;">
+              <tr>
+                <td width="54" style="padding:9px 12px 9px 0;vertical-align:top;">
+                  <table cellpadding="0" cellspacing="0" border="0" style="background:#0047A0;">
+                    <tr><td align="center" style="padding:4px 0 5px;width:46px;">
+                      <div style="font-family:Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;color:rgba(255,255,255,0.82);">Sep</div>
+                      <div style="font-family:Georgia,serif;font-size:16px;font-weight:700;color:#fff;line-height:1;">12</div>
+                    </td></tr>
+                  </table>
+                </td>
+                <td style="padding:9px 0;vertical-align:top;">
+                  <div style="font-family:Georgia,serif;font-size:14px;font-weight:700;color:#1B2A4A;">PIF leaders meet</div>
+                  <div style="font-family:Georgia,serif;font-size:13px;line-height:1.45;color:#4A5260;margin-top:3px;">First since the pact.</div>
+                </td>
+              </tr>
+            </table>
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-bottom:1px solid #E8E8E8;">
+              <tr>
+                <td width="54" style="padding:9px 12px 9px 0;vertical-align:top;">
+                  <table cellpadding="0" cellspacing="0" border="0" style="background:#0047A0;">
+                    <tr><td align="center" style="padding:4px 0 5px;width:46px;">
+                      <div style="font-family:Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;color:rgba(255,255,255,0.82);">Oct</div>
+                      <div style="font-family:Georgia,serif;font-size:16px;font-weight:700;color:#fff;line-height:1;">3</div>
+                    </td></tr>
+                  </table>
+                </td>
+                <td style="padding:9px 0;vertical-align:top;">
+                  <div style="font-family:Georgia,serif;font-size:14px;font-weight:700;color:#1B2A4A;">National Foundation Day (개천절)</div>
+                  <div style="font-family:Georgia,serif;font-size:13px;line-height:1.45;color:#4A5260;margin-top:3px;">ROK national holiday.</div>
+                </td>
+              </tr>
+            </table>
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-bottom:1px solid #E8E8E8;">
+              <tr>
+                <td width="54" style="padding:9px 12px 9px 0;vertical-align:top;">
+                  <table cellpadding="0" cellspacing="0" border="0" style="background:#0047A0;">
+                    <tr><td align="center" style="padding:4px 0 5px;width:46px;">
+                      <div style="font-family:Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;color:rgba(255,255,255,0.82);">Oct</div>
+                      <div style="font-family:Georgia,serif;font-size:16px;font-weight:700;color:#fff;line-height:1;">9</div>
+                    </td></tr>
+                  </table>
+                </td>
+                <td style="padding:9px 0;vertical-align:top;">
+                  <div style="font-family:Georgia,serif;font-size:14px;font-weight:700;color:#1B2A4A;">Hangul Day (한글날)</div>
+                  <div style="font-family:Georgia,serif;font-size:13px;line-height:1.45;color:#4A5260;margin-top:3px;">ROK national holiday.</div>
+                </td>
+              </tr>
+            </table>
+        </div>
+        
+
+        <div style="padding:20px 32px;border-bottom:1px solid #EBEBEB;" class="sec">
+          <a name="wire" id="wire"></a><table width="100%" cellpadding="0" cellspacing="0" border="0" class="sec-bar" style="background:#14181F;margin-bottom:14px;"><tr><td style="padding:9px 14px;"><span style="font-family:Arial,sans-serif;font-size:12px;color:#167EFF;line-height:1;vertical-align:middle;margin-right:9px;">&#9675;</span><span style="font-family:Arial,sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#FFFFFF;vertical-align:middle;">The Wire</span></td></tr></table>
+          <div style="font-family:Arial,sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#55607A;margin:18px 0 9px;padding-bottom:5px;border-bottom:1px solid #E4E7EB;">Trade</div><div style="margin-bottom:11px;padding-left:12px;border-left:3px solid #0047A0;"><div style="font-family:Arial,sans-serif;font-size:10px;color:#6B7280;text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:2px;">Korea Customs</div><div style="font-family:Georgia,serif;font-size:14px;font-weight:600;color:#1A222E;line-height:1.4;"><a href="https://example.org/6" style="color:#1B2A4A;text-decoration:underline;text-underline-offset:2px;">Customs reports a narrower September deficit</a></div><div style="font-family:Georgia,serif;font-size:13px;line-height:1.5;color:#4A5260;margin-top:2px;">Semiconductors led exports.</div></div><div style="font-family:Arial,sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#55607A;margin:18px 0 9px;padding-bottom:5px;border-bottom:1px solid #E4E7EB;">Politics</div><div style="margin-bottom:11px;padding-left:12px;border-left:3px solid #0047A0;"><div style="font-family:Arial,sans-serif;font-size:10px;color:#6B7280;text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:2px;">Newsis</div><div style="font-family:Georgia,serif;font-size:14px;font-weight:600;color:#1A222E;line-height:1.4;"><a href="https://example.org/7" style="color:#1B2A4A;text-decoration:underline;text-underline-offset:2px;">Assembly committee sets a budget hearing</a></div><div style="font-family:Georgia,serif;font-size:13px;line-height:1.5;color:#4A5260;margin-top:2px;">Testimony begins next week.</div></div>
+        </div>
+        
+
+        <div style="padding:20px 32px;border-bottom:1px solid #EBEBEB;" class="sec">
+          <a name="satellite" id="satellite"></a><table width="100%" cellpadding="0" cellspacing="0" border="0" class="sec-bar" style="background:#14181F;margin-bottom:14px;"><tr><td style="padding:9px 14px;"><span style="font-family:Arial,sans-serif;font-size:12px;color:#167EFF;line-height:1;vertical-align:middle;margin-right:9px;">&#9675;</span><span style="font-family:Arial,sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#FFFFFF;vertical-align:middle;">Satellite &amp; Location Watch</span></td></tr></table>
+          <div style="font-size:11px;color:#6B7280;margin-top:6px;margin-bottom:12px;">1 of 2 sites at elevated or alert status</div>
+          
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" class="loc-grid">
+            <tr>
+                <td style="width:50%;padding:4px;vertical-align:top;" height="100%">
+                  <!-- The card fills its cell. Two <td>s in a row are already
+                       the same height, but a <div> inside one only grows to fit
+                       its own text, so a short note left a stub card beside a
+                       tall one and the row looked broken. A nested table set to
+                       height:100% stretches, which is the one way to do this
+                       that Outlook honours. -->
+                  <table width="100%" cellpadding="0" cellspacing="0" border="0" height="100%" style="height:100%;">
+                    <tr><td style="background:#FFFDF7;border:1px solid #E4E7EB;border-left:3px solid #9A5B00;border-radius:3px;padding:11px 13px;vertical-align:top;">
+                      <div style="font-family:Arial,sans-serif;font-size:10px;font-weight:700;color:#9A5B00;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:5px;">ELEVATED &#9650;</div>
+                      <div style="font-family:Georgia,serif;font-size:14px;font-weight:700;color:#1A222E;line-height:1.3;">Yongbyon Nuclear Complex</div>
+                      <div style="font-family:Georgia,serif;font-size:13px;line-height:1.5;color:#4A5260;margin-top:5px;">Thermal signatures consistent with a reprocessing campaign.</div>
+                      <div style="font-family:Arial,sans-serif;font-size:11px;color:#6B7280;margin-top:7px;">imagery as of <span style="font-family:'Courier New',Courier,monospace;">2026-09-05</span></div>
+                    </td></tr>
+                  </table>
+                </td>
+                <td style="width:50%;padding:4px;vertical-align:top;" height="100%">
+                  <!-- The card fills its cell. Two <td>s in a row are already
+                       the same height, but a <div> inside one only grows to fit
+                       its own text, so a short note left a stub card beside a
+                       tall one and the row looked broken. A nested table set to
+                       height:100% stretches, which is the one way to do this
+                       that Outlook honours. -->
+                  <table width="100%" cellpadding="0" cellspacing="0" border="0" height="100%" style="height:100%;">
+                    <tr><td style="background:#FFFFFF;border:1px solid #E4E7EB;border-left:3px solid #0047A0;border-radius:3px;padding:11px 13px;vertical-align:top;">
+                      <div style="font-family:Arial,sans-serif;font-size:10px;font-weight:700;color:#0047A0;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:5px;">ACTIVITY</div>
+                      <div style="font-family:Georgia,serif;font-size:14px;font-weight:700;color:#1A222E;line-height:1.3;">Sohae Satellite Launching Station</div>
+                      <div style="font-family:Georgia,serif;font-size:13px;line-height:1.5;color:#4A5260;margin-top:5px;">Vehicle movement at the assembly building.</div>
+                      <div style="font-family:Arial,sans-serif;font-size:11px;color:#6B7280;margin-top:7px;">imagery as of <span style="font-family:'Courier New',Courier,monospace;">2026-09-07</span></div>
+                    </td></tr>
+                  </table>
+                </td></tr>
+          </table>
+          
+        </div>
+        
+
+    <!-- Black, not the band colour. The accent belongs to the masthead: used
+         at both ends it stops being identity and becomes decoration, and the
+         brief gains a second thing competing for the eye at the moment it
+         should be closing. The hierarchy runs identity, then why you have
+         this, then what you can do with it, then the legal line - and the
+         legal line breaks onto white so the document ends rather than
+         trailing off. -->
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" class="sec footer" style="background:#14181F;border-top:3px solid #CD2E3A;">
+      
+      <tr><td style="padding:26px 32px 6px;text-align:center;">
+        <!-- CSIS Korea Chair lockup, built in HTML rather than as an image:
+             mail clients block images by default, and a blocked logo is a
+             broken logo. This always renders, scales, and stays legible in
+             dark mode. -->
+        <table class="lockup" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto;"><tr>
+          <td style="padding-right:14px;font-family:Georgia,'Times New Roman',serif;font-size:38px;letter-spacing:3px;color:#FFFFFF;line-height:1;">CSIS</td>
+          <td style="border-left:1px solid rgba(255,255,255,0.45);padding:3px 14px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.82);line-height:1.4;text-align:left;">Geopolitics and Foreign<br>Policy Department</td>
+          <td style="border-left:1px solid rgba(255,255,255,0.45);padding:3px 0 3px 14px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.82);line-height:1.4;text-align:left;">Korea<br>Chair</td>
+        </tr></table>
+        <div style="font-family:Georgia,serif;font-size:13px;color:rgba(255,255,255,0.72);margin-top:14px;">Washington, D.C.</div>
+      </td></tr>
+      <tr><td style="padding:16px 32px 4px;text-align:center;">
+        <div style="font-family:Georgia,serif;font-size:13px;line-height:1.6;color:rgba(255,255,255,0.80);max-width:520px;margin:0 auto;">
+          You are receiving the Korea Daily Brief as a member of the CSIS Korea Chair distribution list.
+        </div>
+      </td></tr>
+      <tr><td style="padding:14px 32px 4px;text-align:center;">
+        <a class="pill" href="https://andysaulim.github.io/Daily-Korea-Digest/latest.html" style="display:inline-block;padding:6px 15px;margin:0 4px;font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:0.5px;color:#14181F;background:#FFFFFF;border-radius:14px;text-decoration:none;white-space:nowrap;">Read online</a>
+        <a class="pill" href="https://andysaulim.github.io/Daily-Korea-Digest/archive.html" style="display:inline-block;padding:6px 15px;margin:0 4px;font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:0.5px;color:#14181F;background:#FFFFFF;border-radius:14px;text-decoration:none;white-space:nowrap;">Past issues</a><a class="pill" href="https://andysaulim.github.io/Daily-Korea-Digest/trade.html" style="display:inline-block;padding:6px 15px;margin:0 4px;font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:0.5px;color:#14181F;background:#FFFFFF;border-radius:14px;text-decoration:none;white-space:nowrap;">Trade reference</a>
+      </td></tr>
+      <tr><td style="padding:18px 32px 22px;text-align:center;">
+        <div style="border-top:1px solid rgba(255,255,255,0.14);padding-top:14px;text-align:center;font-family:Georgia,serif;font-size:13px;line-height:1.6;color:rgba(255,255,255,0.72);max-width:520px;margin:0 auto;">
+          This newsletter is automatically generated, so it may contain errors. Please check all information and sources before citing.
+          To report errors or other issues, please contact Andy Lim at <a href="mailto:alim@csis.org" style="color:rgba(255,255,255,0.95);">alim@csis.org</a>.
+        </div>
+        <div style="margin-top:16px;">
+          <a href="#top" style="font-family:Arial,sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.95);text-decoration:none;">&#8593; Back to top</a>
+        </div>
+      </td></tr>
+    </table>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" class="footer-end" style="background:#FFFFFF;">
+      <tr><td style="padding:12px 32px 18px;text-align:center;font-family:Arial,sans-serif;font-size:10px;letter-spacing:0.5px;color:#6B7280;">
+        &copy; 2026 Center for Strategic and International Studies &nbsp;&middot;&nbsp; No. 168 &middot; generated 1:45 PM ET
+      </td></tr>
+    </table>
+    
+            </td>
+          </tr>
+        </table>
+        <!--[if mso]></td></tr></table><![endif]-->
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

@@ -111,7 +111,7 @@ _DARK_TEXT = {
     "#CD2E3A": "#F08A94",   # alert red
     "#A93226": "#F08A94",   # semantic down
     "#2E7D4F": "#5FBF87",   # semantic up
-    "#B26A00": "#E0A64A",   # semantic caution
+    "#9A5B00": "#E0A64A",   # semantic caution
 }
 
 _DARK_BG = {
@@ -149,7 +149,7 @@ _DARK_EXEMPT = {
     # either scheme, so none of them needs a dark variant.
     "#14181F",
     # Status-chip fills: a saturated ground with white type, readable either way.
-    "#CD2E3A", "#2E7D4F", "#A93226", "#B26A00",
+    "#CD2E3A", "#2E7D4F", "#A93226", "#9A5B00",
     # The dark palette's own values, so re-scanning a dark rule is not a miss.
     "#E8E6E1", "#121212", "#1a1a1a", "#1E2126", "#262A30", "#04182F",
     "#16222F", "#1A1D22", "#2A1518", "#1C2A3E", "#22262C", "#2A1D15",
@@ -192,6 +192,12 @@ def _dark_mode_css() -> str:
         lines.append(f'      .wrapper [style*="color:{light}"] {{ color:{dark} !important; }}')
     for light, dark in _DARK_BG.items():
         lines.append(f'      .wrapper [style*="background:{light}"] {{ background-color:{dark} !important; }}')
+    # Last, so it wins. The pill is dark type on a white fill; the generic
+    # white-background mapping above darkens the fill and leaves the type
+    # dark, which measures 1.23:1 — a button you cannot read. Equal
+    # specificity, so order is the only thing that decides it.
+    lines.append('      .wrapper .pill { background:#E8E6E1 !important; '
+                 'color:#14181F !important; }')
     lines.append("    }")
     return "\n".join(lines)
 
@@ -426,7 +432,7 @@ def render(digest: dict) -> str:
                  'letter-spacing:0.5px;color:#14181F;background:#FFFFFF;'
                  'border-radius:14px;text-decoration:none;white-space:nowrap;')
     if _b:
-        _footer_trade = (f'<a href="{_b}trade.html" '
+        _footer_trade = (f'<a class="pill" href="{_b}trade.html" '
                          f'style="{_foot_btn}">Trade reference</a>')
     sections = []
 
@@ -441,10 +447,10 @@ def render(digest: dict) -> str:
               'letter-spacing:0.5px;color:#14181F;background:#FFFFFF;'
               'border-radius:14px;'
               'text-decoration:none;white-space:nowrap;')
-        links = [f'<a href="{_esc(web_url)}" style="{_a}">Read online</a>']
+        links = [f'<a class="pill" href="{_esc(web_url)}" style="{_a}">Read online</a>']
         if base:
-            links.append(f'<a href="{_esc(base + "latest.pdf")}" style="{_a}">Download PDF</a>')
-            links.append(f'<a href="{_esc(base + "archive.html")}" style="{_a}">Past issues</a>')
+            links.append(f'<a class="pill" href="{_esc(base + "latest.pdf")}" style="{_a}">Download PDF</a>')
+            links.append(f'<a class="pill" href="{_esc(base + "archive.html")}" style="{_a}">Past issues</a>')
         sep = ''
         # The internal-use notice and the utility links each had a full-width
         # band to themselves, which put roughly 90px of chrome above the
@@ -528,7 +534,9 @@ def render(digest: dict) -> str:
     if memo_items:
         memo_html = ""
         for i, mi in enumerate(memo_items[:3]):
-            memo_text = _esc(mi) if isinstance(mi, str) else _esc(mi.get("text", "") if isinstance(mi, dict) else str(mi or ""))
+            # The memo is the first thing read and the place the prompt most
+            # wants a name bolded, so it converts emphasis like any body copy.
+            memo_text = _emphasis(_esc(mi) if isinstance(mi, str) else _esc(mi.get("text", "") if isinstance(mi, dict) else str(mi or "")))
             num = i + 1
             memo_html += f"""
             <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:10px;">
@@ -545,8 +553,8 @@ def render(digest: dict) -> str:
         <div style="padding:18px 32px 6px;" class="sec">
           <a name="memo" id="memo"></a>
           <table width="100%" cellpadding="0" cellspacing="0" border="0" class="glance-panel" style="background:#EDF2FA;border-left:3px solid {TAEGUK_BLUE};">
-            <tr><td style="padding:16px 20px 8px;">
-              {_sec_label("Today at a Glance")}
+            <tr><td style="padding:0;">{_sec_label("Today at a Glance")}</td></tr>
+            <tr><td style="padding:0 20px 8px;">
               {memo_html}
             </td></tr>
           </table>
@@ -1821,7 +1829,7 @@ def render(digest: dict) -> str:
         _badge_styles = {
             "normal": ("#6B7280", "#FFFFFF", "MONITORING"),
             "activity": (TAEGUK_BLUE, "#FFFFFF", "ACTIVITY"),
-            "elevated": ("#B26A00", "#FFFDF7", "ELEVATED"),
+            "elevated": ("#9A5B00", "#FFFDF7", "ELEVATED"),
             "alert": (TAEGUK_RED, "#FFF8F8", "ALERT"),
         }
         # Count against the full watch list, not the freshness-filtered view —
@@ -1881,7 +1889,7 @@ def render(digest: dict) -> str:
                         _src = _date(int(_dm.group(1)), int(_dm.group(2)), int(_dm.group(3) or 1))
                         _age = (datetime.now(timezone.utc).date() - _src).days
                         if _age > 90:
-                            stale_flag = (f' <span style="color:#B26A00;">&middot; no recent reporting '
+                            stale_flag = (f' <span style="color:#9A5B00;">&middot; no recent reporting '
                                           f'(~{_age // 30} mo)</span>')
                     except (ValueError, TypeError):
                         pass
@@ -1951,7 +1959,7 @@ def render(digest: dict) -> str:
          at both ends it stops being identity and becomes decoration, and the
          brief gains a second thing competing for the eye at the moment it
          should be closing. The hierarchy runs identity, then why you have
-         this, then what you can do with it, then the legal line — and the
+         this, then what you can do with it, then the legal line - and the
          legal line breaks onto white so the document ends rather than
          trailing off. -->
     <table width="100%" cellpadding="0" cellspacing="0" border="0" class="sec footer" style="background:#14181F;border-top:3px solid {TAEGUK_RED};">
@@ -1974,8 +1982,8 @@ def render(digest: dict) -> str:
         </div>
       </td></tr>
       <tr><td style="padding:14px 32px 4px;text-align:center;">
-        <a href="{_esc(web_url)}" style="{_foot_btn}">Read online</a>
-        <a href="{_esc(archive_url)}" style="{_foot_btn}">Past issues</a>{_footer_trade}
+        <a class="pill" href="{_esc(web_url)}" style="{_foot_btn}">Read online</a>
+        <a class="pill" href="{_esc(archive_url)}" style="{_foot_btn}">Past issues</a>{_footer_trade}
       </td></tr>
       <tr><td style="padding:18px 32px 22px;text-align:center;">
         <div style="border-top:1px solid rgba(255,255,255,0.14);padding-top:14px;text-align:center;font-family:Georgia,serif;font-size:13px;line-height:1.6;color:rgba(255,255,255,0.72);max-width:520px;margin:0 auto;">
@@ -2043,7 +2051,7 @@ def render(digest: dict) -> str:
     /* Reset */
     body, table, td, div, p {{ margin:0; padding:0; }}
     img {{ border:0; display:block; }}
-    /* Print — keep FULL colors and the exact on-screen look; only drop page
+    /* Print - keep FULL colors and the exact on-screen look; only drop page
        chrome (shadow, page margins). print-color-adjust forces browsers to
        print background colors instead of stripping them. Works when printing
        the archived web page or the email via the browser's Print / Save as PDF. */
@@ -2053,14 +2061,14 @@ def render(digest: dict) -> str:
       html, body {{ background:#FFFFFF !important; }}
       .wrapper {{ box-shadow:none !important; width:680px !important; max-width:680px !important; margin:0 auto !important; }}
       a {{ text-decoration:none !important; }}
-      /* Let everything flow across page breaks — avoiding breaks pushes content
+      /* Let everything flow across page breaks - avoiding breaks pushes content
          that doesn't fit to the next page, leaving big empty gaps. */
       * {{ page-break-inside: auto !important; }}
       /* Chrome is interface, not brief: a printed page carrying a "Read
          online" button bar and a jump menu is printing the controls. */
       .util-row, .nav-row, .no-print {{ display:none !important; }}
     }}
-    /* Mobile responsive — one declaration per pattern; no duplicates.
+    /* Mobile responsive - one declaration per pattern; no duplicates.
        Fixes from the Q3 2026 mobile audit are marked (A#). */
     @media only screen and (max-width: 620px) {{
       /* Notice and links will not sit side by side on a phone.
@@ -2092,7 +2100,7 @@ def render(digest: dict) -> str:
       .mast-meta div {{ white-space:normal !important; }}
       /* The CSIS lockup is three cells side by side with rules between them.
          Its min-content width is 293px, which with the footer padding put a
-         325px floor under the whole table — the last thing still forcing a
+         325px floor under the whole table - the last thing still forcing a
          320px screen to scroll sideways. Stacked and centred it costs three
          short lines and fits any screen. */
       .lockup td {{ display:block !important; border-left:0 !important;
@@ -2114,11 +2122,11 @@ def render(digest: dict) -> str:
       h2 {{ font-size:13px !important; }}
       h3 {{ font-size:14px !important; }}
       .key-stat-num {{ font-size:26px !important; }}
-      /* (A10) Market strip STAYS 3-across on mobile — smaller mono, tighter pad */
+      /* (A10) Market strip STAYS 3-across on mobile - smaller mono, tighter pad */
       .mkt-table td {{ padding:8px 4px 10px !important; }}
       .mkt-table div[style*="font-size:16px"] {{ font-size:14px !important; }}
       .mkt-table div[style*="font-size:14px"] {{ font-size:13px !important; }}
-      /* (A11) Grids stack — declared once each */
+      /* (A11) Grids stack - declared once each */
       .loc-grid td, .gov-grid td {{ display:block !important; width:100% !important; padding:5px 0 !important; }}
       .loc-grid tr, .gov-grid tr {{ display:block !important; }}
       .loc-grid div[style*="font-size:10px"] {{ font-size:11px !important; }}
@@ -2135,11 +2143,11 @@ def render(digest: dict) -> str:
          handled by the stacking rule above, whose selector is more specific. */
       .sentiment-table table td {{ display:inline-block !important; width:32% !important;
         box-sizing:border-box !important; padding:8px 2px !important; text-align:center !important; }}
-      /* Trade dashboard strip — stays 3-across like the market strip */
+      /* Trade dashboard strip - stays 3-across like the market strip */
       .trade-dash td {{ padding:9px 4px 10px !important; }}
       .trade-dash span[style*="font-size:22px"] {{ font-size:18px !important; }}
       .trade-dash span[style*="font-size:13px"] {{ font-size:11px !important; }}
-      /* Tariff sector + trade policy tables — stack */
+      /* Tariff sector + trade policy tables - stack */
       .tariff-sector td, .trade-policy td {{ display:block !important; width:100% !important; padding:3px 8px !important; white-space:normal !important; }}
       .tariff-sector tr {{ display:block !important; border-bottom:1px solid #F0E0E0 !important; padding:4px 0 !important; }}
       .trade-policy tr {{ display:block !important; border-bottom:1px solid #E8E8E8 !important; padding:6px 0 !important; }}
@@ -2151,7 +2159,7 @@ def render(digest: dict) -> str:
       .kcna-dark td {{ padding-left:16px !important; padding-right:16px !important; }}
       .kcna-dark > div {{ padding:16px 16px !important; }}
       .kcna-dark table td {{ white-space:normal !important; word-break:break-word !important; }}
-      /* (A2) Legibility floor — real declarations only */
+      /* (A2) Legibility floor - real declarations only */
       body, td, div, p, span {{ -webkit-text-size-adjust:100%; }}
       div[style*="font-size:10px"], span[style*="font-size:10px"] {{ font-size:11px !important; }}
       /* (A1) Touch targets via min-height alone; no line-height bloat */
@@ -2159,7 +2167,7 @@ def render(digest: dict) -> str:
       p a, div a, td a {{ min-height:auto; padding:6px 0; }}
       img {{ max-width:100% !important; height:auto !important; }}
     }}
-    /* Tablet breakpoint — tighten padding, keep grids side-by-side */
+    /* Tablet breakpoint - tighten padding, keep grids side-by-side */
     @media only screen and (min-width: 621px) and (max-width: 768px) {{
       .wrapper {{ width:100% !important; max-width:680px !important; }}
       .sec, .footer {{ padding:16px 22px !important; }}
