@@ -123,6 +123,8 @@ _DARK_BG = {
     "#EDF2FA":  "#1C2A3E",  # Today at a Glance
     "#F0F5FB":  "#16222F",  # Gallup spotlight
     "#FBF0F1":  "#2A1518",  # discourse flag
+    "#FFFDF7":  "#2A2519",  # location card, elevated
+    "#FFF8F8":  "#2A1B1C",  # location card, alert
     "#FBF3F0":  "#2A1D15",  # caution panel
     "#EEF3F9":  "#1C2A3E",  # inset panels
     "#E7EBF0":  "#22262C",
@@ -164,17 +166,17 @@ def _dark_mode_css() -> str:
         "    @media (prefers-color-scheme: dark) {",
         "      body { background:#121212 !important; }",
         "      .wrapper { background:#1a1a1a !important; }",
-        "      .wrapper .sec { background:#1E2126 !important; border-bottom-color:#4A526073D !important; }",
-        "      .wrapper .nav-row { background:#1A1D22 !important; border-bottom-color:#4A526073D !important; }",
+        "      .wrapper .sec { background:#1E2126 !important; border-bottom-color:#3A4048 !important; }",
+        "      .wrapper .nav-row { background:#1A1D22 !important; border-bottom-color:#3A4048 !important; }",
         "      .wrapper h1, .wrapper h2, .wrapper h3 { color:#E8E6E1 !important; }",
         "      .wrapper .footer { background:#062A5E !important; }",
         "      .wrapper .kcna-dark, .wrapper .kcna-dark table, .wrapper .kcna-dark > div { background:#0A1E38 !important; }",
-        "      .wrapper .item-card, .wrapper .story-card, .wrapper .gov-grid div, .wrapper .loc-grid div { background:#262A30 !important; border-color:#4A526073D !important; }",
+        "      .wrapper .item-card, .wrapper .story-card, .wrapper .gov-grid div, .wrapper .loc-grid div { background:#262A30 !important; border-color:#3A4048 !important; }",
         "      .wrapper .sentiment-spotlight { background:#16222F !important; }",
         "      .wrapper .sentiment-discourse { background:#2A1518 !important; }",
         "      .wrapper .mkt-table td { border-color:rgba(255,255,255,0.08) !important; }",
-        "      .wrapper .sentiment-table td, .wrapper .cal-table { border-color:#4A526073D !important; }",
-        "      .wrapper td[style*=\"border-bottom:1px solid #E8E8E8\"], .wrapper table[style*=\"border-bottom:1px solid #E8E8E8\"] { border-color:#4A526073D !important; }",
+        "      .wrapper .sentiment-table td, .wrapper .cal-table { border-color:#3A4048 !important; }",
+        "      .wrapper td[style*=\"border-bottom:1px solid #E8E8E8\"], .wrapper table[style*=\"border-bottom:1px solid #E8E8E8\"] { border-color:#3A4048 !important; }",
     ]
     for light, dark in _DARK_TEXT.items():
         lines.append(f'      .wrapper [style*="color:{light}"] {{ color:{dark} !important; }}')
@@ -1708,11 +1710,15 @@ def render(digest: dict) -> str:
         locations = _fresh
 
         # BP Monitored Locations — 2-column card grid with status context
+        # Status is carried by the rule and the eyebrow, not by a tinted block.
+        # Tinting the whole card made the two thirds of sites that are simply
+        # being watched read as greyed out, and put the loudest colour behind
+        # the longest text.
         _badge_styles = {
-            "normal": ("#7F8C8D", "#F5F6F7", "MONITORING"),
-            "activity": ("#7F8C8D", "#F5F6F7", "MONITORING"),
-            "elevated": (TAEGUK_RED, "#FBF0F1", "ELEVATED"),
-            "alert": (TAEGUK_RED, "#FBE9EA", "ALERT"),
+            "normal": ("#6B7280", "#FFFFFF", "MONITORING"),
+            "activity": (TAEGUK_BLUE, "#FFFFFF", "ACTIVITY"),
+            "elevated": ("#B26A00", "#FFFDF7", "ELEVATED"),
+            "alert": (TAEGUK_RED, "#FFF8F8", "ALERT"),
         }
         # Count against the full watch list, not the freshness-filtered view —
         # "1 of 1 sites at elevated status" was true of the filtered set and
@@ -1741,13 +1747,25 @@ def render(digest: dict) -> str:
                     b_label += " &#9650;"
                 elif direction == "down":
                     b_label += " &#9660;"
-                status_badge = f'<span style="font-family:Arial,sans-serif;font-size:11px;font-weight:700;color:{b_color};letter-spacing:0.5px;">{b_label}</span>'
+                # The status sits above the name on its own line. Sharing a
+                # line, a long site name pushed the status onto a second row
+                # inside a half-width column, so it landed under the name and
+                # read as part of it.
+                status_badge = (f'<div style="font-family:Arial,sans-serif;font-size:10px;'
+                                f'font-weight:700;color:{b_color};letter-spacing:1.5px;'
+                                f'text-transform:uppercase;margin-bottom:5px;">{b_label}</div>')
                 # Note rendering — style differently for carried-forward vs active
                 note_html = ""
                 if note and "no new reporting" in note.lower():
-                    note_html = f'<div style="font-size:11px;line-height:1.4;color:#6B7280;margin-top:4px;font-style:italic;">{note}</div>'
+                    note_html = (f'<div style="font-family:Georgia,serif;font-size:13px;'
+                                 f'line-height:1.5;color:{MUTE};margin-top:5px;'
+                                 f'font-style:italic;">{note}</div>')
                 elif note:
-                    note_html = f'<div style="font-size:11px;line-height:1.4;font-family:Georgia,serif;color:#4A5260;margin-top:4px;">{note}</div>'
+                    # 13px Georgia, like every other piece of body copy. At
+                    # 11px the substance of the panel was the smallest text in
+                    # the brief.
+                    note_html = (f'<div style="font-family:Georgia,serif;font-size:13px;'
+                                 f'line-height:1.5;color:{BODY_INK};margin-top:5px;">{note}</div>')
                 # Last report date — mono, machine-measured. Flag notes whose
                 # last source is stale (>90 days) so a months-old status isn't
                 # read as current (e.g. Yellow Sea PMZ carried from January).
@@ -1763,13 +1781,16 @@ def render(digest: dict) -> str:
                                           f'(~{_age // 30} mo)</span>')
                     except (ValueError, TypeError):
                         pass
-                last_html = (f'<div style="font-family:Arial,sans-serif;font-size:11px;color:#6B7280;margin-top:4px;">'
-                             f'as of {last_source_date}{stale_flag}</div>'
+                last_html = (f'<div style="font-family:Arial,sans-serif;font-size:11px;'
+                             f'color:{MUTE};margin-top:7px;">imagery as of '
+                             f'<span style="font-family:{MONO};">{last_source_date}</span>'
+                             f'{stale_flag}</div>'
                              if last_source_date and last_source_date != "unknown" else "")
                 row_cards += f"""
                 <td style="width:50%;padding:4px;vertical-align:top;">
-                  <div style="background:{b_bg};border-radius:3px;padding:10px 12px;border-left:3px solid {b_color};">
-                    <div style="font-size:13px;font-weight:700;color:{INK};margin-bottom:2px;">{name} &nbsp;{status_badge}</div>
+                  <div style="background:{b_bg};border:1px solid #E4E7EB;border-left:3px solid {b_color};border-radius:3px;padding:11px 13px;">
+                    {status_badge}
+                    <div style="font-family:Georgia,serif;font-size:14px;font-weight:700;color:{INK};line-height:1.3;">{name}</div>
                     {note_html}
                     {last_html}
                   </div>
@@ -1826,7 +1847,7 @@ def render(digest: dict) -> str:
           <td style="border-left:1px solid rgba(255,255,255,0.45);padding:2px 12px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.82);line-height:1.35;text-align:left;">Geopolitics and Foreign<br>Policy Department</td>
           <td style="border-left:1px solid rgba(255,255,255,0.45);padding:2px 0 2px 12px;font-family:Arial,sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.82);line-height:1.35;text-align:left;">Korea<br>Chair</td>
         </tr></table>
-        <div style="font-family:Georgia,serif;font-size:13px;color:rgba(255,255,255,0.72);margin-top:12px;">Washington, DC &middot; csis.org</div>
+        <div style="font-family:Georgia,serif;font-size:13px;color:rgba(255,255,255,0.72);margin-top:12px;">Washington, D.C.</div>
         <div style="margin-top:11px;font-family:Arial,sans-serif;font-size:11px;letter-spacing:0.5px;">
           <a href="{_esc(web_url)}" style="color:rgba(255,255,255,0.95);text-decoration:none;">Read online</a> &nbsp;&middot;&nbsp;
           <a href="{_esc(archive_url)}" style="color:rgba(255,255,255,0.95);text-decoration:none;">Past issues</a>{_footer_trade}
@@ -1849,18 +1870,30 @@ def render(digest: dict) -> str:
     # 1,600-2,000 word target the brief is too long to scan end to end and the
     # only link was "back to top". A quiet day that drops sections simply gets
     # fewer links, and fewer than four suppresses the row entirely.
-    _NAV = [("Top Stories", "overnight"), ("Pyongyang", "kcna"),
+    # Label and anchor in document order. "Top Stories" pointed at #overnight,
+    # so the one link a reader is most likely to try landed a section past
+    # where it said it would. Every pair here is checked against the anchor the
+    # section actually emitted, below.
+    _NAV = [("Top Stories", "top-stories"), ("Overnight", "overnight"),
+            ("Pyongyang", "kcna"), ("Seoul", "rok-gov"),
             ("Trade", "trade"), ("Markets", "business"),
             ("Polling", "sentiment"), ("Upcoming", "upcoming"),
             ("Analysis", "analysis"), ("Satellite", "satellite")]
     body = "\n".join(sections)
-    _links = [f'<a href="#{_a}" style="color:{TAEGUK_BLUE};text-decoration:none;white-space:nowrap;">{_l}</a>'
+    _links = [f'<a href="#{_a}" style="color:{TAEGUK_BLUE};text-decoration:underline;'
+              f'text-underline-offset:2px;white-space:nowrap;">{_l}</a>'
               for _l, _a in _NAV if f'a name="{_a}"' in body]
     _nav_html = ""
     if len(_links) >= 4:
-        _nav_html = ('<div class="nav-row" style="background:#F7F8FA;border-bottom:1px solid #E4E7EB;'
-                     'padding:8px 32px;text-align:center;font-family:Arial,sans-serif;'
-                     'font-size:11px;line-height:1.9;color:#6B7280;" class="sec">'
+        # Unlabelled and unadorned, the row read as a subtitle rather than a
+        # menu, so it went unused. It is now named and the links are underlined.
+        _nav_html = ('<div class="nav-row sec" style="background:#F7F8FA;'
+                     'border-bottom:1px solid #E4E7EB;padding:9px 32px;'
+                     'text-align:center;font-family:Arial,sans-serif;'
+                     'font-size:11px;line-height:1.9;color:#6B7280;">'
+                     '<span style="font-size:10px;font-weight:700;'
+                     'text-transform:uppercase;letter-spacing:1.5px;'
+                     'color:#6B7280;">In this issue &nbsp;</span>'
                      + ' &nbsp;&middot;&nbsp; '.join(_links) + '</div>')
     body = body.replace("%%NAV%%", _nav_html)
 
@@ -1952,7 +1985,7 @@ def render(digest: dict) -> str:
       /* (A11) Grids stack — declared once each */
       .loc-grid td, .gov-grid td {{ display:block !important; width:100% !important; padding:5px 0 !important; }}
       .loc-grid tr, .gov-grid tr {{ display:block !important; }}
-      .loc-grid div[style*="font-size:11px"] {{ font-size:13px !important; }}
+      .loc-grid div[style*="font-size:10px"] {{ font-size:11px !important; }}
       /* Calendar watch */
       .cal-table td[width="50"] {{ width:40px !important; padding:8px 6px 8px 0 !important; }}
       .cal-date {{ font-size:16px !important; }}

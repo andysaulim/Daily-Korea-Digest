@@ -260,8 +260,69 @@ def check_length_has_a_ceiling() -> list[str]:
     return problems
 
 
+def check_nav_links_land_where_they_say() -> list[str]:
+    """Every jump link points at the section it names.
+
+    "Top Stories" pointed at `#overnight`: the label and the anchor were two
+    separate columns of a literal, so a mismatch between them was invisible.
+    A menu that lands a section past where it says it will is worse than no
+    menu, because a reader who tries it once stops trying.
+    """
+    import re as _re
+    problems = []
+    from pathlib import Path
+    src = Path("render.py").read_text(encoding="utf-8")
+    block = _re.search(r"_NAV = \[(.*?)\]", src, _re.S)
+    if not block:
+        return ["render._NAV not found; the navigation row has moved"]
+    pairs = _re.findall(r'\("([^"]+)",\s*"([^"]+)"\)', block.group(1))
+    if not pairs:
+        return ["render._NAV parsed to nothing"]
+    anchors = set(_re.findall(r'a name="([a-z0-9-]+)"', src))
+    for label, anchor in pairs:
+        if anchor not in anchors:
+            problems.append(f"nav {label!r} points at #{anchor}, which no section emits")
+    # Several labels are deliberate synonyms for their section — Seoul for the
+    # government round-up, Pyongyang for the KCNA read. So the pairing is
+    # stated here rather than inferred, and a label that changes destination
+    # has to be changed in both places.
+    expected = {
+        "Top Stories": "top-stories", "Overnight": "overnight",
+        "Pyongyang": "kcna", "Seoul": "rok-gov", "Trade": "trade",
+        "Markets": "business", "Polling": "sentiment",
+        "Upcoming": "upcoming", "Analysis": "analysis",
+        "Satellite": "satellite",
+    }
+    for label, anchor in pairs:
+        want = expected.get(label)
+        if want is None:
+            problems.append(f"nav {label!r} is new; add its destination to "
+                            f"test_sources.check_nav_links_land_where_they_say")
+        elif want != anchor:
+            problems.append(f"nav {label!r} points at #{anchor}, not #{want}")
+    return problems
+
+
+def check_colours_are_colours() -> list[str]:
+    """No malformed hex in the stylesheet.
+
+    `#4A526073D` sat in five dark-mode rules. Nine hex digits is not a colour,
+    so every browser dropped the whole declaration and the card borders were
+    simply missing in dark mode — silently, because an invalid value in CSS is
+    ignored rather than reported.
+    """
+    import re as _re
+    from pathlib import Path
+    src = Path("render.py").read_text(encoding="utf-8")
+    bad = {m for m in _re.findall(r"#[0-9A-Fa-f]{2,12}\b", src)
+           if len(m) - 1 not in (3, 4, 6, 8)}
+    return [f"{h} is not a valid hex colour" for h in sorted(bad)]
+
+
 CHECKS = [
     ("prestige rule is enforceable", check_prestige_rule_is_enforceable),
+    ("nav links land where they say", check_nav_links_land_where_they_say),
+    ("hex colours are well formed", check_colours_are_colours),
     ("primary ROK sources reach the model", check_primary_sources_reach_the_model),
     ("Korean ministry headlines survive", check_korean_headlines_survive),
     ("filter still rejects world news", check_filter_still_rejects_world_news),
