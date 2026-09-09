@@ -233,8 +233,16 @@ def _arrow(val) -> str:
 
 
 
-def _link_or_text(text: str, url: str, style: str = "color:#1A222E;text-decoration:none;") -> str:
+def _link_or_text(text: str, url: str,
+                  style: str = "color:#1B2A4A;text-decoration:underline;"
+                               "text-underline-offset:2px;") -> str:
     """Render as <a> only if url is a real link, otherwise plain text.
+
+    Underlined, in the navy the rest of the brief uses for links. The default
+    used to be undecorated ink, so in the scan sections a headline that opened
+    an article and one that did not looked identical, and nothing told a
+    reader which lines were worth clicking.
+
     NOTE: `text` should already be HTML-escaped by the caller via _esc()."""
     if url and url != "#" and url.startswith("http"):
         return f'<a href="{_esc(url)}" style="{style}">{text}</a>'
@@ -1330,13 +1338,6 @@ def render(digest: dict) -> str:
         except Exception:
             _delta = None
 
-        def _trend_mark(trend):
-            if trend == "up":
-                return f' <span style="font-size:18px;color:{UP_GREEN};vertical-align:middle;">&#9650;</span>'
-            if trend == "down":
-                return f' <span style="font-size:18px;color:{DOWN_RED};vertical-align:middle;">&#9660;</span>'
-            return ""
-
         def _delta_line():
             """One line under the approval figure: the change and its baseline."""
             if not _delta:
@@ -1363,7 +1364,14 @@ def render(digest: dict) -> str:
             return name or fallback
 
         def _tile(label, sub, data):
-            """Compact party tile: role on top, party name under it."""
+            """Compact party tile: role on top, party name under it.
+
+            The arrow is gone from these. Three tiles each carrying a coloured
+            triangle put four pieces of movement on one row, and none of them
+            said how much: the section read as busy without being informative.
+            Party standings are a snapshot; the measured change belongs to the
+            approval series, where it can be computed.
+            """
             has = bool(data and data.get("value") and str(data.get("value")).strip().lower() not in ("none", ""))
             val = _esc(str(data.get("value"))) if has else "--"
             colour = INK if has else "#9AA3AE"
@@ -1377,7 +1385,7 @@ def render(digest: dict) -> str:
                     <td width="33%" valign="top" align="center" style="padding:2px 4px;">
                       <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#6B7280;font-family:Arial,sans-serif;white-space:nowrap;">{label}</div>
                       {kr_html}
-                      <div style="font-family:Georgia,serif;font-size:22px;font-weight:700;color:{colour};margin-top:6px;line-height:1;">{val}{_trend_mark(data.get("trend") if has else None)}</div>
+                      <div style="font-family:Georgia,serif;font-size:22px;font-weight:700;color:{colour};margin-top:6px;line-height:1;">{val}</div>
                     </td>"""
 
         approval = sentiment.get("presidential_approval") or {}
@@ -1441,7 +1449,7 @@ def render(digest: dict) -> str:
             <tr>
               <td width="42%" valign="top" style="padding:4px 18px 4px 0;border-right:1px solid #E4E7EB;">
                 <div style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:#6B7280;font-family:Arial,sans-serif;">Presidential approval</div>
-                <div class="hero-num" style="font-family:Georgia,serif;font-size:42px;font-weight:700;color:{TAEGUK_BLUE};line-height:1.05;margin-top:4px;">{_esc(str(approval.get("value") or "--"))}{_trend_mark(approval.get("trend"))}</div>
+                <div class="hero-num" style="font-family:Georgia,serif;font-size:42px;font-weight:700;color:{TAEGUK_BLUE};line-height:1.05;margin-top:4px;">{_esc(str(approval.get("value") or "--"))}</div>
                 {_delta_line()}
                 <div style="font-size:11px;color:#6B7280;font-family:Arial,sans-serif;margin-top:5px;">{_esc(str(approval.get("source") or ""))}{" &middot; " + _esc(str(approval.get("last_updated") or "")) if approval.get("last_updated") else ""}</div>
                 {"<div style='margin-top:9px;'>" + _spark_html + "</div>" if _spark_html else ""}
