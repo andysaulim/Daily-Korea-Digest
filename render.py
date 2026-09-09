@@ -390,7 +390,7 @@ def render(digest: dict) -> str:
 
     # ── 1. Header ────────────────────────────────────────────────────────
     sections.append(f"""
-    <a name="top"></a>
+    <a name="top" id="top"></a>
     <div bgcolor="{BAND}" style="background-color:{BAND};color:#fff;padding:16px 32px 16px;border-bottom:1px solid rgba(255,255,255,0.18);" class="sec">
       <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
         <td style="vertical-align:top;">
@@ -419,7 +419,7 @@ def render(digest: dict) -> str:
         bok_rate = markets.get("bok_rate") or {}
         # Top row: KOSPI, Brent, USD/KRW
         sections.append(f"""
-        <a name="markets"></a>
+        <a name="markets" id="markets"></a>
         <table class="mkt-table" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:{NAVY_DATA};color:#fff;border-bottom:1px solid rgba(255,255,255,0.10);">
           <tr>
             <td width="25%" align="center" style="padding:11px 6px 13px;">
@@ -471,7 +471,7 @@ def render(digest: dict) -> str:
             </table>"""
         sections.append(f"""
         <div style="padding:18px 32px 6px;" class="sec">
-          <a name="memo"></a>
+          <a name="memo" id="memo"></a>
           <table width="100%" cellpadding="0" cellspacing="0" border="0" class="glance-panel" style="background:#EDF2FA;border-left:3px solid {TAEGUK_BLUE};">
             <tr><td style="padding:16px 20px 8px;">
               {_sec_label("Today at a Glance")}
@@ -503,7 +503,7 @@ def render(digest: dict) -> str:
             </div>"""
         sections.append(f"""
         <div {_SEC}>
-          <a name="top-stories"></a>{_sec_label("Top Stories")}
+          <a name="top-stories" id="top-stories"></a>{_sec_label("Top Stories")}
           {stories_html}
         </div>
         """)
@@ -542,7 +542,7 @@ def render(digest: dict) -> str:
                       f'{flash_html}</table>')
         sections.append(f"""
         <div {_SEC}>
-          <a name="overnight"></a>{_sec_label("Overnight")}
+          <a name="overnight" id="overnight"></a>{_sec_label("Overnight")}
           {flash_html}
         </div>
         """)
@@ -553,7 +553,7 @@ def render(digest: dict) -> str:
     key_stat = digest.get("key_stat") or {}
     if key_stat and key_stat.get("number") is not None and key_stat.get("number") != "":
         sections.append(f"""
-        <a name="key-stat"></a>
+        <a name="key-stat" id="key-stat"></a>
         <div {_SEC}>
           {_sec_label("Stat of the Day")}
           <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#EEF3F9;border-left:3px solid {TAEGUK_BLUE};border-radius:3px;">
@@ -664,7 +664,7 @@ def render(digest: dict) -> str:
                 </div>"""
 
         sections.append(f"""
-        <a name="kcna"></a>
+        <a name="kcna" id="kcna"></a>
         <div style="padding:0;border-bottom:1px solid #333;" class="sec kcna-dark">
           <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:{NAVY_PANEL};">
             <tr>
@@ -855,7 +855,7 @@ def render(digest: dict) -> str:
         rok_date = _esc(str(digest.get("digest_date", "")))
         sections.append(f"""
         <div {_SEC}>
-          <a name="rok-gov"></a>{_sec_label("ROK Government")}
+          <a name="rok-gov" id="rok-gov"></a>{_sec_label("ROK Government")}
           <div style="font-size:10px;color:#6B7280;font-family:Arial,sans-serif;margin-top:-10px;margin-bottom:10px;">President + Ministries &middot; {rok_date}</div>
           <div style="padding-top:4px;">
             {gov_grid_html}
@@ -908,7 +908,7 @@ def render(digest: dict) -> str:
         urgency_color = TAEGUK_RED if e_days <= 14 else TAEGUK_BLUE
         sections.append(f"""
         <div {_SEC}>
-          <a name="election"></a>{_sec_label("Election Tracker")}
+          <a name="election" id="election"></a>{_sec_label("Election Tracker")}
           <div style="margin-top:6px;">
             <span style="font-size:18px;font-weight:700;color:{INK};">{e_name}</span>
             <span style="display:inline-block;padding:2px 10px;border-radius:3px;font-family:Arial,sans-serif;letter-spacing:0.5px;font-size:11px;font-weight:700;color:#fff;background:{urgency_color};margin-left:10px;vertical-align:middle;">{e_days} DAYS</span>
@@ -1240,7 +1240,7 @@ def render(digest: dict) -> str:
         digest["_trade_standing_html"] = "".join(standing)
         sections.append(f"""
         <div {_SEC}>
-          <a name="trade"></a>{_sec_label("US-Korea Trade &amp; Investment")}
+          <a name="trade" id="trade"></a>{_sec_label("US-Korea Trade &amp; Investment")}
           {sop_html}
           {"".join(pillars)}
           {_standing_link}
@@ -1276,7 +1276,7 @@ def render(digest: dict) -> str:
             )
         sections.append(f"""
         <div {_SEC}>
-          <a name="business"></a>{_sec_label("Business &amp; Economy")}
+          <a name="business" id="business"></a>{_sec_label("Business &amp; Economy")}
           {biz_html}
         </div>
         """)
@@ -1311,7 +1311,7 @@ def render(digest: dict) -> str:
                                     headline=headline, body=body, url=url, bar_color=bar_color)
         sections.append(f"""
         <div {_SEC}>
-          <a name="nea"></a>{_sec_label("Northeast Asia Watch")}
+          <a name="nea" id="nea"></a>{_sec_label("Northeast Asia Watch")}
           {nea_html}
         </div>
         """)
@@ -1408,7 +1408,7 @@ def render(digest: dict) -> str:
             _spark_html = ""
         sections.append(f"""
         <div {_SEC}>
-          <a name="sentiment"></a>{_sec_label("Public Sentiment")}
+          <a name="sentiment" id="sentiment"></a>{_sec_label("Public Sentiment")}
           <table width="100%" cellpadding="0" cellspacing="0" border="0" class="sentiment-table">
             <tr>
               <td width="42%" valign="top" style="padding:4px 18px 4px 0;border-right:1px solid #E4E7EB;">
@@ -1459,7 +1459,7 @@ def render(digest: dict) -> str:
             </table>"""
         sections.append(f"""
         <div {_SEC}>
-          <a name="upcoming"></a>{_sec_label("Upcoming")}
+          <a name="upcoming" id="upcoming"></a>{_sec_label("Upcoming")}
           {up_rows}
         </div>
         """)
@@ -1487,7 +1487,7 @@ def render(digest: dict) -> str:
                             f'border="0" class="flash-table">{rows}</table>')
         sections.append(f"""
         <div {_SEC}>
-          <a name="wire"></a>{_sec_label("The Wire")}
+          <a name="wire" id="wire"></a>{_sec_label("The Wire")}
           {wire_html}
         </div>
         """)
@@ -1611,7 +1611,7 @@ def render(digest: dict) -> str:
         if sa_html.strip():
             sections.append(f"""
         <div {_SEC}>
-          <a name="analysis"></a>{_sec_label("Analysis")}
+          <a name="analysis" id="analysis"></a>{_sec_label("Analysis")}
           {sa_html}
         </div>
         """)
@@ -1801,7 +1801,7 @@ def render(digest: dict) -> str:
 
         sections.append(f"""
         <div {_SEC}>
-          <a name="satellite"></a>{_sec_label("Satellite &amp; Location Watch")}
+          <a name="satellite" id="satellite"></a>{_sec_label("Satellite &amp; Location Watch")}
           {summary_html}
           {img_report_html}
           <table width="100%" cellpadding="0" cellspacing="0" border="0" class="loc-grid">
