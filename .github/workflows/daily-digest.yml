@@ -7,6 +7,11 @@ on:
     - cron: '30 11 * * *'  # 7:30 AM ET — fallback if external cron missed
     - cron: '0 13 * * *'   # 9:00 AM ET — last resort
   workflow_dispatch: # Primary trigger via external cron (cron-job.org)
+    inputs:
+      force_send:
+        description: 'Send even outside the 7 AM ET delivery window. The external cron posts no inputs, so it is unaffected.'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -23,6 +28,18 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
+          # Earliest hour this brief may reach the list, in ET. The Japan
+          # edition mailed its list at 00:44 and the Australia one at 00:00
+          # because nothing enforced a delivery hour and the external cron can
+          # fire at any time. Korea's own dispatch path ran unconditionally,
+          # which is how 7 September went out at 1:09 PM.
+          EARLIEST_ET="${{ vars.EARLIEST_SEND_HOUR_ET || '7' }}"
+          HOUR_ET=$(TZ=America/New_York date +%-H)
+          if [ "$HOUR_ET" -lt "$EARLIEST_ET" ] && [ "${{ inputs.force_send }}" != "true" ]; then
+            echo "::notice::${HOUR_ET}:00 ET is before the ${EARLIEST_ET}:00 ET earliest send — skipping."
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           if [ "${{ github.event_name }}" != "schedule" ]; then
             echo "Dispatch trigger — running"
             echo "should_run=true" >> "$GITHUB_OUTPUT"
