@@ -13,7 +13,10 @@ feed_health.json
 kcna_tracker.json
 bp_tracker.json
 tension_tracker.json
-metrics.jsonl
+# metrics.jsonl is deliberately NOT ignored. It carries the per-run token
+# counts and API cost, one line per run. Ignoring it meant the file lived
+# only in the Actions cache, which GitHub evicts after seven days idle, so
+# the spend history could vanish untouched. The commit step adds it.
 weekly_*.html
 weekly_*.json
 
