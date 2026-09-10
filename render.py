@@ -567,7 +567,7 @@ def render(digest: dict) -> str:
         stories_html = ""
         for story in top_stories:
             cat = _esc(_str(story.get("category_tag", story.get("category", ""))))
-            headline = _esc(story.get("headline", ""))
+            headline = _emphasis(_esc(story.get("headline", "")))
             body = _emphasis(_esc(story.get("body", "")))
             src_line = _esc(_clean_src(story.get("src_line", story.get("source", ""))))
             url = story.get("url", "")
@@ -595,7 +595,7 @@ def render(digest: dict) -> str:
         for item in overnight:
             cat_raw = _str(item.get("category", ""))
             cat = _esc(cat_raw)
-            headline = _esc(item.get("headline", ""))
+            headline = _emphasis(_esc(item.get("headline", "")))
             body = _emphasis(_esc(item.get("body_text", "")))
             src = _esc(_clean_src(item.get("source", "")))
             url = item.get("url", "")
@@ -640,7 +640,7 @@ def render(digest: dict) -> str:
             <tr><td style="padding:14px 16px;">
               <div style="font-family:Georgia,serif;font-size:26px;font-weight:700;color:{TAEGUK_BLUE};line-height:1;">{_esc(str(key_stat.get("number", "")))}</div>
               <div style="font-family:Georgia,serif;font-size:14px;color:{INK};margin-top:5px;line-height:1.4;">{_esc(key_stat.get("label", ""))}</div>
-              {"<div style='font-family:Georgia,serif;font-size:13px;color:#4A5260;margin-top:4px;line-height:1.5;'>" + _esc(key_stat.get("context", "")) + "</div>" if key_stat.get("context") else ""}
+              {"<div style='font-family:Georgia,serif;font-size:13px;color:#4A5260;margin-top:4px;line-height:1.5;'>" + _emphasis(_esc(key_stat.get("context", ""))) + "</div>" if key_stat.get("context") else ""}
               {"<div style='font-family:Arial,sans-serif;font-size:11px;color:#55607A;margin-top:7px;'>" + _esc(key_stat.get("source", "")) + "</div>" if key_stat.get("source") else ""}
             </td></tr>
           </table>
@@ -720,10 +720,10 @@ def render(digest: dict) -> str:
         if top_articles:
             art_items = ""
             for i, art in enumerate(top_articles[:3], 1):
-                a_headline = _esc(art.get("headline", ""))
+                a_headline = _emphasis(_esc(art.get("headline", "")))
                 if not a_headline:
                     continue
-                a_summary = _esc(art.get("summary", ""))
+                a_summary = _emphasis(_esc(art.get("summary", "")))
                 a_src = _esc(art.get("source", ""))
                 a_url = art.get("url", "")
                 kim_badge = (f' <span style="font-family:Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:0.5px;'
@@ -791,7 +791,7 @@ def render(digest: dict) -> str:
                 ministry = _esc(item.get("ministry", ""))
                 ministry_korean = _esc(item.get("ministry_korean", ""))
                 action = _esc(item.get("action", ""))
-                detail = _esc(item.get("detail", ""))
+                detail = _emphasis(_esc(item.get("detail", "")))
                 source_url = item.get("url", "")
                 source_label = _esc(item.get("source_label", ""))
                 # Who acted. The prompt has always extracted this; the card
@@ -867,8 +867,8 @@ def render(digest: dict) -> str:
             for cal in calendar_watch:
                 cal_month = _esc(cal.get("month", ""))
                 cal_day = _esc(str(cal.get("day", "")))
-                cal_headline = _esc(cal.get("headline", ""))
-                cal_detail = _esc(cal.get("detail", ""))
+                cal_headline = _emphasis(_esc(cal.get("headline", "")))
+                cal_detail = _emphasis(_esc(cal.get("detail", "")))
                 cal_items += f"""
                 <table class="cal-table" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-bottom:1px solid #E8E8E8;">
                   <tr>
@@ -899,7 +899,7 @@ def render(digest: dict) -> str:
                 position = _esc(item.get("position", ""))
                 name = _esc(item.get("name", ""))
                 action = item.get("action", "appointed")
-                detail = _esc(item.get("detail", ""))
+                detail = _emphasis(_esc(item.get("detail", "")))
                 predecessor = _esc(item.get("predecessor", ""))
                 a_color = action_colors.get(action, "#1B2A4A")
                 action_badge = f'<span style="display:inline-block;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:600;color:#fff;background:{a_color};text-transform:uppercase;margin-left:6px;">{_esc(action)}</span>'
@@ -925,7 +925,7 @@ def render(digest: dict) -> str:
                 _c = str(item.get("committee", "") or "")
                 committee = _esc(_c.title() if _c.isupper() else _c)
                 action = _esc(item.get("action", "") or item.get("activity", ""))
-                detail = _esc(item.get("detail", ""))
+                detail = _emphasis(_esc(item.get("detail", "")))
                 asm_items += f"""
                 <div style="margin-bottom:11px;padding-left:12px;border-left:3px solid #C9D2DE;">
                   <div style="font-family:Georgia,serif;font-size:14px;font-weight:600;color:{INK};line-height:1.35;">{action}</div>
@@ -957,7 +957,7 @@ def render(digest: dict) -> str:
         e_name = _esc(election.get("election_name", ""))
         e_date = _esc(election.get("election_date", ""))
         e_days = election.get("days_until", 0)
-        e_summary = _esc(election.get("summary", ""))
+        e_summary = _emphasis(_esc(election.get("summary", "")))
         key_races = election.get("key_races") or []
 
         races_html = ""
@@ -968,7 +968,7 @@ def render(digest: dict) -> str:
                 inc = _esc(r.get("incumbent_party", ""))
                 chal = _esc(r.get("challenger_party", ""))
                 status = _esc(r.get("status", ""))
-                note = _esc(r.get("note", ""))
+                note = _emphasis(_esc(r.get("note", "")))
                 inc_color = TAEGUK_BLUE if "Democratic" in inc or "DP" in inc else TAEGUK_RED
                 chal_color = TAEGUK_RED if "People Power" in chal or "PPP" in chal else TAEGUK_BLUE
                 race_rows += f"""
@@ -1241,11 +1241,11 @@ def render(digest: dict) -> str:
         # ── Pillar 3: New This Week (genuinely new deals only) ─────────────
         new_rows = ""
         for deal in deal_list:
-            headline = _esc(deal.get("headline", ""))
+            headline = _emphasis(_esc(deal.get("headline", "")))
             if not headline:
                 continue
             value = _esc(deal.get("value", "")) if deal.get("value") else ""
-            detail = _esc(deal.get("detail", ""))
+            detail = _emphasis(_esc(deal.get("detail", "")))
             src2 = _esc(deal.get("source", ""))
             parties = _esc(deal.get("parties", ""))
             url = deal.get("url", "")
@@ -1354,7 +1354,7 @@ def render(digest: dict) -> str:
             biz_html += _item_block(
                 cat=_esc(_str(item.get("category", item.get("sector", "")))),
                 src=_esc(_clean_src(item.get("source", ""))),
-                headline=_esc(item.get("headline", "")),
+                headline=_emphasis(_esc(item.get("headline", ""))),
                 body=_emphasis(_esc(item.get("body_text", ""))),
                 url=item.get("url", ""),
                 bar_color=biz_sector_colors.get(_str(item.get("sector", "")), TAEGUK_BLUE),
@@ -1380,7 +1380,7 @@ def render(digest: dict) -> str:
         for item in nea_items:
             cat_raw = _str(item.get("category", ""))
             cat = _esc(cat_raw)
-            headline = _esc(item.get("headline", ""))
+            headline = _emphasis(_esc(item.get("headline", "")))
             body = _emphasis(_esc(item.get("body_text", "")))
             src = _esc(_clean_src(item.get("source", "")))
             url = item.get("url", "")
@@ -1567,8 +1567,8 @@ def render(digest: dict) -> str:
                   </table>
                 </td>
                 <td style="padding:9px 0;vertical-align:top;">
-                  <div style="font-family:Georgia,serif;font-size:14px;font-weight:700;color:#1B2A4A;">{_esc(cal.get("headline", ""))}</div>
-                  <div style="font-family:Georgia,serif;font-size:13px;line-height:1.45;color:#4A5260;margin-top:3px;">{_esc(cal.get("detail", ""))}</div>
+                  <div style="font-family:Georgia,serif;font-size:14px;font-weight:700;color:#1B2A4A;">{_emphasis(_esc(cal.get("headline", "")))}</div>
+                  <div style="font-family:Georgia,serif;font-size:13px;line-height:1.45;color:#4A5260;margin-top:3px;">{_emphasis(_esc(cal.get("detail", "")))}</div>
                 </td>
               </tr>
             </table>"""
@@ -1592,10 +1592,10 @@ def render(digest: dict) -> str:
         for _cat, _items in _groups.items():
             rows = "".join(
                 _compact_row(cat="" if _multi else _esc(_cat),
-                             headline=_esc(i.get("headline", "")),
+                             headline=_emphasis(_esc(i.get("headline", ""))),
                              url=i.get("url", ""),
                              src=_esc(_clean_src(i.get("source", ""))),
-                             body=_esc(i.get("body_text", "")))
+                             body=_emphasis(_esc(i.get("body_text", ""))))
                 for i in _items)
             wire_html += ((_subhead(_esc(_cat)) if _multi else "")
                           + rows)
@@ -1703,7 +1703,7 @@ def render(digest: dict) -> str:
             src = _esc(a.get("source", ""))
             tier = _esc(a.get("journal_tier", ""))
             title = _esc(a.get("headline", a.get("title", "")))
-            summary = _esc(a.get("summary", ""))
+            summary = _emphasis(_esc(a.get("summary", "")))
             implication = _esc(a.get("policy_implication", ""))
             url = a.get("url", "")
             read_link = f'<a href="{_esc(url)}" style="font-size:11px;color:{TAEGUK_BLUE};">Read &#8594;</a>' if url and url != "#" and url.startswith("http") else ""
@@ -1743,7 +1743,7 @@ def render(digest: dict) -> str:
             ir_source = _esc(imagery_report.get("source", ""))
             ir_date = _esc(imagery_report.get("date", ""))
             ir_label = _esc(imagery_report.get("label", "New imagery reports"))
-            ir_headline = _esc(imagery_report.get("headline", ""))
+            ir_headline = _emphasis(_esc(imagery_report.get("headline", "")))
             ir_body = _esc(imagery_report.get("body") or imagery_report.get("summary", ""))
             ir_sources = imagery_report.get("source_links") or []
             ir_bp_ids = imagery_report.get("bp_location_ids") or []
@@ -1851,7 +1851,7 @@ def render(digest: dict) -> str:
                 loc = locations[j]
                 name = _esc(loc.get("name", ""))
                 status = loc.get("status", "normal")
-                note = _esc(loc.get("note", ""))
+                note = _emphasis(_esc(loc.get("note", "")))
                 last_source_date = _esc(loc.get("last_source_date", ""))
                 direction = loc.get("direction", "")
                 b_color, b_bg, b_label = _badge_styles.get(status, ("#7F8C8D", "#F5F6F7", "MONITOR"))

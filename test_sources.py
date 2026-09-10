@@ -400,7 +400,53 @@ def check_subject_is_the_house_format():
     return problems
 
 
+def check_no_raw_markdown_reaches_the_reader():
+    """Every prose field must have its **bold** converted, not printed.
+
+    The prompt asks for a name in double asterisks and a figure in single ones,
+    and the renderer converts them. A field that skips the conversion ships the
+    asterisks: the 10 September China brief carried eighteen, among them
+    **Ford** and a half-open **Cynthia "Xanthi". Walking every field means a
+    newly added one cannot leak quietly.
+    """
+    import copy
+    import preview
+    import render as render_mod
+    prose = ("body", "body_text", "summary", "detail", "context", "text",
+             "note", "analyst_note", "so_what", "headline", "central_argument")
+    d = copy.deepcopy(preview.DIGEST)
+    marks = {}
+
+    def mark(o):
+        if isinstance(o, dict):
+            for k, v in list(o.items()):
+                if k in prose and isinstance(v, str) and v.strip():
+                    tok = f"MARK{len(marks)}"
+                    marks[tok] = k
+                    o[k] = f"**{tok}** tail."
+                else:
+                    mark(v)
+        elif isinstance(o, list):
+            for x in o:
+                mark(x)
+
+    mark(d)
+    html = render_mod.render(d)
+    problems = [f"{f}: ships literal ** to the reader"
+                for f in sorted({f for t, f in marks.items() if f"**{t}**" in html})]
+
+    d2 = copy.deepcopy(preview.DIGEST)
+    d2["top_stories"][0]["body"] = "**<script>alert(1)</script>** and **A Name**"
+    h2 = render_mod.render(d2)
+    if "<script>" in h2:
+        problems.append("emphasis smuggled markup past the escaper")
+    if 'font-weight:700;">A Name</strong>' not in h2:
+        problems.append("a genuine name no longer bolds")
+    return problems
+
+
 CHECKS = [
+    ("no raw markdown reaches the reader", check_no_raw_markdown_reaches_the_reader),
     ("subject line is the house format", check_subject_is_the_house_format),
     ("prestige rule is enforceable", check_prestige_rule_is_enforceable),
     ("masthead is mobile-safe", check_masthead_is_mobile_safe),
