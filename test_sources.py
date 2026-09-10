@@ -442,6 +442,20 @@ def check_no_raw_markdown_reaches_the_reader():
         problems.append("emphasis smuggled markup past the escaper")
     if 'font-weight:700;">A Name</strong>' not in h2:
         problems.append("a genuine name no longer bolds")
+
+    # The fixture does not populate every section, so walking it alone can pass
+    # while an unexercised section still leaks. Two backstops: the walk must
+    # have marked a meaningful number of fields, and the renderer's source must
+    # carry no unwrapped prose site at all.
+    if len(marks) < 8:
+        problems.append(f"the walk only marked {len(marks)} fields; too few to mean anything")
+    import re as _re
+    from pathlib import Path as _P
+    unwrapped = _re.findall(
+        r'(?<!_emphasis\()\b_esc\(\w+\.get\("(detail|context|headline|note|body_text|body|summary)", ""\)\)',
+        _P("render.py").read_text(encoding="utf-8"))
+    for f in sorted(set(unwrapped)):
+        problems.append(f"{f}: rendered without the emphasis conversion")
     return problems
 
 
