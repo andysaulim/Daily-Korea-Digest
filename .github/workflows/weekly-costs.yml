@@ -1,0 +1,44 @@
+name: Weekly API Cost Sheet
+
+# One table covering every edition. Each brief records its own spend in its own
+# repository, so without this there is no single place to read the week's cost.
+# Monday morning, after the weekend's runs have landed.
+on:
+  schedule:
+    - cron: '20 12 * * 1'   # 8:20 AM ET Monday
+  workflow_dispatch:
+    inputs:
+      days:
+        description: 'Window in days (default 7)'
+        type: string
+        default: '7'
+
+permissions:
+  contents: read
+
+jobs:
+  cost-sheet:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Build and send the cost sheet
+        env:
+          # Needs read access to all five edition repositories. The default
+          # GITHUB_TOKEN is scoped to this one, so a PAT is required; without
+          # it the other editions report as unreachable rather than as zero.
+          GH_PAT: ${{ secrets.GH_PAT }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASS: ${{ secrets.GMAIL_APP_PASS }}
+          # An operator's report. NOT the reader distribution list — the script
+          # refuses to send if this overlaps DIGEST_TO.
+          COST_REPORT_TO: ${{ vars.COST_REPORT_TO || vars.TEST_SEND_TO }}
+        run: |
+          python cost_weekly.py --days "${{ inputs.days || '7' }}" --send
