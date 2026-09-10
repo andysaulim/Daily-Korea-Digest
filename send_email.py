@@ -190,34 +190,18 @@ def build_subject(re_line: Optional[str] = None, lead: Optional[str] = None,
     survived of the RE line at a hundred characters, which cut mid-item and
     often mid-word because the RE line is a list of fragments.
 
-    Setting DIGEST_SUBJECT_STYLE=lead puts the day's lead story after the
-    date instead, for anyone who would rather the subject argue for opening it
-    than name itself. Truncation there falls on a word boundary.
+    There is deliberately no alternative style. A DIGEST_SUBJECT_STYLE=lead
+    variable used to append the day's lead story, which meant the subject
+    could differ from the other three editions depending on a repo variable
+    nobody would think to check. All four now read
+    "<Edition> Daily Brief | <Weekday>, <Month> <D>, <Year>" and nothing can
+    change that at runtime. `re_line` and `lead` are still accepted so callers
+    need not change, and are unused.
     """
     from zoneinfo import ZoneInfo
     now = now or datetime.now(ZoneInfo("America/New_York"))
     date_str = now.strftime("%A, %B %-d, %Y")
-    base = f"Korea Daily Brief | {date_str}"
-
-    if (os.environ.get("DIGEST_SUBJECT_STYLE") or "").strip().lower() != "lead":
-        return base
-
-    headline = (lead or "").strip()
-    if not headline and re_line:
-        headline = re.split(r"\s*[·•|]\s*|\s+—\s+", re_line.strip())[0].strip()
-    headline = re.sub(r"\s+", " ", headline).rstrip(" .")
-    if not headline:
-        return base
-
-    room = limit - len(base) - 3
-    if room < 24:
-        return base
-    if len(headline) > room:
-        cut = headline[:room]
-        if " " in cut:
-            cut = cut[:cut.rindex(" ")]
-        headline = cut.rstrip(" ,;:") + "…"
-    return f"{base} — {headline}"
+    return f"Korea Daily Brief | {date_str}"
 
 def send(html: str, re_line: Optional[str] = None, subject: Optional[str] = None,
          lead: Optional[str] = None,

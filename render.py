@@ -1977,7 +1977,7 @@ def render(digest: dict) -> str:
         <div style="font-family:Georgia,serif;font-size:13px;color:rgba(255,255,255,0.72);margin-top:14px;">Washington, D.C.</div>
       </td></tr>
       <tr><td style="padding:16px 32px 4px;text-align:center;">
-        <div style="font-family:Georgia,serif;font-size:13px;line-height:1.6;color:rgba(255,255,255,0.80);max-width:520px;margin:0 auto;">
+        <div style="font-family:Georgia,serif;font-size:12px;line-height:1.6;color:rgba(255,255,255,0.80);max-width:none;margin:0 auto;white-space:normal;">
           You are receiving the Korea Daily Brief as a member of the CSIS Korea Chair distribution list.
         </div>
       </td></tr>

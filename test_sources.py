@@ -373,7 +373,35 @@ def check_masthead_is_mobile_safe() -> list[str]:
     return problems
 
 
+
+def check_subject_is_the_house_format():
+    """"<Edition> Daily Brief | <Weekday>, <Month> <D>, <Year>", the same in all
+    four editions. A DIGEST_SUBJECT_STYLE variable used to append the day's lead
+    story, so the subject differed from its siblings depending on a repo setting
+    nobody would think to look at. Returns a list of problems, empty if none."""
+    import os
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+    from send_email import build_subject
+    problems = []
+    now = datetime.now(ZoneInfo("America/New_York"))
+    want = "Korea Daily Brief | " + now.strftime("%A, %B %-d, %Y")
+    subj = build_subject(re_line="A | B | C", lead="A lead story")
+    if subj != want:
+        problems.append(f"subject is {subj!r}, expected {want!r}")
+    if not re.fullmatch(r"Korea Daily Brief \| \w+, \w+ \d{1,2}, \d{4}", subj):
+        problems.append(f"subject does not match the house pattern: {subj!r}")
+    os.environ["DIGEST_SUBJECT_STYLE"] = "lead"
+    try:
+        if build_subject(lead="A lead story") != want:
+            problems.append("DIGEST_SUBJECT_STYLE still changes the subject at runtime")
+    finally:
+        os.environ.pop("DIGEST_SUBJECT_STYLE", None)
+    return problems
+
+
 CHECKS = [
+    ("subject line is the house format", check_subject_is_the_house_format),
     ("prestige rule is enforceable", check_prestige_rule_is_enforceable),
     ("masthead is mobile-safe", check_masthead_is_mobile_safe),
     ("emphasis cannot inject markup", check_emphasis_cannot_inject),
