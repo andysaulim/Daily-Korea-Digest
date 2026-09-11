@@ -633,7 +633,7 @@ TIER 4: KCNA / RODONG SINMUN (last 48h)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 DIGEST SYNTHESIS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-TARGET LENGTH — 1,900-2,200 WORDS, HARD CEILING 2,400 (an 8-minute read): This is a band, not a floor. An issue shipped at 3,518 words because the section maximums between them permitted far more than the target and nothing stopped the brief filling them; a reader promised eight minutes got fifteen. Under 1,700 means you left usable reporting on the floor. Over 2,400 means you included items that did not earn their place, and the pipeline will drop them for you from the end of the weaker sections. Choose better rather than let that happen: cover the day in fewer, better-chosen items at the brevity the BREVITY rule demands.
+TARGET LENGTH — 2,500-2,750 WORDS, HARD CEILING 2,750 (about an 11-minute read): This is a band, not a floor. Under 2,300 means you left usable reporting on the floor. Over 2,750 means you included items that did not earn their place, and the pipeline will drop them for you from the end of the weaker sections. Choose better rather than let that happen: cover the day in fewer, better-chosen items at the brevity the BREVITY rule demands. Length is never a reason to pad — a strong 2,500 beats a padded 2,750.
 Return a digest object with:
 - digest_date: "{date_str}"
 - re_line: one-line RE: summary (max 120 chars, key themes separated by ·)

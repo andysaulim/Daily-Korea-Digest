@@ -21,7 +21,13 @@ from digest import _count_digest_words
 
 # An eight-minute read. An issue once shipped at 3,518 words because the
 # section maximums permitted 3,680 between them and nothing capped the total.
-WORD_CEILING = 2400
+# Raised from 2,400 at the Korea Chair's direction (Sep 2026). The brief had
+# run 3,062-3,518 for four days: the trimmer could not reach 2,400 without
+# cutting into the day's substance, because its per-section floors plus the
+# sections it may never touch already come to roughly that. Rather than keep
+# losing reporting to an arbitrary number, the band moved to where the brief
+# actually sits when it is good. Quality first; the ceiling is the backstop.
+WORD_CEILING = 2750
 
 
 def _count_rendered_words_of(html: str) -> int:
@@ -565,7 +571,7 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
     elif word_count < 1600:
         warnings.append(f"WORD COUNT CRITICAL: ~{word_count} words (hard minimum 1600)")
     elif word_count < 1700:
-        warnings.append(f"WORD COUNT: ~{word_count} words (band is 1900-2200)")
+        warnings.append(f"WORD COUNT: ~{word_count} words (band is 2500-2750)")
     elif word_count > WORD_CEILING:
         # Not fatal: length_budget trims to the ceiling before rendering. This
         # says the model is consistently over and its caps want another look.

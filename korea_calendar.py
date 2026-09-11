@@ -29,13 +29,18 @@ RECURRING: list[tuple[int, int, str, str]] = [
     (1, 1, "Kim Jong Un New Year message",
      "Plenum readout sets the DPRK's stated line for the year."),
     (2, 16, "Day of the Shining Star",
-     "Kim Jong Il's birthday. DPRK national holiday."),
+     "Kim Jong Il's birthday. Watch for a Kim Jong Un appearance, a Kumsusan "
+     "visit and a heavier KCNA output; round anniversaries have drawn parades."),
     (3, 1, "Samiljeol (3·1 Independence Movement Day)",
      "ROK national holiday. Presidential address often addresses Japan ties."),
     (4, 15, "Day of the Sun",
      "Kim Il Sung's birthday, the largest DPRK anniversary. Parades possible."),
-    (6, 6, "ROK Memorial Day (현충일)", "National day of remembrance."),
-    (6, 25, "Korean War outbreak anniversary", "War began 25 June 1950."),
+    (6, 6, "ROK Memorial Day (현충일)",
+     "Public holiday; markets and ministries closed. The president speaks at "
+     "Seoul National Cemetery, usually on alliance and veterans' policy."),
+    (6, 25, "Korean War outbreak anniversary",
+     "The war began on this date in 1950. Commemorations draw alliance "
+     "statements from Seoul and Washington, and DPRK counter-messaging."),
     (7, 27, "Korean War armistice anniversary",
      "Signed 27 July 1953. The DPRK marks it as Victory Day."),
     (8, 15, "Liberation Day (광복절)",
@@ -43,10 +48,16 @@ RECURRING: list[tuple[int, int, str, str]] = [
      "policy and unification."),
     (9, 9, "DPRK founding day",
      "Parades and weapons displays have historically clustered on this date."),
-    (10, 3, "National Foundation Day (개천절)", "ROK national holiday."),
-    (10, 9, "Hangul Day (한글날)", "ROK national holiday."),
+    (10, 3, "National Foundation Day (개천절)",
+     "Public holiday: KRX closed, ministries dark, no Assembly business. "
+     "Expect a thin domestic news flow and few primary-source releases."),
+    (10, 9, "Hangul Day (한글날)",
+     "Public holiday: KRX closed, ministries dark. Falling within a week of "
+     "개천절, the two often bracket a slow stretch for government news."),
     (10, 10, "Workers' Party founding day",
-     "Historically accompanied by military displays."),
+     "The party was founded on this date in 1945. Decennial anniversaries "
+     "have brought large Kim Il Sung Square parades and new systems shown in "
+     "public for the first time; watch pre-event imagery for assembly."),
     (12, 17, "Kim Jong Il death anniversary",
      "Mourning period; KCNA output typically drops."),
 ]

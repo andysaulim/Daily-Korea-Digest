@@ -430,7 +430,7 @@ def render(digest: dict) -> str:
     _foot_btn = ('display:inline-block;padding:6px 15px;margin:0 4px;'
                  'font-family:Arial,sans-serif;font-size:11px;font-weight:700;'
                  'letter-spacing:0.5px;color:#14181F;background:#FFFFFF;'
-                 'border-radius:14px;text-decoration:none;white-space:nowrap;')
+                 'border-radius:3px;text-decoration:none;white-space:nowrap;')
     if _b:
         _footer_trade = (f'<a class="pill" href="{_b}trade.html" '
                          f'style="{_foot_btn}">Trade reference</a>')
@@ -445,7 +445,7 @@ def render(digest: dict) -> str:
         _a = ('display:inline-block;padding:6px 14px;margin:0 3px;'  # util-btn
               'font-family:Arial,sans-serif;font-size:11px;font-weight:700;'
               'letter-spacing:0.5px;color:#14181F;background:#FFFFFF;'
-              'border-radius:14px;'
+              'border-radius:3px;'
               'text-decoration:none;white-space:nowrap;')
         links = [f'<a class="pill" href="{_esc(web_url)}" style="{_a}">Read online</a>']
         if base:
@@ -640,7 +640,7 @@ def render(digest: dict) -> str:
         <a name="key-stat" id="key-stat"></a>
         <div {_SEC}>
           {_sec_label("Stat of the Day")}
-          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#EEF3F9;border-left:3px solid {TAEGUK_BLUE};border-radius:3px;">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#FFFFFF;border-top:2px solid {TAEGUK_BLUE};border-bottom:1px solid #E4E7EB;border-radius:3px;">
             <tr><td style="padding:14px 16px;">
               <div style="font-family:Georgia,serif;font-size:26px;font-weight:700;color:{TAEGUK_BLUE};line-height:1;">{_esc(str(key_stat.get("number", "")))}</div>
               <div style="font-family:Georgia,serif;font-size:14px;color:{INK};margin-top:5px;line-height:1.4;">{_esc(key_stat.get("label", ""))}</div>
@@ -1319,7 +1319,7 @@ def render(digest: dict) -> str:
                 _standing_link = (
                     f'<div style="margin-top:16px;padding-top:14px;border-top:1px solid #E4E7EB;">'
                     f'<a href="{_esc(_b + "trade.html")}" style="display:block;'
-                    f'padding:12px 14px;background:#EEF3F9;border-left:3px solid {TAEGUK_BLUE};'
+                    f'padding:13px 0;background:#FFFFFF;border-top:2px solid {TAEGUK_BLUE};'
                     f'border-radius:3px;text-decoration:none;">'
                     f'<span style="font-family:Arial,sans-serif;font-size:10px;font-weight:700;'
                     f'letter-spacing:1.5px;text-transform:uppercase;color:{TAEGUK_BLUE};">'
@@ -1648,7 +1648,7 @@ def render(digest: dict) -> str:
                             + (f'<div style="font-size:11px;color:{TAEGUK_BLUE};line-height:1.4;margin-bottom:3px;"><strong>Context:</strong> {note}</div>' if note else "")
                             + f'{link}</div>')
             if xp_html:
-                sa_html += (f'<div style="margin-bottom:14px;padding:12px 14px;background:#EEF3F9;'
+                sa_html += (f'<div style="margin-bottom:14px;padding:13px 0;background:#FFFFFF;'
                             f'border-radius:6px;border-left:3px solid {TAEGUK_BLUE};">'
                             f'<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;'
                             f'color:{TAEGUK_BLUE};margin-bottom:9px;">Officials on X</div>'
@@ -1830,11 +1830,14 @@ def render(digest: dict) -> str:
         # Tinting the whole card made the two thirds of sites that are simply
         # being watched read as greyed out, and put the loudest colour behind
         # the longest text.
+        # The second value was a background wash. Every card is white now and
+        # status is carried by the top rule and the label, so the wash is gone
+        # and the colour is used once rather than three times per card.
         _badge_styles = {
             "normal": ("#6B7280", "#FFFFFF", "MONITORING"),
             "activity": (TAEGUK_BLUE, "#FFFFFF", "ACTIVITY"),
-            "elevated": ("#9A5B00", "#FFFDF7", "ELEVATED"),
-            "alert": (TAEGUK_RED, "#FFF8F8", "ALERT"),
+            "elevated": ("#9A5B00", "#FFFFFF", "ELEVATED"),
+            "alert": (TAEGUK_RED, "#FFFFFF", "ALERT"),
         }
         # Count against the full watch list, not the freshness-filtered view —
         # "1 of 1 sites at elevated status" was true of the filtered set and
@@ -1911,7 +1914,7 @@ def render(digest: dict) -> str:
                        height:100% stretches, which is the one way to do this
                        that Outlook honours. -->
                   <table width="100%" cellpadding="0" cellspacing="0" border="0" height="100%" style="height:100%;">
-                    <tr><td style="background:{b_bg};border:1px solid #E4E7EB;border-left:3px solid {b_color};border-radius:3px;padding:11px 13px;vertical-align:top;">
+                    <tr><td style="background:#FFFFFF;border:1px solid #E4E7EB;border-top:2px solid {b_color};padding:13px 15px;vertical-align:top;">
                       {status_badge}
                       <div style="font-family:Georgia,serif;font-size:14px;font-weight:700;color:{INK};line-height:1.3;">{name}</div>
                       {note_html}
