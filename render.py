@@ -616,7 +616,12 @@ def render(digest: dict) -> str:
             # one line per item, so the eye runs vertically instead of stopping
             # at a card border every three lines. The cards above carry the
             # weight; this section carries the breadth.
-            tail = (f'<span style="color:#6B7280;"> &mdash; {body}</span>' if body else "")
+            # Headline on its own line, the clause beneath it. Running them
+            # together behind an em-dash made a two-line wrap read as one long
+            # sentence, and the eye could not find where an item ended.
+            tail = (f'<div style="font-family:Georgia,serif;font-size:13px;'
+                    f'line-height:1.45;color:#4A5260;margin-top:2px;">{body}</div>'
+                    if body else "")
             flash_html += (
                 f'<tr>'
                 f'<td style="padding:7px 10px 7px 0;vertical-align:top;white-space:nowrap;'
@@ -626,9 +631,9 @@ def render(digest: dict) -> str:
                 f'<td style="padding:7px 0;vertical-align:top;font-family:Georgia,serif;'
                 f'font-size:13px;line-height:1.45;color:{INK};'
                 f'border-bottom:1px solid #EEF0F3;">'
-                f'{_link_or_text(headline, url)}{tail}'
+                f'<div>{_link_or_text(headline, url)}'
                 f'<span style="font-family:Arial,sans-serif;font-size:11px;color:#6B7280;">'
-                f' &middot; {src}</span></td>'
+                f' &middot; {src}</span></div>{tail}</td>'
                 f'</tr>')
         flash_html = (f'<table width="100%" cellpadding="0" cellspacing="0" border="0" '
                       f'class="flash-table" style="border-top:2px solid {TAEGUK_BLUE};">'
