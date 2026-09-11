@@ -9,9 +9,11 @@ through the GitHub API, adds the days up per edition, and mails one table.
     python cost_weekly.py --send     # print and email it
     python cost_weekly.py --days 30
 
-Needs a token in GITHUB_TOKEN or GH_PAT with read access to the editions. A
-repository it cannot read is reported as unreachable rather than as zero: an
-edition that silently drops out of a cost sheet is how spend goes unnoticed.
+No credentials required: every edition is a public repository, so this reads
+them anonymously. A token is used if one is set, which only raises the rate
+limit. A repository it cannot read is reported as unreachable rather than as
+zero: an edition that silently drops out of a cost sheet is how spend goes
+unnoticed.
 
 The recipient is COST_REPORT_TO. It is deliberately NOT the digest
 distribution list — this is an operator's report, not a reader's.
@@ -39,20 +41,35 @@ EDITIONS = [
 ]
 OWNER = "andysaulim"
 API = "https://api.github.com"
+RAW = "https://raw.githubusercontent.com"
 
 
 def _token() -> str:
+    """Optional. Every edition is a public repository, so the sheet reads them
+    with no credentials at all; a token is used only if one happens to be set,
+    which raises the anonymous rate limit and would cover a repo later made
+    private. Requiring a PAT here was a dependency that bought nothing."""
     return os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_PAT") or ""
 
 
+def _headers() -> dict:
+    h = {"Accept": "application/vnd.github+json", "User-Agent": "cost-weekly"}
+    tok = _token()
+    if tok:
+        h["Authorization"] = f"Bearer {tok}"
+    return h
+
+
 def _get(url: str):
-    req = urllib.request.Request(url, headers={
-        "Authorization": f"Bearer {_token()}",
-        "Accept": "application/vnd.github+json",
-        "User-Agent": "cost-weekly",
-    })
+    req = urllib.request.Request(url, headers=_headers())
     with urllib.request.urlopen(req, timeout=20) as r:
         return json.loads(r.read().decode())
+
+
+def _get_raw(url: str) -> str:
+    req = urllib.request.Request(url, headers=_headers())
+    with urllib.request.urlopen(req, timeout=20) as r:
+        return r.read().decode("utf-8", "replace")
 
 
 def fetch_metrics(repo: str, path: str) -> tuple[list[dict], str | None]:
@@ -64,7 +81,6 @@ def fetch_metrics(repo: str, path: str) -> tuple[list[dict], str | None]:
     and its zero is a lie. Reporting the second as the first is how an edition
     drops out of a cost sheet without anyone noticing.
     """
-    import base64
     try:
         meta = _get(f"{API}/repos/{OWNER}/{repo}")
         branch = meta.get("default_branch", "main")
@@ -72,9 +88,10 @@ def fetch_metrics(repo: str, path: str) -> tuple[list[dict], str | None]:
         return [], f"repo unreachable, HTTP {e.code}"
     except Exception as e:                                      # noqa: BLE001
         return [], f"repo unreachable, {type(e).__name__}"
+    # raw.githubusercontent serves the file directly and is not subject to the
+    # API's anonymous hourly limit, so a weekly sheet needs no credential.
     try:
-        blob = _get(f"{API}/repos/{OWNER}/{repo}/contents/{path}?ref={branch}")
-        raw = base64.b64decode(blob["content"]).decode("utf-8", "replace")
+        raw = _get_raw(f"{RAW}/{OWNER}/{repo}/{branch}/{path}")
     except urllib.error.HTTPError as e:
         if e.code == 404:
             return [], "no runs recorded yet"
@@ -201,10 +218,6 @@ def main() -> int:
     ap.add_argument("--days", type=int, default=7)
     ap.add_argument("--send", action="store_true")
     args = ap.parse_args()
-
-    if not _token():
-        print("No GITHUB_TOKEN / GH_PAT set; cannot read the editions.")
-        return 1
 
     per_edition, errors = collect(args.days)
     print(as_text(per_edition, errors, args.days))

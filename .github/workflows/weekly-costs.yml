@@ -31,9 +31,11 @@ jobs:
 
       - name: Build and send the cost sheet
         env:
-          # Needs read access to all five edition repositories. The default
-          # GITHUB_TOKEN is scoped to this one, so a PAT is required; without
-          # it the other editions report as unreachable rather than as zero.
+          # No token is required: every edition is a public repository and the
+          # sheet reads them anonymously. GH_PAT is passed only if it happens to
+          # exist, which raises the anonymous rate limit and would cover a repo
+          # later made private. An absent secret is an empty string, not a
+          # failure, so this works whether or not one is configured.
           GH_PAT: ${{ secrets.GH_PAT }}
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASS: ${{ secrets.GMAIL_APP_PASS }}
