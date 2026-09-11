@@ -121,10 +121,16 @@ def sparkline_html(color: str = "#0052B4", width_px: int = 108,
         # Scale into the box, keeping a 3px floor so a low point stays visible.
         h = 3 + int((v - lo) / span * (height_px - 4))
         last = i == len(values) - 1
-        fill = color if last else "#B9C6DA"
+        # #B9C6DA measured 1.73 against white: the earlier readings were all
+        # but invisible in light mode, which is most of the chart. WCAG asks
+        # 3:1 for a graphical object; this is 3.13. The dark-mode pair is set
+        # in render.py, since the active bar (navy) is the one that vanishes
+        # there — the chart was half-unreadable in each mode, in opposite ways,
+        # and neither showed up because bars are not text nodes.
+        fill = color if last else "#7E93B3"
         cells += (f'<td style="padding:0 1px 0 0;vertical-align:bottom;">'
-                  f'<div style="width:{bar_w}px;height:{h}px;background:{fill};'
-                  f'font-size:0;line-height:0;">&nbsp;</div></td>')
+                  f'<div class="spark-bar" style="width:{bar_w}px;height:{h}px;'
+                  f'background:{fill};font-size:0;line-height:0;">&nbsp;</div></td>')
     first_label = series[0].get("label") or str(series[0].get("date", ""))[:7]
     return (f'<table cellpadding="0" cellspacing="0" border="0" '
             f'style="height:{height_px}px;"><tr>{cells}</tr>'

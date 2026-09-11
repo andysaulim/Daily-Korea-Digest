@@ -115,6 +115,7 @@ _DARK_TEXT = {
 }
 
 _DARK_BG = {
+    "#7E93B3":  "#55688A",  # poll sparkline, earlier readings
     "#fff":     "#262A30",  # cards
     "#FFFFFF":  "#262A30",
     "#F0F0F0":  "#2A2E34",
@@ -198,6 +199,13 @@ def _dark_mode_css() -> str:
     # specificity, so order is the only thing that decides it.
     lines.append('      .wrapper .pill { background:#E8E6E1 !important; '
                  'color:#14181F !important; }')
+    # The poll sparkline. Its bars are graphics, not text, so the contrast
+    # check never looked at them and the chart was half-unreadable in each
+    # mode: the active bar is navy, which measures 2.00 against the dark
+    # ground, while the earlier readings are pale and vanish on white. The
+    # light pair is set in poll_history; this is the dark one. 5.31 and 3.09.
+    lines.append('      .wrapper .spark-bar[style*="background:#0047A0"] '
+                 '{ background-color:#4D8FE8 !important; }')
     lines.append("    }")
     return "\n".join(lines)
 
