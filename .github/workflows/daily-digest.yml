@@ -101,6 +101,13 @@ jobs:
         if: steps.guard.outputs.should_run == 'true'
         run: python3 test_sources.py
 
+      # The suite above is a hard gate on the send, so it must not be able to
+      # fail with the calendar. This runs it a year out. continue-on-error:
+      # a time bomb a year away is worth a red run, never a held brief.
+      - name: Suite is time-independent
+        continue-on-error: true
+        run: python3 timetravel.py 365 test_sources.py
+
       - name: Install Chromium for PDF export
         if: steps.guard.outputs.should_run == 'true'
         continue-on-error: true
