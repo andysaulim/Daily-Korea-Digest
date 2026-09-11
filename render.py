@@ -115,6 +115,7 @@ _DARK_TEXT = {
 }
 
 _DARK_BG = {
+    "#EDF3FB":  "#16233A",  # Stat of the Day, edition tint
     "#7E93B3":  "#55688A",  # poll sparkline, earlier readings
     "#fff":     "#262A30",  # cards
     "#FFFFFF":  "#262A30",
@@ -648,7 +649,7 @@ def render(digest: dict) -> str:
         <a name="key-stat" id="key-stat"></a>
         <div {_SEC}>
           {_sec_label("Stat of the Day")}
-          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#FFFFFF;border-top:2px solid {TAEGUK_BLUE};border-bottom:1px solid #E4E7EB;border-radius:3px;">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#EDF3FB;border-top:2px solid {TAEGUK_BLUE};border-bottom:1px solid #E4E7EB;border-radius:3px;">
             <tr><td style="padding:14px 16px;">
               <div style="font-family:Georgia,serif;font-size:26px;font-weight:700;color:{TAEGUK_BLUE};line-height:1;">{_esc(str(key_stat.get("number", "")))}</div>
               <div style="font-family:Georgia,serif;font-size:14px;color:{INK};margin-top:5px;line-height:1.4;">{_esc(key_stat.get("label", ""))}</div>
@@ -831,7 +832,7 @@ def render(digest: dict) -> str:
                         f'{_esc(s_label)} &#8599;</a>')
                 elif source_label:
                     _rows.append(f'<span style="font-weight:700;color:{TAEGUK_BLUE};">Primary</span> '
-                                 f'{_esc(source_label)}')
+                                 f'{source_label}')
                 if secondary_url and str(secondary_url).startswith("http"):
                     _rows.append(
                         f'<span style="font-weight:700;">Reported</span> '
@@ -854,9 +855,9 @@ def render(digest: dict) -> str:
                   <table width="100%" cellpadding="0" cellspacing="0" border="0" height="100%" style="height:100%;">
                     <tr><td style="background:#F5F7FA;border-radius:3px;padding:14px;vertical-align:top;">
                       <div style="margin-bottom:6px;">{ministry_header}</div>
-                      <div style="font-size:14px;font-weight:700;color:{INK};line-height:1.3;margin-bottom:6px;">{_esc(action)}</div>
+                      <div style="font-size:14px;font-weight:700;color:{INK};line-height:1.3;margin-bottom:6px;">{action}</div>
                       {official_line}
-                      <div style="font-size:13px;line-height:1.5;font-family:Georgia,serif;color:#4A5260;">{_emphasis(_esc(detail))}</div>
+                      <div style="font-size:13px;line-height:1.5;font-family:Georgia,serif;color:#4A5260;">{detail}</div>
                       {src_link}
                     </td></tr>
                   </table>
@@ -1656,8 +1657,8 @@ def render(digest: dict) -> str:
                             + (f'<div style="font-size:11px;color:{TAEGUK_BLUE};line-height:1.4;margin-bottom:3px;"><strong>Context:</strong> {note}</div>' if note else "")
                             + f'{link}</div>')
             if xp_html:
-                sa_html += (f'<div style="margin-bottom:14px;padding:13px 0;background:#FFFFFF;'
-                            f'border-radius:6px;border-left:3px solid {TAEGUK_BLUE};">'
+                sa_html += (f'<div style="margin-bottom:14px;padding:13px 0 13px 16px;background:#FFFFFF;'
+                            f'border-left:3px solid {TAEGUK_BLUE};">'
                             f'<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;'
                             f'color:{TAEGUK_BLUE};margin-bottom:9px;">Officials on X</div>'
                             f'{xp_html}'

@@ -113,33 +113,24 @@ def sparkline_html(color: str = "#0052B4", width_px: int = 108,
     if len(series) < MIN_POINTS_TO_RENDER:
         return ""
     values = [_pct(p["approval"]) for p in series]
-    lo, hi = min(values), max(values)
-    span = (hi - lo) or 1.0
-    bar_w = max(2, int(width_px / max(len(values), 1)) - 1)
-    cells = ""
-    for i, v in enumerate(values):
-        # Scale into the box, keeping a 3px floor so a low point stays visible.
-        h = 3 + int((v - lo) / span * (height_px - 4))
-        last = i == len(values) - 1
-        # #B9C6DA measured 1.73 against white: the earlier readings were all
-        # but invisible in light mode, which is most of the chart. WCAG asks
-        # 3:1 for a graphical object; this is 3.13. The dark-mode pair is set
-        # in render.py, since the active bar (navy) is the one that vanishes
-        # there — the chart was half-unreadable in each mode, in opposite ways,
-        # and neither showed up because bars are not text nodes.
-        fill = color if last else "#7E93B3"
-        cells += (f'<td style="padding:0 1px 0 0;vertical-align:bottom;">'
-                  f'<div class="spark-bar" style="width:{bar_w}px;height:{h}px;'
-                  f'background:{fill};font-size:0;line-height:0;">&nbsp;</div></td>')
+
+    # No bars. They were scaled from the series minimum, not from zero, so the
+    # lowest reading always bottomed out at a 3px sliver however close the
+    # numbers were: a 4-point fall and a 22-point fall both rendered as a
+    # collapse from full height to nothing. The chart could not tell those
+    # apart, which makes it not a chart. Scaled honestly from zero instead, the
+    # same three readings come out 30, 28 and 27px, indistinguishable at this
+    # size. Three points in a 35px box cannot carry a trend either way.
+    #
+    # The sentence can, and the panel already leads with the current figure and
+    # the change since the last reading, so this is the line that adds the
+    # range rather than repeating it.
     first_label = series[0].get("label") or str(series[0].get("date", ""))[:7]
-    return (f'<table cellpadding="0" cellspacing="0" border="0" '
-            f'style="height:{height_px}px;"><tr>{cells}</tr>'
-            f'<tr><td colspan="{len(values)}" style="padding-top:3px;'
-            # 11px and a colour that passes on white. At 9px in #9AA3AE this
-            # caption measured 2.55:1 and sat below the 10px floor, failing both
-            # halves of the visual check at once. It went unseen because the
-            # sparkline only renders when poll history holds a prior reading,
-            # so a weekly baseline update is what surfaced it.
-            f'font-family:Arial,sans-serif;font-size:11px;color:#6B7280;'
-            f'white-space:nowrap;">{values[0]:g}% since {first_label} '
-            f'&rarr; {values[-1]:g}%</td></tr></table>')
+    direction = "&rarr;"
+    if values[-1] < values[0]:
+        direction = "&darr;"
+    elif values[-1] > values[0]:
+        direction = "&uarr;"
+    return (f'<div style="font-family:Arial,sans-serif;font-size:11px;'
+            f'color:#6B7280;padding-top:2px;">{values[0]:g}% since {first_label} '
+            f'{direction} {values[-1]:g}% across {len(values)} readings</div>')

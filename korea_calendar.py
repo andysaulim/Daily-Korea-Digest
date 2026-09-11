@@ -48,6 +48,11 @@ RECURRING: list[tuple[int, int, str, str]] = [
      "policy and unification."),
     (9, 9, "DPRK founding day",
      "Parades and weapons displays have historically clustered on this date."),
+    (10, 1, "ROK Armed Forces Day (국군의 날)",
+     "Also the anniversary of the ROK-US Mutual Defense Treaty, signed in "
+     "Washington on 1 October 1953. Recent years have brought a parade through "
+     "central Seoul and new systems shown publicly; alliance statements from "
+     "both capitals usually land the same day."),
     (10, 3, "National Foundation Day (개천절)",
      "Public holiday: KRX closed, ministries dark, no Assembly business. "
      "Expect a thin domestic news flow and few primary-source releases."),
