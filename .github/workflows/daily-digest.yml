@@ -110,8 +110,20 @@ jobs:
       # measured in a real browser. None of it is visible by reading the
       # HTML, which is why it kept being found by eye instead. Needs the
       # browser installed below, so it runs after that step.
+      # continue-on-error, deliberately, and it was not before.
+      #
+      # This measures contrast, type size and overflow in a real browser. That
+      # is worth knowing and worth a red run, but it is NOT worth a missing
+      # brief: on 11 September the weekly Gallup baseline update populated a
+      # sparkline caption that had always been 9px at 2.55:1, the check caught
+      # it correctly, and the send was cancelled over a caption. A data change
+      # should never be able to stop the morning.
+      #
+      # The offline checks above stay blocking. They test the pipeline's own
+      # invariants and cannot be tripped by the day's news.
       - name: Visual checks
         if: steps.guard.outputs.should_run != 'false'
+        continue-on-error: true
         run: |
           python3 preview.py
           BRIEF_HTML=preview.html python3 test_render_visual.py

@@ -129,6 +129,11 @@ def sparkline_html(color: str = "#0052B4", width_px: int = 108,
     return (f'<table cellpadding="0" cellspacing="0" border="0" '
             f'style="height:{height_px}px;"><tr>{cells}</tr>'
             f'<tr><td colspan="{len(values)}" style="padding-top:3px;'
-            f'font-family:Arial,sans-serif;font-size:9px;color:#9AA3AE;'
+            # 11px and a colour that passes on white. At 9px in #9AA3AE this
+            # caption measured 2.55:1 and sat below the 10px floor, failing both
+            # halves of the visual check at once. It went unseen because the
+            # sparkline only renders when poll history holds a prior reading,
+            # so a weekly baseline update is what surfaced it.
+            f'font-family:Arial,sans-serif;font-size:11px;color:#6B7280;'
             f'white-space:nowrap;">{values[0]:g}% since {first_label} '
             f'&rarr; {values[-1]:g}%</td></tr></table>')
