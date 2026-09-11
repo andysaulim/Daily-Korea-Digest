@@ -31,6 +31,17 @@ from zoneinfo import ZoneInfo
 
 from cost_daily import normalise
 
+# ADDING A NEW EDITION — two steps, and the second is the one that gets missed:
+#
+#   1. In the new repo: a per-call TOKEN_LEDGER in digest.py, a MODEL_PRICING
+#      table, get_run_usage(), a metrics.jsonl write in run.py wrapped so it
+#      cannot break a send, and a workflow step that COMMITS metrics.jsonl.
+#      Copy any existing edition; its suite has a check that asserts all of it,
+#      so a new edition built from a template cannot quietly skip a part.
+#   2. Add the repo to the list below. Nothing discovers editions automatically,
+#      so an edition missing here spends money that never reaches this sheet —
+#      and reads as an absence rather than an error.
+#
 # repo -> (label, path to metrics.jsonl within the repo)
 EDITIONS = [
     ("Daily-Korea-Digest",                     "Korea",       "metrics.jsonl"),

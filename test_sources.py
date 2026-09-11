@@ -459,7 +459,42 @@ def check_no_raw_markdown_reaches_the_reader():
     return problems
 
 
+def check_api_cost_is_recorded():
+    """Recording spend has three parts, and any one can lapse without a symptom.
+
+    A per-call ledger, a write of it into metrics.jsonl, and a workflow step
+    that commits the file. The Japan edition had none of the three for months.
+    This edition had the first two while its file lived only in an Actions
+    cache that GitHub evicts after seven days, and .gitignore silently defeated
+    the commit step that named it. Neither showed up as a failure, because a
+    missing cost record looks exactly like a cheap week.
+    """
+    import inspect
+    from pathlib import Path as _P
+    import digest as _d
+    problems = []
+    src = inspect.getsource(_d)
+    if "TOKEN_LEDGER" not in src and "_RUN_USAGE" not in src:
+        problems.append("digest keeps no per-call token ledger")
+    if "def get_run_usage" not in src and "def run_cost" not in src:
+        problems.append("digest exposes no per-run usage total")
+
+    run_src = _P("run.py").read_text(encoding="utf-8")
+    if "metrics.jsonl" not in run_src:
+        problems.append("run.py writes no metrics line")
+
+    wf = _P(".github/workflows/daily-digest.yml")
+    if wf.exists() and "metrics.jsonl" not in wf.read_text(encoding="utf-8"):
+        problems.append("the workflow never commits metrics.jsonl, so it lives only in a cache")
+
+    gi = _P(".gitignore")
+    if gi.exists() and any(l.strip() == "metrics.jsonl" for l in gi.read_text().splitlines()):
+        problems.append("metrics.jsonl is gitignored, which silently defeats the commit step")
+    return problems
+
+
 CHECKS = [
+    ("API cost is recorded and kept", check_api_cost_is_recorded),
     ("no raw markdown reaches the reader", check_no_raw_markdown_reaches_the_reader),
     ("subject line is the house format", check_subject_is_the_house_format),
     ("prestige rule is enforceable", check_prestige_rule_is_enforceable),
