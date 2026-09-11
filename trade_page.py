@@ -45,7 +45,11 @@ def build(standing_html: str, *, date_str: str = "", web_base: str = "") -> str:
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>US–Korea Trade Reference · CSIS Korea Chair</title>
 <style>
-  body {{ margin:0; background:#EEF1F4; }}
+  /* The page set no font, so every node without its own declaration fell to
+     the browser default serif: 73 of them rendered in Times New Roman, and
+     the page carried five faces where the brief carries three. Inherit the
+     house sans; the explicit Georgia and monospace declarations still win. */
+  body {{ margin:0; background:#EEF1F4; font-family:{SANS}; }}
   .wrap {{ max-width:760px; margin:0 auto; background:#fff; }}
   @media (max-width:640px) {{ .pad {{ padding-left:20px !important; padding-right:20px !important; }} }}
 </style></head>
