@@ -1634,10 +1634,25 @@ def main():
     # ── Landing page and archive page for GitHub Pages ─────────────────────
     (archive_dir / "index.html").write_text(_build_index_html(), encoding="utf-8")
     import shutil
-    for _tpl in ("archive.html", "corpus.html"):
+    # corpus.html is still a static template. archive.html is now generated
+    # from the same module the other three editions use, so the four share one
+    # layout and one search rather than four pages that drifted apart.
+    for _tpl in ("corpus.html",):
         _src = Path(__file__).parent / "templates" / _tpl
         if _src.exists():
             shutil.copy2(_src, archive_dir / _tpl)
+    try:
+        import archive_page
+        (archive_dir / "archive.html").write_text(
+            archive_page.build(archive_entries, title="Korea Daily Brief",
+                               chair="CSIS Korea Chair", accent="#167EFF",
+                               latest_href="latest.html", prefix="digest_"),
+            encoding="utf-8")
+    except Exception as _e:                                     # noqa: BLE001
+        print(f"  ⚠  Archive page skipped (non-fatal): {_e}")
+        _src = Path(__file__).parent / "templates" / "archive.html"
+        if _src.exists():
+            shutil.copy2(_src, archive_dir / "archive.html")
 
     # ── Step 4: Send email ───────────────────────────────────────────────────
     if not validation_passed:

@@ -311,7 +311,7 @@ def _sec_label(label: str, color: str = RING_ON_DARK) -> str:
         'class="sec-bar" style="background:#14181F;margin-bottom:14px;">'
         '<tr><td style="padding:9px 14px;">'
         f'<span style="font-family:Arial,sans-serif;font-size:12px;color:{color};'
-        'line-height:1;vertical-align:middle;margin-right:9px;">&#9675;</span>'
+        'line-height:1;vertical-align:middle;margin-right:9px;">&#9679;</span>'
         '<span style="font-family:Arial,sans-serif;font-size:11px;font-weight:700;'
         'text-transform:uppercase;letter-spacing:2px;color:#FFFFFF;'
         f'vertical-align:middle;">{label}</span>'
@@ -593,7 +593,11 @@ def render(digest: dict) -> str:
     if overnight:
         flash_html = ""
         for item in overnight:
-            cat_raw = _str(item.get("category", ""))
+            # The prompt asks for category_tag; this read category, so the
+            # left-hand label column rendered empty in every issue while the
+            # other three editions showed theirs. Read the name the model is
+            # told to use, keeping the old one as a fallback.
+            cat_raw = _str(item.get("category_tag", item.get("category", "")))
             cat = _esc(cat_raw)
             headline = _emphasis(_esc(item.get("headline", "")))
             body = _emphasis(_esc(item.get("body_text", "")))
