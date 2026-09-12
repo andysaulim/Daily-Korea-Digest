@@ -198,7 +198,15 @@ jobs:
           # it puts the record in the repository, where it survives. The cache
           # entry stays, since it is what carries the file between runs on the
           # same day.
-          git add README.md gallup_baseline.json metrics.jsonl
+          # One `git add` over three paths stages NOTHING if any one of them
+          # is missing: git exits 128 on the first unmatched pathspec, and the
+          # step ends there. metrics.jsonl does not exist until a run has
+          # written one, so on any run that did not, README and the Gallup
+          # baseline were not committed either. Staged one at a time, a file
+          # that is not there costs only itself.
+          for f in README.md gallup_baseline.json metrics.jsonl; do
+            [ -e "$f" ] && git add "$f" || echo "  (no $f this run)"
+          done
           if ! git diff --cached --quiet; then
             git commit -m "Update README stats, Gallup baseline, run metrics [skip ci]"
             git pull --rebase origin main || true
