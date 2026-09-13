@@ -178,42 +178,68 @@ def generate_weekly(digests: list[dict]) -> dict:
 
 
 def render_weekly(weekly: dict) -> str:
-    """Render weekly summary as HTML email matching daily digest design."""
+    """Render the Week in Review in the daily brief's house style.
+
+    Everything visual here is imported from render.py rather than restated.
+    This renderer predates the daily's redesign and had kept the older look:
+    section titles set as navy type over a hairline rule, a gold accent
+    (#C9A96E, #D4AC0D) the daily no longer uses anywhere, a green-black panel
+    where the daily's is navy, a centred masthead where the daily's is left
+    aligned, and no dark mode at all. Opened next to a daily issue the two
+    read as separate publications.
+
+    Importing the palette, the section bar and the dark-mode block means they
+    cannot drift apart again: a change to the edition's identity reaches the
+    weekly on its next run, with nothing to remember.
+    """
     from html import escape as _esc
+    from render import (_sec_label, _dark_mode_css, BAND, NAVY, INK, MUTE,
+                        BODY_INK, NAVY_PANEL, BLUE_ON_NAVY, UP_GREEN, DOWN_RED)
+
+    SERIF = "Georgia,'Times New Roman',serif"
+    SANS = "Arial,Helvetica,sans-serif"
+    PANEL = "#F5F7FA"          # the daily's panel grey
+    RULE = "#E8E8E8"
+
     week_label = _esc(weekly.get("week_label", "This Week"))
     re_line = _esc(weekly.get("re_line", ""))
     bottom_line = _esc(weekly.get("bottom_line", ""))
 
-    # Top 10 stories
+    def _sec(label: str, body: str) -> str:
+        """One section: the house bar, then its contents, on the .sec ground."""
+        return (f'<div class="sec" style="padding:20px 32px;background:#FFFFFF;'
+                f'border-bottom:1px solid {RULE};">{_sec_label(label)}{body}</div>')
+
+    # ── Top 10 ───────────────────────────────────────────────────────────
     top_html = ""
     for story in (weekly.get("top_10") or []):
-        rank = story.get("rank", "")
+        rank = _esc(str(story.get("rank", "")))
         headline = _esc(story.get("headline", ""))
         body = _esc(story.get("body", ""))
         category = _esc(story.get("category", ""))
         sources = ", ".join(_esc(s) for s in (story.get("sources") or []))
         top_html += f"""
-        <tr><td style="padding:14px 0;border-bottom:1px solid #EBEBEB;">
+        <tr><td style="padding:14px 0;border-bottom:1px solid {RULE};">
             <table cellpadding="0" cellspacing="0" border="0"><tr>
                 <td style="vertical-align:top;padding-right:12px;">
-                    <div style="background:#1B2A4A;color:#fff;border-radius:50%;width:26px;height:26px;text-align:center;line-height:26px;font-size:12px;font-weight:700;">{rank}</div>
+                    <div style="background:{NAVY};color:#FFFFFF;width:26px;height:26px;text-align:center;line-height:26px;font-family:{SANS};font-size:12px;font-weight:700;">{rank}</div>
                 </td>
-                <td>
-                    <div style="font-size:14px;font-weight:700;color:#1B2A4A;line-height:1.3;">{headline}</div>
-                    <div style="font-size:10px;color:#D4AC0D;text-transform:uppercase;letter-spacing:1px;margin-top:2px;">{category}</div>
-                    <div style="font-size:13px;color:#555;line-height:1.5;margin-top:6px;">{body}</div>
-                    <div style="font-size:10px;color:#999;margin-top:4px;">{sources}</div>
+                <td style="vertical-align:top;">
+                    <div style="font-family:{SERIF};font-size:15px;font-weight:700;color:{INK};line-height:1.35;">{headline}</div>
+                    <div style="font-family:{SANS};font-size:10px;font-weight:700;color:{MUTE};text-transform:uppercase;letter-spacing:1.5px;margin-top:3px;">{category}</div>
+                    <div style="font-family:{SERIF};font-size:13px;color:{BODY_INK};line-height:1.55;margin-top:6px;">{body}</div>
+                    <div style="font-family:{SANS};font-size:11px;color:{MUTE};margin-top:5px;">{sources}</div>
                 </td>
             </tr></table>
         </td></tr>"""
 
-    # DPRK statements summary
+    # ── DPRK week summary ────────────────────────────────────────────────
     dprk = weekly.get("dprk_statements") or {}
     dprk_html = ""
     if dprk:
-        kim_ct = dprk.get("kim_appearances", 0)
-        watch_ct = dprk.get("watch_flags", 0)
-        silence_ct = dprk.get("silence_days", 0)
+        kim_ct = _esc(str(dprk.get("kim_appearances", 0)))
+        watch_ct = _esc(str(dprk.get("watch_flags", 0)))
+        silence_ct = _esc(str(dprk.get("silence_days", 0)))
         summary = _esc(dprk.get("summary", ""))
         quotes_html = ""
         for q in (dprk.get("notable_quotes") or [])[:3]:
@@ -221,127 +247,145 @@ def render_weekly(weekly: dict) -> str:
             quote = _esc(q.get("quote", ""))
             if quote:
                 quotes_html += f"""
-                <div style="padding:8px 12px;background:rgba(255,255,255,0.04);border-radius:4px;border-left:3px solid #C9A96E;margin-top:8px;">
-                    <div style="font-size:12px;color:#E8E8E8;font-style:italic;">&ldquo;{quote}&rdquo;</div>
-                    <div style="font-size:10px;color:#C9A96E;margin-top:3px;">{speaker}</div>
+                <div style="padding:9px 13px;background:rgba(255,255,255,0.05);border-left:3px solid {BLUE_ON_NAVY};margin-top:9px;">
+                    <div style="font-family:{SERIF};font-size:13px;color:#E8E6E1;line-height:1.5;">&ldquo;{quote}&rdquo;</div>
+                    <div style="font-family:{SANS};font-size:11px;color:{BLUE_ON_NAVY};margin-top:4px;">{speaker}</div>
                 </div>"""
         dprk_html = f"""
-        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#0F1A12;border-radius:4px;margin-top:16px;">
-            <tr><td style="padding:14px 20px;">
-                <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#C9A96E;margin-bottom:10px;">DPRK Official Statements — Week Summary</div>
-                <div style="font-size:11px;color:#AAA;margin-bottom:8px;">Kim appearances: {kim_ct} &nbsp;·&nbsp; Watch flags: {watch_ct} &nbsp;·&nbsp; Silence days: {silence_ct}</div>
-                <div style="font-size:13px;color:#E0E0E0;line-height:1.5;">{summary}</div>
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" class="kcna-dark" style="background:{NAVY_PANEL};">
+            <tr><td style="padding:16px 20px;">
+                <div style="font-family:{SANS};font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:{BLUE_ON_NAVY};margin-bottom:10px;">DPRK Official Statements &middot; Week Summary</div>
+                <div style="font-family:{SANS};font-size:11px;color:rgba(255,255,255,0.70);margin-bottom:9px;">Kim appearances: {kim_ct} &nbsp;&middot;&nbsp; Watch flags: {watch_ct} &nbsp;&middot;&nbsp; Silence days: {silence_ct}</div>
+                <div style="font-family:{SERIF};font-size:13px;color:#E8E6E1;line-height:1.55;">{summary}</div>
                 {quotes_html}
             </td></tr>
         </table>"""
 
-    # Calendar next week
+    # ── Next week ────────────────────────────────────────────────────────
     cal_html = ""
     for event in (weekly.get("calendar_next_week") or []):
         date = _esc(event.get("date", ""))
         headline = _esc(event.get("headline", ""))
         detail = _esc(event.get("detail", ""))
         cal_html += f"""
-        <tr><td style="padding:8px 0;border-bottom:1px solid #EBEBEB;font-size:13px;">
-            <strong style="color:#1B2A4A;">{date}</strong> — {headline}
-            <div style="font-size:11px;color:#888;margin-top:2px;">{detail}</div>
+        <tr><td style="padding:9px 0;border-bottom:1px solid {RULE};">
+            <div style="font-family:{SERIF};font-size:14px;color:{INK};line-height:1.4;"><strong style="color:{NAVY};">{date}</strong> &mdash; {headline}</div>
+            <div style="font-family:{SERIF};font-size:12px;color:{BODY_INK};margin-top:3px;line-height:1.5;">{detail}</div>
         </td></tr>"""
 
-    # Market weekly
+    # ── Markets ──────────────────────────────────────────────────────────
     mkt = weekly.get("market_weekly") or {}
     mkt_html = ""
     if mkt:
-        kospi_chg = _esc(str(mkt.get("kospi_change_pct", "—")))
-        krw_chg = _esc(str(mkt.get("krw_change_pct", "—")))
+        def _signed(raw):
+            """Colour a weekly move the way the daily strip does: green up,
+            red down, ink when there is no sign to read."""
+            text = _esc(str(raw if raw not in (None, "") else "—"))
+            stripped = text.lstrip()
+            if stripped.startswith("+"):
+                return text, UP_GREEN
+            if stripped.startswith(("-", "−")):
+                return text, DOWN_RED
+            return text, INK
+
+        kospi_txt, kospi_col = _signed(mkt.get("kospi_change_pct"))
+        krw_txt, krw_col = _signed(mkt.get("krw_change_pct"))
         bok = _esc(mkt.get("bok_action") or "No change")
+        _cell = (f'font-family:{SANS};font-size:10px;font-weight:700;'
+                 f'text-transform:uppercase;letter-spacing:1.5px;color:{MUTE};')
         mkt_html = f"""
-        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F8F9FA;border-radius:4px;margin-top:16px;">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" class="mkt-table" style="background:{PANEL};margin-top:16px;">
             <tr>
-                <td style="padding:12px 16px;text-align:center;width:33%;">
-                    <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#888;">KOSPI</div>
-                    <div style="font-size:16px;font-weight:700;color:#1B2A4A;">{kospi_chg}</div>
+                <td style="padding:13px 16px;text-align:center;width:33%;">
+                    <div style="{_cell}">KOSPI</div>
+                    <div style="font-family:{SERIF};font-size:17px;font-weight:700;color:{kospi_col};margin-top:3px;">{kospi_txt}</div>
                 </td>
-                <td style="padding:12px 16px;text-align:center;width:33%;border-left:1px solid #EBEBEB;border-right:1px solid #EBEBEB;">
-                    <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#888;">KRW/USD</div>
-                    <div style="font-size:16px;font-weight:700;color:#1B2A4A;">{krw_chg}</div>
+                <td style="padding:13px 16px;text-align:center;width:33%;border-left:1px solid {RULE};border-right:1px solid {RULE};">
+                    <div style="{_cell}">KRW/USD</div>
+                    <div style="font-family:{SERIF};font-size:17px;font-weight:700;color:{krw_col};margin-top:3px;">{krw_txt}</div>
                 </td>
-                <td style="padding:12px 16px;text-align:center;width:33%;">
-                    <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#888;">BOK</div>
-                    <div style="font-size:13px;color:#1B2A4A;">{bok}</div>
+                <td style="padding:13px 16px;text-align:center;width:33%;">
+                    <div style="{_cell}">BOK</div>
+                    <div style="font-family:{SERIF};font-size:13px;color:{INK};margin-top:5px;">{bok}</div>
                 </td>
             </tr>
         </table>"""
 
     tz = ZoneInfo("America/New_York")
     gen_time = datetime.now(tz).strftime("%-I:%M %p ET")
-    story_count = weekly.get("story_count_total", 0)
+    story_count = _esc(str(weekly.get("story_count_total", 0)))
+
+    _re_block = (
+        f'<div style="margin-top:14px;padding-top:12px;'
+        f'border-top:1px solid rgba(255,255,255,0.28);font-family:{SERIF};'
+        f'font-size:13px;color:rgba(255,255,255,0.92);line-height:1.55;">'
+        f'<strong style="color:#FFFFFF;font-size:11px;letter-spacing:1.5px;'
+        f'font-family:{SANS};">RE:</strong>&nbsp; {re_line}</div>'
+    ) if re_line else ""
+
+    sections = "".join([
+        _sec("Top 10 Stories",
+             f'<table width="100%" cellpadding="0" cellspacing="0" border="0">{top_html}</table>'),
+        _sec("North Korea &amp; Markets", dprk_html + mkt_html) if (dprk_html or mkt_html) else "",
+        _sec("Next Week",
+             f'<table width="100%" cellpadding="0" cellspacing="0" border="0">{cal_html}</table>')
+        if cal_html else "",
+        _sec("Bottom Line",
+             f'<div style="padding:16px;background:{PANEL};border-left:3px solid {NAVY};">'
+             f'<div style="font-family:{SERIF};font-size:14px;color:{INK};'
+             f'line-height:1.6;">{bottom_line}</div></div>')
+        if bottom_line else "",
+    ])
 
     return f"""<!DOCTYPE html>
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Korea Daily Brief — Week in Review · {week_label}</title>
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark">
+<title>Korea Week in Review &middot; {week_label}</title>
 <style type="text/css">
-@media screen and (max-width: 600px) {{
-    .wrapper {{ width: 100% !important; }}
-    .sec {{ padding: 16px 14px !important; }}
-}}
+{_dark_mode_css()}
+    @media screen and (max-width: 600px) {{
+      .wrapper {{ width:100% !important; max-width:680px !important; }}
+      .sec {{ padding:16px 14px !important; }}
+    }}
 </style>
 </head>
-<body style="margin:0;padding:0;background:#F0F0F0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+<body style="margin:0;padding:0;background:#F0F0F0;">
 <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F0F0F0;">
 <tr><td align="center" style="padding:20px 0;">
-<table class="wrapper" width="640" cellpadding="0" cellspacing="0" border="0" style="background:#FFFFFF;border-radius:4px;overflow:hidden;">
+<table role="presentation" class="wrapper" width="680" cellpadding="0" cellspacing="0" border="0" align="center" style="width:680px;max-width:100%;margin:0 auto;background:#FFFFFF;font-family:{SANS};box-shadow:0 2px 20px rgba(0,0,0,0.08);">
 
-<!-- Header -->
-<tr><td bgcolor="#0D1B2A" style="background-color:#0D1B2A;padding:28px 32px;text-align:center;">
-    <div style="font-size:9px;text-transform:uppercase;letter-spacing:3px;color:rgba(255,255,255,0.5);font-family:Arial,sans-serif;">CSIS Korea Chair</div>
-    <div style="font-size:24px;font-weight:700;color:#FFFFFF;margin:8px 0 4px;font-family:Georgia,serif;">Week in Review</div>
-    <div style="font-size:14px;color:rgba(255,255,255,0.6);">{week_label}</div>
-    <div style="height:2px;background:#C9A96E;width:60px;margin:14px auto 0;"></div>
-</td></tr>
+<tr><td style="padding:0;">
 
-<!-- RE: line -->
-<tr><td style="padding:20px 32px;border-bottom:1px solid #EBEBEB;">
-    <div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#C9A96E;font-weight:700;margin-bottom:6px;">RE:</div>
-    <div style="font-size:15px;color:#1B2A4A;font-weight:600;line-height:1.4;">{re_line}</div>
-    <div style="font-size:10px;color:#999;margin-top:6px;">{story_count} articles processed this week</div>
-</td></tr>
+  <div bgcolor="{BAND}" style="background-color:{BAND};color:#fff;padding:16px 32px;border-bottom:1px solid rgba(255,255,255,0.18);" class="sec mast-band">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+      <td class="mast-main" style="vertical-align:top;">
+        <div style="font-family:{SANS};font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.78);margin-bottom:7px;">CSIS Korea Chair</div>
+        <h1 style="margin:0 0 4px 0;font-size:26px;font-weight:700;font-family:{SERIF};color:#fff;letter-spacing:0.5px;">Week in Review</h1>
+        <div style="margin-top:2px;font-size:16px;font-weight:400;color:rgba(255,255,255,0.85);font-family:{SERIF};">{week_label}</div>
+      </td>
+      <td class="mast-meta" style="vertical-align:bottom;text-align:right;">
+        <div style="font-family:{SANS};font-size:11px;letter-spacing:0.5px;color:rgba(255,255,255,0.72);white-space:nowrap;">{story_count} articles this week</div>
+      </td>
+    </tr></table>
+    {_re_block}
+  </div>
 
-<!-- Top 10 -->
-<tr><td style="padding:20px 32px;border-bottom:1px solid #EBEBEB;">
-    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#1B2A4A;font-family:Arial,sans-serif;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid #1B2A4A;">Top 10 Stories</div>
-    <table width="100%" cellpadding="0" cellspacing="0" border="0">{top_html}</table>
-</td></tr>
+  {sections}
 
-<!-- DPRK + Markets -->
-<tr><td style="padding:20px 32px;border-bottom:1px solid #EBEBEB;">
-    {dprk_html}
-    {mkt_html}
-</td></tr>
-
-<!-- Next Week -->
-<tr><td style="padding:20px 32px;border-bottom:1px solid #EBEBEB;">
-    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#1B2A4A;font-family:Arial,sans-serif;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid #1B2A4A;">Next Week</div>
-    <table width="100%" cellpadding="0" cellspacing="0" border="0">{cal_html}</table>
-</td></tr>
-
-<!-- Bottom Line -->
-<tr><td style="padding:20px 32px;border-bottom:1px solid #EBEBEB;">
-    <div style="padding:16px;background:#F8F9FA;border-radius:4px;border-left:3px solid #1B2A4A;">
-        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#1B2A4A;margin-bottom:8px;">Bottom Line</div>
-        <div style="font-size:14px;color:#333;line-height:1.6;">{bottom_line}</div>
+  <div class="footer" style="background:{NAVY};padding:22px 32px;text-align:center;">
+    <div style="font-family:{SERIF};font-size:12px;line-height:1.6;color:rgba(255,255,255,0.80);">
+      You are receiving the Korea Week in Review as a member of the CSIS Korea Chair distribution list.
     </div>
-</td></tr>
-
-<!-- Footer -->
-<tr><td style="padding:20px 32px;background:#1B2A4A;text-align:center;">
-    <div style="font-size:9px;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,0.45);font-family:Arial,sans-serif;line-height:2;">
-        CSIS Korea Chair &nbsp;&middot;&nbsp; Week in Review &nbsp;&middot;&nbsp; Generated {gen_time}
+    <div style="font-family:{SANS};font-size:10px;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,0.45);line-height:2;margin-top:10px;">
+      CSIS Korea Chair &nbsp;&middot;&nbsp; Week in Review &nbsp;&middot;&nbsp; Generated {gen_time}
     </div>
-</td></tr>
+  </div>
 
+</td></tr>
 </table>
 </td></tr></table>
 </body></html>"""
@@ -391,8 +435,12 @@ def main():
         if os.environ.get("DIGEST_TO"):
             from send_email import send
             week_label = weekly.get("week_label", date_slug)
-            re_short = weekly.get("re_line", "")[:80]
-            subject = f"Korea Week in Review · {week_label} — {re_short}"
+            # House format, the same shape as the daily's "Korea Daily Brief
+            # | Tuesday, September 8, 2026": name first, because that is what
+            # a reader filters and searches on, then the period it covers.
+            # The RE: line used to be appended and pushed the subject past
+            # what any client shows, burying the name it starts with.
+            subject = f"Korea Week in Review | {week_label}"
             send(html, subject=subject)
             print("📧  Weekly email sent")
         else:
