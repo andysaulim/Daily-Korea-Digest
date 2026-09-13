@@ -998,11 +998,13 @@ def generate_digest(payload: dict, db_context: str = "",
                 digest = _call_claude(client, user_prompt, model=retry_model)
             else:
                 # Re-prompt with the previous output + specific expansion instructions
-                word_deficit = max(0, 1000 - _count_digest_words(digest))
+                # The floor is 1600; this said 1000, so a 2,000-word draft was
+                # told it was "0 words short" of a minimum it had already passed.
+                word_deficit = max(0, 1600 - _count_digest_words(digest))
                 expansion_prompt = (
                     f"Your previous digest output failed content minimums:\n"
                     + "\n".join(f"  • {f}" for f in content_failures)
-                    + f"\n\nYou are ~{word_deficit} words short of the 1000-word minimum.\n"
+                    + f"\n\nYou are ~{word_deficit} words short of the 1600-word minimum.\n"
                     + "\nHere is your previous output:\n"
                     + json.dumps(digest, ensure_ascii=False)[:8000]
                     + "\n\nRevise and return a COMPLETE updated digest JSON that fixes ALL failures above. "
@@ -1011,7 +1013,7 @@ def generate_digest(payload: dict, db_context: str = "",
                     "Each top_stories body must be 60-80 words (2-3 dense sentences). "
                     "Each overnight_items body_text must be 50-70 words. "
                     "Each business_economy/northeast_asia/also_today item must be 40-60 words. "
-                    "Add MORE items from the available articles to reach 1000+ words — do not inflate existing bodies with filler.\n"
+                    "Add MORE items from the available articles to reach 1600+ words — do not inflate existing bodies with filler.\n"
                     "- TOP STORIES: Include at least 3 stories. Pull from the available articles.\n"
                     "- OVERNIGHT ITEMS: Include at least 3 items (max 6).\n"
                     "- MORNING MEMO: Include exactly 3 items.\n"
@@ -1083,7 +1085,8 @@ def generate_digest(payload: dict, db_context: str = "",
 
 def regenerate_digest(payload: dict, previous_digest: dict,
                       validation_warnings: list[str], db_context: str = "",
-                      attempt: int = 0, recent_coverage: str = "") -> dict:
+                      attempt: int = 0, recent_coverage: str = "",
+                      cleanup_log: list[str] | None = None) -> dict:
     """Re-generate digest by sending validation feedback to Claude.
 
     Reuses the same collected articles — only re-calls the Claude API with
@@ -1102,10 +1105,37 @@ def regenerate_digest(payload: dict, previous_digest: dict,
     word_count = _count_digest_words(previous_digest)
     warning_list = "\n".join(f"  - {w}" for w in validation_warnings)
 
+    # What the cleanup pass actually deleted, verbatim. Without it the model
+    # sees only the shortfall, not its cause: it is handed back an already
+    # cleaned digest, so the items it wrote and lost are simply absent, and
+    # nothing distinguishes "you wrote too little" from "you wrote plenty and
+    # a quarter of it was removed for repeating articles across sections".
+    # Told the first, the model adds more of what is being deleted.
+    removals = [ln.strip() for ln in (cleanup_log or [])
+                if "Removed" in ln or "Dropped" in ln]
+    removal_block = ""
+    if removals:
+        shown = removals[:25]
+        removal_block = (
+            f"\n\nBEFORE it was measured, your previous draft lost {len(removals)} "
+            "item(s) to the automatic cleanup pass. This is why the word count is "
+            "short — not because you wrote too little. Here is exactly what was "
+            "removed and why:\n"
+            + "\n".join(f"  - {r}" for r in shown)
+            + (f"\n  ...and {len(removals) - len(shown)} more"
+               if len(removals) > len(shown) else "")
+            + "\n\nEvery article may appear in ONE section only. Re-using a URL in a "
+              "second section does not lengthen the brief — the second copy is "
+              "deleted and the words are lost. To reach the minimum, bring in "
+              "DIFFERENT articles from the ones supplied, not the same articles "
+              "again in more places."
+        )
+
     fix_prompt = (
-        f"Your previous digest failed validation with these CRITICAL issues:\n"
+        f"Your previous digest failed validation with these issues:\n"
         f"{warning_list}\n\n"
-        f"Current word count: ~{word_count} words.\n\n"
+        f"Current word count after cleanup: ~{word_count} words."
+        f"{removal_block}\n\n"
         "Return a COMPLETE corrected digest JSON that fixes ALL issues above. "
         "Keep everything that was correct — only fix what failed. Specifically:\n"
         "- If word count is too low: write more substantive body text for each story "
