@@ -1,6 +1,13 @@
 {
  "days": [
   {
+   "date": "2026-09-13",
+   "total": 453,
+   "used_in_digest": 16,
+   "shard": "index_2026-09.json",
+   "daily": "2026-09-13.json"
+  },
+  {
    "date": "2026-09-12",
    "total": 518,
    "used_in_digest": 19,
@@ -39,5 +46,5 @@
  "shards": [
   "index_2026-09.json"
  ],
- "updated": "2026-09-12T11:07:51.145396+00:00"
+ "updated": "2026-09-13T15:32:30.258562+00:00"
 }
