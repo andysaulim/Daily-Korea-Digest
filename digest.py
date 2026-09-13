@@ -81,7 +81,7 @@ PRIMARY ROK SOURCES: The feed includes the Presidential Office (대통령실), M
 SOURCE TIERS: This digest draws from 148+ sources including Korean-language newspapers and broadcast (translate titles and key content to English), Korean business dailies (매일경제, 한국경제), official ROK/US/Japan government feeds (USFK, ROK MOFA, Japan MOFA), Korean think tanks (ASAN, EAI, Sejong, KEIA), US think tanks (CSIS, Brookings, Carnegie, RAND, CFR, AEI, Hudson, Heritage, Atlantic Council, NBR, PIIE, USIP), European think tanks with Korea programs (IISS, SIPRI), Chinese and Russian reaction layer sources (Global Times, Xinhua, TASS, Caixin, China Daily, People's Daily), Japanese sources (Nikkei, Japan Times, Kyodo, Mainichi, Asahi), and academic journals.
 KOREAN-LANGUAGE FULL TEXT: Articles marked fulltext=true carry the article body, not just a headline and snippet. Use them — they are the richest material in the feed and usually the earliest. Quote and cite them as you would any other source.
 KOREAN-LANGUAGE CONTENT: Some articles are in Korean (lang="KO") — including broadcast sources (JTBC, KBS, MBC, SBS, YTN, Channel A) and business dailies (매일경제, 한국경제). Translate titles to English and incorporate their content into your analysis. Korean-language sources often break stories before English outlets. Broadcast sources frequently carry breaking security/military news first. ACTIVELY PREFER Korean-language sources when they break a story first or provide richer detail than the English wire version.
-SOURCE DIVERSITY — CRITICAL: Do NOT over-rely on any single source. Overnight_items and top_stories MUST draw from a MIX of outlets — Korean dailies (Korea Herald, JoongAng, Chosun), Korean-language press (조선일보, 한겨레, 경향신문, JTBC, KBS), wire services (Reuters, AP, AFP), international correspondents (WSJ, NYT, FT), and regional outlets (Nikkei, SCMP). If you notice more than 3 items from the same source (e.g. Yonhap English) across overnight_items, REPLACE some with coverage from other outlets. Different sources carry different perspectives — Korean conservative dailies (조선일보, 동아일보) vs progressive (한겨레, 경향신문), business press (매일경제, 한국경제) vs political press. Use this diversity to give readers a fuller picture.
+SOURCE DIVERSITY — CRITICAL: the limit is 3 items per outlet ACROSS THE WHOLE BRIEF, counting every section together — not 3 per section. Three Yonhap items in overnight_items plus three in business_economy is six, and fails validation. Count each outlet's total across top_stories, overnight_items, business_economy, northeast_asia, also_today and social_statements before you finish. The automatic filter only trims within a section, so it cannot fix a whole-brief total for you. Do NOT over-rely on any single source. Overnight_items and top_stories MUST draw from a MIX of outlets — Korean dailies (Korea Herald, JoongAng, Chosun), Korean-language press (조선일보, 한겨레, 경향신문, JTBC, KBS), wire services (Reuters, AP, AFP), international correspondents (WSJ, NYT, FT), and regional outlets (Nikkei, SCMP). If you notice more than 3 items from the same source (e.g. Yonhap English) across overnight_items, REPLACE some with coverage from other outlets. Different sources carry different perspectives — Korean conservative dailies (조선일보, 동아일보) vs progressive (한겨레, 경향신문), business press (매일경제, 한국경제) vs political press. Use this diversity to give readers a fuller picture.
 JAPAN-KOREA & TRILATERAL: Track developments affecting the Japan-Korea bilateral relationship and US-ROK-Japan trilateral cooperation. Key topics: history issues (forced labor, comfort women), GSOMIA intelligence-sharing, Camp David trilateral commitments, joint military exercises, economic friction (export controls, trade disputes), Dokdo/Takeshima, fisheries, Japan-ROK diplomatic meetings. Sources include Japanese outlets (Kyodo, Nikkei, Japan Times, Mainichi, Asahi) and Japan MOFA.
 CHINA-KOREA WATCH: Track PRC influence, pressure, and engagement with the ROK. Key topics: THAAD retaliation (tourism, cultural, economic sanctions — ongoing since 2017), Chinese economic coercion signals, rare earth and critical mineral supply chain pressure, PRC diplomatic moves toward Seoul, Korean public opinion on China, trade dependency metrics, Chinese military activity near Korean waters/airspace. Sources include Caixin, China Daily, People's Daily, Global Times, Xinhua, and Korean coverage of China relations.
 RUSSIA-KOREA WATCH: Track Russia-ROK bilateral relations and diplomatic dynamics separate from NK-Russia axis cooperation. Key topics: ROK sanctions enforcement on Russia, Russia-ROK diplomatic friction (ambassador recalls, visa restrictions), Russian military activity near Korean airspace/waters (KADIZ violations), Russia-ROK trade/energy disruptions (Arctic LNG, pipeline politics), Russian reactions to ROK weapons transfers to Ukraine (direct or via third parties), Yoon/successor government positioning on Russia-Ukraine. NK-Russia weapons cooperation and military-technical transfer stories are PRIMARY coverage (top_stories/overnight) — this section captures the ROK-Russia bilateral dimension. Sources include TASS and Korean coverage of Russia relations.
@@ -998,11 +998,13 @@ def generate_digest(payload: dict, db_context: str = "",
                 digest = _call_claude(client, user_prompt, model=retry_model)
             else:
                 # Re-prompt with the previous output + specific expansion instructions
-                word_deficit = max(0, 1000 - _count_digest_words(digest))
+                # The floor is 1600; this said 1000, so a 2,000-word draft was
+                # told it was "0 words short" of a minimum it had already passed.
+                word_deficit = max(0, 1600 - _count_digest_words(digest))
                 expansion_prompt = (
                     f"Your previous digest output failed content minimums:\n"
                     + "\n".join(f"  • {f}" for f in content_failures)
-                    + f"\n\nYou are ~{word_deficit} words short of the 1000-word minimum.\n"
+                    + f"\n\nYou are ~{word_deficit} words short of the 1600-word minimum.\n"
                     + "\nHere is your previous output:\n"
                     + json.dumps(digest, ensure_ascii=False)[:8000]
                     + "\n\nRevise and return a COMPLETE updated digest JSON that fixes ALL failures above. "
@@ -1011,7 +1013,7 @@ def generate_digest(payload: dict, db_context: str = "",
                     "Each top_stories body must be 60-80 words (2-3 dense sentences). "
                     "Each overnight_items body_text must be 50-70 words. "
                     "Each business_economy/northeast_asia/also_today item must be 40-60 words. "
-                    "Add MORE items from the available articles to reach 1000+ words — do not inflate existing bodies with filler.\n"
+                    "Add MORE items from the available articles to reach 1600+ words — do not inflate existing bodies with filler.\n"
                     "- TOP STORIES: Include at least 3 stories. Pull from the available articles.\n"
                     "- OVERNIGHT ITEMS: Include at least 3 items (max 6).\n"
                     "- MORNING MEMO: Include exactly 3 items.\n"
@@ -1083,7 +1085,8 @@ def generate_digest(payload: dict, db_context: str = "",
 
 def regenerate_digest(payload: dict, previous_digest: dict,
                       validation_warnings: list[str], db_context: str = "",
-                      attempt: int = 0, recent_coverage: str = "") -> dict:
+                      attempt: int = 0, recent_coverage: str = "",
+                      cleanup_log: list[str] | None = None) -> dict:
     """Re-generate digest by sending validation feedback to Claude.
 
     Reuses the same collected articles — only re-calls the Claude API with
@@ -1102,10 +1105,37 @@ def regenerate_digest(payload: dict, previous_digest: dict,
     word_count = _count_digest_words(previous_digest)
     warning_list = "\n".join(f"  - {w}" for w in validation_warnings)
 
+    # What the cleanup pass actually deleted, verbatim. Without it the model
+    # sees only the shortfall, not its cause: it is handed back an already
+    # cleaned digest, so the items it wrote and lost are simply absent, and
+    # nothing distinguishes "you wrote too little" from "you wrote plenty and
+    # a quarter of it was removed for repeating articles across sections".
+    # Told the first, the model adds more of what is being deleted.
+    removals = [ln.strip() for ln in (cleanup_log or [])
+                if "Removed" in ln or "Dropped" in ln]
+    removal_block = ""
+    if removals:
+        shown = removals[:25]
+        removal_block = (
+            f"\n\nBEFORE it was measured, your previous draft lost {len(removals)} "
+            "item(s) to the automatic cleanup pass. This is why the word count is "
+            "short — not because you wrote too little. Here is exactly what was "
+            "removed and why:\n"
+            + "\n".join(f"  - {r}" for r in shown)
+            + (f"\n  ...and {len(removals) - len(shown)} more"
+               if len(removals) > len(shown) else "")
+            + "\n\nEvery article may appear in ONE section only. Re-using a URL in a "
+              "second section does not lengthen the brief — the second copy is "
+              "deleted and the words are lost. To reach the minimum, bring in "
+              "DIFFERENT articles from the ones supplied, not the same articles "
+              "again in more places."
+        )
+
     fix_prompt = (
-        f"Your previous digest failed validation with these CRITICAL issues:\n"
+        f"Your previous digest failed validation with these issues:\n"
         f"{warning_list}\n\n"
-        f"Current word count: ~{word_count} words.\n\n"
+        f"Current word count after cleanup: ~{word_count} words."
+        f"{removal_block}\n\n"
         "Return a COMPLETE corrected digest JSON that fixes ALL issues above. "
         "Keep everything that was correct — only fix what failed. Specifically:\n"
         "- If word count is too low: write more substantive body text for each story "

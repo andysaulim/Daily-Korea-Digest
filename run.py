@@ -1416,8 +1416,18 @@ def main():
         critical_warnings = [w for w in validation_warnings if "CRITICAL" in w]
 
         # Don't retry for DUPLICATE TOPIC issues — dedup already handled them,
-        # and retrying just causes dedup to fight the retry loop
-        retryable_warnings = [w for w in critical_warnings if "DUPLICATE TOPIC" not in w]
+        # and retrying just causes dedup to fight the retry loop.
+        #
+        # Everything else the operator was shown is sent, not just the subset
+        # whose text happens to contain "CRITICAL". That filter is why the
+        # 13 September brief failed three times in a row: the model was told
+        # only "~1531 words, hard minimum 1600" while the two warnings that
+        # explained the shortfall — a source appearing eight times against a
+        # cap of three, and an item with no body — were held back. It added
+        # text, duplicated the same Yonhap articles across sections again,
+        # and lost more each round: 26%, then 32%, then 21% of the draft.
+        # The retry gate stays on the CRITICAL subset; only the feedback widens.
+        retryable_warnings = [w for w in validation_warnings if "DUPLICATE TOPIC" not in w]
 
         if not critical_warnings:
             # Passed — print any non-critical warnings and move on
@@ -1450,7 +1460,8 @@ def main():
             print("\n🔄  Re-generating digest with validation feedback (reusing collected articles)...")
             digest_data = regenerate_digest(
                 payload, digest_data, retryable_warnings, db_context=db_context,
-                attempt=validation_attempt, recent_coverage=recent_coverage
+                attempt=validation_attempt, recent_coverage=recent_coverage,
+                cleanup_log=pp_log
             )
             # Post-process again after regeneration (incl. URL repair)
             digest_data, pp_log = _postprocess_digest(digest_data, payload=payload)
