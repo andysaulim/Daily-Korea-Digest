@@ -92,7 +92,9 @@ TIER1_FEEDS = {
                            _gnews("site:koreatimes.co.kr")],
     "Yonhap English":    _native("https://en.yna.co.kr/RSS/news.xml", "site:en.yna.co.kr"),
     "JoongAng Daily":     _gnews("Korea+site:koreajoongangdaily.joins.com"),
-    "Chosun English":     _gnews("Korea+site:english.chosun.com"),
+    "Chosun English":     ["https://english.chosun.com/rss/",
+                           "https://english.chosun.com/site/data/rss/rss.xml",
+                           _gnews("Korea+site:english.chosun.com")],
     "Hankyoreh English":  _gnews("Korea+site:english.hani.co.kr"),
     "Dong-A English":     _gnews("Korea+site:donga.com/en"),
     "NK News":           _native("https://www.nknews.org/feed/", "site:nknews.org"),
@@ -114,7 +116,8 @@ TIER1_FEEDS = {
     "MBC":                _gnews("site:imnews.imbc.com"),
     "SBS":                _gnews("site:news.sbs.co.kr"),
     "YTN":                _gnews("site:ytn.co.kr"),
-    "Channel A":          _gnews("Korea+site:channela.com"),
+    "Channel A":          ["https://rss.channela.com/rss/news.xml",
+                           _gnews("Korea+site:channela.com")],
     "Arirang News":       _gnews("Korea+site:arirang.com"),
     # ── Korean business dailies ──────────────────────────────────────────
     "매일경제":            _native("https://www.mk.co.kr/rss/30000001/", "site:mk.co.kr"),
@@ -193,7 +196,8 @@ TIER1_FEEDS = {
     "Dept of Commerce":   _gnews("Korea+site:commerce.gov"),
     "Dept of Treasury":   _gnews("Korea+site:treasury.gov"),
     "OFAC":               _gnews("Korea+OR+DPRK+site:ofac.treasury.gov"),
-    "BIS":                _gnews("Korea+OR+DPRK+site:bis.doc.gov"),
+    "BIS":                ["https://www.bis.doc.gov/index.php/all-articles?format=feed&type=rss",
+                           _gnews("Korea+OR+DPRK+site:bis.doc.gov")],
     # ── US Congress ─────────────────────────────────────────────────────
     "Senate Foreign Relations": _gnews("Korea+site:foreign.senate.gov"),
     "Senate Armed Services":    _gnews("Korea+site:armed-services.senate.gov"),
@@ -216,12 +220,16 @@ TIER1_FEEDS = {
 
 TIER2_FEEDS = {
     "CSIS":              (_gnews("Korea+site:csis.org"), "A"),
-    "Brookings":         ("https://www.brookings.edu/feed/", "A"),
-    "Carnegie":          ("https://carnegieendowment.org/rss/solr?query=korea", "A"),
-    "RAND":              ("https://www.rand.org/topics/north-korea.xml", "A"),
+    "Brookings":         (_native("https://www.brookings.edu/feed/",
+                                  "Korea+site:brookings.edu"), "A"),
+    "Carnegie":          (_native("https://carnegieendowment.org/rss/solr?query=korea",
+                                  "Korea+site:carnegieendowment.org"), "A"),
+    "RAND":              (_native("https://www.rand.org/topics/north-korea.xml",
+                                  "Korea+site:rand.org"), "A"),
     "CFR":               (_gnews("Korea+site:cfr.org"), "A"),
     "38 North":          ("https://www.38north.org/feed/", "A"),
-    "AccessDPRK":        (_gnews("site:accessdprk.com"), "A"),
+    "AccessDPRK":        (["https://accessdprk.com/feed/",
+                           _gnews("site:accessdprk.com")], "A"),
     "ArmsControlWonk":   (_gnews("site:armscontrolwonk.com"), "A"),
     "Stimson":           (_gnews("Korea+site:stimson.org"), "B"),
     "IISS":              (_gnews("Korea+site:iiss.org"), "B"),
@@ -244,7 +252,8 @@ TIER2_FEEDS = {
     "PIIE":              (_gnews("Korea+site:piie.com"), "B"),
     "USIP":              (_gnews("Korea+site:usip.org"), "B"),
     # ── CRS / Congressional research ────────────────────────────────────────
-    "CRS Korea":         (_gnews("Korea+OR+DPRK+site:crsreports.congress.gov"), "B"),
+    "CRS Korea":         ([_gnews("Korea+OR+DPRK+site:crsreports.congress.gov"),
+                           _gnews("%22Congressional+Research+Service%22+Korea")], "B"),
     "CRS North Korea":   (_gnews("North+Korea+site:everycrsreport.com"), "B"),
     # ── DPRK-specialist direct feeds ────────────────────────────────────────
     "Beyond Parallel":   ("https://beyondparallel.csis.org/feed/", "A"),
@@ -278,7 +287,8 @@ TIER3_FEEDS = {
 
 TIER4_FEEDS = {
     # Direct KCNA sources (often blocked — kept for when they work)
-    "KCNA Watch":         "https://kcnawatch.org/newstream/feed/",
+    "KCNA Watch":         _native("https://kcnawatch.org/newstream/feed/",
+                                  "KCNA+site:kcnawatch.org"),
     # Wire services / outlets that relay KCNA content daily (primary indirect)
     "KCNA (Yonhap)":      _gnews("KCNA+Yonhap"),
     "KCNA (Reuters)":     _gnews("KCNA+site:reuters.com"),
@@ -288,7 +298,8 @@ TIER4_FEEDS = {
     "KCNA (38 North)":    _gnews("KCNA+site:38north.org"),
     "KCNA (Daily NK)":    _gnews("KCNA+site:dailynk.com"),
     "KCNA (NK News)":     _gnews("KCNA+site:nknews.org"),
-    "KCNA (Korea Risk)":  _gnews("KCNA+site:koreariskgroup.com"),
+    "KCNA (Korea Risk)":  ["https://www.nknews.org/category/kcna-watch/feed/",
+                           _gnews("KCNA+site:koreariskgroup.com")],
     # Major newspapers that relay KCNA statements
     "KCNA (BBC)":         _gnews("KCNA+OR+%22North+Korea+state+media%22+site:bbc.com"),
     "KCNA (NYT)":         _gnews("KCNA+site:nytimes.com"),
@@ -1005,7 +1016,8 @@ SATELLITE_IMAGERY_FEEDS = {
     "Imagery WSJ":      _gnews("%22satellite%22+%22North+Korea%22+site:wsj.com"),
     "Imagery CNN":      _gnews("%22satellite%22+%22North+Korea%22+site:cnn.com"),
     # Broad catch-all for any outlet reporting DPRK imagery
-    "NK Imagery":       _gnews("%22satellite+imag%22+%22North+Korea%22+OR+%22DPRK%22+Yongbyon+OR+Sinpo+OR+Sohae+OR+Punggye+OR+%22nuclear+site%22"),
+    "NK Imagery":       [_gnews("%22satellite+imagery%22+%22North+Korea%22"),
+                         _gnews("%22satellite+imag%22+%22North+Korea%22+OR+%22DPRK%22+Yongbyon+OR+Sinpo+OR+Sohae+OR+Punggye+OR+%22nuclear+site%22")],
     "NK Facility":      _gnews("%22North+Korea%22+%22imagery+shows%22+OR+%22images+show%22+OR+%22images+reveal%22+OR+%22imagery+reveals%22"),
 }
 
