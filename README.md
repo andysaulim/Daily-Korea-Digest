@@ -11,16 +11,16 @@ Automated daily intelligence briefing on the Korean Peninsula for CSIS Korea Cha
 
 | Metric | Value |
 |--------|-------|
-| Last generated | September 14, 2026 at 7:06 AM ET |
+| Last generated | September 14, 2026 at 10:03 AM ET |
 | Digest date | Monday, September 14, 2026 |
-| Articles collected | 741 |
-| Unique sources | 37 |
-| Top stories | 4 |
-| Overnight items | 7 |
-| Word count | ~1,315 |
+| Articles collected | 763 |
+| Unique sources | 41 |
+| Top stories | 3 |
+| Overnight items | 4 |
+| Word count | ~875 |
 | Kim Jong Un appeared | No |
-| Est. API cost (this run) | $0.65 |
-| Est. API cost (month to date) | $7.87 (9 runs) |
+| Est. API cost (this run) | $0.83 |
+| Est. API cost (month to date) | $8.70 (10 runs) |
 
 <!-- STATS:END -->
 
