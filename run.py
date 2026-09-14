@@ -1253,6 +1253,11 @@ def _build_index_html() -> str:
 def main():
     parser = argparse.ArgumentParser(description="Korea Daily Brief pipeline")
     parser.add_argument("--no-send",    action="store_true", help="Render to file only, do not send email")
+    parser.add_argument("--send-to",    metavar="EMAIL", default="",
+                        help="Test send: deliver to these addresses only "
+                             "(comma-separated) instead of the distribution "
+                             "list. Use to prove a new mail path before the "
+                             "list is anywhere near it.")
     parser.add_argument("--from-cache", action="store_true", help="Skip collection, use existing collected.json")
     parser.add_argument("--dry-run",    action="store_true", help="Collect only, don't call Claude")
     parser.add_argument("--no-push",    action="store_true", help="Skip pushing new entries to NK-Russia/provocations databases")
@@ -1472,8 +1477,16 @@ def main():
             print("\n🚫  CRITICAL validation failures after all retries — newsletter will NOT be sent.")
             print("    Fix the issues above or re-run. HTML still rendered for review.")
 
+    # A test send proves a mail path; it is not an edition. It must leave the
+    # published record untouched — otherwise proving that CSIS SMTP works
+    # consumes an issue number, advances the trackers a day, and makes the
+    # real brief look like it already went out.
+    _is_test_send = bool((getattr(args, "send_to", "") or "").strip())
+    if _is_test_send:
+        print("  🧪  Test send: archive, trackers and metrics will not be written.")
+
     # Only update trackers if digest passed validation (avoid corrupting state)
-    if validation_passed:
+    if validation_passed and not _is_test_send:
         update_from_digest(digest_data)
         kcna_update_from_digest(digest_data)
         bp_update_from_digest(digest_data)
@@ -1484,7 +1497,7 @@ def main():
         print("  ⚠  Skipping tracker updates due to critical validation failures")
 
     # ── Step 2b: Push flagged entries to databases ────────────────────────────
-    if not args.no_push and validation_passed:
+    if not args.no_push and validation_passed and not _is_test_send:
         push_summary = process_digest_entries(digest_data)
         if push_summary.get("nk_russia_added") or push_summary.get("provocations_added"):
             print(f"    NK-Russia: {push_summary.get('nk_russia_added', 0)} added, "
@@ -1618,7 +1631,12 @@ def main():
                        or _count_digest_words(digest_data),
         "url": f"digest_{date_slug}.html",
     })
-    if _archive_ok or not archive_json_path.exists():
+    if _is_test_send:
+        # The issue is rendered and reviewable on disk, but it is not an
+        # edition: keeping it out of the manifest is what stops a test
+        # consuming today's issue number and appearing in Past issues.
+        print("  🧪  Test send: archive manifest left unchanged.")
+    elif _archive_ok or not archive_json_path.exists():
         archive_entries.sort(key=lambda e: str(e.get("date") or ""))
         archive_json_path.write_text(
             json.dumps(archive_entries, ensure_ascii=False, indent=2),
@@ -1679,7 +1697,11 @@ def main():
     elif args.no_send:
         print("\n  --no-send: skipping email. Open latest.html to review.")
     else:
-        if not os.environ.get("DIGEST_TO"):
+        # A test send names its own recipients and never touches the list. The
+        # point is to prove a mail path — a new SMTP server, a changed From —
+        # against a real issue without nineteen people receiving the proof.
+        _test_to = [a.strip() for a in (args.send_to or "").split(",") if a.strip()]
+        if not _test_to and not os.environ.get("DIGEST_TO"):
             print("\n⚠️  DIGEST_TO not set — email will only go to sender's own address")
         from send_email import send
         re_line = digest_data.get("re_line")
@@ -1687,7 +1709,11 @@ def main():
         # that tells a reader at 6 AM whether to open this now.
         _top = (digest_data.get("top_stories") or [{}])[0]
         _lead = (_top.get("headline") or "").strip() if isinstance(_top, dict) else ""
-        send(html, re_line=re_line, lead=_lead)
+        if _test_to:
+            print(f"\n🧪  TEST SEND — {', '.join(_test_to)} only, not the list.")
+            send(html, re_line=re_line, lead=_lead, recipients=_test_to)
+        else:
+            send(html, re_line=re_line, lead=_lead)
 
     # ── Step 5: Pipeline health checks ─────────────────────────────────────
     health_report = {}
@@ -1732,8 +1758,11 @@ def main():
         except Exception:
             pass
         metrics_path = Path("metrics.jsonl")
-        with open(metrics_path, "a") as f:
-            f.write(json.dumps(metrics) + "\n")
+        if _is_test_send:
+            print("  🧪  Test send: no metrics row written.")
+        else:
+            with open(metrics_path, "a") as f:
+                f.write(json.dumps(metrics) + "\n")
     except Exception:
         pass
 
