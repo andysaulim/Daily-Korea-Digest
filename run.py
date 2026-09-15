@@ -49,8 +49,81 @@ EMAIL_BYTES_WARN = 78_000
 EMAIL_BYTES_CRITICAL = 96_000
 
 
+_COND_OPEN = re.compile(r"<!--\[if\b", re.I)
+_STYLE_BLOCK = re.compile(r"(<style[^>]*>)(.*?)(</style>)", re.I | re.S)
+_PRE_BLOCK = re.compile(r"<(pre|textarea)\b", re.I)
+
+
+def _minify_css(css: str) -> str:
+    css = re.sub(r"/\*.*?\*/", "", css, flags=re.S)          # CSS comments
+    css = re.sub(r"\s*\n\s*", " ", css)                      # line breaks
+    css = re.sub(r"\s{2,}", " ", css)
+    css = re.sub(r"\s*([{};:,>])\s*", r"\1", css)            # around punctuation
+    css = re.sub(r";}", "}", css)
+    return css.strip()
+
+
+def minify_email_html(html: str) -> str:
+    """Shrink the rendered brief without changing what it renders.
+
+    Gmail clips a message body over 102,400 bytes and shows "View entire
+    message" in place of the rest, so an issue that runs long is silently
+    truncated mid-item for a large share of its readers. Roughly a fifth of
+    this brief's bytes are indentation, line breaks and authoring comments —
+    all of which cost delivery and buy nothing.
+
+    The transform is chosen to be provably neutral rather than merely
+    cautious. Outside <style> and <pre>, any run of whitespace containing a
+    newline already renders as exactly one space, so collapsing it to one
+    space cannot change layout or inline spacing. That is what makes this
+    safe to run on a brief nobody proofreads before it goes out.
+
+    Preserved deliberately:
+      - conditional comments (<!--[if mso]> … <![endif]-->), which Outlook
+        needs and which are not decoration;
+      - <pre> and <textarea>, where whitespace is significant. If either ever
+        appears the document is returned untouched rather than half-handled.
+    """
+    if _PRE_BLOCK.search(html):
+        return html
+
+    # Comments go FIRST, and the order is load-bearing. Several authoring
+    # comments in this renderer discuss "<style>" in prose. Matching style
+    # blocks before removing them let the block regex start at a mention
+    # inside a comment and run to the next real </style>, swallowing the
+    # comment tail and a genuine stylesheet into one stashed chunk. Removing
+    # comments first means the block regex can only ever see real markup.
+    def _drop_comment(m: re.Match) -> str:
+        body = m.group(0)
+        return body if _COND_OPEN.search(body) or "endif" in body.lower() else ""
+
+    html = re.sub(r"<!--.*?-->", _drop_comment, html, flags=re.S)
+
+    styles: list[str] = []
+
+    def _stash(m: re.Match) -> str:
+        styles.append(m.group(1) + _minify_css(m.group(2)) + m.group(3))
+        return f"\x00STYLE{len(styles) - 1}\x00"
+
+    html = _STYLE_BLOCK.sub(_stash, html)
+
+    # The whole saving, and the only risky-looking step: a whitespace run with
+    # a newline in it already collapses to one space when rendered, so this
+    # replaces it with the one space it was always going to be.
+    html = re.sub(r"[ \t]*\n[ \t\n]*", " ", html)
+    html = re.sub(r"[ \t]{2,}", " ", html)
+
+    for i, block in enumerate(styles):
+        html = html.replace(f"\x00STYLE{i}\x00", block)
+    return html.strip()
+
+
 def check_email_size(html: str) -> list[str]:
-    """Warn, then block, before Gmail would clip the body.
+    """Warn before Gmail would clip the body.
+
+    This reports; it does not block. A brief that is slightly too long is
+    still worth sending, and cancelling one over its byte count would cost
+    the issue to save the tail of it.
 
     Measures encoded bytes rather than string length: Korean, Japanese and
     Chinese text costs three bytes a character, so a character count would
@@ -58,10 +131,17 @@ def check_email_size(html: str) -> list[str]:
     """
     n = len(html.encode("utf-8"))
     pct = 100 * n / GMAIL_CLIP_BYTES
-    if n >= EMAIL_BYTES_CRITICAL:
+    if n >= GMAIL_CLIP_BYTES:
         return [f"CRITICAL EMAIL SIZE: {n:,} bytes ({pct:.0f}% of Gmail's "
-                f"{GMAIL_CLIP_BYTES:,}-byte clipping limit); the brief would be "
-                f"truncated mid-item."]
+                f"{GMAIL_CLIP_BYTES:,}-byte clipping limit); the brief WILL be "
+                f"truncated mid-item for Gmail readers."]
+    if n >= EMAIL_BYTES_CRITICAL:
+        # Between the alarm threshold and the real one. Saying "would be
+        # truncated" here was simply untrue, and a warning that overstates
+        # stops being read.
+        return [f"EMAIL SIZE: {n:,} bytes ({pct:.0f}% of Gmail's "
+                f"{GMAIL_CLIP_BYTES:,}-byte clipping limit) — under it, but "
+                f"with little room left."]
     if n >= EMAIL_BYTES_WARN:
         return [f"EMAIL SIZE: {n:,} bytes ({pct:.0f}% of Gmail's clipping limit)"]
     return []
@@ -1565,6 +1645,16 @@ def main():
         print(f"  (length budget unavailable: {_e})")
 
     html = render(digest_data)
+    # Minify before measuring, because the measurement that matters is of the
+    # bytes that actually reach a mailbox. About a seventh of this brief is
+    # indentation, line breaks and authoring comments, and Gmail counts every
+    # one of them against the 102,400 it clips at.
+    _pre_min = len(html.encode("utf-8"))
+    html = minify_email_html(html)
+    _post_min = len(html.encode("utf-8"))
+    if _post_min < _pre_min:
+        print(f"  🗜  Minified: {_pre_min:,} → {_post_min:,} bytes "
+              f"(−{100 * (_pre_min - _post_min) / _pre_min:.0f}%)")
     _final = _count_rendered_words_of(html)
     if _final > WORD_CEILING:
         print(f"  ⚠  still {_final} rendered words after trimming; the sections "
