@@ -1201,7 +1201,7 @@ def render(digest: dict) -> str:
             if deal_rows:
                 deal_box = _box(
                     f'<div style="background:#F5F7FA;padding:7px 12px;font-size:11px;text-transform:uppercase;'
-                    f'letter-spacing:1px;color:{TAEGUK_BLUE};font-weight:700;border-bottom:1px solid #DBE0E6;">Committed Investment Deals</div>'
+                    f'letter-spacing:1px;color:{TAEGUK_BLUE};font-weight:700;border-bottom:1px solid #DBE0E6;">$350B Pledge &middot; Selected Projects</div>'
                     f'<table width="100%" cellpadding="0" cellspacing="0" border="0" class="deal-breakdown">{deal_rows}</table>')
 
             standing.append(f'<div style="margin-top:18px;">{_pillar_h("Investment &middot; " + pledged + " pledge", accent=TAEGUK_BLUE)}{bar}{deal_box}</div>')
