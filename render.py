@@ -1204,7 +1204,12 @@ def render(digest: dict) -> str:
                     f'letter-spacing:1px;color:{TAEGUK_BLUE};font-weight:700;border-bottom:1px solid #DBE0E6;">$350B Pledge &middot; Selected Projects</div>'
                     f'<table width="100%" cellpadding="0" cellspacing="0" border="0" class="deal-breakdown">{deal_rows}</table>')
 
-            standing.append(f'<div style="margin-top:18px;">{_pillar_h("Investment &middot; " + pledged + " pledge", accent=TAEGUK_BLUE)}{bar}{deal_box}</div>')
+            # In the brief, not on the reference page behind it. The pledge
+            # had no contents to show until September 2026, so it belonged with
+            # the standing material; now that projects are being selected, which
+            # one was chosen is news a reader should meet without following a
+            # link. The ledger and the policy watch stay on the trade page.
+            pillars.append(f'<div style="margin-top:18px;">{_pillar_h("Investment &middot; " + pledged + " pledge", accent=TAEGUK_BLUE)}{bar}{deal_box}</div>')
 
         # ── Pillar 2b: Bilateral Investment Ledger ─────────────────────────
         # Corporate investment flows BOTH directions, tracked separately from
@@ -1339,8 +1344,8 @@ def render(digest: dict) -> str:
                     f'letter-spacing:1.5px;text-transform:uppercase;color:{TAEGUK_BLUE};">'
                     f'Full trade reference &#8594;</span>'
                     f'<span style="display:block;font-family:Georgia,serif;font-size:13px;'
-                    f'color:{INK};margin-top:4px;line-height:1.45;">Investment ledger, pledge '
-                    f'tracker and standing policy measures.</span></a></div>')
+                    f'color:{INK};margin-top:4px;line-height:1.45;">Investment ledger and '
+                    f'standing policy measures.</span></a></div>')
         digest["_trade_standing_html"] = "".join(standing)
         sections.append(f"""
         <div {_SEC}>

@@ -1167,6 +1167,49 @@ def _maybe_persist_sentiment_baseline(digest_data: dict) -> str | None:
         return None
 
 
+def _ensure_pledge_projects(digest: dict) -> list[str]:
+    """Guarantee the $350B pledge block has its selected projects.
+
+    The block is meant to appear in every issue, and a section that depends on
+    the model repeating a list each day will eventually be missing from one.
+    These projects are a standing fact held in digest.PLEDGE_PROJECTS, so they
+    do not need to survive a round trip through generation to be printed.
+
+    Fills gaps only: a project the model returned is left exactly as written,
+    including a value it updated from today's reporting. Planned projects are
+    excluded — the block renders under "Selected Projects", and listing one
+    still awaiting US consultation there would read as chosen.
+    """
+    log: list[str] = []
+    try:
+        from digest import SELECTED_PLEDGE_PROJECTS
+    except Exception:                                           # noqa: BLE001
+        return log
+    if not SELECTED_PLEDGE_PROJECTS or not isinstance(digest, dict):
+        return log
+    deals = digest.setdefault("us_korea_deals", {})
+    if not isinstance(deals, dict):
+        return log
+    pkg = deals.setdefault("investment_package", {})
+    if not isinstance(pkg, dict):
+        return log
+    if not str(pkg.get("total_pledged") or "").strip():
+        pkg["total_pledged"] = "$350B"
+    known = pkg.get("known_deals")
+    if not isinstance(known, list):
+        known = []
+    have = {str(d.get("company", "")).strip().lower()
+            for d in known if isinstance(d, dict)}
+    for proj in SELECTED_PLEDGE_PROJECTS:
+        if proj["project"].strip().lower() in have:
+            continue
+        known.append({"company": proj["project"], "sector": proj["sector"],
+                      "value": proj["value"] or ""})
+        log.append(f"pledge project restored: {proj['project']}")
+    pkg["known_deals"] = known
+    return log
+
+
 def _postprocess_digest(digest_data: dict, payload: dict | None = None) -> tuple[dict, list[str]]:
     """Run dedup, deal filter, source diversity, and URL repair. Returns (digest, all_log_messages)."""
     log = []
@@ -1643,6 +1686,9 @@ def main():
             print(f"  {_line}")
     except Exception as _e:
         print(f"  (length budget unavailable: {_e})")
+
+    for _msg in _ensure_pledge_projects(digest_data):
+        print(f"  🏗  {_msg}")
 
     html = render(digest_data)
     # Minify before measuring, because the measurement that matters is of the

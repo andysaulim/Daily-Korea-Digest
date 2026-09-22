@@ -179,7 +179,67 @@ BASELINE SECTOR RATES (update from today's articles if changed):
 SECTION 122 SURCHARGE BASELINE: keep this field SHORT (≤10 words). Before Jul 24 2026: "10% surcharge (Section 122), expires Jul 24 2026". After Jul 24 2026: "10% surcharge (Section 122), expired Jul 24 2026". Do NOT write a full sentence here.
 NEXT TRIGGER BASELINE: SHORT (≤12 words), and a FUTURE item relative to today — never Jul 24 2026 or Apr 14 2026 (both past). Prefer a dated forward item from today's articles or the calendar. If none, use "Section 301 determination — pending, no fixed date"."""
 
-_INVESTMENT_TRACKER = """\
+# Projects the ROK government has officially attributed to the $350B pledge.
+# One source of truth, read twice: the prompt block below is generated from it,
+# and run.py backfills it into the digest so the brief's pledge block cannot
+# disappear on a day the model omits the field. Add a project here when a
+# ministry announces one; nothing else needs editing.
+PLEDGE_PROJECTS = [
+    {
+        "rank": 1,
+        "project": "Encinal gas-fired power plant",
+        "where": "Texas",
+        "value": "$22.3B",
+        "sector": "Energy - Texas, 6.3 GW",
+        "status": "selected",
+        "detail": ("6.3 GW, sited for Texas semiconductor fabs and AI data-centre "
+                   "demand. Government projects revenue up to $45.4B over 20 years. "
+                   "No MOU signed yet."),
+        "reported": "22 Sep 2026",
+        "source": "Yonhap",
+    },
+    {
+        "rank": 2,
+        "project": "Eight large-scale nuclear reactors",
+        "where": "United States",
+        "value": None,
+        "sector": "Nuclear",
+        "status": "planned",
+        "detail": ("Turns on a Westinghouse stake. Seoul sought around 20 percent; "
+                   "talks are at 5-10 percent, which the industry minister said "
+                   "would still carry voting rights."),
+        "reported": "22 Sep 2026",
+        "source": "Yonhap",
+    },
+    {
+        "rank": 3,
+        "project": "LNG project",
+        "where": "Alaska",
+        "value": None,
+        "sector": "Energy",
+        "status": "planned",
+        "detail": "Needs further consultation with Washington.",
+        "reported": "22 Sep 2026",
+        "source": "Yonhap",
+    },
+]
+
+SELECTED_PLEDGE_PROJECTS = [p for p in PLEDGE_PROJECTS if p["status"] == "selected"]
+
+
+def _pledge_project_lines() -> str:
+    """The SELECTED PROJECTS block of the prompt, built from PLEDGE_PROJECTS."""
+    out = []
+    for p in PLEDGE_PROJECTS:
+        val = p["value"] or "value not reported"
+        head = (f'  {p["rank"]} | {p["project"]}, {p["where"]} | {val} | '
+                f'{"SELECTED — under the pledge" if p["status"] == "selected" else "PLANNED — needs further US consultation"}')
+        out.append(head)
+        out.append(f'      {p["detail"]} ({p["source"]}, {p["reported"]})')
+    return "\n".join(out)
+
+
+_INVESTMENT_TRACKER = f"""\
 REFERENCE — US-Korea $350B investment pledge (a GOVERNMENT-LEVEL commitment).
 $350B pledge timeline: framework Jul 30 2025; Trump-Lee summit Aug 25 2025 (Washington); Trump state visit Oct 29 2025 (Gyeongju); National Assembly passed the Special Investment Act Mar 12 2026 (226-8-8), creating the Korea-US Strategic Investment Corporation to channel the fund.
 Intended structure: $150B shipbuilding (MASGA), $200B strategic sectors (capped $20B/yr), $100B US energy purchases.
@@ -194,17 +254,7 @@ These ARE attributable to the $350B pledge: the Ministry of Trade, Industry and
 Resources presented them to the National Assembly trade committee as the fund's
 own project selections. Keep them separate from the corporate ledger below, and
 carry every line forward. Format: # | project | value | status
-
-  1 | Gas-fired power plant, Encinal, Texas | $22.3B | SELECTED — first project under the pledge
-      6.3 GW installed capacity, sited for Texas semiconductor fabs and AI data-centre demand.
-      Government projects revenue up to $45.4B over 20 years, which it says more than recovers
-      principal and interest. No MOU signed yet; Industry Minister Kim Jung-kwan told the
-      committee further talks with US Commerce Secretary Howard Lutnick were due the same day.
-      Reported to the committee in closed session, 22 Sep 2026 (Yonhap).
-  2 | Eight large-scale nuclear reactors, United States | value not reported | PLANNED — needs further US consultation
-      Turns on a Westinghouse stake. Seoul sought around 20 percent; Washington has reportedly
-      balked, and talks are at 5-10 percent, which Kim said would still carry voting rights.
-  3 | LNG project, Alaska | value not reported | PLANNED — needs further US consultation
+{_pledge_project_lines()}
 
 Rules for this list:
 - Still NO official drawdown or disbursement figure for the $350B. A selected project is not
