@@ -1487,5 +1487,12 @@
     "top_stories_count": 4,
     "word_count": 4121,
     "url": "digest_2026-09-30.html"
+  },
+  {
+    "date": "2026-10-01",
+    "headline_re": "Seoul September exports hit record $120.9B · Trump touts $200B Korean energy deal, Seoul hedges on Alaska LNG · Lee balances DMZ blast response with dialogue push · Kim visits Kim Il Sung University",
+    "top_stories_count": 3,
+    "word_count": 3719,
+    "url": "digest_2026-10-01.html"
   }
 ]
