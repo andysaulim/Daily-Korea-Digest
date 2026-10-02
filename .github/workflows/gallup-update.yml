@@ -8,6 +8,36 @@ on:
     - cron: '0 5 * * 5'
     - cron: '0 5 * * 6'
   workflow_dispatch:
+    inputs:
+      approval:
+        description: >-
+          Presidential approval, whole number (e.g. 41). Fill this in to enter
+          the week's poll by hand; leave every field blank to just re-run the
+          automatic check.
+        type: string
+        default: ''
+      dp:
+        description: 'Democratic Party support (e.g. 40)'
+        type: string
+        default: ''
+      ppp:
+        description: 'People Power Party support (e.g. 24)'
+        type: string
+        default: ''
+      ind:
+        description: 'Independents / 무당층 (e.g. 27)'
+        type: string
+        default: ''
+      dates:
+        description: >-
+          Survey dates as published — an ISO date (2026-09-29) or
+          "September 29-31, 2026". Required when approval is given.
+        type: string
+        default: ''
+      poll_no:
+        description: 'Gallup poll number, optional'
+        type: string
+        default: ''
 
 permissions:
   contents: write
@@ -32,7 +62,23 @@ jobs:
         env:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASS: ${{ secrets.GMAIL_APP_PASS }}
-        run: python gallup_update.py
+        run: |
+          # Hand-entered figures when the inputs carry them, the ordinary
+          # scrape when they do not. Same script, same sanity checks, same
+          # write either way — a manual week must not produce a baseline that
+          # differs in shape from a parsed one.
+          if [ -n "${{ inputs.approval }}" ]; then
+            echo "::notice::Manual Gallup entry: approval ${{ inputs.approval }}, dates ${{ inputs.dates }}"
+            python gallup_update.py \
+              --approval "${{ inputs.approval }}" \
+              --dates    "${{ inputs.dates }}" \
+              ${{ inputs.dp      && format('--dp {0}', inputs.dp) || '' }} \
+              ${{ inputs.ppp     && format('--ppp {0}', inputs.ppp) || '' }} \
+              ${{ inputs.ind     && format('--ind {0}', inputs.ind) || '' }} \
+              ${{ inputs.poll_no && format('--poll-no {0}', inputs.poll_no) || '' }}
+          else
+            python gallup_update.py
+          fi
 
       - name: Commit updated baseline
         run: |
@@ -43,6 +89,6 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add gallup_baseline.json
-          git commit -m "Update Gallup baseline (weekly auto-update) [skip ci]"
+          git commit -m "Update Gallup baseline${{ inputs.approval && ' (manual entry)' || ' (weekly auto-update)' }} [skip ci]"
           git pull --rebase origin main || true
           git push
