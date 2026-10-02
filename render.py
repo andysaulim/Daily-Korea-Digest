@@ -1201,10 +1201,15 @@ def render(digest: dict) -> str:
             if deal_rows:
                 deal_box = _box(
                     f'<div style="background:#F5F7FA;padding:7px 12px;font-size:11px;text-transform:uppercase;'
-                    f'letter-spacing:1px;color:{TAEGUK_BLUE};font-weight:700;border-bottom:1px solid #DBE0E6;">Committed Investment Deals</div>'
+                    f'letter-spacing:1px;color:{TAEGUK_BLUE};font-weight:700;border-bottom:1px solid #DBE0E6;">$350B Pledge &middot; Selected Projects</div>'
                     f'<table width="100%" cellpadding="0" cellspacing="0" border="0" class="deal-breakdown">{deal_rows}</table>')
 
-            standing.append(f'<div style="margin-top:18px;">{_pillar_h("Investment &middot; " + pledged + " pledge", accent=TAEGUK_BLUE)}{bar}{deal_box}</div>')
+            # In the brief, not on the reference page behind it. The pledge
+            # had no contents to show until September 2026, so it belonged with
+            # the standing material; now that projects are being selected, which
+            # one was chosen is news a reader should meet without following a
+            # link. The ledger and the policy watch stay on the trade page.
+            pillars.append(f'<div style="margin-top:18px;">{_pillar_h("Investment &middot; " + pledged + " pledge", accent=TAEGUK_BLUE)}{bar}{deal_box}</div>')
 
         # ── Pillar 2b: Bilateral Investment Ledger ─────────────────────────
         # Corporate investment flows BOTH directions, tracked separately from
@@ -1339,8 +1344,8 @@ def render(digest: dict) -> str:
                     f'letter-spacing:1.5px;text-transform:uppercase;color:{TAEGUK_BLUE};">'
                     f'Full trade reference &#8594;</span>'
                     f'<span style="display:block;font-family:Georgia,serif;font-size:13px;'
-                    f'color:{INK};margin-top:4px;line-height:1.45;">Investment ledger, pledge '
-                    f'tracker and standing policy measures.</span></a></div>')
+                    f'color:{INK};margin-top:4px;line-height:1.45;">Investment ledger and '
+                    f'standing policy measures.</span></a></div>')
         digest["_trade_standing_html"] = "".join(standing)
         sections.append(f"""
         <div {_SEC}>
@@ -1510,23 +1515,53 @@ def render(digest: dict) -> str:
               <span style="font-weight:600;">{topic}:</span> {finding}
             </div>"""
 
-        # Check if polling data is stale (>7 days old)
+        # Flag polling the reader should not take as this week's.
+        #
+        # This badge existed and had never once appeared. It parsed only
+        # "Sep 11, 2026" and "Sep 11 2026", while the collector passes the
+        # baseline's survey_dates straight through — which reads "week of
+        # 2026-09-11". Neither format matched, poll_dt stayed None, and the
+        # check silently did nothing while the brief printed a three-week-old
+        # approval rating as the current one.
+        #
+        # Parse the shapes actually produced, pull any ISO or long-form date
+        # out of a longer label, and say the age in words rather than only
+        # the date: a reader scanning a dashboard reads "38%" long before
+        # they read a date underneath it.
         stale_html = ""
         poll_updated = (approval.get("last_updated") or "")
         if poll_updated and poll_updated != "recent":
             try:
-                # Try common date formats from the collector
                 poll_dt = None
-                for fmt in ("%b %d, %Y", "%b %d %Y"):
-                    try:
-                        poll_dt = datetime.strptime(poll_updated, fmt).replace(tzinfo=timezone.utc)
-                        break
-                    except ValueError:
-                        continue
-                if poll_dt and (now - poll_dt).days > 7:
-                    stale_html = f"""
-            <div style="margin-top:8px;font-size:10px;color:#6B7280;text-align:center;">
-              Data from {_esc(poll_updated)} — newer polling may be available
+                _iso = _re.search(r"(\d{4})-(\d{2})-(\d{2})", poll_updated)
+                if _iso:
+                    poll_dt = datetime(int(_iso.group(1)), int(_iso.group(2)),
+                                       int(_iso.group(3)), tzinfo=timezone.utc)
+                else:
+                    # "June 9-11, 2026" and "Sep 11, 2026": take the last day
+                    # named, which is when the survey finished.
+                    _m = _re.search(r"([A-Z][a-z]+)\s+(\d{1,2})(?:\s*[-–]\s*(\d{1,2}))?,?\s+(\d{4})",
+                                    poll_updated)
+                    if _m:
+                        _day = int(_m.group(3) or _m.group(2))
+                        for _fmt in ("%B", "%b"):
+                            try:
+                                _mon = datetime.strptime(_m.group(1), _fmt).month
+                                poll_dt = datetime(int(_m.group(4)), _mon, _day,
+                                                   tzinfo=timezone.utc)
+                                break
+                            except ValueError:
+                                continue
+                if poll_dt:
+                    _age = (now - poll_dt).days
+                    if _age > 7:
+                        _wks = _age // 7
+                        _how_old = (f"{_wks} week{'s' if _wks != 1 else ''} old"
+                                    if _wks else f"{_age} days old")
+                        stale_html = f"""
+            <div style="margin-top:8px;font-size:10px;color:{TAEGUK_RED};text-align:center;">
+              Gallup Korea publishes weekly &middot; this reading is {_how_old}
+              ({_esc(poll_updated)})
             </div>"""
             except Exception:
                 pass

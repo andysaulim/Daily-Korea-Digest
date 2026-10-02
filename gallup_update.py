@@ -26,7 +26,13 @@ from email.mime.text import MIMEText
 from pathlib import Path
 
 BASELINE_PATH = Path(__file__).parent / "gallup_baseline.json"
-ALERT_DAYS = 21
+# Gallup Korea publishes weekly, so a baseline older than this has missed at
+# least two releases and the parser is broken, not merely unlucky. It was 21,
+# which is four missed releases — and because the test is "> ALERT_DAYS", a
+# baseline that went stale on 11 September produced no alert through the runs
+# of 12, 18, 19, 25 and 26 September, each of which failed to parse and exited
+# 0. The brief printed a three-week-old approval rating throughout.
+ALERT_DAYS = 10
 OPERATOR_EMAIL = "alim@csis.org"
 
 MONTH_NAMES = ["January", "February", "March", "April", "May", "June",
@@ -158,7 +164,32 @@ def _baseline_age_days(baseline: dict) -> int | None:
         return None
 
 
-def main() -> int:
+def _parse_args(argv=None):
+    """Hand-entered figures, for the week the parser cannot read one.
+
+    The scrape is the convenience; this is the guarantee. It runs the same
+    sanity checks and the same write as the automatic path, so a manual week
+    produces a baseline indistinguishable from a parsed one — including the
+    trend arrows and the approval series behind the sparkline.
+    """
+    import argparse
+    ap = argparse.ArgumentParser(
+        description="Update the Gallup Korea baseline, automatically or by hand.")
+    ap.add_argument("--approval", type=float,
+                    help="Presidential approval, whole number (e.g. 41). "
+                         "Supplying it switches off the scrape.")
+    ap.add_argument("--dp", type=float, help="Democratic Party support")
+    ap.add_argument("--ppp", type=float, help="People Power Party support")
+    ap.add_argument("--ind", type=float, help="Independents / 무당층")
+    ap.add_argument("--dates", default="",
+                    help="Survey dates as published, e.g. '2026-09-29' or "
+                         "'September 29-31, 2026'. Required with --approval.")
+    ap.add_argument("--poll-no", default="", help="Gallup poll number, optional")
+    return ap.parse_args(argv)
+
+
+def main(argv=None) -> int:
+    args = _parse_args(argv)
     print("📊  Weekly Gallup baseline check")
     baseline = _load_baseline()
     print(f"  Current: {baseline.get('poll', '?')} · {baseline.get('survey_dates', '?')}")
@@ -168,11 +199,30 @@ def main() -> int:
     # Fetch + merge the latest weekly poll from Korean news (labeled extraction,
     # multi-article merge). Only accepts a poll strictly newer than the baseline.
     rec = {}
-    try:
-        from gallup_fetch import fetch_latest_gallup
-        rec = fetch_latest_gallup(newest_sort_key=current_key)
-    except Exception as e:
-        print(f"  ⚠ Fetch failed: {e}")
+    if args.approval is not None:
+        if not args.dates.strip():
+            print("  ✗ --dates is required with --approval (the survey date is "
+                  "what orders the series and ages the baseline).")
+            return 2
+        _key = _current_sort_key({"survey_dates": args.dates})
+        if not _key:
+            print(f"  ✗ Could not read a date out of --dates {args.dates!r}. "
+                  f"Use an ISO date (2026-09-29) or 'September 29, 2026'.")
+            return 2
+        rec = {"approval": args.approval, "dp": args.dp, "ppp": args.ppp,
+               "ind": args.ind, "sort_key": _key,
+               "survey_label": args.dates.strip(),
+               "poll_no": args.poll_no.strip() or None}
+        print(f"  Manual entry for {_key} — skipping the scrape.")
+        if _key <= (current_key or ""):
+            print(f"  note: {_key} is not newer than the stored {current_key}; "
+                  f"writing anyway, because a hand correction should win.")
+    else:
+        try:
+            from gallup_fetch import fetch_latest_gallup
+            rec = fetch_latest_gallup(newest_sort_key=current_key)
+        except Exception as e:
+            print(f"  ⚠ Fetch failed: {e}")
 
     # Carry-forward, NOT all-or-nothing: approval anchors the update; any party
     # field the parse missed inherits the prior baseline value.
@@ -232,7 +282,8 @@ def main() -> int:
                              "party_kr": "국민의힘",
                              "trend": _trend(ppp, old["party_opposition"])},
         "updated_at": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
-        "updated_by": "gallup_update.py (auto, news-parse)",
+        "updated_by": ("gallup_update.py (manual entry)" if args.approval is not None
+                       else "gallup_update.py (auto, news-parse)"),
     })
     if ind is not None:
         updated["party_independent"] = {"value": f"{ind:g}%",

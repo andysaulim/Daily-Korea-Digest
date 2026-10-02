@@ -12,6 +12,14 @@ on:
         description: 'Send even outside the 7 AM ET delivery window. The external cron posts no inputs, so it is unaffected.'
         type: boolean
         default: false
+      send_to:
+        description: >-
+          Test send: deliver this run to these addresses only, comma-separated.
+          Leave blank for the normal distribution list. Use it to prove a new
+          mail path — a different SMTP server, a changed From address — against
+          a real issue before the list is anywhere near it.
+        type: string
+        default: ''
 
 permissions:
   contents: write
@@ -35,7 +43,12 @@ jobs:
           # which is how 7 September went out at 1:09 PM.
           EARLIEST_ET="${{ vars.EARLIEST_SEND_HOUR_ET || '7' }}"
           HOUR_ET=$(TZ=America/New_York date +%-H)
-          if [ "$HOUR_ET" -lt "$EARLIEST_ET" ] && [ "${{ inputs.force_send }}" != "true" ]; then
+          # A test send goes to named addresses, never the list, so the
+          # delivery-hour floor has nothing to protect and only makes the path
+          # untestable outside one hour of the morning.
+          if [ "$HOUR_ET" -lt "$EARLIEST_ET" ] \
+             && [ "${{ inputs.force_send }}" != "true" ] \
+             && [ -z "${{ inputs.send_to }}" ]; then
             echo "::notice::${HOUR_ET}:00 ET is before the ${EARLIEST_ET}:00 ET earliest send — skipping."
             echo "should_run=false" >> "$GITHUB_OUTPUT"
             exit 0
@@ -162,7 +175,12 @@ jobs:
           WEB_URL: https://andysaulim.github.io/Daily-Korea-Digest
         run: |
           set -o pipefail
-          python run.py 2>&1 | tee /tmp/run.log
+          if [ -n "${{ inputs.send_to }}" ]; then
+            echo "::notice::TEST SEND to ${{ inputs.send_to }} — the distribution list is not used."
+            python run.py --send-to "${{ inputs.send_to }}" 2>&1 | tee /tmp/run.log
+          else
+            python run.py 2>&1 | tee /tmp/run.log
+          fi
           echo "success=true" >> "$GITHUB_OUTPUT"
 
       # Post-email steps use continue-on-error so a Pages/README failure

@@ -92,9 +92,9 @@ TIER1_FEEDS = {
                            _gnews("site:koreatimes.co.kr")],
     "Yonhap English":    _native("https://en.yna.co.kr/RSS/news.xml", "site:en.yna.co.kr"),
     "JoongAng Daily":     _gnews("Korea+site:koreajoongangdaily.joins.com"),
-    "Chosun English":     ["https://english.chosun.com/rss/",
-                           "https://english.chosun.com/site/data/rss/rss.xml",
-                           _gnews("Korea+site:english.chosun.com")],
+    # Both guessed publisher paths return 404; english.chosun.com does not
+    # expose a feed at either. Back to the search until a real one is found.
+    "Chosun English":     _gnews("Korea+site:english.chosun.com"),
     "Hankyoreh English":  _gnews("Korea+site:english.hani.co.kr"),
     "Dong-A English":     _gnews("Korea+site:donga.com/en"),
     "NK News":           _native("https://www.nknews.org/feed/", "site:nknews.org"),
@@ -116,8 +116,9 @@ TIER1_FEEDS = {
     "MBC":                _gnews("site:imnews.imbc.com"),
     "SBS":                _gnews("site:news.sbs.co.kr"),
     "YTN":                _gnews("site:ytn.co.kr"),
-    "Channel A":          ["https://rss.channela.com/rss/news.xml",
-                           _gnews("Korea+site:channela.com")],
+    # A guessed publisher feed here does not resolve at all (no such host),
+    # so it cost a DNS failure every run and delivered nothing.
+    "Channel A":          _gnews("Korea+site:channela.com"),
     "Arirang News":       _gnews("Korea+site:arirang.com"),
     # ── Korean business dailies ──────────────────────────────────────────
     "매일경제":            _native("https://www.mk.co.kr/rss/30000001/", "site:mk.co.kr"),
@@ -228,6 +229,8 @@ TIER2_FEEDS = {
                                   "Korea+site:rand.org"), "A"),
     "CFR":               (_gnews("Korea+site:cfr.org"), "A"),
     "38 North":          ("https://www.38north.org/feed/", "A"),
+    # Timed out rather than 404ing on 14 September: the host exists and may
+    # simply have been down, which is not proof the path is wrong. Kept.
     "AccessDPRK":        (["https://accessdprk.com/feed/",
                            _gnews("site:accessdprk.com")], "A"),
     "ArmsControlWonk":   (_gnews("site:armscontrolwonk.com"), "A"),
@@ -298,8 +301,9 @@ TIER4_FEEDS = {
     "KCNA (38 North)":    _gnews("KCNA+site:38north.org"),
     "KCNA (Daily NK)":    _gnews("KCNA+site:dailynk.com"),
     "KCNA (NK News)":     _gnews("KCNA+site:nknews.org"),
-    "KCNA (Korea Risk)":  ["https://www.nknews.org/category/kcna-watch/feed/",
-                           _gnews("KCNA+site:koreariskgroup.com")],
+    # The guessed NK News category feed 404s. KCNA Watch proper now delivers
+    # through its own entry, so this one stays on its search.
+    "KCNA (Korea Risk)":  _gnews("KCNA+site:koreariskgroup.com"),
     # Major newspapers that relay KCNA statements
     "KCNA (BBC)":         _gnews("KCNA+OR+%22North+Korea+state+media%22+site:bbc.com"),
     "KCNA (NYT)":         _gnews("KCNA+site:nytimes.com"),

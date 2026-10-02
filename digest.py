@@ -179,7 +179,67 @@ BASELINE SECTOR RATES (update from today's articles if changed):
 SECTION 122 SURCHARGE BASELINE: keep this field SHORT (≤10 words). Before Jul 24 2026: "10% surcharge (Section 122), expires Jul 24 2026". After Jul 24 2026: "10% surcharge (Section 122), expired Jul 24 2026". Do NOT write a full sentence here.
 NEXT TRIGGER BASELINE: SHORT (≤12 words), and a FUTURE item relative to today — never Jul 24 2026 or Apr 14 2026 (both past). Prefer a dated forward item from today's articles or the calendar. If none, use "Section 301 determination — pending, no fixed date"."""
 
-_INVESTMENT_TRACKER = """\
+# Projects the ROK government has officially attributed to the $350B pledge.
+# One source of truth, read twice: the prompt block below is generated from it,
+# and run.py backfills it into the digest so the brief's pledge block cannot
+# disappear on a day the model omits the field. Add a project here when a
+# ministry announces one; nothing else needs editing.
+PLEDGE_PROJECTS = [
+    {
+        "rank": 1,
+        "project": "Encinal gas-fired power plant",
+        "where": "Texas",
+        "value": "$22.3B",
+        "sector": "Energy - Texas, 6.3 GW",
+        "status": "selected",
+        "detail": ("6.3 GW, sited for Texas semiconductor fabs and AI data-centre "
+                   "demand. Government projects revenue up to $45.4B over 20 years. "
+                   "No MOU signed yet."),
+        "reported": "22 Sep 2026",
+        "source": "Yonhap",
+    },
+    {
+        "rank": 2,
+        "project": "Eight large-scale nuclear reactors",
+        "where": "United States",
+        "value": None,
+        "sector": "Nuclear",
+        "status": "planned",
+        "detail": ("Turns on a Westinghouse stake. Seoul sought around 20 percent; "
+                   "talks are at 5-10 percent, which the industry minister said "
+                   "would still carry voting rights."),
+        "reported": "22 Sep 2026",
+        "source": "Yonhap",
+    },
+    {
+        "rank": 3,
+        "project": "LNG project",
+        "where": "Alaska",
+        "value": None,
+        "sector": "Energy",
+        "status": "planned",
+        "detail": "Needs further consultation with Washington.",
+        "reported": "22 Sep 2026",
+        "source": "Yonhap",
+    },
+]
+
+SELECTED_PLEDGE_PROJECTS = [p for p in PLEDGE_PROJECTS if p["status"] == "selected"]
+
+
+def _pledge_project_lines() -> str:
+    """The SELECTED PROJECTS block of the prompt, built from PLEDGE_PROJECTS."""
+    out = []
+    for p in PLEDGE_PROJECTS:
+        val = p["value"] or "value not reported"
+        head = (f'  {p["rank"]} | {p["project"]}, {p["where"]} | {val} | '
+                f'{"SELECTED — under the pledge" if p["status"] == "selected" else "PLANNED — needs further US consultation"}')
+        out.append(head)
+        out.append(f'      {p["detail"]} ({p["source"]}, {p["reported"]})')
+    return "\n".join(out)
+
+
+_INVESTMENT_TRACKER = f"""\
 REFERENCE — US-Korea $350B investment pledge (a GOVERNMENT-LEVEL commitment).
 $350B pledge timeline: framework Jul 30 2025; Trump-Lee summit Aug 25 2025 (Washington); Trump state visit Oct 29 2025 (Gyeongju); National Assembly passed the Special Investment Act Mar 12 2026 (226-8-8), creating the Korea-US Strategic Investment Corporation to channel the fund.
 Intended structure: $150B shipbuilding (MASGA), $200B strategic sectors (capped $20B/yr), $100B US energy purchases.
@@ -187,7 +247,24 @@ Intended structure: $150B shipbuilding (MASGA), $200B strategic sectors (capped 
 *** DO NOT CONFLATE — critical ***
 The White House "investments" page and summit fact sheets list many individual Korean corporate US investments (e.g. Hyundai plants ~$26B, Korean Air's Boeing order ~$36.2B, Korea Zinc, LS Group, Paris Baguette, Samsung Biologics, etc.). These are ORDINARY COMMERCIAL announcements. They are NOT verified tranches or drawdown of the $350B Strategic Investment Corporation fund, and MUST NOT be summed and presented as "pledge fulfillment." There is NO public official figure for how much of the $350B has actually been committed/drawn down through the Corporation.
 Do NOT compute a fulfillment percentage from these corporate deals. (Prior versions of this tracker wrongly summed them to "$99.1B / 28% fulfilled" — that was a conflation; do not reproduce it.)
-NOTE: Samsung $37B Taylor TX fabs and SK $22B are Biden-era CHIPS Act commitments (2022-2024), unrelated to this pledge."""
+NOTE: Samsung $37B Taylor TX fabs and SK $22B are Biden-era CHIPS Act commitments (2022-2024), unrelated to this pledge.
+
+*** SELECTED PROJECTS — the pledge's own pipeline ***
+These ARE attributable to the $350B pledge: the Ministry of Trade, Industry and
+Resources presented them to the National Assembly trade committee as the fund's
+own project selections. Keep them separate from the corporate ledger below, and
+carry every line forward. Format: # | project | value | status
+{_pledge_project_lines()}
+
+Rules for this list:
+- Still NO official drawdown or disbursement figure for the $350B. A selected project is not
+  money committed through the Strategic Investment Corporation: announced_to_date and
+  pct_fulfilled stay null until an official drawdown figure is reported.
+- Do not sum these values, and do not add the Texas $22.3B to the corporate ledger — it belongs
+  to the pledge, and counting it in both is the conflation this tracker exists to prevent.
+- Kim told the committee no investment proceeds if it exceeds the $200B limit.
+- A committee member said the MOU will likely be announced by Trump ahead of the November US
+  midterms. That is one member's expectation, not a scheduled date — do not print it as one."""
 
 
 _INVESTMENT_LEDGER = """\
@@ -686,7 +763,7 @@ Return a digest object with:
     NEVER write one long sentence chained with semicolons. This shipped and was unreadable: "Seoul faces no baseline reciprocal tariff since Section 122 expired Jul 24; steel/aluminum at 50% Section 232 and autos at 15% remain active; Section 301 is now the primary prospective tariff vehicle; the $350B investment pledge has no official drawdown figure." Four clauses, one breath, no hierarchy.
     Write it as separate sentences instead: "Steel and aluminium stay at 50% and autos at 15%, both under Section 232. The Section 122 surcharge expired 24 July, so there is no baseline reciprocal tariff. Section 301 is now the likely vehicle for any new measure."
     Spell out an abbreviation on first use and expand a bare statute number into what it does.
-  - investment_package: status of the ROK-US $350B investment PLEDGE — a government-level commitment, NOT a sum of corporate deals (see US-KOREA INVESTMENT TRACKER above; do NOT conflate ordinary corporate US-investment announcements with pledge fulfillment). Object with: total_pledged (string, "$350B"); announced_to_date (string or null — an OFFICIAL Strategic Investment Corporation drawdown/commitment figure ONLY; set null if none has been reported, which is currently the case); pct_fulfilled (integer or null — OFFICIAL only; null if no official drawdown figure); known_deals (array — LEAVE EMPTY [] unless today's articles cite an OFFICIAL source explicitly attributing a specific deal to the $350B fund; do NOT populate it with the corporate announcements from the tracker); note (1 short sentence on the pledge's structure/status, e.g. "$150B shipbuilding, $200B strategic sectors, $100B energy purchases; no official drawdown figure reported to date"); latest_update (SHORT phrase, only if there is genuine official progress — else omit). Default state: announced_to_date=null, pct_fulfilled=null, known_deals=[], with a factual note — leave fulfillment unfilled rather than inventing it.
+  - investment_package: status of the ROK-US $350B investment PLEDGE — a government-level commitment, NOT a sum of corporate deals (see US-KOREA INVESTMENT TRACKER above; do NOT conflate ordinary corporate US-investment announcements with pledge fulfillment). Object with: total_pledged (string, "$350B"); announced_to_date (string or null — an OFFICIAL Strategic Investment Corporation drawdown/commitment figure ONLY; set null if none has been reported, which is currently the case); pct_fulfilled (integer or null — OFFICIAL only; null if no official drawdown figure); known_deals (array — projects OFFICIALLY attributed to the $350B fund. Carry forward every SELECTED project from the SELECTED PROJECTS list in the tracker above, and add any new one today's articles report from an official source. Each: company (the project, e.g. "Encinal gas-fired power plant"), sector (short, e.g. "Energy - Texas, 6.3 GW"), value (as reported, e.g. "$22.3B"). Include only SELECTED projects — a project still described as planned or awaiting US consultation goes in latest_update, not here, because this list renders under "Selected Projects" and a planned one would read as chosen. Never put ordinary corporate announcements here; those belong in investment_ledger); note (1 short sentence on the pledge's structure/status, e.g. "$150B shipbuilding, $200B strategic sectors, $100B energy purchases; no official drawdown figure reported to date"); latest_update (SHORT phrase, only if there is genuine official progress — else omit). Default state: announced_to_date=null, pct_fulfilled=null — a selected project is NOT a drawdown, so these two stay null until an official Strategic Investment Corporation figure is reported. known_deals is no longer empty by default: as of 22 Sep 2026 it carries the Encinal project. Leave fulfillment unfilled rather than inventing it.
   - investment_ledger: bilateral Korea-US CORPORATE investment flows, tracked SEPARATELY from the $350B pledge (do NOT conflate). Array — carry forward EVERY entry in the US-KOREA INVESTMENT LEDGER reference above, and ADD any new deal reported in today's articles. Each entry: entity (lead firm), counterparty (other party, or null), value (string exactly as reported — "$26B", ">$500B", "undisclosed", "3.3 mtpa/yr"), direction (EXACTLY one of "rok_to_us", "us_to_rok", "partnership"), sector (short), status (EXACTLY one of "binding", "loi", "mou", "announced"), date (short, e.g. "Oct 2025"), note (optional short clause). Do NOT sum the values into any total. Keep directions accurate: Korean firms buying/building in the US = rok_to_us; US firms building/investing in Korea = us_to_rok; chip-supply or joint platforms = partnership.
   - trade_policy: STANDING WATCH of ongoing NON-TARIFF US measures affecting South Korea (MAX 6) — this is background/reference status, NOT "new this week" news (it renders under a "Trade Policy Watch" heading). Do NOT repeat tariff rates already shown in tariff_tracker. Focus on: Section 301 investigations, export controls, CFIUS reviews, ITC cases, trade negotiation rounds. Each: item, agency, detail (1 sentence — current status with dates/deadlines), status (ACTIVE/PENDING/RISK/MONITOR), url (link to the most recent authoritative source — Federal Register notice, USTR announcement, Reuters/AP report; REQUIRED — if no sourced URL exists, omit the item rather than fabricate a link). ONLY include measures that are STILL IN EFFECT: if a measure has EXPIRED, lapsed, concluded, or been terminated, OMIT it entirely (do not list it with a past-tense note). Keep each detail current — do not carry forward a stale status if today's articles show it has changed.
     See TRADE & TARIFF BASELINES section above for baseline entries, tariff rates, and sector rates.
