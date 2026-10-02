@@ -1515,23 +1515,53 @@ def render(digest: dict) -> str:
               <span style="font-weight:600;">{topic}:</span> {finding}
             </div>"""
 
-        # Check if polling data is stale (>7 days old)
+        # Flag polling the reader should not take as this week's.
+        #
+        # This badge existed and had never once appeared. It parsed only
+        # "Sep 11, 2026" and "Sep 11 2026", while the collector passes the
+        # baseline's survey_dates straight through — which reads "week of
+        # 2026-09-11". Neither format matched, poll_dt stayed None, and the
+        # check silently did nothing while the brief printed a three-week-old
+        # approval rating as the current one.
+        #
+        # Parse the shapes actually produced, pull any ISO or long-form date
+        # out of a longer label, and say the age in words rather than only
+        # the date: a reader scanning a dashboard reads "38%" long before
+        # they read a date underneath it.
         stale_html = ""
         poll_updated = (approval.get("last_updated") or "")
         if poll_updated and poll_updated != "recent":
             try:
-                # Try common date formats from the collector
                 poll_dt = None
-                for fmt in ("%b %d, %Y", "%b %d %Y"):
-                    try:
-                        poll_dt = datetime.strptime(poll_updated, fmt).replace(tzinfo=timezone.utc)
-                        break
-                    except ValueError:
-                        continue
-                if poll_dt and (now - poll_dt).days > 7:
-                    stale_html = f"""
-            <div style="margin-top:8px;font-size:10px;color:#6B7280;text-align:center;">
-              Data from {_esc(poll_updated)} — newer polling may be available
+                _iso = _re.search(r"(\d{4})-(\d{2})-(\d{2})", poll_updated)
+                if _iso:
+                    poll_dt = datetime(int(_iso.group(1)), int(_iso.group(2)),
+                                       int(_iso.group(3)), tzinfo=timezone.utc)
+                else:
+                    # "June 9-11, 2026" and "Sep 11, 2026": take the last day
+                    # named, which is when the survey finished.
+                    _m = _re.search(r"([A-Z][a-z]+)\s+(\d{1,2})(?:\s*[-–]\s*(\d{1,2}))?,?\s+(\d{4})",
+                                    poll_updated)
+                    if _m:
+                        _day = int(_m.group(3) or _m.group(2))
+                        for _fmt in ("%B", "%b"):
+                            try:
+                                _mon = datetime.strptime(_m.group(1), _fmt).month
+                                poll_dt = datetime(int(_m.group(4)), _mon, _day,
+                                                   tzinfo=timezone.utc)
+                                break
+                            except ValueError:
+                                continue
+                if poll_dt:
+                    _age = (now - poll_dt).days
+                    if _age > 7:
+                        _wks = _age // 7
+                        _how_old = (f"{_wks} week{'s' if _wks != 1 else ''} old"
+                                    if _wks else f"{_age} days old")
+                        stale_html = f"""
+            <div style="margin-top:8px;font-size:10px;color:{TAEGUK_RED};text-align:center;">
+              Gallup Korea publishes weekly &middot; this reading is {_how_old}
+              ({_esc(poll_updated)})
             </div>"""
             except Exception:
                 pass

@@ -26,7 +26,13 @@ from email.mime.text import MIMEText
 from pathlib import Path
 
 BASELINE_PATH = Path(__file__).parent / "gallup_baseline.json"
-ALERT_DAYS = 21
+# Gallup Korea publishes weekly, so a baseline older than this has missed at
+# least two releases and the parser is broken, not merely unlucky. It was 21,
+# which is four missed releases — and because the test is "> ALERT_DAYS", a
+# baseline that went stale on 11 September produced no alert through the runs
+# of 12, 18, 19, 25 and 26 September, each of which failed to parse and exited
+# 0. The brief printed a three-week-old approval rating throughout.
+ALERT_DAYS = 10
 OPERATOR_EMAIL = "alim@csis.org"
 
 MONTH_NAMES = ["January", "February", "March", "April", "May", "June",
