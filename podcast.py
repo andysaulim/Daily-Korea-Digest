@@ -77,6 +77,19 @@ def _country(text: str, abbr: str, noun: str, adjective: str) -> str:
     return re.sub(rf"\b{abbr}\b(\s+\w+|(?=[^\w]|$))", repl, text)
 
 
+_NOT_A_NOUN = {"in", "to", "of", "for", "and", "or", "a", "an", "the", "on",
+               "over", "by", "from", "with", "per", "at", "as", "this", "last",
+               "next", "is", "was", "will", "would"}
+
+
+def _money(m: re.Match) -> str:
+    """$22.3B -> "22.3 billion dollars", or "dollar" when it modifies a noun."""
+    amount, unit = m.group(1), _UNITS[m.group(2).lower()]
+    nxt = re.match(r"\s+([A-Za-z]+)", m.string[m.end():])
+    as_adjective = bool(nxt) and nxt.group(1).lower() not in _NOT_A_NOUN
+    return f"{amount} {unit} dollar{'' if as_adjective else 's'}"
+
+
 def speakable(text: str) -> str:
     """Rewrite a printed sentence so a speech engine says it the way a reader means it.
 
@@ -95,7 +108,7 @@ def speakable(text: str) -> str:
     t = _HANGUL.sub("", t)
     t = re.sub(r"\(\s*[,;/·]*\s*\)", "", t)          # parentheses Hangul left empty
     t = re.sub(r"\s*·\s*", ", ", t)
-    t = _MONEY.sub(lambda m: f"{m.group(1)} {_UNITS[m.group(2).lower()]} dollars", t)
+    t = _MONEY.sub(_money, t)
     t = re.sub(r"\bUS\b", "U.S.", t)
     t = _country(t, "DPRK", "North Korea", "North Korean")
     t = _country(t, "ROK", "South Korea", "South Korean")
@@ -127,59 +140,88 @@ def _spoken_date(digest: dict) -> str:
     for fmt in ("%Y-%m-%d", "%A, %B %d, %Y", "%B %d, %Y"):
         try:
             d = datetime.strptime(raw[:len(datetime.now().strftime(fmt)) + 12].strip(), fmt)
-            return d.strftime("%A, %B ") + str(d.day) + d.strftime(", %Y")
+            return d.strftime("%A, %B ") + str(d.day)
         except ValueError:
             continue
     return raw
 
 
+_STOP = {"the", "and", "for", "with", "that", "this", "from", "into", "over",
+         "after", "amid", "will", "would", "its", "their", "about", "says", "said"}
+
+
+def _words(text: str) -> set[str]:
+    return {w for w in re.findall(r"[a-z]+", text.lower()) if len(w) > 3 and w not in _STOP}
+
+
 def _story(item: dict, body_key: str = "body") -> str:
+    """One item as spoken: the body alone when it already tells the headline.
+
+    In print a headline then a body is how a page is scanned. Read aloud it is
+    the same story twice in a row, because the body's first sentence usually
+    restates the headline in full. Measured, not assumed: when most of the
+    headline's content words recur in the body's opening sentence, the
+    headline is dropped. Otherwise — short wire items whose body is a fragment
+    that leans on its headline — both are kept.
+    """
     head = speakable(item.get("headline", ""))
     body = speakable(item.get(body_key) or item.get("body_text") or item.get("body") or "")
-    src = re.sub(r"\s+", " ", str(item.get("source") or "")).strip()
-    attribution = f" That's from {src}." if src else ""
-    return " ".join(p for p in (head, body) if p) + attribution
+    if not body:
+        return head
+    if not head:
+        return body
+    # The opening forty words, not the first "sentence": abbreviations such as
+    # "Sept. 21" end a sentence for a splitter and not for a reader, and cut
+    # the comparison short enough that every headline looked new.
+    first = " ".join(body.split()[:40])
+    hw = _words(head)
+    if hw and len(hw & _words(first)) / len(hw) >= 0.4:
+        return body
+    return f"{head} {body}"
 
 
 def build_script(digest: dict) -> str:
     """The day's brief as a spoken script: paragraphs separated by blank lines.
 
-    Follows the printed brief's order and stops where the brief stops. Leaves
-    out what does not survive being read aloud — tariff tables, the investment
-    ledger, link lists, sparklines — and names every story's source, because a
-    listener has no hyperlink to check and attribution is how they know where a
-    claim came from.
+    Follows the printed brief's order and says only what it says. Leaves out
+    what does not survive being read aloud — tariff tables, the ledger, link
+    lists, sparklines. The connective phrases ("Our top story", "Looking
+    ahead") are the only words added, and none of them carries a fact.
+
+    The opening summary is read only when the top stories will not repeat it:
+    the morning memo is usually those same stories in a sentence each, and in
+    audio, unlike print, a listener cannot skip the second telling.
     """
     when = _spoken_date(digest)
-    out: list[str] = [
-        f"This is the Korea Daily Brief from the CSIS Korea Chair, for {when}."
-    ]
+    out: list[str] = [f"This is the Korea Daily Brief from the CSIS Korea Chair. "
+                      f"It's {when}."]
 
-    memo = [m for m in (digest.get("morning_memo") or []) if m]
-    if memo:
-        lines = []
-        for m in memo:
-            text = m if isinstance(m, str) else (m.get("text") or m.get("item") or "")
-            if text:
-                lines.append(speakable(text))
-        if lines:
-            out.append("First, today in brief. " + " ".join(lines))
-
+    # The RE line is the brief's own one-line rundown, which is exactly what a
+    # spoken bulletin opens with. The morning memo is not used: it is the top
+    # stories again, a sentence each, and every item in it is told in full
+    # further down — in audio a listener cannot skip the second telling.
     top = _items(digest, "top_stories")
-    if top:
-        out.append("The top stories.")
-        for n, item in enumerate(top, 1):
-            lead = "First" if n == 1 else ("Next" if n < len(top) else "And finally")
-            out.append(f"{lead}. {_story(item)}")
+    parts = [speakable(p).rstrip(".") for p in str(digest.get("re_line") or "").split("·")]
+    parts = [p for p in parts if p]
+    if len(parts) > 1:
+        out.append("In today's brief: " + "; ".join(parts[:-1]) + "; and " + parts[-1] + ".")
+    elif parts:
+        out.append(f"In today's brief: {parts[0]}.")
+
+    leads = ["Our top story:", "Also making news:", "And:"]
+    for n, item in enumerate(top):
+        lead = leads[0] if n == 0 else ("And finally:" if n == len(top) - 1 else leads[1])
+        out.append(f"{lead} {_story(item)}")
 
     overnight = _items(digest, "overnight_items")
     if overnight:
-        out.append("Overnight.")
-        out.extend(_story(i, "body_text") for i in overnight)
+        first, *rest = [_story(i, "body_text") for i in overnight]
+        out.append(f"Here's what else happened overnight. {first}")
+        out.extend(rest)
 
     kcna = digest.get("kcna_delta") or {}
     if isinstance(kcna, dict) and kcna.get("bottom_line"):
-        k = ["From Pyongyang.", speakable(kcna["bottom_line"])]
+        k = ["Turning to Pyongyang.", speakable(kcna["bottom_line"])]
         days = kcna.get("days_since_last_appearance")
         if isinstance(days, int) and days > 0 and not kcna.get("kim_appearance_today"):
             k.append(f"Kim Jong Un was last seen in public {days} "
@@ -197,56 +239,60 @@ def build_script(digest: dict) -> str:
             names = "; ".join(
                 speakable(f'{d["company"]}, {d.get("value") or "value not reported"}').rstrip(".")
                 for d in deals)
-            t.append(f"Projects selected so far under the 350 billion dollar "
-                     f"investment pledge: {names}.")
+            t.append(f"Selected so far under the 350 billion dollar investment pledge: {names}.")
         if pkg.get("latest_update"):
             t.append(speakable(pkg["latest_update"]))
         if t:
-            out.append("U.S.–Korea trade and investment. " + " ".join(t))
+            out.append("On U.S.–Korea trade. " + " ".join(t))
 
     biz = _items(digest, "business_economy")
     if biz:
-        out.append("Business and the economy.")
-        out.extend(_story(i, "body_text") for i in biz)
+        first, *rest = [_story(i, "body_text") for i in biz]
+        out.append(f"In business news. {first}")
+        out.extend(rest)
 
     region = _items(digest, "northeast_asia")
     if region:
-        out.append("Around the region.")
-        out.extend(_story(i, "body_text") for i in region)
+        first, *rest = [_story(i, "body_text") for i in region]
+        out.append(f"Around the region. {first}")
+        out.extend(rest)
 
     # usd_krw is dollars-to-won, so a fall means the won strengthened. Say
-    # what the number is — "the dollar at 1,338 won" — rather than "the won at
-    # 1,338, down", which reverses the direction for any listener who hears it.
+    # what the number is — "the dollar is at 1,338 won" — rather than "the won
+    # is at 1,338, down", which reverses the direction for a listener.
     mk = digest.get("market_indicators") or {}
     spoken_mk = []
-    for key, fmt in (("kospi", "the KOSPI at {v}"),
-                     ("usd_krw", "the dollar at {v} won"),
-                     ("brent", "Brent crude at {v} dollars a barrel"),
-                     ("bok_rate", "the Bank of Korea base rate at {v}")):
+    for key, fmt in (("kospi", "The KOSPI is at {v}"),
+                     ("usd_krw", "The dollar is at {v} won"),
+                     ("brent", "Brent crude is at {v} dollars a barrel"),
+                     ("bok_rate", "The Bank of Korea's base rate is {v}")):
         v = mk.get(key)
         if not isinstance(v, dict) or not v.get("value"):
             continue
-        phrase = fmt.format(v=str(v["value"]).rstrip("%") + ("%" if "%" in str(v["value"]) else ""))
+        phrase = fmt.format(v=str(v["value"]).replace("%", " percent"))
         chg = v.get("change_pct")
         if isinstance(chg, (int, float)) and chg:
             phrase += f", {'up' if chg > 0 else 'down'} {abs(chg):g} percent"
-        spoken_mk.append(phrase)
+        spoken_mk.append(phrase + ".")
     if spoken_mk:
-        out.append("In the markets: " + "; ".join(spoken_mk) + ".")
+        out.append("In the markets. " + " ".join(spoken_mk))
 
+    _y = re.search(r"\b(20\d{2})\b", str(digest.get("digest_date") or ""))
+    year = _y.group(1) if _y else ""          # digest_date is not always ISO
     cal = [c for c in (digest.get("calendar_watch") or []) if isinstance(c, dict)]
-    if cal:
-        ahead = []
-        for c in cal:
-            date = str(c.get("date") or "").strip()
-            event = speakable(c.get("event") or c.get("headline") or "")
-            if event:
-                ahead.append((f"{date}: " if date else "") + event)
-        if ahead:
-            out.append("Coming up. " + " ".join(ahead))
+    ahead = []
+    for c in cal:
+        date = str(c.get("date") or "").strip()
+        if year:
+            date = re.sub(rf",?\s*{year}\b", "", date).strip()
+        event = speakable(c.get("event") or c.get("headline") or "")
+        if event:
+            ahead.append((f"{date}: " if date else "") + event)
+    if ahead:
+        out.append("Looking ahead. " + " ".join(ahead))
 
     out.append(f"That's the Korea Daily Brief for {when}. The full text, with a "
-               f"link to every source, is in today's email and in the online archive.")
+               f"link to every source, is in today's email.")
     return "\n\n".join(p.strip() for p in out if p and p.strip())
 
 
