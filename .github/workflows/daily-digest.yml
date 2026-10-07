@@ -178,6 +178,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           TTS_MODEL: ${{ vars.TTS_MODEL }}
           TTS_VOICE: ${{ vars.TTS_VOICE }}
+          TTS_STYLE: ${{ vars.TTS_STYLE }}
           WEB_URL: https://andysaulim.github.io/Daily-Korea-Digest
         run: |
           set -o pipefail

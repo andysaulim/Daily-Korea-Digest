@@ -19,6 +19,7 @@ is made):
     OPENAI_API_KEY   enables synthesis
     TTS_MODEL        default gpt-4o-mini-tts
     TTS_VOICE        default onyx
+    TTS_STYLE        how the voice reads; default is a conversational podcast host
 """
 from __future__ import annotations
 
@@ -40,8 +41,20 @@ FEED_EPISODES = 30          # what the feed advertises; the workflow prunes the 
 DEFAULT_MODEL = "gpt-4o-mini-tts"
 DEFAULT_VOICE = "onyx"
 LAST_ERROR = ""              # why the most recent synthesis produced nothing
-DELIVERY = ("Calm, measured, authoritative news-briefing delivery. Even pace, "
-            "clear diction, no dramatisation. Pause briefly between items.")
+# How the voice reads, sent with every request to models that take it. The
+# default is the conversational public-radio register rather than a newsreader:
+# unhurried, warm and curious, the way a host talks to one listener. It is a
+# description of a style, deliberately not of any particular person — cloning
+# or imitating a real host's voice is outside what the providers permit and
+# would let listeners mistake the brief for someone else's programme.
+# Override per repo with the TTS_STYLE variable; no code change needed.
+DELIVERY = ("Speak like the host of a thoughtful daily news podcast, talking to one "
+            "listener. Conversational and warm, unhurried, genuinely curious. Let "
+            "sentences breathe: a brief, natural pause before the key fact or number, "
+            "and a slightly longer one between stories. Vary pitch the way people do "
+            "in conversation; lean lightly on the word that matters. Never theatrical, "
+            "never a newsreader's sing-song, never rushed. Pronounce Korean names "
+            "carefully and evenly.")
 
 # ── Making text speakable ────────────────────────────────────────────────────
 
@@ -328,7 +341,7 @@ def _openai_tts(text: str, key: str, model: str, voice: str) -> bytes:
     import requests
     body = {"model": model, "voice": voice, "input": text, "response_format": "mp3"}
     if model.startswith("gpt-4o"):
-        body["instructions"] = DELIVERY        # tts-1 does not take instructions
+        body["instructions"] = (os.environ.get("TTS_STYLE") or "").strip() or DELIVERY
     r = requests.post("https://api.openai.com/v1/audio/speech",
                       headers={"Authorization": f"Bearer {key}"},
                       json=body, timeout=180)
