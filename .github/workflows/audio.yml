@@ -1,0 +1,49 @@
+name: Audio edition (make an episode, send nothing)
+
+# Makes the audio for an issue that has already gone out, from the copy
+# published on gh-pages, and publishes the MP3 and podcast feed. It sends no
+# email and runs no collection or model call for the brief itself — re-running
+# the daily workflow instead would write a different brief and mail the list
+# twice. The daily workflow makes each new day's episode on its own; this is
+# for a day it missed, or for trying audio out.
+on:
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "Issue date, YYYY-MM-DD. Leave as 'today' for today's issue."
+        type: string
+        default: today
+
+permissions:
+  contents: write
+
+jobs:
+  audio:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Make the episode
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          TTS_MODEL: ${{ vars.TTS_MODEL }}
+          TTS_VOICE: ${{ vars.TTS_VOICE }}
+          WEB_URL: https://andysaulim.github.io/Daily-Korea-Digest
+        run: python podcast.py --issue "${{ inputs.date }}" --out public
+
+      - name: Publish
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          personal_token: ${{ secrets.GH_PAT }}
+          publish_dir: ./public
+          keep_files: true
