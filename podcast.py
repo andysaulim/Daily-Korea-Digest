@@ -36,7 +36,13 @@ from pathlib import Path
 from xml.sax.saxutils import escape as _xml
 
 SPOKEN_WPM = 155            # measured pace of the default voice, for estimates
-CHUNK_CHARS = 3500          # under every supported model's per-request limit
+CHUNK_CHARS = 800           # a short paragraph per request; see _chunks
+MIN_COVERAGE = 0.8          # a request whose audio is shorter than this share
+                            # of its expected length is redone: a voice speaking
+                            # quickly lands near 0.9, a skipped passage well below.
+                            # At 0.6 a request that lost a quarter of its words
+                            # passed, and 17% of a test episode vanished unremarked.
+PUBLISH_COVERAGE = 0.75     # after retries, below this the episode is withheld
 FEED_EPISODES = 30          # what the feed advertises; the workflow prunes the rest
 DEFAULT_MODEL = "gpt-4o-mini-tts"
 DEFAULT_VOICE = "ash"            # softer, conversational; suits the podcast-host delivery
@@ -48,13 +54,13 @@ LAST_ERROR = ""              # why the most recent synthesis produced nothing
 # or imitating a real host's voice is outside what the providers permit and
 # would let listeners mistake the brief for someone else's programme.
 # Override per repo with the TTS_STYLE variable; no code change needed.
-DELIVERY = ("Speak like the host of a thoughtful daily news podcast, talking to one "
-            "listener. Conversational and warm, unhurried, genuinely curious. Let "
-            "sentences breathe: a brief, natural pause before the key fact or number, "
-            "and a slightly longer one between stories. Vary pitch the way people do "
-            "in conversation; lean lightly on the word that matters. Never theatrical, "
-            "never a newsreader's sing-song, never rushed. Pronounce Korean names "
-            "carefully and evenly.")
+DELIVERY = ("You are the host of a daily news podcast, talking to one listener you "
+            "respect. Engaged and genuinely curious — you find this interesting and "
+            "it shows. Conversational, with momentum: vary your pace, slow down for "
+            "the fact that matters, pick up through connective lines. A natural "
+            "pause before a key number or quote, a longer one between stories. "
+            "Warm, never theatrical, never a newsreader's monotone. Pronounce "
+            "Korean names carefully.")
 
 # ── Making text speakable ────────────────────────────────────────────────────
 
@@ -195,81 +201,154 @@ def _story(item: dict, body_key: str = "body") -> str:
 
 
 def build_script(digest: dict) -> str:
-    """The day's brief as a spoken script: paragraphs separated by blank lines.
+    """The whole brief as a spoken script, in the order it is printed.
 
-    Follows the printed brief's order and says only what it says. Leaves out
-    what does not survive being read aloud — tariff tables, the ledger, link
-    lists, sparklines. The connective phrases ("Our top story", "Looking
-    ahead") are the only words added, and none of them carries a fact.
+    Every section is read except US–Korea Trade & Investment, which is a
+    standing reference — tariff tables, the pledge ledger — not the day's news,
+    and which the editor asked to leave out of the audio. The morning memo is
+    replaced by the RE line, because the memo retells the top stories.
 
-    The opening summary is read only when the top stories will not repeat it:
-    the morning memo is usually those same stories in a sentence each, and in
-    audio, unlike print, a listener cannot skip the second telling.
+    Connective phrases are the only words added, and none carries a fact. A
+    story already told in an earlier section is not told again: sections such
+    as ROK Government often restate a top story, and a listener, unlike a
+    reader, cannot skip the repeat.
     """
     when = _spoken_date(digest)
-    out: list[str] = [f"This is the Korea Daily Brief from the CSIS Korea Chair. "
-                      f"It's {when}."]
+    out: list[str] = [f"This is the Korea Daily Brief from the CSIS Korea Chair. It's {when}."]
+    told: list[set] = []
 
-    # The RE line is the brief's own one-line rundown, which is exactly what a
-    # spoken bulletin opens with. The morning memo is not used: it is the top
-    # stories again, a sentence each, and every item in it is told in full
-    # further down — in audio a listener cannot skip the second telling.
-    top = _items(digest, "top_stories")
-    parts = [speakable(p).rstrip(".") for p in str(digest.get("re_line") or "").split("·")]
-    parts = [p for p in parts if p]
+    def fresh(text: str) -> bool:
+        w = _words(text)
+        if not w:
+            return False
+        if any(len(w & t) / len(w) >= 0.6 for t in told):
+            return False
+        told.append(w)
+        return True
+
+    def section(lead: str, items: list[str]) -> None:
+        items = [i for i in items if i and fresh(i)]
+        if items:
+            out.append(f"{lead} {items[0]}")
+            out.extend(items[1:])
+
+    parts = [speakable(x).rstrip(".") for x in str(digest.get("re_line") or "").split("·")]
+    parts = [x for x in parts if x]
     if len(parts) > 1:
         out.append("In today's brief: " + "; ".join(parts[:-1]) + "; and " + parts[-1] + ".")
     elif parts:
         out.append(f"In today's brief: {parts[0]}.")
 
-    leads = ["Our top story:", "Also making news:", "And:"]
+    top = _items(digest, "top_stories")
     for n, item in enumerate(top):
-        lead = leads[0] if n == 0 else ("And finally:" if n == len(top) - 1 else leads[1])
-        out.append(f"{lead} {_story(item)}")
+        told_text = _story(item)
+        fresh(told_text)
+        lead = "Our top story:" if n == 0 else ("And finally:" if n == len(top) - 1 else "Also making news:")
+        out.append(f"{lead} {told_text}")
 
-    overnight = _items(digest, "overnight_items")
-    if overnight:
-        first, *rest = [_story(i, "body_text") for i in overnight]
-        out.append(f"Here's what else happened overnight. {first}")
-        out.extend(rest)
+    section("Here's what else happened overnight.",
+            [_story(i, "body_text") for i in _items(digest, "overnight_items")])
 
     kcna = digest.get("kcna_delta") or {}
-    if isinstance(kcna, dict) and kcna.get("bottom_line"):
-        k = ["Turning to Pyongyang.", speakable(kcna["bottom_line"])]
-        days = kcna.get("days_since_last_appearance")
-        if isinstance(days, int) and days > 0 and not kcna.get("kim_appearance_today"):
-            k.append(f"Kim Jong Un was last seen in public {days} "
-                     f"day{'s' if days != 1 else ''} ago.")
-        out.append(" ".join(k))
+    if isinstance(kcna, dict):
+        arts = [_story({"headline": a.get("headline", ""), "body": a.get("summary", "")})
+                for a in (kcna.get("top_articles") or []) if isinstance(a, dict)]
+        if kcna.get("bottom_line"):
+            bl = "The bottom line: " + speakable(kcna["bottom_line"])
+            days = kcna.get("days_since_last_appearance")
+            if isinstance(days, int) and days > 0 and not kcna.get("kim_appearance_today"):
+                bl += f" Kim Jong Un was last seen in public {days} day{'s' if days != 1 else ''} ago."
+            arts.append(bl)
+        section("Turning to Pyongyang, and what state media is saying.", arts)
 
-    trade = digest.get("us_korea_deals") or {}
-    if isinstance(trade, dict):
-        t = []
-        if trade.get("state_of_play"):
-            t.append(speakable(trade["state_of_play"]))
-        pkg = trade.get("investment_package") or {}
-        deals = [d for d in (pkg.get("known_deals") or []) if isinstance(d, dict) and d.get("company")]
-        if deals:
-            names = "; ".join(
-                speakable(f'{d["company"]}, {d.get("value") or "value not reported"}').rstrip(".")
-                for d in deals)
-            t.append(f"Selected so far under the 350 billion dollar investment pledge: {names}.")
-        if pkg.get("latest_update"):
-            t.append(speakable(pkg["latest_update"]))
-        if t:
-            out.append("On U.S.–Korea trade. " + " ".join(t))
+    ks = digest.get("key_stat") or {}
+    if isinstance(ks, dict) and ks.get("number"):
+        stat = speakable(f'{ks["number"]}: {ks.get("label", "")}.').rstrip(".") + "."
+        if ks.get("context"):
+            stat += " " + speakable(ks["context"])
+        out.append(f"The number of the day. {stat}")
 
-    biz = _items(digest, "business_economy")
-    if biz:
-        first, *rest = [_story(i, "body_text") for i in biz]
-        out.append(f"In business news. {first}")
-        out.extend(rest)
+    gov = []
+    for g in _items(digest, "rok_government"):
+        line = speakable(g.get("action", ""))
+        if g.get("detail"):
+            line += " " + speakable(g["detail"])
+        gov.append(line)
+    for a in _items(digest, "rok_assembly"):
+        gov.append(speakable(f'At the National Assembly, {a.get("committee", "")}: {a.get("action", "")}')
+                   + (" " + speakable(a["detail"]) if a.get("detail") else ""))
+    for r in _items(digest, "rok_personnel"):
+        gov.append(speakable(f'{r.get("name", "")}, {r.get("position", "")}: {r.get("action", "")}')
+                   + (" " + speakable(r["detail"]) if r.get("detail") else ""))
+    section("From the South Korean government.", gov)
 
-    region = _items(digest, "northeast_asia")
-    if region:
-        first, *rest = [_story(i, "body_text") for i in region]
-        out.append(f"Around the region. {first}")
-        out.extend(rest)
+    section("In business news.", [_story(i, "body_text") for i in _items(digest, "business_economy")])
+    section("Around the region.", [_story(i, "body_text") for i in _items(digest, "northeast_asia")])
+
+    ps = digest.get("public_sentiment") or {}
+    ap = ps.get("presidential_approval") or {}
+    if isinstance(ap, dict) and ap.get("value"):
+        src = ap.get("source") or "the latest poll"
+        dated = f", taken {ap['last_updated']}" if ap.get("last_updated") else ""
+        line = (f"In {src}{dated}, the president's approval stands at "
+                f"{str(ap['value']).replace('%', ' percent')}")
+        if ap.get("trend") in ("up", "down"):
+            line += f", {ap['trend']}"
+        line += "."
+        parties = []
+        for key in ("party_ruling", "party_opposition"):
+            pt = ps.get(key) or {}
+            if isinstance(pt, dict) and pt.get("value") and pt.get("party"):
+                parties.append(f"the {pt['party']} at {str(pt['value']).replace('%', ' percent')}")
+        ind = ps.get("party_independent") or {}
+        if isinstance(ind, dict) and ind.get("value"):
+            parties.append(f"independents at {str(ind['value']).replace('%', ' percent')}")
+        if parties:
+            line += " Party support: " + ", ".join(parties) + "."
+        out.append(f"On public opinion. {line}")
+
+    quotes = []
+    for q in _items(digest, "social_statements") + _items(digest, "official_x_posts"):
+        if q.get("quote_text") and q.get("who"):
+            ctx = f", {q['handle_context']}," if q.get("handle_context") else ""
+            line = speakable(f'{q["who"]}{ctx} said: "{q["quote_text"]}"')
+            if q.get("analyst_note"):
+                line += " " + speakable(q["analyst_note"])
+            quotes.append(line)
+    section("In their own words.", quotes)
+
+    _y = re.search(r"\b(20\d{2})\b", str(digest.get("digest_date") or ""))
+    year = _y.group(1) if _y else ""
+    ahead = []
+    for c in (digest.get("calendar_watch") or []):
+        if not isinstance(c, dict):
+            continue
+        date = str(c.get("date") or "").strip()
+        if year:
+            date = re.sub(rf",?\s*{year}\b", "", date).strip()
+        event = speakable(c.get("event") or c.get("headline") or "")
+        if event:
+            ahead.append((f"{date}: " if date else "") + event)
+    if ahead:
+        out.append("Looking ahead. " + " ".join(ahead))
+
+    section("Also on the wire.", [_story(i, "body_text") for i in _items(digest, "also_today")])
+
+    analysis = []
+    for o in _items(digest, "opeds_today") + _items(digest, "academic_today"):
+        head = speakable(o.get("headline", "")).rstrip(".")
+        by = o.get("authors")
+        by = ", ".join(by) if isinstance(by, list) else (by or "")
+        src = o.get("source") or o.get("journal") or ""
+        intro = head + (f", by {by}" if by else "") + (f", in {src}" if src else "") + "."
+        arg = speakable(o.get("central_argument") or o.get("summary") or "")
+        analysis.append(f"{intro} {arg}".strip())
+    section("In analysis and commentary.", analysis)
+
+    im = digest.get("imagery_report") or {}
+    if isinstance(im, dict) and (im.get("headline") or im.get("body")):
+        section("From satellite imagery.",
+                [_story({"headline": im.get("headline", ""), "body": im.get("body", "")})])
 
     # usd_krw is dollars-to-won, so a fall means the won strengthened. Say
     # what the number is — "the dollar is at 1,338 won" — rather than "the won
@@ -291,23 +370,179 @@ def build_script(digest: dict) -> str:
     if spoken_mk:
         out.append("In the markets. " + " ".join(spoken_mk))
 
-    _y = re.search(r"\b(20\d{2})\b", str(digest.get("digest_date") or ""))
-    year = _y.group(1) if _y else ""          # digest_date is not always ISO
-    cal = [c for c in (digest.get("calendar_watch") or []) if isinstance(c, dict)]
-    ahead = []
-    for c in cal:
-        date = str(c.get("date") or "").strip()
-        if year:
-            date = re.sub(rf",?\s*{year}\b", "", date).strip()
-        event = speakable(c.get("event") or c.get("headline") or "")
-        if event:
-            ahead.append((f"{date}: " if date else "") + event)
-    if ahead:
-        out.append("Looking ahead. " + " ".join(ahead))
-
     out.append(f"That's the Korea Daily Brief for {when}. The full text, with a "
                f"link to every source, is in today's email.")
-    return "\n\n".join(p.strip() for p in out if p and p.strip())
+    return "\n\n".join(x.strip() for x in out if x and x.strip())
+
+
+# ── The written-for-the-ear script ───────────────────────────────────────────
+
+_SCRIPT_SYSTEM = """You write the script for the audio edition of the Korea Daily Brief, the CSIS Korea Chair's daily briefing on the Korean Peninsula. One host reads it aloud.
+
+Sound like a thoughtful daily news podcast: one host talking to one listener. Warm, curious, conversational, with momentum. Open with a hook: the day's most consequential development in a sentence or two. Then walk through the stories with spoken transitions that connect them, and say plainly why something matters when the brief says why. Short sentences. Contractions. Now and then a question a listener might be asking, answered from the brief. No headline-ese, no strings of fragments, no lists read out.
+
+FACTS. This rule outranks every other:
+- Use ONLY facts in the brief JSON you are given. Every name, number, date, place, quote and claim must come from it.
+- Add nothing from your own knowledge, even if you are certain it is true: no background, no history, no figures, no context the brief does not contain.
+- Say why something matters only where the brief itself says so (body text, analyst notes, bottom lines, "so what" fields). Never speculate.
+- Quote only quotes that appear in the brief, word for word, attributed as the brief attributes them.
+- Write every number exactly as the brief writes it.
+- If something in the brief is unclear, leave it out rather than interpret it.
+
+COVER, in this order: the top stories; overnight; Pyongyang (the top KCNA articles, then the bottom line); the number of the day; the South Korean government, National Assembly and appointments; business and the economy; the region; public opinion (say when the poll was taken); statements and posts from officials; what is coming up; the rest of the wire; analysis and commentary; satellite imagery, only if it is included; the markets, briefly. Leave out US-Korea trade and investment entirely. Never tell the same story twice.
+
+FORMAT: plain spoken text only, paragraphs separated by a blank line. No headings, no stage directions, no sound cues, no markdown, no bullet points. Begin exactly with: "This is the Korea Daily Brief from the CSIS Korea Chair. It's {when}." End exactly with: "That's the Korea Daily Brief for {when}. The full text, with a link to every source, is in today's email." Aim for 1,300 to 1,800 words."""
+
+_SCRIPT_KEYS = ("re_line", "top_stories", "overnight_items", "kcna_delta", "key_stat",
+                "rok_government", "rok_assembly", "rok_personnel", "business_economy",
+                "northeast_asia", "public_sentiment", "social_statements",
+                "official_x_posts", "calendar_watch", "also_today", "opeds_today",
+                "academic_today", "imagery_report", "market_indicators")
+
+# Capitalised words a script may use that need not appear in the brief: the
+# show's own frame, calendar words, and generic titles.
+_ALLOWED_CAPS = set("""
+I The This That These Those It It's Its In On At For From With And But Or So Yet
+Now Here Today Tomorrow Meanwhile Also First Next Finally Still Then And Why What
+How Who Where When Which Let Lets Let's We We're You You're Our Your Their There
+Korea Korean Daily Brief CSIS Chair South North Peninsula Seoul Pyongyang
+Monday Tuesday Wednesday Thursday Friday Saturday Sunday January February March
+April May June July August September October November December
+President Minister Ministry Prime Defense Foreign Unification National Assembly
+Party Government Committee Chairman Secretary General Commander Command State
+U.S. US KCNA DPRK ROK Mr Ms Dr
+""".split())
+
+
+def _norm(text: str) -> str:
+    return re.sub(r"[^a-z0-9 ]+", " ", str(text).lower().replace(",", ""))
+
+
+_NUMBER_WORDS = {w: str(i) for i, w in enumerate(
+    "zero one two three four five six seven eight nine ten eleven twelve thirteen "
+    "fourteen fifteen sixteen seventeen eighteen nineteen twenty".split())}
+_NUMBER_WORDS.update({"thirty": "30", "forty": "40", "fifty": "50", "sixty": "60",
+                      "seventy": "70", "eighty": "80", "ninety": "90", "hundred": "100"})
+
+
+def _tokens(text: str) -> list[str]:
+    """Lower-case word tokens, spelled-out numbers turned into digits."""
+    toks = re.findall(r"\d+(?:\.\d+)?|[a-z]+", str(text).lower().replace(",", ""))
+    return [_NUMBER_WORDS.get(t, t) for t in toks]
+
+
+def _number_in_context(n: str, at: int, script_toks: list[str], src_toks: list[str],
+                       src_pos: dict[str, list[int]]) -> bool:
+    """Is n in the brief beside the same words it sits beside in the script?
+
+    Whether a number appears anywhere in the brief proves nothing: "18" and
+    "7" are in its dates, so "18 satellites" passed against a brief that says
+    15. The number must appear within a few words of a content word that also
+    flanks it in the script.
+    """
+    def content(seq):
+        return [t for t in seq if len(t) > 3 and not t[0].isdigit() and t not in _STOP]
+    near = set(content(script_toks[max(0, at - 6):at])[-2:] + content(script_toks[at + 1:at + 6])[:2])
+    places = src_pos.get(n, [])
+    if not near:
+        return bool(places)
+    return any(near & set(src_toks[max(0, i - 5):i + 6]) for i in places)
+
+
+def check_script(script: str, digest: dict, when: str = "") -> list[str]:
+    """Problems that mean the script says something the brief does not.
+
+    Three checks, each aimed at the way a rewrite most often invents: a number
+    not in the brief, a quotation not in the brief, and a proper name not in
+    the brief. Deliberately strict — a false alarm costs one day of the plain
+    assembled script, and a missed invention costs the brief its credibility.
+    """
+    src = json.dumps({k: digest.get(k) for k in _SCRIPT_KEYS}, ensure_ascii=False)
+    src += " " + str(digest.get("digest_date") or "") + " " + when
+    blob = _norm(src)
+    problems = []
+    src_toks = _tokens(src)
+    src_pos: dict[str, list[int]] = {}
+    for i, t in enumerate(src_toks):
+        if t[0].isdigit():
+            src_pos.setdefault(t, []).append(i)
+    # The opening and closing lines carry the date and are fixed text, checked
+    # separately. They are removed here rather than exempting the date's
+    # numbers everywhere: a global exemption for "7" let "seven soldiers"
+    # through on 7 October against a brief that says three.
+    body = script
+    for fixed in (f"This is the Korea Daily Brief from the CSIS Korea Chair. It's {when}.",
+                  f"That's the Korea Daily Brief for {when}."):
+        body = body.replace(fixed, " ")
+    s_toks = _tokens(body)
+    for i, t in enumerate(s_toks):
+        if t[0].isdigit() and not _number_in_context(t, i, s_toks, src_toks, src_pos):
+            ctx = " ".join(s_toks[max(0, i - 2):i + 3])
+            problems.append(f"number not in the brief here: {t} ({ctx})")
+    for q in re.findall(r"[\"“]([^\"”]{12,})[\"”]", script):
+        if _norm(q).strip() and " ".join(_norm(q).split()) not in " ".join(blob.split()):
+            problems.append(f"quotation not in the brief: {q[:60]!r}")
+    for sentence in re.split(r"(?<=[.!?:;])\s+|\n+", script):
+        words = re.findall(r"[A-Za-z][A-Za-z'.-]*", sentence)
+        for w in words[1:]:
+            core = w.strip(".'-").replace("'s", "")
+            if not core or not core[0].isupper() or core in _ALLOWED_CAPS or len(core) < 3:
+                continue
+            if core.lower() not in blob:
+                problems.append(f"name not in the brief: {core}")
+    seen, out = set(), []
+    for p in problems:
+        if p not in seen:
+            seen.add(p); out.append(p)
+    return out
+
+
+def write_script(digest: dict) -> tuple[str | None, list[str]]:
+    """A script written for listening, or (None, reasons) to fall back.
+
+    Uses the brief's own model. Falls back — never fails — when there is no
+    key, the call errors, the framing lines are missing, or check_script finds
+    anything the brief does not say.
+    """
+    key = (os.environ.get("ANTHROPIC_API_KEY") or "").strip()
+    if not key:
+        return None, ["no ANTHROPIC_API_KEY"]
+    try:
+        from digest import FAST_MODEL as _default_model
+    except Exception:                                           # noqa: BLE001
+        _default_model = "claude-sonnet-4-6"
+    model = (os.environ.get("PODCAST_SCRIPT_MODEL") or "").strip() or _default_model
+    when = _spoken_date(digest)
+    def _no_urls(v):
+        # Links cost tokens and give the writer nothing to say; dropped
+        # structurally — a regex over the JSON left a trailing comma when the
+        # link was the last field, and the payload failed to parse.
+        if isinstance(v, dict):
+            return {k: _no_urls(x) for k, x in v.items() if k not in ("url", "source_links")}
+        if isinstance(v, list):
+            return [_no_urls(x) for x in v]
+        return v
+
+    try:
+        payload = {k: _no_urls(digest[k]) for k in _SCRIPT_KEYS if digest.get(k)}
+        import anthropic
+        msg = anthropic.Anthropic(api_key=key).messages.create(
+            model=model, max_tokens=4000,
+            system=_SCRIPT_SYSTEM.replace("{when}", when),
+            messages=[{"role": "user", "content":
+                       "Here is today's brief as JSON. Write the audio script.\n\n"
+                       + json.dumps(payload, ensure_ascii=False)}])
+        text = "".join(b.text for b in msg.content if getattr(b, "type", "") == "text").strip()
+    except Exception as e:                                      # noqa: BLE001
+        return None, [f"script call failed: {e}"]
+    opening = f"This is the Korea Daily Brief from the CSIS Korea Chair. It's {when}."
+    if not text.startswith(opening[:40]):
+        return None, ["the script did not open with the show's opening line"]
+    problems = check_script(text, digest, when)
+    if problems:
+        return None, problems
+    paras = [speakable(x) for x in text.split("\n\n") if x.strip()]
+    return "\n\n".join(paras), []
 
 
 def estimate_minutes(script: str) -> float:
@@ -316,8 +551,47 @@ def estimate_minutes(script: str) -> float:
 
 # ── Synthesis ────────────────────────────────────────────────────────────────
 
+_MP3_BITRATES = {True: [0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320],
+                 False: [0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160]}
+_MP3_RATES = {3: [44100, 48000, 32000], 2: [22050, 24000, 16000], 0: [11025, 12000, 8000]}
+
+
+def mp3_seconds(data: bytes) -> float:
+    """Length of an MP3 in seconds, by walking its frames.
+
+    The first episode was published as 5:36 when it held 3:31 of audio: the
+    length came from a word-count estimate, because ffprobe was not on the
+    runner. Counting frames needs nothing installed and cannot be fooled by a
+    short file — which is the one thing this number is for.
+    """
+    i, secs, n = 0, 0.0, len(data)
+    while i < n - 4:
+        h = int.from_bytes(data[i:i + 4], "big")
+        if (h >> 21) & 0x7FF == 0x7FF:
+            ver, layer = (h >> 19) & 3, (h >> 17) & 3
+            bri, sri, pad = (h >> 12) & 15, (h >> 10) & 3, (h >> 9) & 1
+            if layer == 1 and ver != 1 and 0 < bri < 15 and sri < 3:
+                mpeg1 = ver == 3
+                sr = _MP3_RATES[ver][sri]
+                br = _MP3_BITRATES[mpeg1][bri] * 1000
+                secs += (1152 if mpeg1 else 576) / sr
+                i += (144 if mpeg1 else 72) * br // sr + pad
+                continue
+        i += 1
+    return secs
+
+
+def _expected_seconds(text: str) -> float:
+    return len(text.split()) / SPOKEN_WPM * 60
+
+
 def _chunks(script: str, limit: int = CHUNK_CHARS) -> list[str]:
-    """Pack paragraphs into requests under the provider's input limit.
+    """Pack paragraphs into requests, kept small on purpose.
+
+    The first live episode sent three requests of up to 3,500 characters and
+    came back a third short: the voice model can stop early on a long passage
+    and still return a well-formed file. Requests of about a paragraph each
+    make a skip both less likely and, when it happens, cheap to redo.
 
     Breaks on paragraph boundaries first, then sentence boundaries for a
     paragraph too long alone, so no request ends mid-sentence — a cut there is
@@ -398,17 +672,31 @@ def _duration_seconds(path: Path, script: str) -> int:
 
 def synthesize(script: str, out_path: Path) -> dict | None:
     """Render the script to MP3. Returns a small record, or None if no audio was made."""
+    global LAST_ERROR
     key = (os.environ.get("OPENAI_API_KEY") or "").strip()
     if not key or not script.strip():
         return None
     model = (os.environ.get("TTS_MODEL") or "").strip() or DEFAULT_MODEL
     voice = (os.environ.get("TTS_VOICE") or "").strip() or DEFAULT_VOICE
+    def _voiced(text: str) -> bytes:
+        """One request, checked. Retried once, then sentence by sentence, if short."""
+        want = _expected_seconds(text)
+        audio = _openai_tts(text, key, model, voice)
+        if want < 4 or mp3_seconds(audio) >= MIN_COVERAGE * want:
+            return audio
+        audio = _openai_tts(text, key, model, voice)
+        if mp3_seconds(audio) >= MIN_COVERAGE * want:
+            return audio
+        sentences = [x for x in re.split(r"(?<=[.!?])\s+", text) if x.strip()]
+        if len(sentences) < 2:
+            return audio
+        return b"".join(_openai_tts(x, key, model, voice) for x in sentences)
+
     try:
-        parts = [_openai_tts(c, key, model, voice) for c in _chunks(script)]
+        parts = [_voiced(c) for c in _chunks(script)]
         out_path.parent.mkdir(parents=True, exist_ok=True)
         _join_mp3(parts, out_path)
     except Exception as e:                                      # noqa: BLE001
-        global LAST_ERROR
         LAST_ERROR = str(e)
         # An annotation, not only a log line: GitHub serves job logs from a
         # separate host, while annotations are readable through the API, so
@@ -416,9 +704,21 @@ def synthesize(script: str, out_path: Path) -> dict | None:
         print(f"::warning title=Audio skipped::{e}")
         print(f"  ⚠  Audio skipped (non-fatal): {e}")
         return None
+    got = mp3_seconds(out_path.read_bytes())
+    want = _expected_seconds(script)
+    if got < PUBLISH_COVERAGE * want:
+        # A short episode is worse than none: it reads as the day's brief and
+        # silently leaves part of it out. Not published, and the reason is
+        # said where it can be read.
+        LAST_ERROR = (f"the audio is {got:.0f} s but the script needs about "
+                      f"{want:.0f} s — the voice skipped part of the brief, so "
+                      f"the episode was not published")
+        print(f"::warning title=Audio incomplete::{LAST_ERROR}")
+        out_path.unlink(missing_ok=True)
+        return None
     return {"tts_provider": "openai", "tts_model": model, "tts_voice": voice,
             "tts_chars": len(script), "audio_bytes": out_path.stat().st_size,
-            "audio_seconds": _duration_seconds(out_path, script)}
+            "audio_seconds": int(got), "audio_expected_seconds": int(want)}
 
 
 # ── The feed ─────────────────────────────────────────────────────────────────
@@ -483,14 +783,83 @@ def _feed_xml(episodes: list[dict], web_base: str) -> str:
 """
 
 
+_MONTHS = {m: i for i, m in enumerate(
+    ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"], 1)}
+
+
+def _last_date(text: str) -> datetime | None:
+    """The last day a date string names: "Oct 5–6, 2026" -> 6 October 2026."""
+    m = re.search(r"([A-Za-z]{3})[a-z]*\.?\s+(\d{1,2})(?:\s*[–-]\s*(\d{1,2}))?,?\s+(20\d{2})", str(text or ""))
+    if not m or m.group(1).lower() not in _MONTHS:
+        return None
+    try:
+        return datetime(int(m.group(4)), _MONTHS[m.group(1).lower()], int(m.group(3) or m.group(2)))
+    except ValueError:
+        return None
+
+
+def imagery_is_new(digest: dict, previous: dict | None) -> bool:
+    """Read the satellite item only when it is a new story.
+
+    The imagery slot is filled every day, often with the same report: the
+    Sangum-ri upgrade led on 6 October and again on the 7th under a different
+    date, and one 3 October naval-construction report ran on two consecutive
+    issues. New means dated today or yesterday — a report with no day at all
+    ("Oct 2026") cannot be shown to be new — and not the story the previous
+    issue already carried.
+    """
+    im = digest.get("imagery_report") or {}
+    if not isinstance(im, dict) or not (im.get("headline") or im.get("body")):
+        return False
+    when, today = _last_date(im.get("date")), _last_date(digest.get("digest_date"))
+    if not when or not today or not (0 <= (today - when).days <= 1):
+        return False
+    prev = (previous or {}).get("imagery_report") or {}
+    if isinstance(prev, dict) and prev.get("headline"):
+        a, b = _words(im.get("headline", "")), _words(prev["headline"])
+        if a and len(a & b) / len(a) >= 0.5:
+            return False
+    return True
+
+
+def _previous_issue(date_slug: str) -> dict | None:
+    """The last issue published before date_slug, from the gh-pages branch."""
+    from datetime import timedelta
+    from shared.published import read_from_branch
+    try:
+        day = datetime.strptime(date_slug, "%Y-%m-%d")
+    except ValueError:
+        return None
+    for back in range(1, 5):
+        text, _ = read_from_branch(f"digest_{(day - timedelta(days=back)):%Y-%m-%d}.json")
+        if text:
+            try:
+                return json.loads(text)
+            except ValueError:
+                return None
+    return None
+
+
 def produce(digest: dict, public: Path, web_base: str, date_slug: str) -> dict | None:
     """Script, audio and feed for one issue. Returns the metrics record, or None."""
-    script = build_script(digest)
+    digest = dict(digest)
+    if not imagery_is_new(digest, _previous_issue(date_slug)):
+        digest.pop("imagery_report", None)
+    script, why = write_script(digest)
+    source = "written"
+    if not script:
+        script, source = build_script(digest), "assembled"
+        if why and why != ["no ANTHROPIC_API_KEY"]:
+            shown = "; ".join(why[:4]) + (f" (+{len(why) - 4} more)" if len(why) > 4 else "")
+            print(f"::warning title=Podcast script fell back to the assembled version::{shown}")
+    print(f"  🎙  Script: {source}, {len(script.split()):,} words")
+    public.mkdir(parents=True, exist_ok=True)
     (public / f"digest_{date_slug}.txt").write_text(script, encoding="utf-8")
     mp3 = public / f"digest_{date_slug}.mp3"
     rec = synthesize(script, mp3)
     if not rec:
         return None
+    rec["script_source"] = source
     shutil.copyfile(mp3, public / "latest.mp3")
     if web_base:
         update_feed(public, web_base, {
