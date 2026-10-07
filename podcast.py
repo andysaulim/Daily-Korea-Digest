@@ -102,6 +102,17 @@ _NOT_A_NOUN = {"in", "to", "of", "for", "and", "or", "a", "an", "the", "on",
                "next", "is", "was", "will", "would"}
 
 
+_MONTH_NAMES = {"Jan": "January", "Feb": "February", "Mar": "March", "Apr": "April",
+           "Jun": "June", "Jul": "July", "Aug": "August", "Sep": "September",
+           "Oct": "October", "Nov": "November", "Dec": "December"}
+_ORDINAL = {"1": "first", "2": "second", "3": "third", "4": "fourth"}
+# Ministry acronyms a reader decodes and a listener can't.
+_SPOKEN_NAMES = (("MOFA", "Foreign Ministry"), ("MOTIE", "Industry Ministry"),
+                 ("MND", "Defense Ministry"), ("MOEF", "Finance Ministry"),
+                 ("MDL", "military demarcation line"),
+                 ("NK Pro", "N.K. Pro"), ("NK News", "N.K. News"))
+
+
 def _money(m: re.Match) -> str:
     """$22.3B -> "22.3 billion dollars", or "dollar" when it modifies a noun."""
     amount, unit = m.group(1), _UNITS[m.group(2).lower()]
@@ -142,9 +153,22 @@ def speakable(text: str) -> str:
     t = re.sub(r"(\d)\s*[–-]\s*(\d)", r"\1 to \2", t)          # "Oct 3–5"
     t = re.sub(r"\s+/\s+", " and ", t)                            # "NK News / NK Pro"
     t = re.sub(r"\bvs\.?\b", "versus", t)
+    t = re.sub(r"\(?\b[A-Z]{3}\d{8,}\b\)?", "", t)                  # wire story IDs
+    t = re.sub(r",?\s*@\w+\s*,?", "", t)                               # social handles
+    t = re.sub(r"\b(Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sept?|Oct|Nov|Dec)\.?\s+(?=\d)",
+               lambda m: _MONTH_NAMES[m.group(1)[:3]] + " ", t)
+    t = re.sub(r"\bQ([1-4])\s+(20\d\d)\b",
+               lambda m: f"the {_ORDINAL[m.group(1)]} quarter of {m.group(2)}", t)
+    t = re.sub(r"(\d)\s?km\b", r"\1 kilometers", t)
+    for short, full in _SPOKEN_NAMES:
+        t = re.sub(rf"\b{short}\b", full, t)
+    t = re.sub(r"\b([A-Za-z]+)/([A-Za-z]+)\b", r"\1 and \2", t)          # "Taiwan/Russia"
+    t = re.sub(r"\s*\(([^()]{1,60})\)", r", \1,", t)                    # asides, not brackets
+    t = re.sub(r",\s*([,.;:!?])", r"\1", t)
+    t = re.sub(r",\s*—", " —", t)
     t = re.sub(r"\s+([,.;:])", r"\1", t)
     t = re.sub(r"\s{2,}", " ", t).strip()
-    if t and t[-1] not in ".?!\"'”’":
+    if t and (t[-1] not in ".?!\"'”’" or (t[-1] in "\"'”’" and t[-2:-1] not in ".?!,")):
         t += "."
     return t
 
@@ -172,6 +196,18 @@ _STOP = {"the", "and", "for", "with", "that", "this", "from", "into", "over",
 
 def _words(text: str) -> set[str]:
     return {w for w in re.findall(r"[a-z]+", text.lower()) if len(w) > 3 and w not in _STOP}
+
+
+_COMMON_NAMES = {"north", "south", "korea", "korean", "koreas", "seoul", "pyongyang", "kim",
+                 "jong", "president", "lee", "jae", "myung", "minister", "foreign", "defense",
+                 "ministry", "the", "dmz", "kcna", "u.s", "united", "states", "russia",
+                 "russian", "china", "chinese", "japan", "japanese", "washington", "party"}
+
+
+def _names(text: str) -> set[str]:
+    """Distinct capitalised words that are not the brief's everyday names."""
+    return {w.lower().strip(".'") for w in re.findall(r"(?<![.!?]\s)\b[A-Z][a-zA-Z.'-]{2,}", text)
+            if w.lower().strip(".'") not in _COMMON_NAMES}
 
 
 def _story(item: dict, body_key: str = "body") -> str:
@@ -216,14 +252,24 @@ def build_script(digest: dict) -> str:
     when = _spoken_date(digest)
     out: list[str] = [f"This is the Korea Daily Brief from the CSIS Korea Chair. It's {when}."]
     told: list[set] = []
+    told_names: list[tuple[set, set]] = []
 
     def fresh(text: str) -> bool:
-        w = _words(text)
+        # The whole item and its opening are both compared: a paraphrase of
+        # the same story shares its lead (who, with whom, about what) even
+        # when its second sentence goes somewhere else.
+        # Four shared uncommon names (Cho, Hyun, Anita, Anand) are the same
+        # story however differently the two items word it.
+        w, lead = _words(text), _words(" ".join(text.split()[:25]))
+        names = _names(text)
         if not w:
             return False
-        if any(len(w & t) / len(w) >= 0.6 for t in told):
-            return False
+        for t, tn in told_names:
+            if len(w & t) / min(len(w), len(t)) >= 0.5 or len(names & tn) >= 4 or \
+                    (len(lead) >= 5 and len(lead & t) / len(lead) >= 0.6):
+                return False
         told.append(w)
+        told_names.append((w, names))
         return True
 
     def section(lead: str, items: list[str]) -> None:
@@ -246,20 +292,34 @@ def build_script(digest: dict) -> str:
         lead = "Our top story:" if n == 0 else ("And finally:" if n == len(top) - 1 else "Also making news:")
         out.append(f"{lead} {told_text}")
 
-    section("Here's what else happened overnight.",
+    section("Here's what else moved overnight.",
             [_story(i, "body_text") for i in _items(digest, "overnight_items")])
 
     kcna = digest.get("kcna_delta") or {}
     if isinstance(kcna, dict):
-        arts = [_story({"headline": a.get("headline", ""), "body": a.get("summary", "")})
-                for a in (kcna.get("top_articles") or []) if isinstance(a, dict)]
+        # Always the top state-media articles, even when a top story already
+        # covered one: then just its headline, as how Pyongyang played it.
+        top_arts = [a for a in (kcna.get("top_articles") or []) if isinstance(a, dict)][:3]
+        arts = []
+        for a in top_arts:
+            full = _story({"headline": a.get("headline", ""), "body": a.get("summary", "")})
+            w = _words(full)
+            if w and any(len(w & t) / min(len(w), len(t)) >= 0.5 for t in told):
+                arts.append(speakable(a.get("headline", "")))
+            else:
+                told.append(w)
+                arts.append(full)
+        if arts:
+            lead = ("State media's top stories today. " if len(arts) > 1 else "State media's top story today. ")
+            arts = [lead + " ".join(arts)]
         if kcna.get("bottom_line"):
             bl = "The bottom line: " + speakable(kcna["bottom_line"])
             days = kcna.get("days_since_last_appearance")
             if isinstance(days, int) and days > 0 and not kcna.get("kim_appearance_today"):
                 bl += f" Kim Jong Un was last seen in public {days} day{'s' if days != 1 else ''} ago."
             arts.append(bl)
-        section("Turning to Pyongyang, and what state media is saying.", arts)
+        if arts:
+            out.append("Now to Pyongyang. " + " ".join(arts))
 
     ks = digest.get("key_stat") or {}
     if isinstance(ks, dict) and ks.get("number"):
@@ -270,30 +330,30 @@ def build_script(digest: dict) -> str:
 
     gov = []
     for g in _items(digest, "rok_government"):
-        line = speakable(g.get("action", ""))
-        if g.get("detail"):
-            line += " " + speakable(g["detail"])
-        gov.append(line)
+        gov.append(_story({"headline": g.get("action", ""), "body": g.get("detail", "")}))
     for a in _items(digest, "rok_assembly"):
-        gov.append(speakable(f'At the National Assembly, {a.get("committee", "")}: {a.get("action", "")}')
-                   + (" " + speakable(a["detail"]) if a.get("detail") else ""))
+        committee = re.sub(r"^\s*National Assembly\s*[—:-]+\s*", "", str(a.get("committee") or ""))
+        story = _story({"headline": a.get("action", ""), "body": a.get("detail", "")})
+        gov.append((f"In the National Assembly's {speakable(committee).rstrip('.')}, " if committee else
+                    "In the National Assembly, ") + story[:1].lower() + story[1:])
     for r in _items(digest, "rok_personnel"):
-        gov.append(speakable(f'{r.get("name", "")}, {r.get("position", "")}: {r.get("action", "")}')
-                   + (" " + speakable(r["detail"]) if r.get("detail") else ""))
-    section("From the South Korean government.", gov)
+        gov.append(_story({"headline": f'{r.get("name", "")}, {r.get("position", "")}: {r.get("action", "")}',
+                           "body": r.get("detail", "")}))
+    section("In Seoul, the government side.", gov)
 
-    section("In business news.", [_story(i, "body_text") for i in _items(digest, "business_economy")])
-    section("Around the region.", [_story(i, "body_text") for i in _items(digest, "northeast_asia")])
+    section("On the economy.", [_story(i, "body_text") for i in _items(digest, "business_economy")])
+    section("Elsewhere in the region.", [_story(i, "body_text") for i in _items(digest, "northeast_asia")])
 
     ps = digest.get("public_sentiment") or {}
     ap = ps.get("presidential_approval") or {}
     if isinstance(ap, dict) and ap.get("value"):
-        src = ap.get("source") or "the latest poll"
-        dated = f", taken {ap['last_updated']}" if ap.get("last_updated") else ""
-        line = (f"In {src}{dated}, the president's approval stands at "
+        src = ap.get("source") or "the latest"
+        polled = re.sub(r",?\s*20\d\d", "", str(ap.get("last_updated") or ""))
+        dated = f", from {polled}" if polled else ""
+        line = (f"In the latest {src} poll{dated}, President Lee's approval is "
                 f"{str(ap['value']).replace('%', ' percent')}")
         if ap.get("trend") in ("up", "down"):
-            line += f", {ap['trend']}"
+            line += f", {ap['trend']} from the poll before"
         line += "."
         parties = []
         for key in ("party_ruling", "party_opposition"):
@@ -304,17 +364,14 @@ def build_script(digest: dict) -> str:
         if isinstance(ind, dict) and ind.get("value"):
             parties.append(f"independents at {str(ind['value']).replace('%', ' percent')}")
         if parties:
-            line += " Party support: " + ", ".join(parties) + "."
-        out.append(f"On public opinion. {line}")
+            line += " By party: " + ", ".join(parties[:-1]) + ", and " + parties[-1] + "." \
+                if len(parties) > 1 else " By party: " + parties[0] + "."
+        out.append(f"How is the public reading all this? {line}")
 
     quotes = []
     for q in _items(digest, "social_statements") + _items(digest, "official_x_posts"):
         if q.get("quote_text") and q.get("who"):
-            ctx = f", {q['handle_context']}," if q.get("handle_context") else ""
-            line = speakable(f'{q["who"]}{ctx} said: "{q["quote_text"]}"')
-            if q.get("analyst_note"):
-                line += " " + speakable(q["analyst_note"])
-            quotes.append(line)
+            quotes.append(speakable(f'{q["who"]} said: "{q["quote_text"]}"'))
     section("In their own words.", quotes)
 
     _y = re.search(r"\b(20\d{2})\b", str(digest.get("digest_date") or ""))
@@ -326,24 +383,25 @@ def build_script(digest: dict) -> str:
         date = str(c.get("date") or "").strip()
         if year:
             date = re.sub(rf",?\s*{year}\b", "", date).strip()
+        date = re.sub(r"\s*\(.*?\)", "", date).strip()
         event = speakable(c.get("event") or c.get("headline") or "")
         if event:
             ahead.append((f"{date}: " if date else "") + event)
     if ahead:
-        out.append("Looking ahead. " + " ".join(ahead))
+        out.append("What's coming up? " + " ".join(ahead))
 
-    section("Also on the wire.", [_story(i, "body_text") for i in _items(digest, "also_today")])
+    section("A few more things worth knowing.", [_story(i, "body_text") for i in _items(digest, "also_today")])
 
     analysis = []
     for o in _items(digest, "opeds_today") + _items(digest, "academic_today"):
         head = speakable(o.get("headline", "")).rstrip(".")
         by = o.get("authors")
         by = ", ".join(by) if isinstance(by, list) else (by or "")
-        src = o.get("source") or o.get("journal") or ""
+        src = speakable(o.get("source") or o.get("journal") or "").rstrip(".")
         intro = head + (f", by {by}" if by else "") + (f", in {src}" if src else "") + "."
         arg = speakable(o.get("central_argument") or o.get("summary") or "")
         analysis.append(f"{intro} {arg}".strip())
-    section("In analysis and commentary.", analysis)
+    section("And from the analysts.", analysis)
 
     im = digest.get("imagery_report") or {}
     if isinstance(im, dict) and (im.get("headline") or im.get("body")):
@@ -368,7 +426,7 @@ def build_script(digest: dict) -> str:
             phrase += f", {'up' if chg > 0 else 'down'} {abs(chg):g} percent"
         spoken_mk.append(phrase + ".")
     if spoken_mk:
-        out.append("In the markets. " + " ".join(spoken_mk))
+        out.append("Finally, the markets. " + " ".join(spoken_mk))
 
     out.append(f"That's the Korea Daily Brief for {when}. The full text, with a "
                f"link to every source, is in today's email.")
@@ -379,7 +437,7 @@ def build_script(digest: dict) -> str:
 
 _SCRIPT_SYSTEM = """You write the script for the audio edition of the Korea Daily Brief, the CSIS Korea Chair's daily briefing on the Korean Peninsula. One host reads it aloud.
 
-Sound like a thoughtful daily news podcast: one host talking to one listener. Warm, curious, conversational, with momentum. Open with a hook: the day's most consequential development in a sentence or two. Then walk through the stories with spoken transitions that connect them, and say plainly why something matters when the brief says why. Short sentences. Contractions. Now and then a question a listener might be asking, answered from the brief. No headline-ese, no strings of fragments, no lists read out.
+Sound like a thoughtful daily news podcast: one host talking to one listener. Warm, curious, conversational, with momentum. Open with a hook: the day's most consequential development in a sentence or two, told as a scene or a tension, not a summary. Then walk through the stories with spoken transitions that connect them by cause, contrast or consequence ("That warning lands on the same day Seoul..."), never "Next," "Also," or "In other news." Group related stories so one leads into the next. Say plainly why something matters when the brief says why. Vary the rhythm: a short sentence after a long one. Contractions. Now and then a question a listener might be asking, answered from the brief. No headline-ese, no strings of fragments, no lists read out, no acronyms a listener can't decode (say "the Foreign Ministry", not "MOFA").
 
 FACTS. This rule outranks every other:
 - Use ONLY facts in the brief JSON you are given. Every name, number, date, place, quote and claim must come from it.
@@ -389,7 +447,7 @@ FACTS. This rule outranks every other:
 - Write every number exactly as the brief writes it.
 - If something in the brief is unclear, leave it out rather than interpret it.
 
-COVER, in this order: the top stories; overnight; Pyongyang (the top KCNA articles, then the bottom line); the number of the day; the South Korean government, National Assembly and appointments; business and the economy; the region; public opinion (say when the poll was taken); statements and posts from officials; what is coming up; the rest of the wire; analysis and commentary; satellite imagery, only if it is included; the markets, briefly. Leave out US-Korea trade and investment entirely. Never tell the same story twice.
+COVER, in this order: the top stories; overnight; Pyongyang (every one of the top KCNA articles in kcna_delta.top_articles, then the bottom line); the number of the day; the South Korean government, National Assembly and appointments; business and the economy; the region; public opinion (say when the poll was taken); statements and posts from officials; what is coming up; the rest of the wire; analysis and commentary; satellite imagery, only if it is included; the markets, briefly. Leave out US-Korea trade and investment entirely. Never tell the same story twice, with one exception: in the Pyongyang section, name every top KCNA article even if a top story covered it. Then one sentence on how state media framed it is enough.
 
 FORMAT: plain spoken text only, paragraphs separated by a blank line. No headings, no stage directions, no sound cues, no markdown, no bullet points. Begin exactly with: "This is the Korea Daily Brief from the CSIS Korea Chair. It's {when}." End exactly with: "That's the Korea Daily Brief for {when}. The full text, with a link to every source, is in today's email." Aim for 1,300 to 1,800 words."""
 

@@ -514,6 +514,13 @@ def check_audio_script_is_the_brief():
              "body": "FM Cho Hyun met PM Han on Oct 3–5."},
         ],
         "market_indicators": {"usd_krw": {"value": "1,338.38", "change_pct": -0.4}},
+        "kcna_delta": {"top_articles": [
+            {"headline": "DPRK rejects ROK mine investigation", "summary": "Repeat of a top story."},
+            {"headline": "Kim letter to Putin calls war sacred", "summary": "Sent ahead of Oct 10."},
+            {"headline": "DPRK backs One China position", "summary": "Statement via KCNA."}],
+            "bottom_line": "Alignment with Moscow."},
+        "social_statements": [{"who": "Foreign Minister Cho Hyun", "handle_context": "@FMChoHyun",
+                               "quote_text": "We will cooperate.", "analyst_note": "Corroborated (AEN20261007005700315)."}],
         "us_korea_deals": {"investment_package": {"known_deals": [
             {"company": "Encinal gas-fired power plant", "value": "$22.3B"}]}},
     }
@@ -538,6 +545,13 @@ def check_audio_script_is_the_brief():
         problems.append("USD/KRW not spoken as the dollar in won")
     if "Issue " in s:
         problems.append("issue number spoken on air")
+    # The editor asked for the top KCNA articles every day, including one a
+    # top story already told; the repeat filter used to drop all three.
+    for a in digest["kcna_delta"]["top_articles"]:
+        if podcast.speakable(a["headline"]).rstrip(".") not in s:
+            problems.append(f"top KCNA article not narrated: {a['headline']!r}")
+    if re.search(r"@\w|AEN\d|Corroborated", s):
+        problems.append("social handle, wire ID or analyst footnote read aloud")
     return problems
 
 
