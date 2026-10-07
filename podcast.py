@@ -16,7 +16,8 @@ episode costs one day of listening, never the brief.
 
 Configuration (all optional; with none set, the script is built and no audio
 is made):
-    OPENAI_API_KEY   enables synthesis
+    OPENAI_API_KEY   enables synthesis (and is the fallback voice)
+    ELEVENLABS_API_KEY + ELEVENLABS_VOICE_ID   use an ElevenLabs voice instead
     TTS_MODEL        default gpt-4o-mini-tts
     TTS_VOICE        default ash
     TTS_STYLE        how the voice reads; default is a conversational podcast host
@@ -66,6 +67,12 @@ DELIVERY = ("You are the host of a daily news podcast for senior policymakers, t
             "before them. Never rush a list or the end of a sentence. Engaged and "
             "curious, never theatrical, never a newsreader's monotone. Pronounce "
             "Korean names carefully.")
+# ElevenLabs, when ELEVENLABS_API_KEY and a voice are set; OpenAI otherwise,
+# and as the fallback if ElevenLabs fails, so a problem there never costs the
+# day's episode. Models are tried in order until one is accepted.
+ELEVEN_MODELS = ("eleven_v4", "eleven_v3", "eleven_multilingual_v2")
+ELEVEN_CHUNK_CHARS = 2400        # stitched requests, so fewer, longer ones sound better
+ELEVEN_SPEED = 0.95              # the voice's own pace setting; 1.0 is its natural pace
 # The voice model's own pace is a suggestion it does not always take; this is
 # applied after, pitch unchanged. 1.0 leaves it alone; TTS_PACE overrides.
 DEFAULT_PACE = 0.92
@@ -118,7 +125,11 @@ _ORDINAL = {"1": "first", "2": "second", "3": "third", "4": "fourth"}
 _SPOKEN_NAMES = (("MOFA", "Foreign Ministry"), ("MOTIE", "Industry Ministry"),
                  ("MND", "Defense Ministry"), ("MOEF", "Finance Ministry"),
                  ("MDL", "military demarcation line"),
-                 ("NK Pro", "N.K. Pro"), ("NK News", "N.K. News"))
+                 ("NK Pro", "N.K. Pro"), ("NK News", "N.K. News"),
+                 ("IRBMs?", "intermediate-range missile"), ("ICBMs?", "intercontinental ballistic missile"),
+                 ("SLBMs?", "submarine-launched ballistic missile"), ("LNG", "liquefied natural gas"),
+                 ("POWs", "prisoners of war"), ("POW", "prisoner of war"),
+                 ("KBO", "Korean baseball"), ("IPs", "internet addresses"))
 
 
 def _money(m: re.Match) -> str:
@@ -174,6 +185,16 @@ def speakable(text: str) -> str:
     t = re.sub(r"\s*\(([^()]{1,60})\)", r", \1,", t)                    # asides, not brackets
     t = re.sub(r",\s*([,.;:!?])", r"\1", t)
     t = re.sub(r",\s*—", " —", t)
+    # "..., per KCNA via Reuters and the Kyiv Post." — a chain of sources read
+    # after the claim; the listener needs the first one, said plainly.
+    t = re.sub(r",?\s+per ([A-Z][\w.'&-]*(?: [A-Z][\w.'&-]*)*)(?: via [^.;]+)?(?=[.;])",
+               r", according to \1", t)
+    t = re.sub(r",(['’\"]),", r"\1,", t)                  # "'sacred,'," -> "'sacred',"
+    # An expanded ministry acronym at the start of a clause needs its article.
+    t = re.sub(r"(^|[.:;]\s+)((?:Foreign|Industry|Defense|Finance) Ministry)", r"\1The \2", t)
+    # "South Korea 747 billion dollar energy transition" (from "ROK $747B ...")
+    t = re.sub(r"\b((?:North|South) Korea) (\d[\d.,]* (?:thousand|million|billion|trillion) dollar)\b",
+               r"\1's \2", t)
     t = re.sub(r"\s+([,.;:])", r"\1", t)
     t = re.sub(r"\s{2,}", " ", t).strip()
     if t and (t[-1] not in ".?!\"'”’" or (t[-1] in "\"'”’" and t[-2:-1] not in ".?!,")):
@@ -304,7 +325,7 @@ def build_script(digest: dict) -> str:
     for n, item in enumerate(top):
         told_text = _story(item)
         fresh(told_text)
-        lead = "Our top story:" if n == 0 else ("And finally:" if n == len(top) - 1 else "Also making news:")
+        lead = "Our top story:" if n == 0 else ("And one more top story:" if n == len(top) - 1 else "Also making news:")
         out.append(f"{lead} {told_text}")
 
     section("Here's what else moved overnight.",
@@ -349,8 +370,8 @@ def build_script(digest: dict) -> str:
     for a in _items(digest, "rok_assembly"):
         committee = re.sub(r"^\s*National Assembly\s*[—:-]+\s*", "", str(a.get("committee") or ""))
         story = _story({"headline": a.get("action", ""), "body": a.get("detail", "")})
-        gov.append((f"In the National Assembly's {speakable(committee).rstrip('.')}, " if committee else
-                    "In the National Assembly, ") + story[:1].lower() + story[1:])
+        gov.append((f"At the National Assembly's {speakable(committee).rstrip('.')}: " if committee else
+                    "At the National Assembly: ") + story)
     for r in _items(digest, "rok_personnel"):
         gov.append(_story({"headline": f'{r.get("name", "")}, {r.get("position", "")}: {r.get("action", "")}',
                            "body": r.get("detail", "")}))
@@ -413,9 +434,14 @@ def build_script(digest: dict) -> str:
         by = o.get("authors")
         by = ", ".join(by) if isinstance(by, list) else (by or "")
         src = speakable(o.get("source") or o.get("journal") or "").rstrip(".")
-        intro = head + (f", by {by}" if by else "") + (f", in {src}" if src else "") + "."
         arg = speakable(o.get("central_argument") or o.get("summary") or "")
-        analysis.append(f"{intro} {arg}".strip())
+        if arg and src:
+            # What the piece argues and who published it; a title read aloud
+            # ("Brewing Korea Crisis? Mines, Missiles, & POWs") is noise.
+            analysis.append(f"From {src}" + (f", {by}" if by else "") + f": {arg}")
+        else:
+            intro = head + (f", by {by}" if by else "") + (f", in {src}" if src else "") + "."
+            analysis.append(f"{intro} {arg}".strip())
     section("And from the analysts.", analysis)
 
     im = digest.get("imagery_report") or {}
@@ -428,17 +454,26 @@ def build_script(digest: dict) -> str:
     # is at 1,338, down", which reverses the direction for a listener.
     mk = digest.get("market_indicators") or {}
     spoken_mk = []
-    for key, fmt in (("kospi", "The KOSPI is at {v}"),
-                     ("usd_krw", "The dollar is at {v} won"),
-                     ("brent", "Brent crude is at {v} dollars a barrel"),
-                     ("bok_rate", "The Bank of Korea's base rate is {v}")):
+    # Figures are rounded as a presenter would say them: seven figures to two
+    # decimals in fifteen seconds is noise to a listener.
+    for key, fmt, places in (("kospi", "Seoul's main stock index, the KOSPI, is at {v}", 0),
+                             ("usd_krw", "The dollar is at {v} won", 0),
+                             ("brent", "Brent crude is at {v} dollars a barrel", 1),
+                             ("bok_rate", "The Bank of Korea's base rate is {v}", None)):
         v = mk.get(key)
         if not isinstance(v, dict) or not v.get("value"):
             continue
-        phrase = fmt.format(v=str(v["value"]).replace("%", " percent"))
+        val = str(v["value"])
+        if places is not None:
+            try:
+                num = float(val.replace(",", ""))
+                val = f"{num:,.{places}f}"
+            except ValueError:
+                pass
+        phrase = fmt.format(v=val.replace("%", " percent"))
         chg = v.get("change_pct")
         if isinstance(chg, (int, float)) and chg:
-            phrase += f", {'up' if chg > 0 else 'down'} {abs(chg):g} percent"
+            phrase += f", {'up' if chg > 0 else 'down'} about {abs(round(chg, 1)):g} percent"
         spoken_mk.append(phrase + ".")
     if spoken_mk:
         out.append("Finally, the markets. " + " ".join(spoken_mk))
@@ -463,24 +498,26 @@ FACTS. This rule outranks every other:
 - Add nothing from your own knowledge, even if you are certain it is true: no background, no history, no figures, no context the brief does not contain.
 - Say why something matters only where the brief itself says so (body text, analyst notes, bottom lines, "so what" fields). Never speculate.
 - Quote only quotes that appear in the brief, word for word, attributed as the brief attributes them.
-- Write every number exactly as the brief writes it, but use no more than two numbers per story.
+- Write every number as the brief writes it, with no more than two numbers per story. Market figures may be rounded the way a presenter says them ("1,338.38 won" as "about 1,338 won", "down 1.98 percent" as "down about 2 percent").
 - If something in the brief is unclear, leave it out rather than interpret it.
 
 SHAPE. Five segments, in this order. Put a line containing only --- between segments (the producer puts a pause there).
 1. COLD OPEN (about 60 words). After the fixed opening line, go straight into the single most consequential development, told as a tension or a stakes question, not a summary. No throat-clearing. Then one menu line: "Three things today: ..." naming the three lead stories in a few words each.
-2. THE THREE LEAD STORIES (about 250 words each), one after another, with --- between them. Usually the top stories. For each: what happened, why it matters to someone who works on Korea policy (from the brief), and what to watch next. Fold in related items from other sections (government reactions, the National Assembly, statements, analysis, imagery) so each lead is one connected story, not a list.
+2. THE THREE LEAD STORIES (about 250 words each), one after another, with --- between them. Usually the top stories. For each: what happened, why it matters to someone who works on Korea policy (from the brief), and what to watch next. Fold in related items from other sections (government reactions, the National Assembly, statements, analysis, imagery) so each lead is one connected story, not a list. Keep one strand per story: if several items are about the same military situation (a warning, missile launches, satellite imagery, a weapons analysis), they belong in one lead together.
 3. PYONGYANG. Name every one of the top KCNA articles in kcna_delta.top_articles, even one a lead story already told (then one sentence on how state media framed it is enough), then the bottom line.
 4. THE ROUND-UP. Everything else worth a listener's time, one or two sentences each, linked by quick spoken transitions: overnight items, government and appointments, the economy, the region, the poll (say when it was taken), what is coming up, the rest of the wire, analysis. Never tell a story the leads already told. Leave out US-Korea trade and investment entirely. Satellite imagery only if it is included.
 5. CLOSE. The markets in two or three short sentences, then the fixed closing line.
 
 WRITE FOR THE EAR. These are broadcast writing rules:
-- One idea per sentence. Most sentences under 20 words. Vary the rhythm: a short sentence after a long one.
+- One idea per sentence. Most sentences under 20 words, none over 25. Vary the rhythm: a short sentence after a long one.
 - Attribution before the claim: "South Korea's Defense Ministry says...", not "..., the ministry said."
 - Full name and title once, then a short form ("Unification Minister Chung Dong-young", then "Chung").
 - Say "you" to the listener now and then. Contractions.
 - Join stories by cause, contrast or consequence ("That warning lands the same day Seoul..."). Never "Next," "Also," "In other news," "Moving on."
 - End each lead story by restating its key fact in a few words, because the listener can't re-read it.
-- No acronyms a listener can't decode: say "the Foreign Ministry", not "MOFA". DMZ, KCNA, U.S. and UN are fine.
+- No acronyms a listener can't decode: say "the Foreign Ministry" not "MOFA", "intermediate-range missile" not "IRBM", "Seoul's main stock index" not "KOSPI", "prisoners of war" not "POWs", "liquefied natural gas" not "LNG". DMZ, KCNA, U.S. and UN are fine.
+- Give a quote its context: who said it, and when or why, before the words themselves.
+- Never title-read: say what an analysis argues and who published it, not its headline.
 - No headline-ese, no strings of fragments, no lists read out, no parentheses.
 - Never use these phrases: "let's dive in", "dive into", "delve", "in today's rapidly evolving", "it's worth noting", "notably", "a stark reminder", "only time will tell", "remains to be seen", "buckle up", "game-changer", "in a world where", "at the end of the day". Don't end sentences on a list of three for effect. Don't open with a rhetorical question.
 
@@ -822,6 +859,34 @@ def spoken_text(script: str) -> str:
     return re.sub(rf"\n*^\s*{re.escape(SEGMENT)}\s*$\n*", "\n\n", script, flags=re.M).strip()
 
 
+def _eleven_tts(text: str, key: str, voice_id: str, model: str,
+                previous: list[str]) -> tuple[bytes, str]:
+    """One ElevenLabs request. Returns (mp3, request id).
+
+    previous_request_ids stitches this request to the audio of the ones before
+    it, so tone and energy carry on instead of resetting every paragraph —
+    the main thing OpenAI's stateless requests could not do.
+    """
+    import requests
+    body = {"text": text, "model_id": model,
+            "voice_settings": {"stability": 0.45, "similarity_boost": 0.8, "style": 0.2,
+                               "use_speaker_boost": True, "speed": ELEVEN_SPEED}}
+    if previous:
+        body["previous_request_ids"] = previous[-3:]
+    r = requests.post(f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}",
+                      params={"output_format": "mp3_44100_128"},
+                      headers={"xi-api-key": key, "Content-Type": "application/json"},
+                      json=body, timeout=300)
+    if r.status_code >= 400:
+        try:
+            d = r.json().get("detail")
+            detail = d.get("message", str(d)) if isinstance(d, dict) else str(d)
+        except ValueError:
+            detail = r.text[:300]
+        raise RuntimeError(f"ElevenLabs returned {r.status_code}: {detail}".strip())
+    return r.content, r.headers.get("request-id", "")
+
+
 def _openai_tts(text: str, key: str, model: str, voice: str) -> bytes:
     import requests
     body = {"model": model, "voice": voice, "input": text, "response_format": "mp3"}
@@ -897,17 +962,21 @@ def _pcm(data: bytes | Path) -> bytes:
     return r.stdout
 
 
-def _pace_filter() -> str:
-    """atempo for the configured pace: slower speech at the same pitch."""
+def _pace(default: float) -> float:
+    """TTS_PACE if set, else the voice's default, kept to a range that sounds natural."""
     try:
-        pace = float((os.environ.get("TTS_PACE") or "").strip() or DEFAULT_PACE)
+        pace = float((os.environ.get("TTS_PACE") or "").strip() or default)
     except ValueError:
-        pace = DEFAULT_PACE
-    pace = min(1.2, max(0.75, pace))
+        pace = default
+    return min(1.2, max(0.75, pace))
+
+
+def _pace_filter(pace: float = 1.0) -> str:
+    """atempo for the pace: slower speech at the same pitch."""
     return "" if abs(pace - 1.0) < 0.005 else f"atempo={pace:g},"
 
 
-def _master(parts: list[tuple[bytes, float]], out_path: Path) -> None:
+def _master(parts: list[tuple[bytes, float]], out_path: Path, pace: float = 1.0) -> None:
     """The finished episode: sting, voice with real pauses, sting, at podcast loudness.
 
     Pauses are silence put in here, not asked of the voice: break tags are
@@ -941,7 +1010,7 @@ def _master(parts: list[tuple[bytes, float]], out_path: Path) -> None:
     mix.extend(sting)
     r = subprocess.run(
         [_ffmpeg(), "-loglevel", "error", "-y", "-f", "s16le", "-ar", str(PCM_RATE), "-ac", "1",
-         "-i", "pipe:0", "-af", _pace_filter() + "loudnorm=I=-16:TP=-1.5:LRA=11", "-ar", "44100", "-ac", "1",
+         "-i", "pipe:0", "-af", _pace_filter(pace) + "loudnorm=I=-16:TP=-1.5:LRA=11", "-ar", "44100", "-ac", "1",
          "-b:a", "64k", str(out_path)],
         input=mix.tobytes(), capture_output=True)
     if r.returncode or not out_path.exists() or not out_path.stat().st_size:
@@ -963,8 +1032,22 @@ def _duration_seconds(path: Path, script: str) -> int:
 def synthesize(script: str, out_path: Path) -> dict | None:
     """Render the script to MP3. Returns a small record, or None if no audio was made."""
     global LAST_ERROR
+    if not script.strip():
+        return None
+    eleven_key = (os.environ.get("ELEVENLABS_API_KEY") or "").strip()
+    eleven_voice = (os.environ.get("ELEVENLABS_VOICE_ID") or "").strip()
+    if eleven_key and eleven_voice:
+        rec = _synthesize_eleven(script, out_path, eleven_key, eleven_voice)
+        if rec:
+            return rec
+        if not (os.environ.get("OPENAI_API_KEY") or "").strip():
+            return None
+        print(f"::warning title=ElevenLabs failed, used OpenAI::{LAST_ERROR}")
+    elif eleven_key:
+        print("::warning title=No ElevenLabs voice set::add the repository variable "
+              "ELEVENLABS_VOICE_ID (run Voice audition to choose one); using OpenAI")
     key = (os.environ.get("OPENAI_API_KEY") or "").strip()
-    if not key or not script.strip():
+    if not key:
         return None
     model = (os.environ.get("TTS_MODEL") or "").strip() or DEFAULT_MODEL
     voice = (os.environ.get("TTS_VOICE") or "").strip() or DEFAULT_VOICE
@@ -998,9 +1081,9 @@ def synthesize(script: str, out_path: Path) -> dict | None:
 
     try:
         parts = [(_voiced(c), pause) for c, pause in _chunks(script)]
-        voiced_seconds = sum(mp3_seconds(p) for p, _ in parts)
-        out_path.parent.mkdir(parents=True, exist_ok=True)
-        _master(parts, out_path)
+        return _finish(parts, script, out_path,
+                       {"tts_provider": "openai", "tts_model": model, "tts_voice": voice},
+                       pace=_pace(default=DEFAULT_PACE))
     except Exception as e:                                      # noqa: BLE001
         LAST_ERROR = str(e)
         # An annotation, not only a log line: GitHub serves job logs from a
@@ -1009,6 +1092,15 @@ def synthesize(script: str, out_path: Path) -> dict | None:
         print(f"::warning title=Audio skipped::{e}")
         print(f"  ⚠  Audio skipped (non-fatal): {e}")
         return None
+
+
+def _finish(parts: list[tuple[bytes, float]], script: str, out_path: Path,
+            who: dict, pace: float) -> dict | None:
+    """Master the voiced parts and check nothing went missing. Shared by both voices."""
+    global LAST_ERROR
+    voiced_seconds = sum(mp3_seconds(p) for p, _ in parts)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    _master(parts, out_path, pace)
     got = mp3_seconds(out_path.read_bytes())
     want = _expected_seconds(spoken_text(script))
     # Coverage is judged on the voice alone: the stings and pauses would
@@ -1023,9 +1115,55 @@ def synthesize(script: str, out_path: Path) -> dict | None:
         print(f"::warning title=Audio incomplete::{LAST_ERROR}")
         out_path.unlink(missing_ok=True)
         return None
-    return {"tts_provider": "openai", "tts_model": model, "tts_voice": voice,
-            "tts_chars": len(script), "audio_bytes": out_path.stat().st_size,
+    return {**who, "tts_chars": len(script), "audio_bytes": out_path.stat().st_size,
             "audio_seconds": int(got), "audio_expected_seconds": int(want)}
+
+
+def _synthesize_eleven(script: str, out_path: Path, key: str, voice_id: str) -> dict | None:
+    """The episode in an ElevenLabs voice, stitched request to request."""
+    global LAST_ERROR
+    wanted = (os.environ.get("ELEVENLABS_MODEL") or "").strip()
+    models = [wanted] if wanted else list(ELEVEN_MODELS)
+    previous: list[str] = []
+
+    def _tts(text: str) -> bytes:
+        nonlocal previous
+        while True:
+            try:
+                audio, rid = _eleven_tts(text, key, voice_id, models[0], previous)
+            except RuntimeError as e:
+                msg = str(e).lower()
+                # A model this account or voice can't use: try the next one.
+                if len(models) > 1 and ("model" in msg) and ("400" in msg or "404" in msg or "422" in msg):
+                    print(f"  ⚠  {models[0]} unavailable; trying {models[1]}")
+                    models.pop(0)
+                    previous = []
+                    continue
+                # A model that can't stitch: carry on without it.
+                if previous and "previous" in msg:
+                    previous = []
+                    continue
+                raise
+            if rid:
+                previous.append(rid)
+            return audio
+
+    def _voiced(text: str) -> bytes:
+        want = _expected_seconds(text)
+        audio = _tts(text)
+        if want < 4 or mp3_seconds(audio) >= MIN_COVERAGE * want:
+            return audio
+        return _tts(text)
+
+    try:
+        parts = [(_voiced(c), pause) for c, pause in _chunks(script, ELEVEN_CHUNK_CHARS)]
+        return _finish(parts, script, out_path,
+                       {"tts_provider": "elevenlabs", "tts_model": models[0], "tts_voice": voice_id},
+                       pace=_pace(default=1.0))
+    except Exception as e:                                      # noqa: BLE001
+        LAST_ERROR = str(e)
+        print(f"::warning title=ElevenLabs audio failed::{e}")
+        return None
 
 
 # ── The feed ─────────────────────────────────────────────────────────────────
@@ -1211,7 +1349,10 @@ def produce_for_published_issue(date_slug: str, public: Path, web_base: str) -> 
     public.mkdir(parents=True, exist_ok=True)
     rec = produce(digest, public, web_base, date_slug)
     if not rec:
-        if not (os.environ.get("OPENAI_API_KEY") or "").strip():
+        if LAST_ERROR and "ElevenLabs" in LAST_ERROR:
+            why = LAST_ERROR + (" — check the ELEVENLABS_API_KEY secret and the "
+                                "ELEVENLABS_VOICE_ID variable")
+        elif not (os.environ.get("OPENAI_API_KEY") or "").strip():
             why = ("OPENAI_API_KEY is empty in this run. Add it as a REPOSITORY "
                    "secret: Settings > Secrets and variables > Actions > "
                    "Repository secrets. Variables and Environment secrets are "

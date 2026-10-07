@@ -191,6 +191,9 @@ jobs:
           TTS_VOICE: ${{ vars.TTS_VOICE }}
           TTS_STYLE: ${{ vars.TTS_STYLE }}
           TTS_PACE: ${{ vars.TTS_PACE }}
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          ELEVENLABS_VOICE_ID: ${{ vars.ELEVENLABS_VOICE_ID }}
+          ELEVENLABS_MODEL: ${{ vars.ELEVENLABS_MODEL }}
           WEB_URL: https://andysaulim.github.io/Daily-Korea-Digest
         run: |
           set -o pipefail

@@ -1,0 +1,52 @@
+name: Voice audition (sample ElevenLabs voices, send nothing)
+
+# Reads the same passage of the latest issue in several ElevenLabs voices and
+# publishes a page to compare them: andysaulim.github.io/Daily-Korea-Digest/auditions/
+# Pick one by putting its Voice ID in the repository variable ELEVENLABS_VOICE_ID.
+on:
+  workflow_dispatch:
+    inputs:
+      count:
+        description: "How many voices to sample"
+        type: string
+        default: "6"
+      query:
+        description: "Extra search words (optional), e.g. 'deep calm narrator'"
+        type: string
+        default: ""
+      voices:
+        description: "Or: specific voice IDs to sample, comma-separated (optional)"
+        type: string
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  audition:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Sample the voices
+        env:
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          ELEVENLABS_MODEL: ${{ vars.ELEVENLABS_MODEL }}
+        run: python voice_audition.py --out public --count "${{ inputs.count }}" --query "${{ inputs.query }}" --voices "${{ inputs.voices }}"
+
+      - name: Publish
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          personal_token: ${{ secrets.GH_PAT }}
+          publish_dir: ./public
+          keep_files: true

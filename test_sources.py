@@ -541,7 +541,7 @@ def check_audio_script_is_the_brief():
             problems.append(f"narration still contains {label}")
     # The won: USD/KRW falling means the won strengthened. Saying "the won ...
     # down" reverses it, so the figure must be spoken as the dollar in won.
-    if "The dollar is at 1,338.38 won, down 0.4 percent" not in s:
+    if "The dollar is at 1,338 won, down about 0.4 percent" not in s:
         problems.append("USD/KRW not spoken as the dollar in won")
     if "Issue " in s:
         problems.append("issue number spoken on air")
