@@ -108,11 +108,15 @@ jobs:
         run: pip install -r requirements.txt
 
       # ffmpeg masters the audio edition: pauses, the sting, podcast loudness.
-      # It is not on GitHub's Ubuntu image. Never fatal: without it the episode
-      # is still made, as plain joined speech, and the brief is unaffected.
+      # From PyPI (a static build in the imageio-ffmpeg wheel), not apt:
+      # apt-get hung for the job's whole time limit on 7 October. Capped at
+      # two minutes and never fatal: without it the episode is plain joined
+      # speech and the brief is unaffected.
       - name: Install ffmpeg for the audio edition
         if: steps.guard.outputs.should_run == 'true'
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg >/dev/null || echo "::warning title=ffmpeg not installed::audio will be unmastered"
+        timeout-minutes: 2
+        continue-on-error: true
+        run: pip install imageio-ffmpeg || echo "::warning title=ffmpeg not installed::audio will be unmastered"
 
       # Between install and send, so a regression stops the run instead of
       # reaching the list. NOT continue-on-error: a failing check is a reason
