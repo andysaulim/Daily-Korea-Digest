@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd">
+  <channel>
+    <title>Korea Daily Brief</title>
+    <link>https://andysaulim.github.io/Daily-Korea-Digest/archive.html</link>
+    <description>The CSIS Korea Chair's daily brief on the Korean Peninsula, read aloud. Every item is from the printed brief, which links its sources.</description>
+    <language>en-us</language>
+    <itunes:author>CSIS Korea Chair</itunes:author>
+    <itunes:explicit>false</itunes:explicit>
+    <itunes:block>Yes</itunes:block>
+    <item>
+      <title>Korea Daily Brief | Wednesday, October 7</title>
+      <description>North Korea warns Seoul over DMZ demining, Kim letter to Putin, Nuri-5 launches 15 satellites, South Korea 747 billion dollar energy transition.</description>
+      <enclosure url="https://andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-07.mp3" length="3378048" type="audio/mpeg"/>
+      <guid isPermaLink="false">korea-daily-brief-2026-10-07</guid>
+      <pubDate>Wed, 07 Oct 2026 11:00:00 +0000</pubDate>
+      <itunes:duration>5:36</itunes:duration>
+      <link>https://andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-07.html</link>
+    </item>
+  </channel>
+</rss>
