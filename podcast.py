@@ -39,6 +39,7 @@ CHUNK_CHARS = 3500          # under every supported model's per-request limit
 FEED_EPISODES = 30          # what the feed advertises; the workflow prunes the rest
 DEFAULT_MODEL = "gpt-4o-mini-tts"
 DEFAULT_VOICE = "onyx"
+LAST_ERROR = ""              # why the most recent synthesis produced nothing
 DELIVERY = ("Calm, measured, authoritative news-briefing delivery. Even pace, "
             "clear diction, no dramatisation. Pause briefly between items.")
 
@@ -331,7 +332,15 @@ def _openai_tts(text: str, key: str, model: str, voice: str) -> bytes:
     r = requests.post("https://api.openai.com/v1/audio/speech",
                       headers={"Authorization": f"Bearer {key}"},
                       json=body, timeout=180)
-    r.raise_for_status()
+    if r.status_code >= 400:
+        # raise_for_status() gives "429 Client Error: Too Many Requests" and no
+        # more; the body says which 429 — rate limit or an account with no
+        # credit — and that is the difference between waiting and paying.
+        try:
+            detail = (r.json().get("error") or {}).get("message", "")
+        except ValueError:
+            detail = r.text[:300]
+        raise RuntimeError(f"OpenAI returned {r.status_code}: {detail}".strip())
     return r.content
 
 
@@ -386,6 +395,12 @@ def synthesize(script: str, out_path: Path) -> dict | None:
         out_path.parent.mkdir(parents=True, exist_ok=True)
         _join_mp3(parts, out_path)
     except Exception as e:                                      # noqa: BLE001
+        global LAST_ERROR
+        LAST_ERROR = str(e)
+        # An annotation, not only a log line: GitHub serves job logs from a
+        # separate host, while annotations are readable through the API, so
+        # the reason a run produced no audio can be read back without the log.
+        print(f"::warning title=Audio skipped::{e}")
         print(f"  ⚠  Audio skipped (non-fatal): {e}")
         return None
     return {"tts_provider": "openai", "tts_model": model, "tts_voice": voice,
@@ -503,8 +518,20 @@ def produce_for_published_issue(date_slug: str, public: Path, web_base: str) -> 
     public.mkdir(parents=True, exist_ok=True)
     rec = produce(digest, public, web_base, date_slug)
     if not rec:
-        print("✗ No audio produced — is OPENAI_API_KEY set, and does the "
-              "OpenAI account have billing enabled? (The transcript was written.)")
+        if not (os.environ.get("OPENAI_API_KEY") or "").strip():
+            why = ("OPENAI_API_KEY is empty in this run. Add it as a REPOSITORY "
+                   "secret: Settings > Secrets and variables > Actions > "
+                   "Repository secrets. Variables and Environment secrets are "
+                   "not visible to this workflow.")
+        else:
+            why = LAST_ERROR or "OpenAI returned no audio."
+            if "quota" in why.lower() or "billing" in why.lower():
+                why += (" — the OpenAI account needs credit: "
+                        "platform.openai.com/settings/organization/billing")
+            elif "401" in why or "incorrect api key" in why.lower():
+                why += " — the key is wrong or revoked; create a new one and replace the secret."
+        print(f"::error title=No audio produced::{why}")
+        print(f"✗ No audio produced: {why}")
         return 1
     url = f"{web_base.rstrip('/')}/digest_{date_slug}.mp3" if web_base else str(public)
     print(f"✓ {date_slug}: {rec['audio_bytes']:,} bytes, ~{rec['audio_seconds'] // 60} min "
