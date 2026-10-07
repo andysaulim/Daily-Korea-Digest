@@ -520,10 +520,11 @@ def check_audio_script_is_the_brief():
     s = podcast.build_script(digest)
     problems = []
     for item in digest["top_stories"]:
-        if podcast.speakable(item["headline"]).rstrip(".") not in s:
+        told = podcast._story(item)
+        if told.split(".")[0] not in s:
             problems.append(f"top story not narrated: {item['headline']!r}")
-        if f"That's from {item['source']}." not in s:
-            problems.append(f"story narrated without its source: {item['source']}")
+    if "That's from" in s:
+        problems.append("per-story attribution is back (removed at the editor's request)")
     for label, pattern in (("Hangul", r"[\uac00-\ud7a3]"), ("a URL", r"https?://"),
                            ("markdown asterisks", r"\*"), ('a bare "US"', r"\bUS\b"),
                            ("an unexpanded DPRK/ROK", r"\b(DPRK|ROK)\b"),
@@ -533,7 +534,7 @@ def check_audio_script_is_the_brief():
             problems.append(f"narration still contains {label}")
     # The won: USD/KRW falling means the won strengthened. Saying "the won ...
     # down" reverses it, so the figure must be spoken as the dollar in won.
-    if "the dollar at 1,338.38 won, down 0.4 percent" not in s:
+    if "The dollar is at 1,338.38 won, down 0.4 percent" not in s:
         problems.append("USD/KRW not spoken as the dollar in won")
     if "Issue " in s:
         problems.append("issue number spoken on air")
