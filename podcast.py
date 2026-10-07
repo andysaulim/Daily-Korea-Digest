@@ -425,10 +425,36 @@ _NUMBER_WORDS.update({"thirty": "30", "forty": "40", "fifty": "50", "sixty": "60
                       "seventy": "70", "eighty": "80", "ninety": "90", "hundred": "100"})
 
 
+_SCALES = {"hundred": 100, "thousand": 1000}
+
+
 def _tokens(text: str) -> list[str]:
-    """Lower-case word tokens, spelled-out numbers turned into digits."""
-    toks = re.findall(r"\d+(?:\.\d+)?|[a-z]+", str(text).lower().replace(",", ""))
-    return [_NUMBER_WORDS.get(t, t) for t in toks]
+    """Lower-case word tokens, spelled-out numbers turned into digits.
+
+    Compounds are joined, so "one thousand trillion" matches "1,000 trillion"
+    and "twenty five" matches "25". A bare "one" stays a word: it is a pronoun
+    ("the one overseen by", "the big one") far more often than a count.
+    """
+    raw = re.findall(r"\d+(?:\.\d+)?|[a-z]+", str(text).lower().replace(",", ""))
+    out: list[str] = []
+    tens = {"twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"}
+    last = ""
+    for t in raw:
+        prev = out[-1] if out else ""
+        if t == "one" and last not in tens:
+            out.append(t)
+        elif t in _SCALES and (prev.isdigit() or prev == "one"):
+            out[-1] = str(int(float(prev if prev != "one" else 1) * _SCALES[t]))
+        elif last in tens and t in _NUMBER_WORDS and 1 <= int(_NUMBER_WORDS[t]) <= 9:
+            out[-1] = str(int(prev) + int(_NUMBER_WORDS[t]))
+        else:
+            out.append(_NUMBER_WORDS.get(t, t))
+        last = t
+    return out
+
+
+def _stem(w: str) -> str:
+    return w[:-1] if len(w) > 4 and w.endswith("s") and not w.endswith("ss") else w
 
 
 def _number_in_context(n: str, at: int, script_toks: list[str], src_toks: list[str],
@@ -442,11 +468,12 @@ def _number_in_context(n: str, at: int, script_toks: list[str], src_toks: list[s
     """
     def content(seq):
         return [t for t in seq if len(t) > 3 and not t[0].isdigit() and t not in _STOP]
-    near = set(content(script_toks[max(0, at - 6):at])[-2:] + content(script_toks[at + 1:at + 6])[:2])
+    near = {_stem(w) for w in content(script_toks[max(0, at - 6):at])[-2:]
+            + content(script_toks[at + 1:at + 6])[:2]}
     places = src_pos.get(n, [])
     if not near:
         return bool(places)
-    return any(near & set(src_toks[max(0, i - 5):i + 6]) for i in places)
+    return any(near & {_stem(w) for w in src_toks[max(0, i - 5):i + 6]} for i in places)
 
 
 def check_script(script: str, digest: dict, when: str = "") -> list[str]:
@@ -474,6 +501,8 @@ def check_script(script: str, digest: dict, when: str = "") -> list[str]:
     for fixed in (f"This is the Korea Daily Brief from the CSIS Korea Chair. It's {when}.",
                   f"That's the Korea Daily Brief for {when}."):
         body = body.replace(fixed, " ")
+    # "the last 24 hours" is the brief's own window, not a claim from it.
+    body = re.sub(r"\b(?:24|twenty-? ?four)[- ]hours?\b", " ", body, flags=re.I)
     s_toks = _tokens(body)
     for i, t in enumerate(s_toks):
         if t[0].isdigit() and not _number_in_context(t, i, s_toks, src_toks, src_pos):
@@ -868,6 +897,10 @@ def produce(digest: dict, public: Path, web_base: str, date_slug: str) -> dict |
             "summary": speakable(digest.get("re_line", "")),
             "file": mp3.name, "bytes": rec["audio_bytes"],
             "seconds": rec["audio_seconds"],
+            "script": source,
+            # Every reason, not the four an annotation shows, so a rejected
+            # rewrite can be diagnosed without the run log.
+            **({"script_rejected": why[:40]} if source == "assembled" and why else {}),
         })
     return rec
 
