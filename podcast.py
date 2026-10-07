@@ -501,7 +501,20 @@ April May June July August September October November December
 President Minister Ministry Prime Defense Foreign Unification National Assembly
 Party Government Committee Chairman Secretary General Commander Command State
 U.S. US KCNA DPRK ROK Mr Ms Dr
+Washington Beijing Moscow Tokyo
 """.split())
+# Counting what the brief itself lists ("two countries", "three major items")
+# is arithmetic on the brief, not a new fact; a small count before one of
+# these nouns is not checked. Counts of people, days or weapons still are.
+_COUNT_NOUNS = {"countrie", "side", "message", "statement", "item", "storie", "thing",
+                "branche", "capital", "leader", "government", "signal", "track",
+                "partner", "allie", "development", "headline", "article", "piece",
+                "part", "way", "reason", "question", "front", "story", "country"}
+_MARKET_WORDS = {"kospi", "won", "dollar", "dollars", "brent", "crude", "barrel", "percent",
+                 "rate", "index", "points"}
+_MONTH_TOKENS = {"jan": "january", "feb": "february", "mar": "march", "apr": "april",
+                 "jun": "june", "jul": "july", "aug": "august", "sep": "september",
+                 "sept": "september", "oct": "october", "nov": "november", "dec": "december"}
 
 
 def _norm(text: str) -> str:
@@ -538,7 +551,7 @@ def _tokens(text: str) -> list[str]:
         elif last in tens and t in _NUMBER_WORDS and 1 <= int(_NUMBER_WORDS[t]) <= 9:
             out[-1] = str(int(prev) + int(_NUMBER_WORDS[t]))
         else:
-            out.append(_NUMBER_WORDS.get(t, t))
+            out.append(_MONTH_TOKENS.get(t) or _NUMBER_WORDS.get(t, t))
         last = t
     return out
 
@@ -583,6 +596,12 @@ def check_script(script: str, digest: dict, when: str = "") -> list[str]:
     for i, t in enumerate(src_toks):
         if t[0].isdigit():
             src_pos.setdefault(t, []).append(i)
+            # Spoken figures are rounded: 1,338.38 is "1,338 won", 1.98 is
+            # "almost 2 percent". The rounded forms still need their context.
+            if "." in t:
+                v = float(t)
+                for r in {str(int(v)), str(round(v))}:
+                    src_pos.setdefault(r, []).append(i)
     # The opening and closing lines carry the date and are fixed text, checked
     # separately. They are removed here rather than exempting the date's
     # numbers everywhere: a global exemption for "7" let "seven soldiers"
@@ -596,7 +615,23 @@ def check_script(script: str, digest: dict, when: str = "") -> list[str]:
     # The menu line the prompt asks for ("Three things today") counts stories, not facts.
     body = re.sub(r"\b(?:two|three|four|five|\d) (?:things|stories|big stories)\b", " ", body, flags=re.I)
     s_toks = _tokens(body)
+    # Market figures sit in the brief as bare fields ({"value": "1,338.38"}),
+    # with no words around them to match, so they are matched by value,
+    # rounded as a voice says them, and only beside a market word.
+    market = set()
+    for v in (digest.get("market_indicators") or {}).values():
+        if isinstance(v, dict):
+            for x in (v.get("value"), v.get("change_pct")):
+                try:
+                    f = abs(float(str(x).replace(",", "").rstrip("%")))
+                except (TypeError, ValueError):
+                    continue
+                market |= {str(int(f)), str(round(f)), f"{f:g}"}
     for i, t in enumerate(s_toks):
+        if t in market and _MARKET_WORDS & set(s_toks[max(0, i - 4):i + 4]):
+            continue
+        if t in {"2", "3", "4", "5"} and any(_stem(w) in _COUNT_NOUNS for w in s_toks[i + 1:i + 3]):
+            continue
         if t[0].isdigit() and not _number_in_context(t, i, s_toks, src_toks, src_pos):
             ctx = " ".join(s_toks[max(0, i - 2):i + 3])
             problems.append(f"number not in the brief here: {t} ({ctx})")
@@ -609,7 +644,9 @@ def check_script(script: str, digest: dict, when: str = "") -> list[str]:
             core = w.strip(".'-").replace("'s", "")
             if not core or not core[0].isupper() or core in _ALLOWED_CAPS or len(core) < 3:
                 continue
-            if core.lower() not in blob:
+            # Hyphens and dots are spaces in the normalised brief: "Dong-young"
+            # is "dong young" there, "U.S" is "u s".
+            if f" {_norm(core).strip()} " not in f" {' '.join(blob.split())} ":
                 problems.append(f"name not in the brief: {core}")
     seen, out = set(), []
     for p in problems:
