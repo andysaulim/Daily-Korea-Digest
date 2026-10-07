@@ -475,9 +475,63 @@ def produce(digest: dict, public: Path, web_base: str, date_slug: str) -> dict |
     return rec
 
 
+def produce_for_published_issue(date_slug: str, public: Path, web_base: str) -> int:
+    """Make the audio for an issue that has already gone out. Sends nothing.
+
+    Reads that day's digest JSON from the gh-pages branch — the issue exactly
+    as published — so an episode can be made after the fact without running
+    the pipeline again, which would collect fresh news, write a different
+    brief, and mail the list a second time.
+
+    Exits non-zero when no audio is produced, because this is run by hand to
+    find out whether audio works, and a green run with no MP3 would say it did.
+    """
+    from shared.published import read_from_branch
+    text, reachable = read_from_branch(f"digest_{date_slug}.json")
+    if text is None:
+        print(f"✗ No published digest for {date_slug} on gh-pages"
+              + ("" if reachable else " (branch unreachable)"))
+        return 2
+    digest = json.loads(text)
+    try:
+        # Issues published before the 7 October fix carry the pledge project
+        # twice; tidy it the same way the pipeline now does before narrating.
+        from run import _ensure_pledge_projects
+        _ensure_pledge_projects(digest)
+    except Exception:                                           # noqa: BLE001
+        pass
+    public.mkdir(parents=True, exist_ok=True)
+    rec = produce(digest, public, web_base, date_slug)
+    if not rec:
+        print("✗ No audio produced — is OPENAI_API_KEY set, and does the "
+              "OpenAI account have billing enabled? (The transcript was written.)")
+        return 1
+    url = f"{web_base.rstrip('/')}/digest_{date_slug}.mp3" if web_base else str(public)
+    print(f"✓ {date_slug}: {rec['audio_bytes']:,} bytes, ~{rec['audio_seconds'] // 60} min "
+          f"({rec['tts_model']}, {rec['tts_voice']}) -> {url}")
+    return 0
+
+
 if __name__ == "__main__":
+    import argparse
     import sys
-    d = json.load(open(sys.argv[1], encoding="utf-8"))
+    ap = argparse.ArgumentParser(description="Korea Daily Brief audio edition.")
+    ap.add_argument("digest_json", nargs="?",
+                    help="Print the spoken script for a local digest JSON file.")
+    ap.add_argument("--issue", metavar="YYYY-MM-DD",
+                    help="Make audio for an already-published issue (sends nothing). "
+                         "Use 'today' for today's issue.")
+    ap.add_argument("--out", default="public", help="Output directory (default: public)")
+    a = ap.parse_args()
+    if a.issue:
+        from zoneinfo import ZoneInfo
+        day = (datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d")
+               if a.issue == "today" else a.issue)
+        sys.exit(produce_for_published_issue(day, Path(a.out),
+                                             os.environ.get("WEB_URL", "")))
+    if not a.digest_json:
+        ap.error("give a digest JSON file, or --issue")
+    d = json.load(open(a.digest_json, encoding="utf-8"))
     s = build_script(d)
     print(s)
     print(f"\n— {len(s.split()):,} words, ~{estimate_minutes(s):.1f} min, {len(s):,} chars")
