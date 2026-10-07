@@ -493,6 +493,53 @@ def check_api_cost_is_recorded():
     return problems
 
 
+def check_audio_script_is_the_brief():
+    """The narration may only say what the brief printed, in a form a voice can read.
+
+    The audio edition is built from the digest rather than rewritten by a model
+    precisely so it stays inside SOURCE-OR-SKIP. This guards that: every top
+    story is narrated, every narrated story names its source, and nothing that
+    a speech engine would mispronounce or read literally survives.
+    """
+    import re
+    import podcast
+    digest = {
+        "digest_date": "2026-10-07",
+        "re_line": "DPRK warns Seoul · ROK $747B plan",
+        "morning_memo": ["**DPRK** warned the ROK over DMZ demining (더불어민주당)."],
+        "top_stories": [
+            {"headline": "DPRK rejects ROK mine investigation", "source": "NK News",
+             "body": "ROK soldiers were injured near DPRK territory. https://x.y/z"},
+            {"headline": "US-ROK talks resume on $22.3B plan", "source": "Yonhap",
+             "body": "FM Cho Hyun met PM Han on Oct 3–5."},
+        ],
+        "market_indicators": {"usd_krw": {"value": "1,338.38", "change_pct": -0.4}},
+        "us_korea_deals": {"investment_package": {"known_deals": [
+            {"company": "Encinal gas-fired power plant", "value": "$22.3B"}]}},
+    }
+    s = podcast.build_script(digest)
+    problems = []
+    for item in digest["top_stories"]:
+        if podcast.speakable(item["headline"]).rstrip(".") not in s:
+            problems.append(f"top story not narrated: {item['headline']!r}")
+        if f"That's from {item['source']}." not in s:
+            problems.append(f"story narrated without its source: {item['source']}")
+    for label, pattern in (("Hangul", r"[\uac00-\ud7a3]"), ("a URL", r"https?://"),
+                           ("markdown asterisks", r"\*"), ('a bare "US"', r"\bUS\b"),
+                           ("an unexpanded DPRK/ROK", r"\b(DPRK|ROK)\b"),
+                           ('"the North Korea"', r"\bthe (North|South) Korea\b(?!n)"),
+                           ('"North Korean" used as a noun', r"North Korean rejects")):
+        if re.search(pattern, s):
+            problems.append(f"narration still contains {label}")
+    # The won: USD/KRW falling means the won strengthened. Saying "the won ...
+    # down" reverses it, so the figure must be spoken as the dollar in won.
+    if "the dollar at 1,338.38 won, down 0.4 percent" not in s:
+        problems.append("USD/KRW not spoken as the dollar in won")
+    if "Issue " in s:
+        problems.append("issue number spoken on air")
+    return problems
+
+
 CHECKS = [
     ("API cost is recorded and kept", check_api_cost_is_recorded),
     ("no raw markdown reaches the reader", check_no_raw_markdown_reaches_the_reader),
@@ -511,6 +558,7 @@ CHECKS = [
     ("native feeds are tried first", check_native_feeds_come_first),
     ("major feeds have native paths", check_major_feeds_have_native_paths),
     ("length has a ceiling", check_length_has_a_ceiling),
+    ("audio narrates only the brief", check_audio_script_is_the_brief),
 ]
 
 

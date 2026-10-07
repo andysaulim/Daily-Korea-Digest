@@ -146,6 +146,17 @@ def check_email_size(html: str) -> list[str]:
         return [f"EMAIL SIZE: {n:,} bytes ({pct:.0f}% of Gmail's clipping limit)"]
     return []
 
+def _published_from_branch(name: str) -> tuple[str | None, bool]:
+    """Read a published file from the gh-pages branch; see shared.published.
+
+    The archive reads the branch rather than the live site, because Pages was
+    switched off on 3 October and every HTTP fetch 404'd: five issues went out
+    numbered "No. 1" over an archive listing one issue.
+    """
+    from shared.published import read_from_branch
+    return read_from_branch(name)
+
+
 def load_archive_entries(local_path, web_base: str = "") -> tuple[list, bool]:
     """The published archive manifest, and whether it is trustworthy.
 
@@ -170,6 +181,20 @@ def load_archive_entries(local_path, web_base: str = "") -> tuple[list, bool]:
             return entries, True
     except (OSError, json.JSONDecodeError):
         pass
+
+    text, reachable = _published_from_branch("archive.json")
+    if text is not None:
+        try:
+            entries = json.loads(text)
+            if isinstance(entries, list):
+                print(f"  📚  Archive: {len(entries)} prior issues read from the "
+                      f"gh-pages branch")
+                return entries, True
+        except json.JSONDecodeError:
+            pass
+    elif reachable:
+        print("  📚  Archive: no manifest on gh-pages yet — starting one")
+        return [], True
 
     base = (web_base or os.environ.get("WEB_URL", "")).rstrip("/")
     if not base:
@@ -1198,10 +1223,29 @@ def _ensure_pledge_projects(digest: dict) -> list[str]:
     known = pkg.get("known_deals")
     if not isinstance(known, list):
         known = []
-    have = {str(d.get("company", "")).strip().lower()
-            for d in known if isinstance(d, dict)}
+    # Match by containment on a normalised name, not by exact string. The
+    # model writes "Encinal gas-fired power plant, Texas"; the list holds
+    # "Encinal gas-fired power plant". An exact comparison called those two
+    # different projects, so the backfill appended a second copy — and on
+    # 7 October the brief printed Encinal twice under Selected Projects.
+    def _key(name) -> str:
+        return " ".join(re.sub(r"[^a-z0-9 ]+", " ", str(name).lower()).split())
+
+    def _same(a: str, b: str) -> bool:
+        return bool(a) and bool(b) and (a in b or b in a)
+
+    deduped: list = []
+    for d in known:                       # the model can repeat itself too
+        if not isinstance(d, dict):
+            continue
+        if any(_same(_key(d.get("company")), _key(x.get("company"))) for x in deduped):
+            log.append(f"pledge project duplicate dropped: {d.get('company')}")
+            continue
+        deduped.append(d)
+    known = deduped
+    have = [_key(d.get("company")) for d in known]
     for proj in SELECTED_PLEDGE_PROJECTS:
-        if proj["project"].strip().lower() in have:
+        if any(_same(_key(proj["project"]), h) for h in have):
             continue
         known.append({"company": proj["project"], "sector": proj["sector"],
                       "value": proj["value"] or ""})
@@ -1643,11 +1687,29 @@ def main():
     _date_slug = datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d")
     _archive_entries, _archive_ok = load_archive_entries(
         Path("public") / "archive.json", os.environ.get("WEB_URL", ""))
+    # archive_seed.json is a checked-in floor, rebuilt from history after the
+    # manifest was wiped to one entry on 3 October. Dates the published copy
+    # lacks are restored from it; dates it has win. When the archive cannot be
+    # read at all, the seed still numbers the issue — it is not written, but
+    # the masthead should not say "No. 1" because a fetch failed.
+    _seed = []
+    try:
+        _seed = json.loads(Path("archive_seed.json").read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        pass
     if _archive_ok:
+        _have = {e.get("date") for e in _archive_entries}
+        _restored = [e for e in _seed if e.get("date") not in _have]
+        if _restored:
+            print(f"  📚  Restored {len(_restored)} archive entr"
+                  f"{'y' if len(_restored) == 1 else 'ies'} from archive_seed.json")
+            _archive_entries = sorted(_archive_entries + _restored,
+                                      key=lambda e: str(e.get("date") or ""))
         _archive_entries = backfill_archive_entries(
             _archive_entries, os.environ.get("WEB_URL", ""))
+    _numbering = _archive_entries if _archive_ok else _seed
     try:
-        _dates = sorted({e.get("date") for e in _archive_entries if e.get("date")})
+        _dates = sorted({e.get("date") for e in _numbering if e.get("date")})
         digest_data["issue_no"] = (_dates.index(_date_slug) + 1
                                    if _date_slug in _dates else len(_dates) + 1)
     except (ValueError, TypeError):
@@ -1689,6 +1751,33 @@ def main():
 
     for _msg in _ensure_pledge_projects(digest_data):
         print(f"  🏗  {_msg}")
+
+    # ── Audio edition ──────────────────────────────────────────────────────
+    # Built here, after every trim and cleanup, so the listener hears exactly
+    # the issue the reader gets. Before render, so the email can carry a
+    # Listen link — set only once an MP3 actually exists, never optimistically.
+    # Skipped when the issue will not be sent, and on a test send, which must
+    # leave no trace and should not spend on synthesis.
+    _audio = None
+    if validation_passed and not _is_test_send:
+        try:
+            import podcast
+            _pub = Path("public"); _pub.mkdir(exist_ok=True)
+            _audio = podcast.produce(digest_data, _pub,
+                                     os.environ.get("WEB_URL", ""), _date_slug)
+            if _audio:
+                _wb = os.environ.get("WEB_URL", "").rstrip("/")
+                if _wb:
+                    digest_data["audio_url"] = f"{_wb}/digest_{_date_slug}.mp3"
+                print(f"  🎧  Audio: {_audio['audio_bytes']:,} bytes, "
+                      f"~{_audio['audio_seconds'] // 60} min "
+                      f"({_audio['tts_model']}, {_audio['tts_voice']})")
+            else:
+                print("  🎧  Audio: script written, no voice configured "
+                      "(set OPENAI_API_KEY to enable)")
+        except Exception as _e:                                 # noqa: BLE001
+            print(f"  ⚠  Audio skipped (non-fatal): {_e}")
+            _audio = None
 
     html = render(digest_data)
     # Minify before measuring, because the measurement that matters is of the
@@ -1772,7 +1861,13 @@ def main():
         # edition: keeping it out of the manifest is what stops a test
         # consuming today's issue number and appearing in Past issues.
         print("  🧪  Test send: archive manifest left unchanged.")
-    elif _archive_ok or not archive_json_path.exists():
+    elif _archive_ok:
+        # Was "_archive_ok or not archive_json_path.exists()". public/ starts
+        # empty on every runner, so the second half was always true and the
+        # guard passed on exactly the runs it existed to stop: any failed read
+        # wrote a one-entry stub over the published history. A new archive is
+        # now detected positively, by the branch having no manifest, not by the
+        # absence of a local file that is always absent.
         archive_entries.sort(key=lambda e: str(e.get("date") or ""))
         archive_json_path.write_text(
             json.dumps(archive_entries, ensure_ascii=False, indent=2),
@@ -1878,6 +1973,8 @@ def main():
             "validation_warnings": len(validation_warnings),
             "validation_retries": validation_attempt,
             "html_bytes": len(html),
+            # Audio is recorded so its cost shows up with everything else's.
+            **({k: v for k, v in (_audio or {}).items()}),
             "sent": not args.no_send and validation_passed,
             "health_alerts": len(health_report.get("alerts", [])),
             "health_warnings": len(health_report.get("warnings", [])),

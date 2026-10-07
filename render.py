@@ -388,7 +388,7 @@ def _item_block(cat: str, src: str, headline: str, body: str, url: str,
 
 
 _CHROME_WORDS = _re.compile(
-    r"For Internal Use Only|Read online|Download PDF|Past issues|Back to top|"
+    r"For Internal Use Only|Read online|Download PDF|Listen|Past issues|Back to top|"
     r"Top Stories|Pyongyang|Trade|Markets|Polling|Upcoming|"
     r"Center for Strategic and International Studies", _re.I)
 
@@ -459,6 +459,11 @@ def render(digest: dict) -> str:
         links = [f'<a class="pill" href="{_esc(web_url)}" style="{_a}">Read online</a>']
         if base:
             links.append(f'<a class="pill" href="{_esc(base + "latest.pdf")}" style="{_a}">Download PDF</a>')
+            # Only when run.py has confirmed an MP3 exists for this issue. The
+            # link points at the dated file, not latest.mp3, so an old email
+            # keeps playing its own day rather than whatever is newest.
+            if digest.get("audio_url"):
+                links.append(f'<a class="pill" href="{_esc(digest["audio_url"])}" style="{_a}">Listen</a>')
             links.append(f'<a class="pill" href="{_esc(base + "archive.html")}" style="{_a}">Past issues</a>')
         sep = ''
         # The internal-use notice and the utility links each had a full-width
@@ -2039,6 +2044,7 @@ def render(digest: dict) -> str:
       </td></tr>
       <tr><td style="padding:14px 32px 4px;text-align:center;">
         <a class="pill" href="{_esc(web_url)}" style="{_foot_btn}">Read online</a>
+        {f'<a class="pill" href="{_esc(digest["audio_url"])}" style="{_foot_btn}">Listen</a>' if digest.get("audio_url") else ""}
         <a class="pill" href="{_esc(archive_url)}" style="{_foot_btn}">Past issues</a>{_footer_trade}
       </td></tr>
       <tr><td style="padding:18px 32px 22px;text-align:center;">
