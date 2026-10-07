@@ -48,8 +48,8 @@ DEFAULT_MODEL = "gpt-4o-mini-tts"
 DEFAULT_VOICE = "marin"          # OpenAI's recommended voice for quality narration
 FALLBACK_VOICE = "ash"           # if the model ever refuses the default
 SEGMENT = "---"                  # a line on its own: a segment break, voiced as a pause
-PAUSE_PARAGRAPH = 0.45           # seconds of silence between requests within a segment
-PAUSE_SEGMENT = 1.2              # ... and between segments
+PAUSE_PARAGRAPH = 0.7            # seconds of silence between requests within a segment
+PAUSE_SEGMENT = 1.5              # ... and between segments
 PCM_RATE = 24000                 # OpenAI's native speech rate; everything is mixed at it
 LAST_ERROR = ""              # why the most recent synthesis produced nothing
 # How the voice reads, sent with every request to models that take it. The
@@ -59,13 +59,16 @@ LAST_ERROR = ""              # why the most recent synthesis produced nothing
 # or imitating a real host's voice is outside what the providers permit and
 # would let listeners mistake the brief for someone else's programme.
 # Override per repo with the TTS_STYLE variable; no code change needed.
-DELIVERY = ("You are the host of a daily news podcast, talking to one listener you "
-            "respect. Engaged and genuinely curious — you find this interesting and "
-            "it shows. Conversational, with momentum: vary your pace, slow down for "
-            "the fact that matters, pick up through connective lines. A natural "
-            "pause before a key number or quote, a longer one between stories. "
-            "Warm, never theatrical, never a newsreader's monotone. Pronounce "
+DELIVERY = ("You are the host of a daily news podcast for senior policymakers, talking "
+            "to one listener you respect. Calm, warm and unhurried: a measured pace, "
+            "slower than conversation, so every sentence lands. Take a breath between "
+            "sentences. Slow down for names, numbers and quotes, and pause briefly "
+            "before them. Never rush a list or the end of a sentence. Engaged and "
+            "curious, never theatrical, never a newsreader's monotone. Pronounce "
             "Korean names carefully.")
+# The voice model's own pace is a suggestion it does not always take; this is
+# applied after, pitch unchanged. 1.0 leaves it alone; TTS_PACE overrides.
+DEFAULT_PACE = 0.92
 
 # ── Making text speakable ────────────────────────────────────────────────────
 
@@ -503,6 +506,14 @@ Party Government Committee Chairman Secretary General Commander Command State
 U.S. US KCNA DPRK ROK Mr Ms Dr
 Washington Beijing Moscow Tokyo United States Bank Second Third
 """.split())
+_COUNTED_FACTS = {"soldier", "people", "troop", "missile", "satellite", "killed", "injured",
+                  "dead", "wounded", "launche", "launch", "rocket", "ship", "vessel", "day",
+                  "week", "month", "year", "time", "percent", "billion", "million",
+                  "trillion", "won", "dollar", "seat", "vote", "citizen", "prisoner", "pow",
+                  "defector", "worker", "casualtie", "death", "warhead", "test", "drill",
+                  "minister", "official", "aircraft", "plane", "drone", "shell", "round",
+                  "mile", "kilometer", "hour", "point", "satellites", "civilian", "sailor",
+                  "fisherman", "fishermen", "person", "men", "women", "children", "member"}
 # Counting what the brief itself lists ("two countries", "three major items")
 # is arithmetic on the brief, not a new fact; a small count before one of
 # these nouns is not checked. Counts of people, days or weapons still are.
@@ -634,10 +645,10 @@ def check_script(script: str, digest: dict, when: str = "") -> list[str]:
     for i, t in enumerate(s_toks):
         if t in market and _MARKET_WORDS & set(s_toks[max(0, i - 4):i + 4]):
             continue
-        if t in {"2", "3", "4", "5"} and any(_stem(w) in _COUNT_NOUNS for w in s_toks[i + 1:i + 3]):
-            continue
-        if t == "2" and i and s_toks[i - 1] in {"the", "these", "those"} and \
-                (i + 1 >= len(s_toks) or s_toks[i + 1] in _PRONOUN_NEXT):
+        # Small counts ("the two", "two escalatory moves", "three things")
+        # are how speech refers back to what it just said. They are checked
+        # only when they count something a misstatement would matter for.
+        if t in {"2", "3", "4", "5"} and not any(_stem(w) in _COUNTED_FACTS for w in s_toks[i + 1:i + 4]):
             continue
         if t[0].isdigit() and not _number_in_context(t, i, s_toks, src_toks, src_pos):
             ctx = " ".join(s_toks[max(0, i - 2):i + 3])
@@ -886,6 +897,16 @@ def _pcm(data: bytes | Path) -> bytes:
     return r.stdout
 
 
+def _pace_filter() -> str:
+    """atempo for the configured pace: slower speech at the same pitch."""
+    try:
+        pace = float((os.environ.get("TTS_PACE") or "").strip() or DEFAULT_PACE)
+    except ValueError:
+        pace = DEFAULT_PACE
+    pace = min(1.2, max(0.75, pace))
+    return "" if abs(pace - 1.0) < 0.005 else f"atempo={pace:g},"
+
+
 def _master(parts: list[tuple[bytes, float]], out_path: Path) -> None:
     """The finished episode: sting, voice with real pauses, sting, at podcast loudness.
 
@@ -920,7 +941,7 @@ def _master(parts: list[tuple[bytes, float]], out_path: Path) -> None:
     mix.extend(sting)
     r = subprocess.run(
         [_ffmpeg(), "-loglevel", "error", "-y", "-f", "s16le", "-ar", str(PCM_RATE), "-ac", "1",
-         "-i", "pipe:0", "-af", "loudnorm=I=-16:TP=-1.5:LRA=11", "-ar", "44100", "-ac", "1",
+         "-i", "pipe:0", "-af", _pace_filter() + "loudnorm=I=-16:TP=-1.5:LRA=11", "-ar", "44100", "-ac", "1",
          "-b:a", "64k", str(out_path)],
         input=mix.tobytes(), capture_output=True)
     if r.returncode or not out_path.exists() or not out_path.stat().st_size:
