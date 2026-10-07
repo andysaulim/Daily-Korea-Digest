@@ -190,6 +190,7 @@ jobs:
           TTS_MODEL: ${{ vars.TTS_MODEL }}
           TTS_VOICE: ${{ vars.TTS_VOICE }}
           TTS_STYLE: ${{ vars.TTS_STYLE }}
+          TTS_PACE: ${{ vars.TTS_PACE }}
           WEB_URL: https://andysaulim.github.io/Daily-Korea-Digest
         run: |
           set -o pipefail
