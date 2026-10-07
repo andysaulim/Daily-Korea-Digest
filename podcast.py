@@ -45,7 +45,12 @@ MIN_COVERAGE = 0.8          # a request whose audio is shorter than this share
 PUBLISH_COVERAGE = 0.75     # after retries, below this the episode is withheld
 FEED_EPISODES = 30          # what the feed advertises; the workflow prunes the rest
 DEFAULT_MODEL = "gpt-4o-mini-tts"
-DEFAULT_VOICE = "ash"            # softer, conversational; suits the podcast-host delivery
+DEFAULT_VOICE = "marin"          # OpenAI's recommended voice for quality narration
+FALLBACK_VOICE = "ash"           # if the model ever refuses the default
+SEGMENT = "---"                  # a line on its own: a segment break, voiced as a pause
+PAUSE_PARAGRAPH = 0.45           # seconds of silence between requests within a segment
+PAUSE_SEGMENT = 1.2              # ... and between segments
+PCM_RATE = 24000                 # OpenAI's native speech rate; everything is mixed at it
 LAST_ERROR = ""              # why the most recent synthesis produced nothing
 # How the voice reads, sent with every request to models that take it. The
 # default is the conversational public-radio register rather than a newsreader:
@@ -102,6 +107,17 @@ _NOT_A_NOUN = {"in", "to", "of", "for", "and", "or", "a", "an", "the", "on",
                "next", "is", "was", "will", "would"}
 
 
+_MONTH_NAMES = {"Jan": "January", "Feb": "February", "Mar": "March", "Apr": "April",
+           "Jun": "June", "Jul": "July", "Aug": "August", "Sep": "September",
+           "Oct": "October", "Nov": "November", "Dec": "December"}
+_ORDINAL = {"1": "first", "2": "second", "3": "third", "4": "fourth"}
+# Ministry acronyms a reader decodes and a listener can't.
+_SPOKEN_NAMES = (("MOFA", "Foreign Ministry"), ("MOTIE", "Industry Ministry"),
+                 ("MND", "Defense Ministry"), ("MOEF", "Finance Ministry"),
+                 ("MDL", "military demarcation line"),
+                 ("NK Pro", "N.K. Pro"), ("NK News", "N.K. News"))
+
+
 def _money(m: re.Match) -> str:
     """$22.3B -> "22.3 billion dollars", or "dollar" when it modifies a noun."""
     amount, unit = m.group(1), _UNITS[m.group(2).lower()]
@@ -142,9 +158,22 @@ def speakable(text: str) -> str:
     t = re.sub(r"(\d)\s*[–-]\s*(\d)", r"\1 to \2", t)          # "Oct 3–5"
     t = re.sub(r"\s+/\s+", " and ", t)                            # "NK News / NK Pro"
     t = re.sub(r"\bvs\.?\b", "versus", t)
+    t = re.sub(r"\(?\b[A-Z]{3}\d{8,}\b\)?", "", t)                  # wire story IDs
+    t = re.sub(r",?\s*@\w+\s*,?", "", t)                               # social handles
+    t = re.sub(r"\b(Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sept?|Oct|Nov|Dec)\.?\s+(?=\d)",
+               lambda m: _MONTH_NAMES[m.group(1)[:3]] + " ", t)
+    t = re.sub(r"\bQ([1-4])\s+(20\d\d)\b",
+               lambda m: f"the {_ORDINAL[m.group(1)]} quarter of {m.group(2)}", t)
+    t = re.sub(r"(\d)\s?km\b", r"\1 kilometers", t)
+    for short, full in _SPOKEN_NAMES:
+        t = re.sub(rf"\b{short}\b", full, t)
+    t = re.sub(r"\b([A-Za-z]+)/([A-Za-z]+)\b", r"\1 and \2", t)          # "Taiwan/Russia"
+    t = re.sub(r"\s*\(([^()]{1,60})\)", r", \1,", t)                    # asides, not brackets
+    t = re.sub(r",\s*([,.;:!?])", r"\1", t)
+    t = re.sub(r",\s*—", " —", t)
     t = re.sub(r"\s+([,.;:])", r"\1", t)
     t = re.sub(r"\s{2,}", " ", t).strip()
-    if t and t[-1] not in ".?!\"'”’":
+    if t and (t[-1] not in ".?!\"'”’" or (t[-1] in "\"'”’" and t[-2:-1] not in ".?!,")):
         t += "."
     return t
 
@@ -174,6 +203,18 @@ def _words(text: str) -> set[str]:
     return {w for w in re.findall(r"[a-z]+", text.lower()) if len(w) > 3 and w not in _STOP}
 
 
+_COMMON_NAMES = {"north", "south", "korea", "korean", "koreas", "seoul", "pyongyang", "kim",
+                 "jong", "president", "lee", "jae", "myung", "minister", "foreign", "defense",
+                 "ministry", "the", "dmz", "kcna", "u.s", "united", "states", "russia",
+                 "russian", "china", "chinese", "japan", "japanese", "washington", "party"}
+
+
+def _names(text: str) -> set[str]:
+    """Distinct capitalised words that are not the brief's everyday names."""
+    return {w.lower().strip(".'") for w in re.findall(r"(?<![.!?]\s)\b[A-Z][a-zA-Z.'-]{2,}", text)
+            if w.lower().strip(".'") not in _COMMON_NAMES}
+
+
 def _story(item: dict, body_key: str = "body") -> str:
     """One item as spoken: the body alone when it already tells the headline.
 
@@ -200,6 +241,13 @@ def _story(item: dict, body_key: str = "body") -> str:
     return f"{head} {body}"
 
 
+_SECTION_LEADS = ("Our top story", "Here's what else", "Now to Pyongyang", "The number of the day",
+                  "In Seoul,", "On the economy", "Elsewhere in the region", "How is the public",
+                  "In their own words", "What's coming up", "A few more things",
+                  "And from the analysts", "From satellite imagery", "Finally, the markets",
+                  "That's the Korea Daily Brief")
+
+
 def build_script(digest: dict) -> str:
     """The whole brief as a spoken script, in the order it is printed.
 
@@ -216,14 +264,24 @@ def build_script(digest: dict) -> str:
     when = _spoken_date(digest)
     out: list[str] = [f"This is the Korea Daily Brief from the CSIS Korea Chair. It's {when}."]
     told: list[set] = []
+    told_names: list[tuple[set, set]] = []
 
     def fresh(text: str) -> bool:
-        w = _words(text)
+        # The whole item and its opening are both compared: a paraphrase of
+        # the same story shares its lead (who, with whom, about what) even
+        # when its second sentence goes somewhere else.
+        # Four shared uncommon names (Cho, Hyun, Anita, Anand) are the same
+        # story however differently the two items word it.
+        w, lead = _words(text), _words(" ".join(text.split()[:25]))
+        names = _names(text)
         if not w:
             return False
-        if any(len(w & t) / len(w) >= 0.6 for t in told):
-            return False
+        for t, tn in told_names:
+            if len(w & t) / min(len(w), len(t)) >= 0.5 or len(names & tn) >= 4 or \
+                    (len(lead) >= 5 and len(lead & t) / len(lead) >= 0.6):
+                return False
         told.append(w)
+        told_names.append((w, names))
         return True
 
     def section(lead: str, items: list[str]) -> None:
@@ -246,20 +304,34 @@ def build_script(digest: dict) -> str:
         lead = "Our top story:" if n == 0 else ("And finally:" if n == len(top) - 1 else "Also making news:")
         out.append(f"{lead} {told_text}")
 
-    section("Here's what else happened overnight.",
+    section("Here's what else moved overnight.",
             [_story(i, "body_text") for i in _items(digest, "overnight_items")])
 
     kcna = digest.get("kcna_delta") or {}
     if isinstance(kcna, dict):
-        arts = [_story({"headline": a.get("headline", ""), "body": a.get("summary", "")})
-                for a in (kcna.get("top_articles") or []) if isinstance(a, dict)]
+        # Always the top state-media articles, even when a top story already
+        # covered one: then just its headline, as how Pyongyang played it.
+        top_arts = [a for a in (kcna.get("top_articles") or []) if isinstance(a, dict)][:3]
+        arts = []
+        for a in top_arts:
+            full = _story({"headline": a.get("headline", ""), "body": a.get("summary", "")})
+            w = _words(full)
+            if w and any(len(w & t) / min(len(w), len(t)) >= 0.5 for t in told):
+                arts.append(speakable(a.get("headline", "")))
+            else:
+                told.append(w)
+                arts.append(full)
+        if arts:
+            lead = ("State media's top stories today. " if len(arts) > 1 else "State media's top story today. ")
+            arts = [lead + " ".join(arts)]
         if kcna.get("bottom_line"):
             bl = "The bottom line: " + speakable(kcna["bottom_line"])
             days = kcna.get("days_since_last_appearance")
             if isinstance(days, int) and days > 0 and not kcna.get("kim_appearance_today"):
                 bl += f" Kim Jong Un was last seen in public {days} day{'s' if days != 1 else ''} ago."
             arts.append(bl)
-        section("Turning to Pyongyang, and what state media is saying.", arts)
+        if arts:
+            out.append("Now to Pyongyang. " + " ".join(arts))
 
     ks = digest.get("key_stat") or {}
     if isinstance(ks, dict) and ks.get("number"):
@@ -270,30 +342,30 @@ def build_script(digest: dict) -> str:
 
     gov = []
     for g in _items(digest, "rok_government"):
-        line = speakable(g.get("action", ""))
-        if g.get("detail"):
-            line += " " + speakable(g["detail"])
-        gov.append(line)
+        gov.append(_story({"headline": g.get("action", ""), "body": g.get("detail", "")}))
     for a in _items(digest, "rok_assembly"):
-        gov.append(speakable(f'At the National Assembly, {a.get("committee", "")}: {a.get("action", "")}')
-                   + (" " + speakable(a["detail"]) if a.get("detail") else ""))
+        committee = re.sub(r"^\s*National Assembly\s*[—:-]+\s*", "", str(a.get("committee") or ""))
+        story = _story({"headline": a.get("action", ""), "body": a.get("detail", "")})
+        gov.append((f"In the National Assembly's {speakable(committee).rstrip('.')}, " if committee else
+                    "In the National Assembly, ") + story[:1].lower() + story[1:])
     for r in _items(digest, "rok_personnel"):
-        gov.append(speakable(f'{r.get("name", "")}, {r.get("position", "")}: {r.get("action", "")}')
-                   + (" " + speakable(r["detail"]) if r.get("detail") else ""))
-    section("From the South Korean government.", gov)
+        gov.append(_story({"headline": f'{r.get("name", "")}, {r.get("position", "")}: {r.get("action", "")}',
+                           "body": r.get("detail", "")}))
+    section("In Seoul, the government side.", gov)
 
-    section("In business news.", [_story(i, "body_text") for i in _items(digest, "business_economy")])
-    section("Around the region.", [_story(i, "body_text") for i in _items(digest, "northeast_asia")])
+    section("On the economy.", [_story(i, "body_text") for i in _items(digest, "business_economy")])
+    section("Elsewhere in the region.", [_story(i, "body_text") for i in _items(digest, "northeast_asia")])
 
     ps = digest.get("public_sentiment") or {}
     ap = ps.get("presidential_approval") or {}
     if isinstance(ap, dict) and ap.get("value"):
-        src = ap.get("source") or "the latest poll"
-        dated = f", taken {ap['last_updated']}" if ap.get("last_updated") else ""
-        line = (f"In {src}{dated}, the president's approval stands at "
+        src = ap.get("source") or "the latest"
+        polled = re.sub(r",?\s*20\d\d", "", str(ap.get("last_updated") or ""))
+        dated = f", from {polled}" if polled else ""
+        line = (f"In the latest {src} poll{dated}, President Lee's approval is "
                 f"{str(ap['value']).replace('%', ' percent')}")
         if ap.get("trend") in ("up", "down"):
-            line += f", {ap['trend']}"
+            line += f", {ap['trend']} from the poll before"
         line += "."
         parties = []
         for key in ("party_ruling", "party_opposition"):
@@ -304,17 +376,14 @@ def build_script(digest: dict) -> str:
         if isinstance(ind, dict) and ind.get("value"):
             parties.append(f"independents at {str(ind['value']).replace('%', ' percent')}")
         if parties:
-            line += " Party support: " + ", ".join(parties) + "."
-        out.append(f"On public opinion. {line}")
+            line += " By party: " + ", ".join(parties[:-1]) + ", and " + parties[-1] + "." \
+                if len(parties) > 1 else " By party: " + parties[0] + "."
+        out.append(f"How is the public reading all this? {line}")
 
     quotes = []
     for q in _items(digest, "social_statements") + _items(digest, "official_x_posts"):
         if q.get("quote_text") and q.get("who"):
-            ctx = f", {q['handle_context']}," if q.get("handle_context") else ""
-            line = speakable(f'{q["who"]}{ctx} said: "{q["quote_text"]}"')
-            if q.get("analyst_note"):
-                line += " " + speakable(q["analyst_note"])
-            quotes.append(line)
+            quotes.append(speakable(f'{q["who"]} said: "{q["quote_text"]}"'))
     section("In their own words.", quotes)
 
     _y = re.search(r"\b(20\d{2})\b", str(digest.get("digest_date") or ""))
@@ -326,24 +395,25 @@ def build_script(digest: dict) -> str:
         date = str(c.get("date") or "").strip()
         if year:
             date = re.sub(rf",?\s*{year}\b", "", date).strip()
+        date = re.sub(r"\s*\(.*?\)", "", date).strip()
         event = speakable(c.get("event") or c.get("headline") or "")
         if event:
             ahead.append((f"{date}: " if date else "") + event)
     if ahead:
-        out.append("Looking ahead. " + " ".join(ahead))
+        out.append("What's coming up? " + " ".join(ahead))
 
-    section("Also on the wire.", [_story(i, "body_text") for i in _items(digest, "also_today")])
+    section("A few more things worth knowing.", [_story(i, "body_text") for i in _items(digest, "also_today")])
 
     analysis = []
     for o in _items(digest, "opeds_today") + _items(digest, "academic_today"):
         head = speakable(o.get("headline", "")).rstrip(".")
         by = o.get("authors")
         by = ", ".join(by) if isinstance(by, list) else (by or "")
-        src = o.get("source") or o.get("journal") or ""
+        src = speakable(o.get("source") or o.get("journal") or "").rstrip(".")
         intro = head + (f", by {by}" if by else "") + (f", in {src}" if src else "") + "."
         arg = speakable(o.get("central_argument") or o.get("summary") or "")
         analysis.append(f"{intro} {arg}".strip())
-    section("In analysis and commentary.", analysis)
+    section("And from the analysts.", analysis)
 
     im = digest.get("imagery_report") or {}
     if isinstance(im, dict) and (im.get("headline") or im.get("body")):
@@ -368,30 +438,50 @@ def build_script(digest: dict) -> str:
             phrase += f", {'up' if chg > 0 else 'down'} {abs(chg):g} percent"
         spoken_mk.append(phrase + ".")
     if spoken_mk:
-        out.append("In the markets. " + " ".join(spoken_mk))
+        out.append("Finally, the markets. " + " ".join(spoken_mk))
 
     out.append(f"That's the Korea Daily Brief for {when}. The full text, with a "
                f"link to every source, is in today's email.")
-    return "\n\n".join(x.strip() for x in out if x and x.strip())
+    # A pause before each section, as the written script has between segments.
+    marked: list[str] = []
+    for x in (x.strip() for x in out if x and x.strip()):
+        if marked and x.startswith(_SECTION_LEADS):
+            marked.append(SEGMENT)
+        marked.append(x)
+    return "\n\n".join(marked)
 
 
 # ── The written-for-the-ear script ───────────────────────────────────────────
 
-_SCRIPT_SYSTEM = """You write the script for the audio edition of the Korea Daily Brief, the CSIS Korea Chair's daily briefing on the Korean Peninsula. One host reads it aloud.
-
-Sound like a thoughtful daily news podcast: one host talking to one listener. Warm, curious, conversational, with momentum. Open with a hook: the day's most consequential development in a sentence or two. Then walk through the stories with spoken transitions that connect them, and say plainly why something matters when the brief says why. Short sentences. Contractions. Now and then a question a listener might be asking, answered from the brief. No headline-ese, no strings of fragments, no lists read out.
+_SCRIPT_SYSTEM = """You write the script for the audio edition of the Korea Daily Brief, the CSIS Korea Chair's daily briefing on the Korean Peninsula for senior policymakers. One host reads it aloud. It should sound like a well-made daily news podcast (think of the shape of NPR's Up First or Axios Today), not a newsletter read out.
 
 FACTS. This rule outranks every other:
 - Use ONLY facts in the brief JSON you are given. Every name, number, date, place, quote and claim must come from it.
 - Add nothing from your own knowledge, even if you are certain it is true: no background, no history, no figures, no context the brief does not contain.
 - Say why something matters only where the brief itself says so (body text, analyst notes, bottom lines, "so what" fields). Never speculate.
 - Quote only quotes that appear in the brief, word for word, attributed as the brief attributes them.
-- Write every number exactly as the brief writes it.
+- Write every number exactly as the brief writes it, but use no more than two numbers per story.
 - If something in the brief is unclear, leave it out rather than interpret it.
 
-COVER, in this order: the top stories; overnight; Pyongyang (the top KCNA articles, then the bottom line); the number of the day; the South Korean government, National Assembly and appointments; business and the economy; the region; public opinion (say when the poll was taken); statements and posts from officials; what is coming up; the rest of the wire; analysis and commentary; satellite imagery, only if it is included; the markets, briefly. Leave out US-Korea trade and investment entirely. Never tell the same story twice.
+SHAPE. Five segments, in this order. Put a line containing only --- between segments (the producer puts a pause there).
+1. COLD OPEN (about 60 words). After the fixed opening line, go straight into the single most consequential development, told as a tension or a stakes question, not a summary. No throat-clearing. Then one menu line: "Three things today: ..." naming the three lead stories in a few words each.
+2. THE THREE LEAD STORIES (about 250 words each), one after another, with --- between them. Usually the top stories. For each: what happened, why it matters to someone who works on Korea policy (from the brief), and what to watch next. Fold in related items from other sections (government reactions, the National Assembly, statements, analysis, imagery) so each lead is one connected story, not a list.
+3. PYONGYANG. Name every one of the top KCNA articles in kcna_delta.top_articles, even one a lead story already told (then one sentence on how state media framed it is enough), then the bottom line.
+4. THE ROUND-UP. Everything else worth a listener's time, one or two sentences each, linked by quick spoken transitions: overnight items, government and appointments, the economy, the region, the poll (say when it was taken), what is coming up, the rest of the wire, analysis. Never tell a story the leads already told. Leave out US-Korea trade and investment entirely. Satellite imagery only if it is included.
+5. CLOSE. The markets in two or three short sentences, then the fixed closing line.
 
-FORMAT: plain spoken text only, paragraphs separated by a blank line. No headings, no stage directions, no sound cues, no markdown, no bullet points. Begin exactly with: "This is the Korea Daily Brief from the CSIS Korea Chair. It's {when}." End exactly with: "That's the Korea Daily Brief for {when}. The full text, with a link to every source, is in today's email." Aim for 1,300 to 1,800 words."""
+WRITE FOR THE EAR. These are broadcast writing rules:
+- One idea per sentence. Most sentences under 20 words. Vary the rhythm: a short sentence after a long one.
+- Attribution before the claim: "South Korea's Defense Ministry says...", not "..., the ministry said."
+- Full name and title once, then a short form ("Unification Minister Chung Dong-young", then "Chung").
+- Say "you" to the listener now and then. Contractions.
+- Join stories by cause, contrast or consequence ("That warning lands the same day Seoul..."). Never "Next," "Also," "In other news," "Moving on."
+- End each lead story by restating its key fact in a few words, because the listener can't re-read it.
+- No acronyms a listener can't decode: say "the Foreign Ministry", not "MOFA". DMZ, KCNA, U.S. and UN are fine.
+- No headline-ese, no strings of fragments, no lists read out, no parentheses.
+- Never use these phrases: "let's dive in", "dive into", "delve", "in today's rapidly evolving", "it's worth noting", "notably", "a stark reminder", "only time will tell", "remains to be seen", "buckle up", "game-changer", "in a world where", "at the end of the day". Don't end sentences on a list of three for effect. Don't open with a rhetorical question.
+
+FORMAT: plain spoken text only, paragraphs separated by a blank line, segments separated by a line containing only ---. No headings, no stage directions, no sound cues, no markdown, no bullet points. Begin exactly with: "This is the Korea Daily Brief from the CSIS Korea Chair. It's {when}." End exactly with: "That's the Korea Daily Brief for {when}. The full text, with a link to every source, is in today's email." Aim for 1,300 to 1,600 words."""
 
 _SCRIPT_KEYS = ("re_line", "top_stories", "overnight_items", "kcna_delta", "key_stat",
                 "rok_government", "rok_assembly", "rok_personnel", "business_economy",
@@ -497,12 +587,14 @@ def check_script(script: str, digest: dict, when: str = "") -> list[str]:
     # separately. They are removed here rather than exempting the date's
     # numbers everywhere: a global exemption for "7" let "seven soldiers"
     # through on 7 October against a brief that says three.
-    body = script
+    body = re.sub(r"^\s*---\s*$", " ", script, flags=re.M)
     for fixed in (f"This is the Korea Daily Brief from the CSIS Korea Chair. It's {when}.",
                   f"That's the Korea Daily Brief for {when}."):
         body = body.replace(fixed, " ")
     # "the last 24 hours" is the brief's own window, not a claim from it.
     body = re.sub(r"\b(?:24|twenty-? ?four)[- ]hours?\b", " ", body, flags=re.I)
+    # The menu line the prompt asks for ("Three things today") counts stories, not facts.
+    body = re.sub(r"\b(?:two|three|four|five|\d) (?:things|stories|big stories)\b", " ", body, flags=re.I)
     s_toks = _tokens(body)
     for i, t in enumerate(s_toks):
         if t[0].isdigit() and not _number_in_context(t, i, s_toks, src_toks, src_pos):
@@ -570,7 +662,9 @@ def write_script(digest: dict) -> tuple[str | None, list[str]]:
     problems = check_script(text, digest, when)
     if problems:
         return None, problems
-    paras = [speakable(x) for x in text.split("\n\n") if x.strip()]
+    text = re.sub(r"^\s*-{3,}\s*$", f"\n{SEGMENT}\n", text, flags=re.M)
+    paras = [x.strip() if x.strip() == SEGMENT else speakable(x)
+             for x in re.split(r"\n\s*\n", text) if x.strip()]
     return "\n\n".join(paras), []
 
 
@@ -614,8 +708,8 @@ def _expected_seconds(text: str) -> float:
     return len(text.split()) / SPOKEN_WPM * 60
 
 
-def _chunks(script: str, limit: int = CHUNK_CHARS) -> list[str]:
-    """Pack paragraphs into requests, kept small on purpose.
+def _chunks(script: str, limit: int = CHUNK_CHARS) -> list[tuple[str, float]]:
+    """Pack paragraphs into requests, kept small on purpose, each with the pause after it.
 
     The first live episode sent three requests of up to 3,500 characters and
     came back a third short: the voice model can stop early on a long passage
@@ -623,21 +717,29 @@ def _chunks(script: str, limit: int = CHUNK_CHARS) -> list[str]:
     make a skip both less likely and, when it happens, cheap to redo.
 
     Breaks on paragraph boundaries first, then sentence boundaries for a
-    paragraph too long alone, so no request ends mid-sentence — a cut there is
-    audible as an unnatural pause and a reset in intonation.
+    paragraph too long alone, so no request ends mid-sentence. A request never
+    spans a segment break (a line holding only ---): the pause there is
+    silence the producer inserts, longer than the one between paragraphs.
     """
-    out, cur = [], ""
-    for para in script.split("\n\n"):
-        pieces = [para] if len(para) <= limit else re.split(r"(?<=[.!?])\s+", para)
-        for piece in pieces:
-            if len(cur) + len(piece) + 2 > limit and cur:
-                out.append(cur)
-                cur = piece
-            else:
-                cur = f"{cur}\n\n{piece}" if cur else piece
-    if cur:
-        out.append(cur)
+    out: list[tuple[str, float]] = []
+    for segment in re.split(rf"\n\s*{re.escape(SEGMENT)}\s*\n", "\n" + script.strip() + "\n"):
+        cur = ""
+        for para in [x.strip() for x in segment.split("\n\n") if x.strip() and x.strip() != SEGMENT]:
+            pieces = [para] if len(para) <= limit else re.split(r"(?<=[.!?])\s+", para)
+            for piece in pieces:
+                if len(cur) + len(piece) + 2 > limit and cur:
+                    out.append((cur, PAUSE_PARAGRAPH))
+                    cur = piece
+                else:
+                    cur = f"{cur}\n\n{piece}" if cur else piece
+        if cur:
+            out.append((cur, PAUSE_SEGMENT))
     return out
+
+
+def spoken_text(script: str) -> str:
+    """The script without segment markers: what the transcript shows."""
+    return re.sub(rf"\n*^\s*{re.escape(SEGMENT)}\s*$\n*", "\n\n", script, flags=re.M).strip()
 
 
 def _openai_tts(text: str, key: str, model: str, voice: str) -> bytes:
@@ -660,31 +762,83 @@ def _openai_tts(text: str, key: str, model: str, voice: str) -> bytes:
     return r.content
 
 
-def _join_mp3(parts: list[bytes], out_path: Path) -> None:
-    """Concatenate chunk MP3s; re-encode to 48 kbps mono when ffmpeg is present.
+def _sting(rate: int = PCM_RATE) -> "array":
+    """A short, quiet signature for the open and close, synthesised here.
 
-    Raw concatenation plays in every common player, because MP3 is a stream of
-    independent frames. ffmpeg, when available (it is on GitHub's Ubuntu
-    runners), produces a clean single file and brings a 15-minute episode down
-    to about 5 MB — speech needs nothing more, and it is the difference between
-    a site that fits in GitHub Pages' 1 GB and one that does not.
+    Generated rather than downloaded so there is no licence to track: a soft
+    D-major pad under two bell notes, about three and a half seconds. A file
+    at assets/sting.mp3 (or STING_FILE) replaces it — a licensed track, if the
+    show ever wants one.
     """
-    if shutil.which("ffmpeg"):
-        with tempfile.TemporaryDirectory() as tmp:
-            listing = Path(tmp) / "parts.txt"
-            names = []
-            for i, part in enumerate(parts):
-                p = Path(tmp) / f"part{i:03d}.mp3"
-                p.write_bytes(part)
-                names.append(f"file '{p}'")
-            listing.write_text("\n".join(names))
-            done = subprocess.run(
-                ["ffmpeg", "-loglevel", "error", "-y", "-f", "concat", "-safe", "0",
-                 "-i", str(listing), "-ac", "1", "-b:a", "48k", str(out_path)],
-                capture_output=True, text=True)
-            if done.returncode == 0 and out_path.exists() and out_path.stat().st_size:
-                return
-    out_path.write_bytes(b"".join(parts))
+    import math
+    from array import array
+    n = int(3.6 * rate)
+    pad = (146.83, 220.0, 293.66, 369.99, 329.63)        # D3 A3 D4 F#4 E4
+    bells = ((0.00, 587.33), (0.32, 880.0))              # D5, then A5
+    out = array("h", bytes(2 * n))
+    for i in range(n):
+        t = i / rate
+        env = min(1.0, t / 0.5) * (1.0 if t < 2.2 else max(0.0, 1 - (t - 2.2) / 1.4))
+        v = env * sum(math.sin(2 * math.pi * f * t) for f in pad) / len(pad) * 0.55
+        for start, f in bells:
+            if t >= start:
+                d = t - start
+                v += 0.35 * math.exp(-d * 2.2) * (math.sin(2 * math.pi * f * d)
+                                                 + 0.3 * math.sin(4 * math.pi * f * d))
+        out[i] = int(max(-1.0, min(1.0, v * 0.42)) * 32767)
+    return out
+
+
+def _pcm(data: bytes | Path) -> bytes:
+    """Any audio ffmpeg reads, as 16-bit mono PCM at PCM_RATE."""
+    src = ["-i", str(data)] if isinstance(data, Path) else ["-i", "pipe:0"]
+    r = subprocess.run(["ffmpeg", "-loglevel", "error", *src, "-f", "s16le", "-ac", "1",
+                        "-ar", str(PCM_RATE), "pipe:1"],
+                       input=None if isinstance(data, Path) else data, capture_output=True)
+    if r.returncode:
+        raise RuntimeError(f"ffmpeg could not decode audio: {r.stderr.decode()[:200]}")
+    return r.stdout
+
+
+def _master(parts: list[tuple[bytes, float]], out_path: Path) -> None:
+    """The finished episode: sting, voice with real pauses, sting, at podcast loudness.
+
+    Pauses are silence put in here, not asked of the voice: break tags are
+    unreliable across voice models, and a request that ends a segment and the
+    one that starts the next are separate calls anyway. The voice comes in
+    over the tail of the opening sting. The whole mix is normalised to
+    -16 LUFS, the level Apple Podcasts and most players expect, so the
+    episode is neither quiet beside other shows nor uneven within itself.
+
+    Without ffmpeg (a local run) the chunks are simply concatenated: MP3 is a
+    stream of independent frames, so that plays everywhere.
+    """
+    if not shutil.which("ffmpeg"):
+        out_path.write_bytes(b"".join(p for p, _ in parts))
+        return
+    from array import array
+    voice = array("h")
+    for i, (part, pause) in enumerate(parts):
+        voice.frombytes(_pcm(part))
+        if i < len(parts) - 1:
+            voice.frombytes(bytes(2 * int(pause * PCM_RATE)))
+    custom = Path(os.environ.get("STING_FILE") or Path(__file__).with_name("assets") / "sting.mp3")
+    sting = array("h", _pcm(custom)) if custom.exists() else _sting()
+    # The voice enters as the sting fades: 1.2 s of overlap, mixed with clipping.
+    overlap = min(int(1.2 * PCM_RATE), len(sting), len(voice))
+    mix = array("h", sting[:len(sting) - overlap])
+    for a, b in zip(sting[len(sting) - overlap:], voice[:overlap]):
+        mix.append(max(-32768, min(32767, int(a * 0.6) + b)))
+    mix.extend(voice[overlap:])
+    mix.frombytes(bytes(2 * int(0.7 * PCM_RATE)))
+    mix.extend(sting)
+    r = subprocess.run(
+        ["ffmpeg", "-loglevel", "error", "-y", "-f", "s16le", "-ar", str(PCM_RATE), "-ac", "1",
+         "-i", "pipe:0", "-af", "loudnorm=I=-16:TP=-1.5:LRA=11", "-ar", "44100", "-ac", "1",
+         "-b:a", "64k", str(out_path)],
+        input=mix.tobytes(), capture_output=True)
+    if r.returncode or not out_path.exists() or not out_path.stat().st_size:
+        raise RuntimeError(f"ffmpeg could not master the episode: {r.stderr.decode()[:200]}")
 
 
 def _duration_seconds(path: Path, script: str) -> int:
@@ -707,24 +861,39 @@ def synthesize(script: str, out_path: Path) -> dict | None:
         return None
     model = (os.environ.get("TTS_MODEL") or "").strip() or DEFAULT_MODEL
     voice = (os.environ.get("TTS_VOICE") or "").strip() or DEFAULT_VOICE
+
+    def _tts(text: str) -> bytes:
+        nonlocal voice
+        try:
+            return _openai_tts(text, key, model, voice)
+        except RuntimeError as e:
+            # A model that does not offer the default voice says so with a
+            # 400; better the previous voice than no episode.
+            if voice == DEFAULT_VOICE and "400" in str(e) and "voice" in str(e).lower():
+                print(f"::warning title=Voice unavailable::{voice} refused; using {FALLBACK_VOICE}")
+                voice = FALLBACK_VOICE
+                return _openai_tts(text, key, model, voice)
+            raise
+
     def _voiced(text: str) -> bytes:
         """One request, checked. Retried once, then sentence by sentence, if short."""
         want = _expected_seconds(text)
-        audio = _openai_tts(text, key, model, voice)
+        audio = _tts(text)
         if want < 4 or mp3_seconds(audio) >= MIN_COVERAGE * want:
             return audio
-        audio = _openai_tts(text, key, model, voice)
+        audio = _tts(text)
         if mp3_seconds(audio) >= MIN_COVERAGE * want:
             return audio
         sentences = [x for x in re.split(r"(?<=[.!?])\s+", text) if x.strip()]
         if len(sentences) < 2:
             return audio
-        return b"".join(_openai_tts(x, key, model, voice) for x in sentences)
+        return b"".join(_tts(x) for x in sentences)
 
     try:
-        parts = [_voiced(c) for c in _chunks(script)]
+        parts = [(_voiced(c), pause) for c, pause in _chunks(script)]
+        voiced_seconds = sum(mp3_seconds(p) for p, _ in parts)
         out_path.parent.mkdir(parents=True, exist_ok=True)
-        _join_mp3(parts, out_path)
+        _master(parts, out_path)
     except Exception as e:                                      # noqa: BLE001
         LAST_ERROR = str(e)
         # An annotation, not only a log line: GitHub serves job logs from a
@@ -734,12 +903,14 @@ def synthesize(script: str, out_path: Path) -> dict | None:
         print(f"  ⚠  Audio skipped (non-fatal): {e}")
         return None
     got = mp3_seconds(out_path.read_bytes())
-    want = _expected_seconds(script)
-    if got < PUBLISH_COVERAGE * want:
+    want = _expected_seconds(spoken_text(script))
+    # Coverage is judged on the voice alone: the stings and pauses would
+    # otherwise hide a quarter of the brief gone missing.
+    if voiced_seconds < PUBLISH_COVERAGE * want:
         # A short episode is worse than none: it reads as the day's brief and
         # silently leaves part of it out. Not published, and the reason is
         # said where it can be read.
-        LAST_ERROR = (f"the audio is {got:.0f} s but the script needs about "
+        LAST_ERROR = (f"the voice is {voiced_seconds:.0f} s but the script needs about "
                       f"{want:.0f} s — the voice skipped part of the brief, so "
                       f"the episode was not published")
         print(f"::warning title=Audio incomplete::{LAST_ERROR}")
@@ -883,7 +1054,7 @@ def produce(digest: dict, public: Path, web_base: str, date_slug: str) -> dict |
             print(f"::warning title=Podcast script fell back to the assembled version::{shown}")
     print(f"  🎙  Script: {source}, {len(script.split()):,} words")
     public.mkdir(parents=True, exist_ok=True)
-    (public / f"digest_{date_slug}.txt").write_text(script, encoding="utf-8")
+    (public / f"digest_{date_slug}.txt").write_text(spoken_text(script), encoding="utf-8")
     mp3 = public / f"digest_{date_slug}.mp3"
     rec = synthesize(script, mp3)
     if not rec:
