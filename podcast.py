@@ -858,10 +858,27 @@ def _sting(rate: int = PCM_RATE) -> "array":
     return out
 
 
+def _ffmpeg() -> str | None:
+    """ffmpeg on PATH, else the static build the imageio-ffmpeg wheel carries.
+
+    The workflows install it from PyPI, not apt: apt-get on the runner hung
+    for the job's whole 15 minutes on 7 October, twice. A wheel is one
+    download from a cache that does not stall.
+    """
+    found = shutil.which("ffmpeg")
+    if found:
+        return found
+    try:
+        import imageio_ffmpeg
+        return imageio_ffmpeg.get_ffmpeg_exe()
+    except Exception:                                           # noqa: BLE001
+        return None
+
+
 def _pcm(data: bytes | Path) -> bytes:
     """Any audio ffmpeg reads, as 16-bit mono PCM at PCM_RATE."""
     src = ["-i", str(data)] if isinstance(data, Path) else ["-i", "pipe:0"]
-    r = subprocess.run(["ffmpeg", "-loglevel", "error", *src, "-f", "s16le", "-ac", "1",
+    r = subprocess.run([_ffmpeg(), "-loglevel", "error", *src, "-f", "s16le", "-ac", "1",
                         "-ar", str(PCM_RATE), "pipe:1"],
                        input=None if isinstance(data, Path) else data, capture_output=True)
     if r.returncode:
@@ -882,7 +899,7 @@ def _master(parts: list[tuple[bytes, float]], out_path: Path) -> None:
     Without ffmpeg (a local run) the chunks are simply concatenated: MP3 is a
     stream of independent frames, so that plays everywhere.
     """
-    if not shutil.which("ffmpeg"):
+    if not _ffmpeg():
         out_path.write_bytes(b"".join(p for p, _ in parts))
         return
     from array import array
@@ -902,7 +919,7 @@ def _master(parts: list[tuple[bytes, float]], out_path: Path) -> None:
     mix.frombytes(bytes(2 * int(0.7 * PCM_RATE)))
     mix.extend(sting)
     r = subprocess.run(
-        ["ffmpeg", "-loglevel", "error", "-y", "-f", "s16le", "-ar", str(PCM_RATE), "-ac", "1",
+        [_ffmpeg(), "-loglevel", "error", "-y", "-f", "s16le", "-ar", str(PCM_RATE), "-ac", "1",
          "-i", "pipe:0", "-af", "loudnorm=I=-16:TP=-1.5:LRA=11", "-ar", "44100", "-ac", "1",
          "-b:a", "64k", str(out_path)],
         input=mix.tobytes(), capture_output=True)
