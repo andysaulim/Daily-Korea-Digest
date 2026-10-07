@@ -552,6 +552,11 @@ def check_audio_script_is_the_brief():
             problems.append(f"top KCNA article not narrated: {a['headline']!r}")
     if re.search(r"@\w|AEN\d|Corroborated", s):
         problems.append("social handle, wire ID or analyst footnote read aloud")
+    # Segment breaks become silence: they must never be voiced or transcribed.
+    if podcast.SEGMENT not in s:
+        problems.append("no segment breaks, so no pauses between sections")
+    if any(podcast.SEGMENT in c for c, _ in podcast._chunks(s)) or podcast.SEGMENT in podcast.spoken_text(s):
+        problems.append("a segment marker would be read aloud or shown in the transcript")
     return problems
 
 

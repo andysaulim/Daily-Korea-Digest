@@ -45,7 +45,12 @@ MIN_COVERAGE = 0.8          # a request whose audio is shorter than this share
 PUBLISH_COVERAGE = 0.75     # after retries, below this the episode is withheld
 FEED_EPISODES = 30          # what the feed advertises; the workflow prunes the rest
 DEFAULT_MODEL = "gpt-4o-mini-tts"
-DEFAULT_VOICE = "ash"            # softer, conversational; suits the podcast-host delivery
+DEFAULT_VOICE = "marin"          # OpenAI's recommended voice for quality narration
+FALLBACK_VOICE = "ash"           # if the model ever refuses the default
+SEGMENT = "---"                  # a line on its own: a segment break, voiced as a pause
+PAUSE_PARAGRAPH = 0.45           # seconds of silence between requests within a segment
+PAUSE_SEGMENT = 1.2              # ... and between segments
+PCM_RATE = 24000                 # OpenAI's native speech rate; everything is mixed at it
 LAST_ERROR = ""              # why the most recent synthesis produced nothing
 # How the voice reads, sent with every request to models that take it. The
 # default is the conversational public-radio register rather than a newsreader:
@@ -234,6 +239,13 @@ def _story(item: dict, body_key: str = "body") -> str:
     if hw and len(hw & _words(first)) / len(hw) >= 0.4:
         return body
     return f"{head} {body}"
+
+
+_SECTION_LEADS = ("Our top story", "Here's what else", "Now to Pyongyang", "The number of the day",
+                  "In Seoul,", "On the economy", "Elsewhere in the region", "How is the public",
+                  "In their own words", "What's coming up", "A few more things",
+                  "And from the analysts", "From satellite imagery", "Finally, the markets",
+                  "That's the Korea Daily Brief")
 
 
 def build_script(digest: dict) -> str:
@@ -430,26 +442,46 @@ def build_script(digest: dict) -> str:
 
     out.append(f"That's the Korea Daily Brief for {when}. The full text, with a "
                f"link to every source, is in today's email.")
-    return "\n\n".join(x.strip() for x in out if x and x.strip())
+    # A pause before each section, as the written script has between segments.
+    marked: list[str] = []
+    for x in (x.strip() for x in out if x and x.strip()):
+        if marked and x.startswith(_SECTION_LEADS):
+            marked.append(SEGMENT)
+        marked.append(x)
+    return "\n\n".join(marked)
 
 
 # ── The written-for-the-ear script ───────────────────────────────────────────
 
-_SCRIPT_SYSTEM = """You write the script for the audio edition of the Korea Daily Brief, the CSIS Korea Chair's daily briefing on the Korean Peninsula. One host reads it aloud.
-
-Sound like a thoughtful daily news podcast: one host talking to one listener. Warm, curious, conversational, with momentum. Open with a hook: the day's most consequential development in a sentence or two, told as a scene or a tension, not a summary. Then walk through the stories with spoken transitions that connect them by cause, contrast or consequence ("That warning lands on the same day Seoul..."), never "Next," "Also," or "In other news." Group related stories so one leads into the next. Say plainly why something matters when the brief says why. Vary the rhythm: a short sentence after a long one. Contractions. Now and then a question a listener might be asking, answered from the brief. No headline-ese, no strings of fragments, no lists read out, no acronyms a listener can't decode (say "the Foreign Ministry", not "MOFA").
+_SCRIPT_SYSTEM = """You write the script for the audio edition of the Korea Daily Brief, the CSIS Korea Chair's daily briefing on the Korean Peninsula for senior policymakers. One host reads it aloud. It should sound like a well-made daily news podcast (think of the shape of NPR's Up First or Axios Today), not a newsletter read out.
 
 FACTS. This rule outranks every other:
 - Use ONLY facts in the brief JSON you are given. Every name, number, date, place, quote and claim must come from it.
 - Add nothing from your own knowledge, even if you are certain it is true: no background, no history, no figures, no context the brief does not contain.
 - Say why something matters only where the brief itself says so (body text, analyst notes, bottom lines, "so what" fields). Never speculate.
 - Quote only quotes that appear in the brief, word for word, attributed as the brief attributes them.
-- Write every number exactly as the brief writes it.
+- Write every number exactly as the brief writes it, but use no more than two numbers per story.
 - If something in the brief is unclear, leave it out rather than interpret it.
 
-COVER, in this order: the top stories; overnight; Pyongyang (every one of the top KCNA articles in kcna_delta.top_articles, then the bottom line); the number of the day; the South Korean government, National Assembly and appointments; business and the economy; the region; public opinion (say when the poll was taken); statements and posts from officials; what is coming up; the rest of the wire; analysis and commentary; satellite imagery, only if it is included; the markets, briefly. Leave out US-Korea trade and investment entirely. Never tell the same story twice, with one exception: in the Pyongyang section, name every top KCNA article even if a top story covered it. Then one sentence on how state media framed it is enough.
+SHAPE. Five segments, in this order. Put a line containing only --- between segments (the producer puts a pause there).
+1. COLD OPEN (about 60 words). After the fixed opening line, go straight into the single most consequential development, told as a tension or a stakes question, not a summary. No throat-clearing. Then one menu line: "Three things today: ..." naming the three lead stories in a few words each.
+2. THE THREE LEAD STORIES (about 250 words each), one after another, with --- between them. Usually the top stories. For each: what happened, why it matters to someone who works on Korea policy (from the brief), and what to watch next. Fold in related items from other sections (government reactions, the National Assembly, statements, analysis, imagery) so each lead is one connected story, not a list.
+3. PYONGYANG. Name every one of the top KCNA articles in kcna_delta.top_articles, even one a lead story already told (then one sentence on how state media framed it is enough), then the bottom line.
+4. THE ROUND-UP. Everything else worth a listener's time, one or two sentences each, linked by quick spoken transitions: overnight items, government and appointments, the economy, the region, the poll (say when it was taken), what is coming up, the rest of the wire, analysis. Never tell a story the leads already told. Leave out US-Korea trade and investment entirely. Satellite imagery only if it is included.
+5. CLOSE. The markets in two or three short sentences, then the fixed closing line.
 
-FORMAT: plain spoken text only, paragraphs separated by a blank line. No headings, no stage directions, no sound cues, no markdown, no bullet points. Begin exactly with: "This is the Korea Daily Brief from the CSIS Korea Chair. It's {when}." End exactly with: "That's the Korea Daily Brief for {when}. The full text, with a link to every source, is in today's email." Aim for 1,300 to 1,800 words."""
+WRITE FOR THE EAR. These are broadcast writing rules:
+- One idea per sentence. Most sentences under 20 words. Vary the rhythm: a short sentence after a long one.
+- Attribution before the claim: "South Korea's Defense Ministry says...", not "..., the ministry said."
+- Full name and title once, then a short form ("Unification Minister Chung Dong-young", then "Chung").
+- Say "you" to the listener now and then. Contractions.
+- Join stories by cause, contrast or consequence ("That warning lands the same day Seoul..."). Never "Next," "Also," "In other news," "Moving on."
+- End each lead story by restating its key fact in a few words, because the listener can't re-read it.
+- No acronyms a listener can't decode: say "the Foreign Ministry", not "MOFA". DMZ, KCNA, U.S. and UN are fine.
+- No headline-ese, no strings of fragments, no lists read out, no parentheses.
+- Never use these phrases: "let's dive in", "dive into", "delve", "in today's rapidly evolving", "it's worth noting", "notably", "a stark reminder", "only time will tell", "remains to be seen", "buckle up", "game-changer", "in a world where", "at the end of the day". Don't end sentences on a list of three for effect. Don't open with a rhetorical question.
+
+FORMAT: plain spoken text only, paragraphs separated by a blank line, segments separated by a line containing only ---. No headings, no stage directions, no sound cues, no markdown, no bullet points. Begin exactly with: "This is the Korea Daily Brief from the CSIS Korea Chair. It's {when}." End exactly with: "That's the Korea Daily Brief for {when}. The full text, with a link to every source, is in today's email." Aim for 1,300 to 1,600 words."""
 
 _SCRIPT_KEYS = ("re_line", "top_stories", "overnight_items", "kcna_delta", "key_stat",
                 "rok_government", "rok_assembly", "rok_personnel", "business_economy",
@@ -555,12 +587,14 @@ def check_script(script: str, digest: dict, when: str = "") -> list[str]:
     # separately. They are removed here rather than exempting the date's
     # numbers everywhere: a global exemption for "7" let "seven soldiers"
     # through on 7 October against a brief that says three.
-    body = script
+    body = re.sub(r"^\s*---\s*$", " ", script, flags=re.M)
     for fixed in (f"This is the Korea Daily Brief from the CSIS Korea Chair. It's {when}.",
                   f"That's the Korea Daily Brief for {when}."):
         body = body.replace(fixed, " ")
     # "the last 24 hours" is the brief's own window, not a claim from it.
     body = re.sub(r"\b(?:24|twenty-? ?four)[- ]hours?\b", " ", body, flags=re.I)
+    # The menu line the prompt asks for ("Three things today") counts stories, not facts.
+    body = re.sub(r"\b(?:two|three|four|five|\d) (?:things|stories|big stories)\b", " ", body, flags=re.I)
     s_toks = _tokens(body)
     for i, t in enumerate(s_toks):
         if t[0].isdigit() and not _number_in_context(t, i, s_toks, src_toks, src_pos):
@@ -628,7 +662,9 @@ def write_script(digest: dict) -> tuple[str | None, list[str]]:
     problems = check_script(text, digest, when)
     if problems:
         return None, problems
-    paras = [speakable(x) for x in text.split("\n\n") if x.strip()]
+    text = re.sub(r"^\s*-{3,}\s*$", f"\n{SEGMENT}\n", text, flags=re.M)
+    paras = [x.strip() if x.strip() == SEGMENT else speakable(x)
+             for x in re.split(r"\n\s*\n", text) if x.strip()]
     return "\n\n".join(paras), []
 
 
@@ -672,8 +708,8 @@ def _expected_seconds(text: str) -> float:
     return len(text.split()) / SPOKEN_WPM * 60
 
 
-def _chunks(script: str, limit: int = CHUNK_CHARS) -> list[str]:
-    """Pack paragraphs into requests, kept small on purpose.
+def _chunks(script: str, limit: int = CHUNK_CHARS) -> list[tuple[str, float]]:
+    """Pack paragraphs into requests, kept small on purpose, each with the pause after it.
 
     The first live episode sent three requests of up to 3,500 characters and
     came back a third short: the voice model can stop early on a long passage
@@ -681,21 +717,29 @@ def _chunks(script: str, limit: int = CHUNK_CHARS) -> list[str]:
     make a skip both less likely and, when it happens, cheap to redo.
 
     Breaks on paragraph boundaries first, then sentence boundaries for a
-    paragraph too long alone, so no request ends mid-sentence — a cut there is
-    audible as an unnatural pause and a reset in intonation.
+    paragraph too long alone, so no request ends mid-sentence. A request never
+    spans a segment break (a line holding only ---): the pause there is
+    silence the producer inserts, longer than the one between paragraphs.
     """
-    out, cur = [], ""
-    for para in script.split("\n\n"):
-        pieces = [para] if len(para) <= limit else re.split(r"(?<=[.!?])\s+", para)
-        for piece in pieces:
-            if len(cur) + len(piece) + 2 > limit and cur:
-                out.append(cur)
-                cur = piece
-            else:
-                cur = f"{cur}\n\n{piece}" if cur else piece
-    if cur:
-        out.append(cur)
+    out: list[tuple[str, float]] = []
+    for segment in re.split(rf"\n\s*{re.escape(SEGMENT)}\s*\n", "\n" + script.strip() + "\n"):
+        cur = ""
+        for para in [x.strip() for x in segment.split("\n\n") if x.strip() and x.strip() != SEGMENT]:
+            pieces = [para] if len(para) <= limit else re.split(r"(?<=[.!?])\s+", para)
+            for piece in pieces:
+                if len(cur) + len(piece) + 2 > limit and cur:
+                    out.append((cur, PAUSE_PARAGRAPH))
+                    cur = piece
+                else:
+                    cur = f"{cur}\n\n{piece}" if cur else piece
+        if cur:
+            out.append((cur, PAUSE_SEGMENT))
     return out
+
+
+def spoken_text(script: str) -> str:
+    """The script without segment markers: what the transcript shows."""
+    return re.sub(rf"\n*^\s*{re.escape(SEGMENT)}\s*$\n*", "\n\n", script, flags=re.M).strip()
 
 
 def _openai_tts(text: str, key: str, model: str, voice: str) -> bytes:
@@ -718,31 +762,83 @@ def _openai_tts(text: str, key: str, model: str, voice: str) -> bytes:
     return r.content
 
 
-def _join_mp3(parts: list[bytes], out_path: Path) -> None:
-    """Concatenate chunk MP3s; re-encode to 48 kbps mono when ffmpeg is present.
+def _sting(rate: int = PCM_RATE) -> "array":
+    """A short, quiet signature for the open and close, synthesised here.
 
-    Raw concatenation plays in every common player, because MP3 is a stream of
-    independent frames. ffmpeg, when available (it is on GitHub's Ubuntu
-    runners), produces a clean single file and brings a 15-minute episode down
-    to about 5 MB — speech needs nothing more, and it is the difference between
-    a site that fits in GitHub Pages' 1 GB and one that does not.
+    Generated rather than downloaded so there is no licence to track: a soft
+    D-major pad under two bell notes, about three and a half seconds. A file
+    at assets/sting.mp3 (or STING_FILE) replaces it — a licensed track, if the
+    show ever wants one.
     """
-    if shutil.which("ffmpeg"):
-        with tempfile.TemporaryDirectory() as tmp:
-            listing = Path(tmp) / "parts.txt"
-            names = []
-            for i, part in enumerate(parts):
-                p = Path(tmp) / f"part{i:03d}.mp3"
-                p.write_bytes(part)
-                names.append(f"file '{p}'")
-            listing.write_text("\n".join(names))
-            done = subprocess.run(
-                ["ffmpeg", "-loglevel", "error", "-y", "-f", "concat", "-safe", "0",
-                 "-i", str(listing), "-ac", "1", "-b:a", "48k", str(out_path)],
-                capture_output=True, text=True)
-            if done.returncode == 0 and out_path.exists() and out_path.stat().st_size:
-                return
-    out_path.write_bytes(b"".join(parts))
+    import math
+    from array import array
+    n = int(3.6 * rate)
+    pad = (146.83, 220.0, 293.66, 369.99, 329.63)        # D3 A3 D4 F#4 E4
+    bells = ((0.00, 587.33), (0.32, 880.0))              # D5, then A5
+    out = array("h", bytes(2 * n))
+    for i in range(n):
+        t = i / rate
+        env = min(1.0, t / 0.5) * (1.0 if t < 2.2 else max(0.0, 1 - (t - 2.2) / 1.4))
+        v = env * sum(math.sin(2 * math.pi * f * t) for f in pad) / len(pad) * 0.55
+        for start, f in bells:
+            if t >= start:
+                d = t - start
+                v += 0.35 * math.exp(-d * 2.2) * (math.sin(2 * math.pi * f * d)
+                                                 + 0.3 * math.sin(4 * math.pi * f * d))
+        out[i] = int(max(-1.0, min(1.0, v * 0.42)) * 32767)
+    return out
+
+
+def _pcm(data: bytes | Path) -> bytes:
+    """Any audio ffmpeg reads, as 16-bit mono PCM at PCM_RATE."""
+    src = ["-i", str(data)] if isinstance(data, Path) else ["-i", "pipe:0"]
+    r = subprocess.run(["ffmpeg", "-loglevel", "error", *src, "-f", "s16le", "-ac", "1",
+                        "-ar", str(PCM_RATE), "pipe:1"],
+                       input=None if isinstance(data, Path) else data, capture_output=True)
+    if r.returncode:
+        raise RuntimeError(f"ffmpeg could not decode audio: {r.stderr.decode()[:200]}")
+    return r.stdout
+
+
+def _master(parts: list[tuple[bytes, float]], out_path: Path) -> None:
+    """The finished episode: sting, voice with real pauses, sting, at podcast loudness.
+
+    Pauses are silence put in here, not asked of the voice: break tags are
+    unreliable across voice models, and a request that ends a segment and the
+    one that starts the next are separate calls anyway. The voice comes in
+    over the tail of the opening sting. The whole mix is normalised to
+    -16 LUFS, the level Apple Podcasts and most players expect, so the
+    episode is neither quiet beside other shows nor uneven within itself.
+
+    Without ffmpeg (a local run) the chunks are simply concatenated: MP3 is a
+    stream of independent frames, so that plays everywhere.
+    """
+    if not shutil.which("ffmpeg"):
+        out_path.write_bytes(b"".join(p for p, _ in parts))
+        return
+    from array import array
+    voice = array("h")
+    for i, (part, pause) in enumerate(parts):
+        voice.frombytes(_pcm(part))
+        if i < len(parts) - 1:
+            voice.frombytes(bytes(2 * int(pause * PCM_RATE)))
+    custom = Path(os.environ.get("STING_FILE") or Path(__file__).with_name("assets") / "sting.mp3")
+    sting = array("h", _pcm(custom)) if custom.exists() else _sting()
+    # The voice enters as the sting fades: 1.2 s of overlap, mixed with clipping.
+    overlap = min(int(1.2 * PCM_RATE), len(sting), len(voice))
+    mix = array("h", sting[:len(sting) - overlap])
+    for a, b in zip(sting[len(sting) - overlap:], voice[:overlap]):
+        mix.append(max(-32768, min(32767, int(a * 0.6) + b)))
+    mix.extend(voice[overlap:])
+    mix.frombytes(bytes(2 * int(0.7 * PCM_RATE)))
+    mix.extend(sting)
+    r = subprocess.run(
+        ["ffmpeg", "-loglevel", "error", "-y", "-f", "s16le", "-ar", str(PCM_RATE), "-ac", "1",
+         "-i", "pipe:0", "-af", "loudnorm=I=-16:TP=-1.5:LRA=11", "-ar", "44100", "-ac", "1",
+         "-b:a", "64k", str(out_path)],
+        input=mix.tobytes(), capture_output=True)
+    if r.returncode or not out_path.exists() or not out_path.stat().st_size:
+        raise RuntimeError(f"ffmpeg could not master the episode: {r.stderr.decode()[:200]}")
 
 
 def _duration_seconds(path: Path, script: str) -> int:
@@ -765,24 +861,39 @@ def synthesize(script: str, out_path: Path) -> dict | None:
         return None
     model = (os.environ.get("TTS_MODEL") or "").strip() or DEFAULT_MODEL
     voice = (os.environ.get("TTS_VOICE") or "").strip() or DEFAULT_VOICE
+
+    def _tts(text: str) -> bytes:
+        nonlocal voice
+        try:
+            return _openai_tts(text, key, model, voice)
+        except RuntimeError as e:
+            # A model that does not offer the default voice says so with a
+            # 400; better the previous voice than no episode.
+            if voice == DEFAULT_VOICE and "400" in str(e) and "voice" in str(e).lower():
+                print(f"::warning title=Voice unavailable::{voice} refused; using {FALLBACK_VOICE}")
+                voice = FALLBACK_VOICE
+                return _openai_tts(text, key, model, voice)
+            raise
+
     def _voiced(text: str) -> bytes:
         """One request, checked. Retried once, then sentence by sentence, if short."""
         want = _expected_seconds(text)
-        audio = _openai_tts(text, key, model, voice)
+        audio = _tts(text)
         if want < 4 or mp3_seconds(audio) >= MIN_COVERAGE * want:
             return audio
-        audio = _openai_tts(text, key, model, voice)
+        audio = _tts(text)
         if mp3_seconds(audio) >= MIN_COVERAGE * want:
             return audio
         sentences = [x for x in re.split(r"(?<=[.!?])\s+", text) if x.strip()]
         if len(sentences) < 2:
             return audio
-        return b"".join(_openai_tts(x, key, model, voice) for x in sentences)
+        return b"".join(_tts(x) for x in sentences)
 
     try:
-        parts = [_voiced(c) for c in _chunks(script)]
+        parts = [(_voiced(c), pause) for c, pause in _chunks(script)]
+        voiced_seconds = sum(mp3_seconds(p) for p, _ in parts)
         out_path.parent.mkdir(parents=True, exist_ok=True)
-        _join_mp3(parts, out_path)
+        _master(parts, out_path)
     except Exception as e:                                      # noqa: BLE001
         LAST_ERROR = str(e)
         # An annotation, not only a log line: GitHub serves job logs from a
@@ -792,12 +903,14 @@ def synthesize(script: str, out_path: Path) -> dict | None:
         print(f"  ⚠  Audio skipped (non-fatal): {e}")
         return None
     got = mp3_seconds(out_path.read_bytes())
-    want = _expected_seconds(script)
-    if got < PUBLISH_COVERAGE * want:
+    want = _expected_seconds(spoken_text(script))
+    # Coverage is judged on the voice alone: the stings and pauses would
+    # otherwise hide a quarter of the brief gone missing.
+    if voiced_seconds < PUBLISH_COVERAGE * want:
         # A short episode is worse than none: it reads as the day's brief and
         # silently leaves part of it out. Not published, and the reason is
         # said where it can be read.
-        LAST_ERROR = (f"the audio is {got:.0f} s but the script needs about "
+        LAST_ERROR = (f"the voice is {voiced_seconds:.0f} s but the script needs about "
                       f"{want:.0f} s — the voice skipped part of the brief, so "
                       f"the episode was not published")
         print(f"::warning title=Audio incomplete::{LAST_ERROR}")
@@ -941,7 +1054,7 @@ def produce(digest: dict, public: Path, web_base: str, date_slug: str) -> dict |
             print(f"::warning title=Podcast script fell back to the assembled version::{shown}")
     print(f"  🎙  Script: {source}, {len(script.split()):,} words")
     public.mkdir(parents=True, exist_ok=True)
-    (public / f"digest_{date_slug}.txt").write_text(script, encoding="utf-8")
+    (public / f"digest_{date_slug}.txt").write_text(spoken_text(script), encoding="utf-8")
     mp3 = public / f"digest_{date_slug}.mp3"
     rec = synthesize(script, mp3)
     if not rec:

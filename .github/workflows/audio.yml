@@ -33,6 +33,12 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      # ffmpeg masters the audio edition: pauses, the sting, podcast loudness.
+      # It is not on GitHub's Ubuntu image. Never fatal: without it the episode
+      # is still made, as plain joined speech, and the brief is unaffected.
+      - name: Install ffmpeg for the audio edition
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg >/dev/null || echo "::warning title=ffmpeg not installed::audio will be unmastered"
+
       - name: Make the episode
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
