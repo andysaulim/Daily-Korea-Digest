@@ -147,29 +147,14 @@ def check_email_size(html: str) -> list[str]:
     return []
 
 def _published_from_branch(name: str) -> tuple[str | None, bool]:
-    """Read a published file straight from the gh-pages branch.
+    """Read a published file from the gh-pages branch; see shared.published.
 
-    Returns (text, reachable). The branch is where the deploy writes, and it is
-    there whether or not GitHub Pages is currently serving it. Reading the site
-    over HTTP made the archive depend on Pages being switched on — and on
-    3 October it was switched off, every fetch 404'd, and five issues went out
-    numbered "No. 1" over an archive listing a single issue.
-
-    reachable is True when the branch itself could be fetched. A missing file
-    on a reachable branch is a genuinely new manifest and safe to start; an
-    unreachable branch is no evidence of anything, and the caller must not write.
+    The archive reads the branch rather than the live site, because Pages was
+    switched off on 3 October and every HTTP fetch 404'd: five issues went out
+    numbered "No. 1" over an archive listing one issue.
     """
-    import subprocess
-    try:
-        f = subprocess.run(["git", "fetch", "-q", "--depth=1", "origin", "gh-pages"],
-                           capture_output=True, text=True, timeout=60)
-        if f.returncode != 0:
-            return None, False
-        r = subprocess.run(["git", "show", f"FETCH_HEAD:{name}"],
-                           capture_output=True, text=True, timeout=30)
-        return (r.stdout, True) if r.returncode == 0 else (None, True)
-    except Exception:                                           # noqa: BLE001
-        return None, False
+    from shared.published import read_from_branch
+    return read_from_branch(name)
 
 
 def load_archive_entries(local_path, web_base: str = "") -> tuple[list, bool]:
@@ -1767,6 +1752,33 @@ def main():
     for _msg in _ensure_pledge_projects(digest_data):
         print(f"  🏗  {_msg}")
 
+    # ── Audio edition ──────────────────────────────────────────────────────
+    # Built here, after every trim and cleanup, so the listener hears exactly
+    # the issue the reader gets. Before render, so the email can carry a
+    # Listen link — set only once an MP3 actually exists, never optimistically.
+    # Skipped when the issue will not be sent, and on a test send, which must
+    # leave no trace and should not spend on synthesis.
+    _audio = None
+    if validation_passed and not _is_test_send:
+        try:
+            import podcast
+            _pub = Path("public"); _pub.mkdir(exist_ok=True)
+            _audio = podcast.produce(digest_data, _pub,
+                                     os.environ.get("WEB_URL", ""), _date_slug)
+            if _audio:
+                _wb = os.environ.get("WEB_URL", "").rstrip("/")
+                if _wb:
+                    digest_data["audio_url"] = f"{_wb}/digest_{_date_slug}.mp3"
+                print(f"  🎧  Audio: {_audio['audio_bytes']:,} bytes, "
+                      f"~{_audio['audio_seconds'] // 60} min "
+                      f"({_audio['tts_model']}, {_audio['tts_voice']})")
+            else:
+                print("  🎧  Audio: script written, no voice configured "
+                      "(set OPENAI_API_KEY to enable)")
+        except Exception as _e:                                 # noqa: BLE001
+            print(f"  ⚠  Audio skipped (non-fatal): {_e}")
+            _audio = None
+
     html = render(digest_data)
     # Minify before measuring, because the measurement that matters is of the
     # bytes that actually reach a mailbox. About a seventh of this brief is
@@ -1961,6 +1973,8 @@ def main():
             "validation_warnings": len(validation_warnings),
             "validation_retries": validation_attempt,
             "html_bytes": len(html),
+            # Audio is recorded so its cost shows up with everything else's.
+            **({k: v for k, v in (_audio or {}).items()}),
             "sent": not args.no_send and validation_passed,
             "health_alerts": len(health_report.get("alerts", [])),
             "health_warnings": len(health_report.get("warnings", [])),

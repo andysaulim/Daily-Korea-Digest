@@ -172,6 +172,12 @@ jobs:
           SMTP_USER: ${{ secrets.SMTP_USER }}
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
           X_SCRAPER_KEY: ${{ secrets.X_SCRAPER_KEY }}
+          # Audio edition. With no key the script is still written and the
+          # brief is unaffected; with one, an MP3 and podcast feed are
+          # published and the email gains a Listen link.
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          TTS_MODEL: ${{ vars.TTS_MODEL }}
+          TTS_VOICE: ${{ vars.TTS_VOICE }}
           WEB_URL: https://andysaulim.github.io/Daily-Korea-Digest
         run: |
           set -o pipefail
@@ -199,6 +205,25 @@ jobs:
           personal_token: ${{ secrets.GH_PAT }}
           publish_dir: ./public
           keep_files: true
+
+      # keep_files preserves every file ever published, which is right for the
+      # HTML archive and wrong for audio: at roughly 5 MB an episode, a year of
+      # daily MP3s alone would pass GitHub Pages' 1 GB site limit. Keep the 30
+      # newest — the number podcast.py's feed advertises — and drop the rest.
+      - name: Prune old audio from the published site
+        if: steps.guard.outputs.should_run == 'true'
+        continue-on-error: true
+        run: |
+          git fetch -q origin gh-pages || exit 0
+          rm -rf /tmp/ghp && git worktree add -q --detach /tmp/ghp FETCH_HEAD
+          cd /tmp/ghp
+          old=$(ls -1 digest_*.mp3 2>/dev/null | sort | head -n -30)
+          if [ -z "$old" ]; then echo "Nothing to prune"; exit 0; fi
+          for f in $old; do git rm -q "$f" "${f%.mp3}.txt" 2>/dev/null || git rm -q "$f"; done
+          git -c user.name="github-actions[bot]" \
+              -c user.email="github-actions[bot]@users.noreply.github.com" \
+              commit -q -m "Prune audio older than the 30 newest episodes [skip ci]"
+          git push -q origin HEAD:gh-pages && echo "Pruned: $(echo "$old" | wc -l) episode(s)"
 
       - name: Commit updated README + Gallup baseline
         if: steps.guard.outputs.should_run == 'true'

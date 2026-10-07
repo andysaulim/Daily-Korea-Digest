@@ -136,3 +136,47 @@ def merge_seed(entries, seed_path: Path, key: str = "date"):
         print(f"    {len(restored)} archive row(s) restored from "
               f"{Path(seed_path).name}")
     return entries + restored
+
+
+def read_from_branch(name: str, branch: str = "gh-pages") -> tuple[str | None, bool]:
+    """Read a published file straight from the deploy branch.
+
+    Returns (text, reachable). Prefer this to load() for anything the deploy
+    writes: the branch holds the file whether or not GitHub Pages is serving
+    it, so a site that has been switched off — as Korea's was from 3 October,
+    and Australia's before it — no longer reads as an empty history.
+
+    reachable is True when the branch could be fetched. A file missing from a
+    reachable branch genuinely does not exist yet and is safe to start; an
+    unreachable branch is no evidence either way, and the caller must not write.
+    """
+    import subprocess
+    try:
+        f = subprocess.run(["git", "fetch", "-q", "--depth=1", "origin", branch],
+                           capture_output=True, text=True, timeout=60)
+        if f.returncode != 0:
+            return None, False
+        r = subprocess.run(["git", "show", f"FETCH_HEAD:{name}"],
+                           capture_output=True, text=True, timeout=30)
+        return (r.stdout, True) if r.returncode == 0 else (None, True)
+    except Exception:                                           # noqa: BLE001
+        return None, False
+
+
+def load_list(path: Path, base_url: str = "") -> tuple[list, bool]:
+    """A published JSON list, branch first and the live site second.
+
+    Same contract as load(): (data, trustworthy), and a caller that gets
+    False must not write.
+    """
+    text, reachable = read_from_branch(Path(path).name)
+    if text is not None:
+        try:
+            data = json.loads(text)
+            if isinstance(data, list):
+                return data, True
+        except ValueError:
+            pass
+    elif reachable:
+        return [], True
+    return load(path, base_url, fallback=[])
