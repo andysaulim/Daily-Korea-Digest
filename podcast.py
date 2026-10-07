@@ -501,7 +501,7 @@ April May June July August September October November December
 President Minister Ministry Prime Defense Foreign Unification National Assembly
 Party Government Committee Chairman Secretary General Commander Command State
 U.S. US KCNA DPRK ROK Mr Ms Dr
-Washington Beijing Moscow Tokyo
+Washington Beijing Moscow Tokyo United States Bank Second Third
 """.split())
 # Counting what the brief itself lists ("two countries", "three major items")
 # is arithmetic on the brief, not a new fact; a small count before one of
@@ -509,7 +509,11 @@ Washington Beijing Moscow Tokyo
 _COUNT_NOUNS = {"countrie", "side", "message", "statement", "item", "storie", "thing",
                 "branche", "capital", "leader", "government", "signal", "track",
                 "partner", "allie", "development", "headline", "article", "piece",
-                "part", "way", "reason", "question", "front", "story", "country"}
+                "part", "way", "reason", "question", "front", "story", "country", "audience"}
+# "the two agreed", "presenting the two as" — "two" standing for people or
+# things already named, not a count.
+_PRONOUN_NEXT = {"as", "agreed", "of", "have", "are", "were", "had", "met", "said", "will",
+                 "would", "to", "in", "on", "at", "and", "also", "both", "spoke", "discussed"}
 _MARKET_WORDS = {"kospi", "won", "dollar", "dollars", "brent", "crude", "barrel", "percent",
                  "rate", "index", "points"}
 _MONTH_TOKENS = {"jan": "january", "feb": "february", "mar": "march", "apr": "april",
@@ -626,11 +630,14 @@ def check_script(script: str, digest: dict, when: str = "") -> list[str]:
                     f = abs(float(str(x).replace(",", "").rstrip("%")))
                 except (TypeError, ValueError):
                     continue
-                market |= {str(int(f)), str(round(f)), f"{f:g}"}
+                market |= {str(int(f)), str(round(f)), f"{f:g}", f"{f:.2f}", f"{f:.1f}"}
     for i, t in enumerate(s_toks):
         if t in market and _MARKET_WORDS & set(s_toks[max(0, i - 4):i + 4]):
             continue
         if t in {"2", "3", "4", "5"} and any(_stem(w) in _COUNT_NOUNS for w in s_toks[i + 1:i + 3]):
+            continue
+        if t == "2" and i and s_toks[i - 1] in {"the", "these", "those"} and \
+                (i + 1 >= len(s_toks) or s_toks[i + 1] in _PRONOUN_NEXT):
             continue
         if t[0].isdigit() and not _number_in_context(t, i, s_toks, src_toks, src_pos):
             ctx = " ".join(s_toks[max(0, i - 2):i + 3])
@@ -643,6 +650,11 @@ def check_script(script: str, digest: dict, when: str = "") -> list[str]:
         for w in words[1:]:
             core = w.strip(".'-").replace("'s", "")
             if not core or not core[0].isupper() or core in _ALLOWED_CAPS or len(core) < 3:
+                continue
+            # "U.S.-ROK": a compound of names each allowed or in the brief.
+            if "-" in core and all(x in _ALLOWED_CAPS or not x[:1].isupper()
+                                   or f" {_norm(x).strip()} " in f" {' '.join(blob.split())} "
+                                   for x in core.split("-") if x):
                 continue
             # Hyphens and dots are spaces in the normalised brief: "Dong-young"
             # is "dong young" there, "U.S" is "u s".
@@ -684,13 +696,33 @@ def write_script(digest: dict) -> tuple[str | None, list[str]]:
     try:
         payload = {k: _no_urls(digest[k]) for k in _SCRIPT_KEYS if digest.get(k)}
         import anthropic
-        msg = anthropic.Anthropic(api_key=key).messages.create(
-            model=model, max_tokens=4000,
-            system=_SCRIPT_SYSTEM.replace("{when}", when),
-            messages=[{"role": "user", "content":
-                       "Here is today's brief as JSON. Write the audio script.\n\n"
-                       + json.dumps(payload, ensure_ascii=False)}])
-        text = "".join(b.text for b in msg.content if getattr(b, "type", "") == "text").strip()
+        client = anthropic.Anthropic(api_key=key)
+        convo = [{"role": "user", "content":
+                  "Here is today's brief as JSON. Write the audio script.\n\n"
+                  + json.dumps(payload, ensure_ascii=False)}]
+
+        def _ask() -> str:
+            msg = client.messages.create(model=model, max_tokens=4000,
+                                         system=_SCRIPT_SYSTEM.replace("{when}", when),
+                                         messages=convo)
+            return "".join(b.text for b in msg.content if getattr(b, "type", "") == "text").strip()
+
+        text = _ask()
+        # One revision round. A single misquote or misread figure used to
+        # cost the whole script; now the writer is shown exactly what the
+        # check found and fixes only that, and the result is checked again
+        # from scratch — the revision earns no trust the first draft lacked.
+        first = check_script(text, digest, when)
+        if first:
+            convo += [{"role": "assistant", "content": text},
+                      {"role": "user", "content":
+                       "A fact check against the brief found these problems:\n- "
+                       + "\n- ".join(first[:30])
+                       + "\n\nFix only those lines: use the brief's exact figure, quote the "
+                         "brief word for word or paraphrase without quotation marks, or "
+                         "drop the claim. Keep everything else as it is. Return the whole "
+                         "script and nothing else."}]
+            text = _ask()
     except Exception as e:                                      # noqa: BLE001
         return None, [f"script call failed: {e}"]
     opening = f"This is the Korea Daily Brief from the CSIS Korea Chair. It's {when}."
