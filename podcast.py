@@ -18,7 +18,7 @@ Configuration (all optional; with none set, the script is built and no audio
 is made):
     OPENAI_API_KEY   enables synthesis
     TTS_MODEL        default gpt-4o-mini-tts
-    TTS_VOICE        default onyx
+    TTS_VOICE        default ash
     TTS_STYLE        how the voice reads; default is a conversational podcast host
 """
 from __future__ import annotations
@@ -39,7 +39,7 @@ SPOKEN_WPM = 155            # measured pace of the default voice, for estimates
 CHUNK_CHARS = 3500          # under every supported model's per-request limit
 FEED_EPISODES = 30          # what the feed advertises; the workflow prunes the rest
 DEFAULT_MODEL = "gpt-4o-mini-tts"
-DEFAULT_VOICE = "onyx"
+DEFAULT_VOICE = "ash"            # softer, conversational; suits the podcast-host delivery
 LAST_ERROR = ""              # why the most recent synthesis produced nothing
 # How the voice reads, sent with every request to models that take it. The
 # default is the conversational public-radio register rather than a newsreader:
