@@ -390,7 +390,7 @@ def _item_block(cat: str, src: str, headline: str, body: str, url: str,
 # How the audio edition shows in the masthead: "card" (a white bar under the
 # nameplate), "line" (one quiet line in the RE line's place) or "pill" (a small
 # button beside the issue meta).
-LISTEN_STYLE = "pill"
+LISTEN_STYLE = "card"
 
 _CHROME_WORDS = _re.compile(
     r"For Internal Use Only|Read online|Download PDF|Listen to today.s brief|"
