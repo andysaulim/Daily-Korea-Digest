@@ -387,6 +387,11 @@ def _item_block(cat: str, src: str, headline: str, body: str, url: str,
             </div>"""
 
 
+# How the audio edition shows in the masthead: "card" (a white bar under the
+# nameplate), "line" (one quiet line in the RE line's place) or "pill" (a small
+# button beside the issue meta).
+LISTEN_STYLE = "pill"
+
 _CHROME_WORDS = _re.compile(
     r"For Internal Use Only|Read online|Download PDF|Listen to today.s brief|"
     r"The audio edition, read aloud|\d+ min(?= ?<)|Listen|Past issues|Back to top|"
@@ -486,7 +491,30 @@ def render(digest: dict) -> str:
     # RE line otherwise. Email clients will not play audio inline (Gmail and
     # Outlook strip <audio>), so the bar is one large link to the episode,
     # which opens in the phone's or browser's own player.
-    if digest.get("audio_url"):
+    _listen_pill = ""
+    if digest.get("audio_url") and LISTEN_STYLE in ("line", "pill"):
+        _mins = digest.get("audio_minutes")
+        _len = f"{int(_mins)} min" if isinstance(_mins, (int, float)) and _mins > 0 else ""
+        _href = _esc(digest["audio_url"])
+        if LISTEN_STYLE == "line":
+            # One quiet line where the RE line sat, in the same hairline frame.
+            _masthead_bar = (
+                "<div style='margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.28);'>"
+                f'<a href="{_href}" style="text-decoration:none;color:#FFFFFF;font-family:Arial,sans-serif;">'
+                '<span style="display:inline-block;width:22px;height:22px;line-height:22px;border-radius:11px;'
+                f'background:#FFFFFF;color:{BAND};text-align:center;font-size:10px;vertical-align:middle;">&#9654;&#xFE0E;</span>'
+                '<span style="font-size:13px;font-weight:700;letter-spacing:0.3px;vertical-align:middle;margin-left:9px;">Listen to today&#8217;s brief</span>'
+                + (f'<span style="font-size:12px;color:rgba(255,255,255,0.72);vertical-align:middle;margin-left:8px;">{_len}</span>' if _len else "")
+                + "</a></div>")
+        else:
+            # A small pill beside the issue meta; nothing under the nameplate.
+            _masthead_bar = ""
+            _listen_pill = (
+                f'<a href="{_href}" style="display:inline-block;margin-top:8px;padding:6px 12px;background:#FFFFFF;'
+                'border-radius:14px;text-decoration:none;font-family:Arial,sans-serif;font-size:12px;font-weight:700;'
+                f'color:#14181F;white-space:nowrap;"><span style="color:{BAND};">&#9654;&#xFE0E;</span>&nbsp; Listen'
+                + (f' &middot; {_len}' if _len else "") + "</a>")
+    elif digest.get("audio_url"):
         _mins = digest.get("audio_minutes")
         _len = f"{int(_mins)} min" if isinstance(_mins, (int, float)) and _mins > 0 else "Audio"
         _masthead_bar = (
@@ -522,6 +550,7 @@ def render(digest: dict) -> str:
         </td>
         <td class="mast-meta" style="vertical-align:bottom;text-align:right;">
           <div style="font-family:Arial,sans-serif;font-size:11px;letter-spacing:0.5px;color:rgba(255,255,255,0.72);white-space:nowrap;">{_issue_meta}%%WORDS%% words &middot; %%READMIN%% min read</div>
+          {_listen_pill}
         </td>
       </tr></table>
       {_masthead_bar}
