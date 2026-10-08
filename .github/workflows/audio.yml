@@ -45,7 +45,6 @@ jobs:
 
       - name: Make the episode
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           TTS_MODEL: ${{ vars.TTS_MODEL }}
           TTS_VOICE: ${{ vars.TTS_VOICE }}

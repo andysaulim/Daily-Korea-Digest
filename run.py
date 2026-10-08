@@ -1775,7 +1775,7 @@ def main():
                       f"({_audio['tts_model']}, {_audio['tts_voice']})")
             else:
                 print("  🎧  Audio: script written, no voice configured "
-                      "(set OPENAI_API_KEY to enable)")
+                      "(set ELEVENLABS_API_KEY to enable)")
         except Exception as _e:                                 # noqa: BLE001
             print(f"  ⚠  Audio skipped (non-fatal): {_e}")
             _audio = None
