@@ -2,14 +2,10 @@
   {
     "date": "2026-10-07",
     "title": "Korea Daily Brief | Wednesday, October 7",
-    "summary": "North Korea warns Seoul over DMZ demining, Kim letter to Putin, Nuri-5 launches 15 satellites, South Korea 747 billion dollar energy transition.",
+    "summary": "North Korea warns Seoul over DMZ demining, Kim letter to Putin, Nuri-5 launches 15 satellites, South Korea's 747 billion dollar energy transition.",
     "file": "digest_2026-10-07.mp3",
-    "bytes": 5142821,
-    "seconds": 642,
-    "script": "assembled",
-    "script_rejected": [
-      "number not in the brief here: 2 (linking the 2 that 3)",
-      "number not in the brief here: 2 (violation citation 2 escalatory moves)"
-    ]
+    "bytes": 5069887,
+    "seconds": 633,
+    "script": "written"
   }
 ]
