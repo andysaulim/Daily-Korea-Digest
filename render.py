@@ -388,7 +388,8 @@ def _item_block(cat: str, src: str, headline: str, body: str, url: str,
 
 
 _CHROME_WORDS = _re.compile(
-    r"For Internal Use Only|Read online|Download PDF|Listen|Past issues|Back to top|"
+    r"For Internal Use Only|Read online|Download PDF|Listen to today.s brief|"
+    r"The audio edition, read aloud|\d+ min(?= ?<)|Listen|Past issues|Back to top|"
     r"Top Stories|Pyongyang|Trade|Markets|Polling|Upcoming|"
     r"Center for Strategic and International Studies", _re.I)
 
@@ -462,8 +463,8 @@ def render(digest: dict) -> str:
             # Only when run.py has confirmed an MP3 exists for this issue. The
             # link points at the dated file, not latest.mp3, so an old email
             # keeps playing its own day rather than whatever is newest.
-            if digest.get("audio_url"):
-                links.append(f'<a class="pill" href="{_esc(digest["audio_url"])}" style="{_a}">Listen</a>')
+            # The episode has its own bar in the masthead (below); a second
+            # Listen pill here would be the same link twice.
             links.append(f'<a class="pill" href="{_esc(base + "archive.html")}" style="{_a}">Past issues</a>')
         sep = ''
         # The internal-use notice and the utility links each had a full-width
@@ -481,6 +482,33 @@ def render(digest: dict) -> str:
         """)
 
     # ── 1. Header ────────────────────────────────────────────────────────
+    # The bar under the nameplate: the audio edition when there is one, the
+    # RE line otherwise. Email clients will not play audio inline (Gmail and
+    # Outlook strip <audio>), so the bar is one large link to the episode,
+    # which opens in the phone's or browser's own player.
+    if digest.get("audio_url"):
+        _mins = digest.get("audio_minutes")
+        _len = f"{int(_mins)} min" if isinstance(_mins, (int, float)) and _mins > 0 else "Audio"
+        _masthead_bar = (
+            f'<a href="{_esc(digest["audio_url"])}" class="listen-bar" '
+            'style="display:block;margin-top:14px;padding:11px 14px;background:#FFFFFF;'
+            'border-radius:4px;text-decoration:none;color:#14181F;">'
+            '<table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation"><tr>'
+            '<td width="34" style="vertical-align:middle;">'
+            f'<span style="display:inline-block;width:28px;height:28px;line-height:28px;border-radius:14px;'
+            f'background:{BAND};color:#FFFFFF;text-align:center;font-size:12px;font-family:Arial,sans-serif;">&#9654;&#xFE0E;</span></td>'
+            '<td style="vertical-align:middle;font-family:Arial,sans-serif;">'
+            '<div style="font-size:14px;font-weight:700;color:#14181F;">Listen to today&#8217;s brief</div>'
+            '<div style="font-size:12px;color:#4A5160;margin-top:1px;">The audio edition, read aloud</div></td>'
+            f'<td align="right" style="vertical-align:middle;font-family:Arial,sans-serif;font-size:12px;font-weight:700;color:#4A5160;white-space:nowrap;">{_len}</td>'
+            '</tr></table></a>')
+    elif re_line:
+        _masthead_bar = ("<div style='margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.28);"
+                         "font-size:13px;color:rgba(255,255,255,0.92);font-family:Georgia,serif;line-height:1.55;'>"
+                         "<strong style='color:#FFFFFF;font-size:11px;letter-spacing:1.5px;font-family:Arial,sans-serif;'>RE:</strong>&nbsp; "
+                         + re_line + "</div>")
+    else:
+        _masthead_bar = ""
     sections.append(f"""
     <a name="top" id="top"></a>
     <div bgcolor="{BAND}" style="background-color:{BAND};color:#fff;padding:16px 32px 16px;border-bottom:1px solid rgba(255,255,255,0.18);" class="sec mast-band">
@@ -496,7 +524,7 @@ def render(digest: dict) -> str:
           <div style="font-family:Arial,sans-serif;font-size:11px;letter-spacing:0.5px;color:rgba(255,255,255,0.72);white-space:nowrap;">{_issue_meta}%%WORDS%% words &middot; %%READMIN%% min read</div>
         </td>
       </tr></table>
-      {"<div style='margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.28);font-size:13px;color:rgba(255,255,255,0.92);font-family:Georgia,serif;line-height:1.55;'><strong style='color:#FFFFFF;font-size:11px;letter-spacing:1.5px;font-family:Arial,sans-serif;'>RE:</strong>&nbsp; " + re_line + "</div>" if re_line else ""}
+      {_masthead_bar}
     </div>
     """)
 
