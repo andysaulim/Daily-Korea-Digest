@@ -1,0 +1,68 @@
+[
+ {
+  "name": "Cole - Relaxed and Soft Narrator",
+  "use_id": "VNwFREYja0aVVrBmwEME",
+  "voice_id": "VNwFREYja0aVVrBmwEME",
+  "descriptive": "calm",
+  "use_case": "narrative_story",
+  "age": "middle_aged",
+  "accent": "american",
+  "description": "Soft-spoken 30s male with a natural West Coast blend. Relaxed, conversational pace. Ideal for laid-back narration, thoughtful dialogue, or calm instructional content. Clean American accent with gentle delivery.",
+  "file": "cole-relaxed-and-soft-narrator-VNwFRE.mp3"
+ },
+ {
+  "name": "Smooth Julez - Warm, Conversational",
+  "use_id": "TUQsl1aKc9B4sQw25R3n",
+  "voice_id": "TUQsl1aKc9B4sQw25R3n",
+  "descriptive": "confident",
+  "use_case": "narrative_story",
+  "age": "middle_aged",
+  "accent": "american",
+  "description": "Natural podcast host, audiobook narrator, storyteller, late-night host, sports reaction creator, and gaming commentator. Relaxed, slightly deep, smooth, warm, confident, and conversational. Clear pacing, calm presence, natural pauses, subtle humor, and quiet confidence. Engaging without sounding overly dramatic or overly excited.",
+  "file": "smooth-julez-warm-conversational-TUQsl1.mp3"
+ },
+ {
+  "name": "Rafaga",
+  "use_id": "68sMPAsdt7bCNPLgaEmA",
+  "voice_id": "68sMPAsdt7bCNPLgaEmA",
+  "descriptive": "calm",
+  "use_case": "narrative_story",
+  "age": "middle_aged",
+  "accent": "american",
+  "description": "Warm, mature male storyteller with a smooth medium-to-deep voice, neutral English accent, and precise articulation. Calm, thoughtful, and gently authoritative, with the reassuring presence of an experienced narrator. Great for premium audiobook or timeless philosophical folktale: intimate, intelligent, reflective, engaging, and quietly inspiring.",
+  "file": "rafaga-68sMPA.mp3"
+ },
+ {
+  "name": "Andersen - Calm Storyteller",
+  "use_id": "Clspgps4m9eBG038q9nx",
+  "voice_id": "Clspgps4m9eBG038q9nx",
+  "descriptive": "pleasant",
+  "use_case": "narrative_story",
+  "age": "middle_aged",
+  "accent": "american",
+  "description": "Versatile English male narration voice (apparent age 35\u201345) with a warm, confident delivery, moderately deep tone and a subtle natural rasp. Clear and engaging, with the flexibility to adapt from intimate storytelling and audiobooks to documentaries, children\u2019s stories, educational content, corporate presentations and informative videos. Capable of conveying authority, curiosity, warmth and subtle emotion across a wide range of narration styles. Created by Alejandro Dur\u00e1n.",
+  "file": "andersen-calm-storyteller-Clspgp.mp3"
+ },
+ {
+  "name": "Nate - Warm, Relaxed and Natural",
+  "use_id": "R0NHZSY77YjjG5oXHqmE",
+  "voice_id": "R0NHZSY77YjjG5oXHqmE",
+  "descriptive": "relaxed",
+  "use_case": "conversational",
+  "age": "middle_aged",
+  "accent": "american",
+  "description": "Nate is a warm, relaxed American male trained across casual conversations, podcast scripts, and everyday dialogue. Not a narrator, not a presenter - just a real person talking. \n\nHis unhurried delivery builds trust the way a good podcast host does: naturally, without trying. Ideal for conversational AI, voice assistants, chatbots, explainer content, and any platform where authentic human energy matters more than polished broadcast delivery. \nLow effort. High believability. Real.",
+  "file": "nate-warm-relaxed-and-natural-R0NHZS.mp3"
+ },
+ {
+  "name": "Marcus K - Calm Documentary Narrator",
+  "use_id": "3H55HGnNE1XjYxigHSAS",
+  "voice_id": "3H55HGnNE1XjYxigHSAS",
+  "descriptive": "calm",
+  "use_case": "narrative_story",
+  "age": "middle_aged",
+  "accent": "american",
+  "description": "A calm, thoughtful American male voice with a warm conversational delivery. Ideal for documentaries, technology explainers, educational videos, essays, corporate training, podcasts, museum guides, and e-learning. Best suited for informative and reflective narration that feels natural, trustworthy, and engaging rather than overly theatrical. Especially effective for technology, science, history, and educational content.",
+  "file": "marcus-k-calm-documentary-narrator-3H55HG.mp3"
+ }
+]
