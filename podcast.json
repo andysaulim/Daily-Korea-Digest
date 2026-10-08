@@ -7,5 +7,22 @@
     "bytes": 4579412,
     "seconds": 572,
     "script": "written"
+  },
+  {
+    "date": "2026-10-08",
+    "title": "Korea Daily Brief | Thursday, October 8",
+    "summary": "South Korea recalls Ukraine envoy over NK prisoner of war row, South Korea test-fires first hypersonic glide vehicle, AI-driven cyberattack on Korean banks, DMZ mine provocation escalates.",
+    "file": "digest_2026-10-08.mp3",
+    "bytes": 5265492,
+    "seconds": 658,
+    "script": "assembled",
+    "script_rejected": [
+      "quotation not in the brief: ' at differing interpretations of confidentiality arrangement'",
+      "quotation not in the brief: ' and pledged continued investment in hypersonic propulsion, '",
+      "quotation not in the brief: ' Kim also vowed to deepen bilateral strategic ties. The brie'",
+      "name not in the brief: Service",
+      "name not in the brief: U.S",
+      "name not in the brief: Council"
+    ]
   }
 ]
