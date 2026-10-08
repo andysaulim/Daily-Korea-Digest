@@ -16,8 +16,8 @@ episode costs one day of listening, never the brief.
 
 Configuration (all optional; with none set, the script is built and no audio
 is made):
-    OPENAI_API_KEY   enables synthesis (and is the fallback voice)
-    ELEVENLABS_API_KEY + ELEVENLABS_VOICE_ID   use an ElevenLabs voice instead
+    ELEVENLABS_API_KEY   enables synthesis (voice: DEFAULT_ELEVEN_VOICE, or ELEVENLABS_VOICE_ID)
+    OPENAI_API_KEY       not used unless TTS_PROVIDER=openai is set deliberately
     TTS_MODEL        default gpt-4o-mini-tts
     TTS_VOICE        default ash
     TTS_STYLE        how the voice reads; default is a conversational podcast host
@@ -67,9 +67,8 @@ DELIVERY = ("You are the host of a daily news podcast for senior policymakers, t
             "before them. Never rush a list or the end of a sentence. Engaged and "
             "curious, never theatrical, never a newsreader's monotone. Pronounce "
             "Korean names carefully.")
-# ElevenLabs, when ELEVENLABS_API_KEY and a voice are set; OpenAI otherwise,
-# and as the fallback if ElevenLabs fails, so a problem there never costs the
-# day's episode. Models are tried in order until one is accepted.
+# ElevenLabs is the only voice in normal use (see synthesize). Models are tried
+# in order until one is accepted.
 ELEVEN_MODELS = ("eleven_v4", "eleven_v3", "eleven_multilingual_v2")
 # Rafaga, chosen by the editor on 8 October from the voice audition: a calm,
 # mature narrator with precise articulation, picked for a listener used to
@@ -1040,16 +1039,17 @@ def synthesize(script: str, out_path: Path) -> dict | None:
         return None
     eleven_key = (os.environ.get("ELEVENLABS_API_KEY") or "").strip()
     eleven_voice = (os.environ.get("ELEVENLABS_VOICE_ID") or "").strip() or DEFAULT_ELEVEN_VOICE
-    if eleven_key and eleven_voice:
-        rec = _synthesize_eleven(script, out_path, eleven_key, eleven_voice)
-        if rec:
-            return rec
-        if not (os.environ.get("OPENAI_API_KEY") or "").strip():
+    # ElevenLabs only. The editor asked on 8 October that OpenAI never be
+    # charged again: there is no automatic fallback, and the workflows no
+    # longer pass OPENAI_API_KEY. If ElevenLabs fails, that day has no
+    # episode and the email shows the RE line instead of the Listen bar.
+    # OpenAI runs only if someone deliberately sets TTS_PROVIDER=openai.
+    if (os.environ.get("TTS_PROVIDER") or "").strip().lower() != "openai":
+        if not eleven_key:
+            LAST_ERROR = "ELEVENLABS_API_KEY is empty in this run"
+            print(f"::warning title=No audio::{LAST_ERROR}")
             return None
-        print(f"::warning title=ElevenLabs failed, used OpenAI::{LAST_ERROR}")
-    elif eleven_key:
-        print("::warning title=No ElevenLabs voice set::add the repository variable "
-              "ELEVENLABS_VOICE_ID (run Voice audition to choose one); using OpenAI")
+        return _synthesize_eleven(script, out_path, eleven_key, eleven_voice)
     key = (os.environ.get("OPENAI_API_KEY") or "").strip()
     if not key:
         return None
@@ -1353,14 +1353,15 @@ def produce_for_published_issue(date_slug: str, public: Path, web_base: str) -> 
     public.mkdir(parents=True, exist_ok=True)
     rec = produce(digest, public, web_base, date_slug)
     if not rec:
-        if LAST_ERROR and "ElevenLabs" in LAST_ERROR:
-            why = LAST_ERROR + (" — check the ELEVENLABS_API_KEY secret and the "
-                                "ELEVENLABS_VOICE_ID variable")
-        elif not (os.environ.get("OPENAI_API_KEY") or "").strip():
-            why = ("OPENAI_API_KEY is empty in this run. Add it as a REPOSITORY "
-                   "secret: Settings > Secrets and variables > Actions > "
-                   "Repository secrets. Variables and Environment secrets are "
-                   "not visible to this workflow.")
+        if (os.environ.get("TTS_PROVIDER") or "").strip().lower() != "openai":
+            why = LAST_ERROR or "ElevenLabs returned no audio."
+            if "empty" in why:
+                why += (". Add it as a REPOSITORY secret: Settings > Secrets and "
+                        "variables > Actions > Repository secrets.")
+            elif "401" in why:
+                why += " — the ElevenLabs key is wrong or revoked; create a new one and replace the secret."
+            elif "quota" in why.lower() or "credit" in why.lower():
+                why += " — the ElevenLabs plan is out of credits: elevenlabs.io > Subscription."
         else:
             why = LAST_ERROR or "OpenAI returned no audio."
             if "quota" in why.lower() or "billing" in why.lower():

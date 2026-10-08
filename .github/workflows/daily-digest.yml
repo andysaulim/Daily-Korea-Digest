@@ -186,7 +186,6 @@ jobs:
           # Audio edition. With no key the script is still written and the
           # brief is unaffected; with one, an MP3 and podcast feed are
           # published and the email gains a Listen link.
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           TTS_MODEL: ${{ vars.TTS_MODEL }}
           TTS_VOICE: ${{ vars.TTS_VOICE }}
           TTS_STYLE: ${{ vars.TTS_STYLE }}
