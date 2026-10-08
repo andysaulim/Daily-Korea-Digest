@@ -1769,6 +1769,7 @@ def main():
                 _wb = os.environ.get("WEB_URL", "").rstrip("/")
                 if _wb:
                     digest_data["audio_url"] = f"{_wb}/digest_{_date_slug}.mp3"
+                    digest_data["audio_minutes"] = max(1, round(_audio["audio_seconds"] / 60))
                 print(f"  🎧  Audio: {_audio['audio_bytes']:,} bytes, "
                       f"~{_audio['audio_seconds'] // 60} min "
                       f"({_audio['tts_model']}, {_audio['tts_voice']})")
