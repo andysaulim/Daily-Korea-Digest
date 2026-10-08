@@ -71,6 +71,10 @@ DELIVERY = ("You are the host of a daily news podcast for senior policymakers, t
 # and as the fallback if ElevenLabs fails, so a problem there never costs the
 # day's episode. Models are tried in order until one is accepted.
 ELEVEN_MODELS = ("eleven_v4", "eleven_v3", "eleven_multilingual_v2")
+# Rafaga, chosen by the editor on 8 October from the voice audition: a calm,
+# mature narrator with precise articulation, picked for a listener used to
+# audiobooks. The ELEVENLABS_VOICE_ID variable overrides it.
+DEFAULT_ELEVEN_VOICE = "68sMPAsdt7bCNPLgaEmA"
 ELEVEN_CHUNK_CHARS = 2400        # stitched requests, so fewer, longer ones sound better
 ELEVEN_SPEED = 0.95              # the voice's own pace setting; 1.0 is its natural pace
 # The voice model's own pace is a suggestion it does not always take; this is
@@ -1035,7 +1039,7 @@ def synthesize(script: str, out_path: Path) -> dict | None:
     if not script.strip():
         return None
     eleven_key = (os.environ.get("ELEVENLABS_API_KEY") or "").strip()
-    eleven_voice = (os.environ.get("ELEVENLABS_VOICE_ID") or "").strip()
+    eleven_voice = (os.environ.get("ELEVENLABS_VOICE_ID") or "").strip() or DEFAULT_ELEVEN_VOICE
     if eleven_key and eleven_voice:
         rec = _synthesize_eleven(script, out_path, eleven_key, eleven_voice)
         if rec:
