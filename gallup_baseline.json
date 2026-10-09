@@ -1,10 +1,10 @@
 {
-  "poll": "Gallup Korea (September 18, 2026)",
-  "survey_dates": "September 18, 2026",
+  "poll": "Gallup Korea (week of 2026-09-19)",
+  "survey_dates": "week of 2026-09-19",
   "source": "Gallup Korea",
   "presidential_approval": {
     "value": "37%",
-    "trend": "down"
+    "trend": "stable"
   },
   "party_ruling": {
     "value": "39%",
@@ -26,8 +26,8 @@
     "headline": "President Lee Jae-myung's approval rating fell to a new low of 37% this week, per Yonhap reporting on a fresh Gallup Korea poll, down from 38% the prior week and below his previous low of 42% recorded in August.",
     "poll_date": "September 18, 2026"
   },
-  "updated_at": "2026-09-18",
-  "updated_by": "run.py (auto — persisted from digest public_sentiment)",
+  "updated_at": "2026-10-09",
+  "updated_by": "gallup_update.py (auto, news-parse)",
   "history": [
     {
       "date": "2026-08-25",
@@ -48,6 +48,11 @@
       "date": "2026-09-18",
       "approval": 37.0,
       "label": "September 18, 2026"
+    },
+    {
+      "date": "2026-09-19",
+      "approval": 37.0,
+      "label": "2026-09-19"
     }
   ]
 }
