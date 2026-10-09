@@ -1,33 +1,33 @@
 {
-  "poll": "Gallup Korea (week of 2026-09-19)",
-  "survey_dates": "week of 2026-09-19",
+  "poll": "Gallup Korea (October 6-8, 2026)",
+  "survey_dates": "October 6-8, 2026",
   "source": "Gallup Korea",
   "presidential_approval": {
     "value": "37%",
     "trend": "stable"
   },
   "party_ruling": {
-    "value": "39%",
+    "value": "35%",
     "party": "Democratic Party",
     "party_kr": "더불어민주당",
-    "trend": "stable"
+    "trend": "down"
   },
   "party_opposition": {
-    "value": "25%",
+    "value": "26%",
     "party": "People Power Party",
     "party_kr": "국민의힘",
-    "trend": "stable"
+    "trend": "up"
   },
   "party_independent": {
-    "value": "26%",
-    "trend": "stable"
+    "value": "31%",
+    "trend": "up"
   },
   "spotlight": {
-    "headline": "President Lee Jae-myung's approval rating fell to a new low of 37% this week, per Yonhap reporting on a fresh Gallup Korea poll, down from 38% the prior week and below his previous low of 42% recorded in August.",
-    "poll_date": "September 18, 2026"
+    "headline": "President Lee Jae-myung's approval held at 37% in Gallup Korea's October 6-8 poll, the first since the Chuseok break and unchanged from September 15-17, while disapproval eased from 56% to 51%. Democratic Party support fell four points to 35% and independents rose to 31%.",
+    "poll_date": "October 6-8, 2026"
   },
   "updated_at": "2026-10-09",
-  "updated_by": "gallup_update.py (auto, news-parse)",
+  "updated_by": "gallup_update.py (manual, verified against Gallup Korea Daily Opinion No. 677)",
   "history": [
     {
       "date": "2026-08-25",
@@ -35,24 +35,24 @@
       "label": "Aug 25-27"
     },
     {
-      "date": "2026-09-04",
+      "date": "2026-09-01",
       "approval": 40.0,
-      "label": "Sep 4"
+      "label": "Sep 1-3"
     },
     {
-      "date": "2026-09-11",
+      "date": "2026-09-08",
       "approval": 38.0,
-      "label": "2026-09-11"
+      "label": "Sep 8-10"
     },
     {
-      "date": "2026-09-18",
+      "date": "2026-09-15",
       "approval": 37.0,
-      "label": "September 18, 2026"
+      "label": "Sep 15-17"
     },
     {
-      "date": "2026-09-19",
+      "date": "2026-10-06",
       "approval": 37.0,
-      "label": "2026-09-19"
+      "label": "Oct 6-8"
     }
   ]
 }
