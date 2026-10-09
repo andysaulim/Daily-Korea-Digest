@@ -24,5 +24,19 @@
       "name not in the brief: U.S",
       "name not in the brief: Council"
     ]
+  },
+  {
+    "date": "2026-10-09",
+    "title": "Korea Daily Brief | Friday, October 9",
+    "summary": "South Korea HGV test, Seoul recalls Ukraine envoy, NIS snub roils alliance, October 10 North Korea watch, AI cyber campaign widens.",
+    "file": "digest_2026-10-09.mp3",
+    "bytes": 5283465,
+    "seconds": 660,
+    "script": "assembled",
+    "script_rejected": [
+      "number not in the brief here: 16 (probe but 16 of 18)",
+      "quotation not in the brief: '\\n\\nSeoul now has a hypersonic glide vehicle. Whether it chang'",
+      "quotation not in the brief: ' toward North Korea. That accusation is now visible in multi'"
+    ]
   }
 ]

@@ -1,0 +1,57 @@
+This is the Korea Daily Brief from the CSIS Korea Chair. It's Friday, October 9.
+
+In today's brief: South Korea HGV test; Seoul recalls Ukraine envoy; NIS snub roils alliance; October 10 North Korea watch; and AI cyber campaign widens.
+
+Our top story: South Korea successfully test-launched its first domestically developed hypersonic glide vehicle on October 8, with President Lee Jae-myung observing the launch. The Blue House said the test marked a significant step toward securing a new strategic deterrent capability; the HGV travels at more than Mach 5 and is designed to evade air-defense interception. The test comes weeks after North Korea conducted its own hypersonic missile test, and the same day South Korea's Defense Ministry noted ongoing North Korea landmine incidents on the DMZ.
+
+Also making news: South Korea recalled Ambassador Park Ki-chang from Kyiv after Ukraine transferred captured North Korean soldiers to Seoul without coordinating in a manner that met South Korea's expectations. Ukraine said it remains open to dialogue; the People Power Party accused the Lee government of picking a fight with Ukraine while remaining 'biasedly silent' toward North Korea. The recall directly affects South Korea's ability to receive future North Korean prisoner of war transfers, which require Ukrainian cooperation.
+
+And one more top story: AI-assisted cyberattacks buffet South Korean and Japanese financial institutions; police expand probe. South Korean police expanded their hacking investigation team after 16 of 18 suspected overseas hacking attacks on South Korean financial firms went unattributed, according to a lawmaker's disclosure. CrowdStrike identified a Chinese-developed AI agent called ARTEX as a tool used in attacks on South Korean banks; its developer made the tool closed-source following the disclosure. Reuters reported AI is lowering the barrier for cybercriminals targeting South Korea and Japan, with bank-sector intrusions sweeping both countries.
+
+Here's what else moved overnight. NIS exclusion from trilateral intelligence session raises U.S. alliance concerns in Seoul. First reported snub of its kind this year.
+
+Suspected North Korean anti-personnel mine washes ashore on Jumun Island near Incheon. South Korea marines detonated it safely; no casualties.
+
+Over 70% of Americans support defending South Korea against North Korea, KEIA survey finds. 77% of Republicans, 73% of Democrats — ahead of midterms.
+
+White House official accuses South Korea of flooding U.S. market with subsidized steel. Accusation raises Section 232 enforcement risk.
+
+North Korean smartphone locks into reboot loop when taken to South Korea, Chinese blogger documents. Screen turns orange; apparent geofencing or kill-switch.
+
+SK Group Chairman Chey Tae-won visits Gwangju site, vows to accelerate new chip cluster construction in southwest. Plans fab at roughly two-thirds the size of Yongin cluster.
+
+Now to Pyongyang. State media's top stories today. Kim Yo Jong issued a second statement in 48 hours rejecting Seoul's medical aid plan as a political provocation, not a humanitarian gesture, maintaining total inter-Korean shutdown posture ahead of the October 10 anniversary. North Korea's Foreign Ministry simultaneously attacked U.S. Taiwan arms policy and pledged full support for Russia's war in Ukraine — coordinated with Kim Jong Un's 'sacred war' letter to Putin — delivering maximum rhetorical alignment with both Moscow and Beijing. KCNA reported that North Korea published the first official biography of Kim Jong Un, framing his life as a 'revolutionary' struggle — a propaganda milestone timed to the Workers' Party founding anniversary. The bottom line: Kim Jong Un has not appeared publicly in 4 days as the Workers' Party founding anniversary, October 10, arrives; the parade training site is active per satellite imagery, and Kim Yo Jong is sustaining escalatory rhetoric on multiple tracks simultaneously — watch for a Kim appearance or military display on October 10. Kim Jong Un was last seen in public 4 days ago.
+
+The number of the day. 70%+: Americans supporting U.S. military defense of South Korea. An annual Korea Economic Institute survey found more than 70% of Americans support defending South Korea against a North Korean attack, with 77% of Republicans and 73% of Democrats backing the alliance — a data point entering the U.S. midterm cycle.
+
+In Seoul, the government side. Vice Minister Lee Du-hui visited Japan on October 8 to 9, meeting Japanese Defense Minister Koizumi Shinjiro and Senior Defense Official Ando Atsushi. Both sides reaffirmed the importance of South Korea-Japan and South Korea-U.S.-Japan close cooperation against North Korea's advancing nuclear and missile threats, and agreed to pursue future-oriented defense exchanges including AI and unmanned systems.
+
+At the National Assembly's National Assembly First Committee, UN GA — First Committee session, New York,: South Korea demands North Korea apology at UN for DMZ landmine blast; North Korea delegate denies involvement. At the UN General Assembly First Committee session in New York, South Korea's Ambassador Cha Ji-hoon publicly confronted North Korea's representative over the September 21 DMZ mine explosions, citing joint South Korea-UNC findings of deliberate North Korean mine placement. The North Korean side called the allegations a 'poor trick.'
+
+On the economy. Record Q3 profits at Samsung, reported 107.4 trillion won operating profit October 8, and SK Hynix are enabling the government to increase spending on AI infrastructure and youth programs. The earnings surge reflects surging HBM and advanced memory demand from the global AI buildout.
+
+LG Electronics and Bosch have partnered to develop vehicle chiplets, marking LG's first entry into semiconductor design. The move comes as Korean electronics firms seek to diversify into the automotive chip supply chain ahead of EV expansion.
+
+South Korea's Fair Trade Commission is now formally adjudicating whether Samsung Electronics violated consumer protection rules by throttling Galaxy smartphone performance via its Game Optimizing Service, GOS — a case that has been under investigation since 2022. The outcome could affect Samsung's domestic regulatory exposure ahead of the iPhone 18-era competition cycle.
+
+Elsewhere in the region. Senior South Korea and Japanese defense officials held formal talks to reaffirm security cooperation against North Korea's escalating nuclear and missile program, coordinating positions ahead of the Workers' Party founding anniversary on October 10.
+
+North Korea's Foreign Ministry issued statements simultaneously criticizing U.S. arms transfers to Taiwan and pledging full support for Russia's war in Ukraine, synchronized with Kim Jong Un's letter to Putin calling the war 'sacred.' The dual statement represents coordinated anti-Western positioning by Pyongyang with both Moscow and Beijing in the 24 hours before the Workers' Party founding anniversary.
+
+How is the public reading all this? In the latest Gallup Korea poll, from September 18, President Lee's approval is 37 percent. By party: the Democratic Party at 39 percent, the People Power Party at 25 percent, and independents at 26 percent.
+
+In their own words. Kim Yo Jong said: "Seoul's plan to send medical aid to North Korea is a 'provocation.'".
+
+President Lee Jae-myung said: "Officials who contribute greatly to national development: the National Tax Service established a special TF for high-amount delinquent taxpayers this year and has intensified tracking of assets hidden overseas, signing tax collection MOUs with Australia, Indonesia, Hungary, Belgium, the UK, Liberia, New Zealand, and others — the network of cooperating countries now stands at 77."
+
+What's coming up? October 10: North Korean Workers' Party founding day, October 10 — highest-risk provocation window this quarter; N.K. Pro satellite imagery shows parade training site active with hundreds of trucks. October 11-12: South Korean National Assembly overseas audit missions — National Assembly members conducting inspections of overseas missions; Jeong Cheong-rae's U.S. visa delay redirected his mission to Europe.
+
+A few more things worth knowing. Satellite imagery shows large-scale parade training activity at North Korea's main base this week, consistent with preparations for a Workers' Party founding day military parade on October 10; no signs of missile launch or major weapons display event at the site.
+
+EAI analysis traces the diversion pathway by which South Korean diesel exports were re-exported and reached the Russian Far East, in the context of Ukraine's accusations that South Korea fuel exports eased Russia's energy crisis following drone strikes on refineries. Seoul said October 8 it has no confirmed direct fuel exports to Russia and vowed strict enforcement of export controls.
+
+And from the analysts. From KEIA, Korea Economic Institute of America: American public support for the U.S.-South Korea alliance remains robust across party lines ahead of the midterms, with over 70% backing military defense of South Korea and nearly 60% supporting nuclear-powered submarine cooperation.
+
+Finally, the markets. Seoul's main stock index, the KOSPI, is at 6,626, down about 2.6 percent. The dollar is at 1,341 won, up about 0.1 percent. Brent crude is at 103.1 dollars a barrel, down about 1.2 percent. The Bank of Korea's base rate is 2.50 percent.
+
+That's the Korea Daily Brief for Friday, October 9. The full text, with a link to every source, is in today's email.
