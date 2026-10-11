@@ -1557,5 +1557,12 @@
     "top_stories_count": 4,
     "word_count": 3985,
     "url": "digest_2026-10-10.html"
+  },
+  {
+    "date": "2026-10-11",
+    "headline_re": "DPRK marks party anniversary modestly · US-Korea intelligence friction deepens · Arctic route completes · SK chip cluster push · AI bank hacks",
+    "top_stories_count": 3,
+    "word_count": 3745,
+    "url": "digest_2026-10-11.html"
   }
 ]
