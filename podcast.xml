@@ -9,6 +9,15 @@
     <itunes:explicit>false</itunes:explicit>
     <itunes:block>Yes</itunes:block>
     <item>
+      <title>Korea Daily Brief | Monday, October 12</title>
+      <description>NK fires 4th missile salvo in a month, Russian emergency minister in Pyongyang, KOSPI -3.65% on tech selloff, Bank of Korea rate hold defended.</description>
+      <enclosure url="https://andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-12.mp3" length="4357894" type="audio/mpeg"/>
+      <guid isPermaLink="false">korea-daily-brief-2026-10-12</guid>
+      <pubDate>Mon, 12 Oct 2026 11:00:00 +0000</pubDate>
+      <itunes:duration>9:04</itunes:duration>
+      <link>https://andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-12.html</link>
+    </item>
+    <item>
       <title>Korea Daily Brief | Sunday, October 11</title>
       <description>North Korea marks party anniversary modestly, U.S.-Korea intelligence friction deepens, Arctic route completes, SK chip cluster push, AI bank hacks.</description>
       <enclosure url="https://andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-11.mp3" length="4648376" type="audio/mpeg"/>

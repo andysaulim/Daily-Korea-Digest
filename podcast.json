@@ -56,5 +56,20 @@
     "bytes": 4648376,
     "seconds": 581,
     "script": "written"
+  },
+  {
+    "date": "2026-10-12",
+    "title": "Korea Daily Brief | Monday, October 12",
+    "summary": "NK fires 4th missile salvo in a month, Russian emergency minister in Pyongyang, KOSPI -3.65% on tech selloff, Bank of Korea rate hold defended.",
+    "file": "digest_2026-10-12.mp3",
+    "bytes": 4357894,
+    "seconds": 544,
+    "script": "assembled",
+    "script_rejected": [
+      "number not in the brief here: 900 (more than 900 kilometers that)",
+      "number not in the brief here: 4 (was tested 4 tests in)",
+      "name not in the brief: Chiefs",
+      "name not in the brief: U.S"
+    ]
   }
 ]
