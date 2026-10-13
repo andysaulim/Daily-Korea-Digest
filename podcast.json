@@ -71,5 +71,17 @@
       "name not in the brief: Chiefs",
       "name not in the brief: U.S"
     ]
+  },
+  {
+    "date": "2026-10-13",
+    "title": "Korea Daily Brief | Tuesday, October 13",
+    "summary": "North Korea tactical missile test + Defense Revolution Museum opening, KOSPI -5.5% on chip selloff, Trump floats Kim meeting, South Korea-U.S. intel rift deepens.",
+    "file": "digest_2026-10-13.mp3",
+    "bytes": 5537584,
+    "seconds": 692,
+    "script": "assembled",
+    "script_rejected": [
+      "name not in the brief: U.S"
+    ]
   }
 ]
