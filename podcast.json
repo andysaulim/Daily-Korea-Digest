@@ -83,5 +83,22 @@
     "script_rejected": [
       "name not in the brief: U.S"
     ]
+  },
+  {
+    "date": "2026-10-14",
+    "title": "Korea Daily Brief | Wednesday, October 14",
+    "summary": "NK museum flaunts Hwasong-20, New Yalu Bridge opens Thu, DOJ North Korea IT crackdown, Sue Mi Terry charges dropped, Lee names new CoS.",
+    "file": "digest_2026-10-14.mp3",
+    "bytes": 5675928,
+    "seconds": 709,
+    "script": "assembled",
+    "script_rejected": [
+      "quotation not in the brief: ' meet Kim during his upcoming November Asia trip. The CSIS K'",
+      "quotation not in the brief: ' That inspection followed trilateral consultations between S'",
+      "quotation not in the brief: \" — a story this brief led with, and state media's framing em\"",
+      "quotation not in the brief: \"\\n\\nSouth Korea's Financial Supervisory Service confirmed hack\"",
+      "name not in the brief: Vice",
+      "name not in the brief: Supervisory"
+    ]
   }
 ]
