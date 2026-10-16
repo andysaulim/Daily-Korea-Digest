@@ -422,6 +422,38 @@ def _count_rendered_words(html_body: str) -> int:
     return len([w for w in text.split() if any(c.isalnum() for c in w)])
 
 
+def _pledge_is_new(deal: dict, digest: dict, days: int = 7) -> bool:
+    """A pledge project reported within `days` of the issue, or one not in the standing list."""
+    try:
+        from digest import PLEDGE_PROJECTS
+    except Exception:                                           # noqa: BLE001
+        return False
+    name = " ".join(_re.sub(r"[^a-z0-9 ]+", " ", str(deal.get("company", "")).lower()).split())
+    match = None
+    for proj in PLEDGE_PROJECTS:
+        key = " ".join(_re.sub(r"[^a-z0-9 ]+", " ", proj["project"].lower()).split())
+        if name and (key in name or name in key):
+            match = proj
+            break
+    if match is None:
+        return True                     # reported by the model from today's sources
+    try:
+        reported = datetime.strptime(match.get("reported", ""), "%d %b %Y")
+    except ValueError:
+        return False
+    raw = str(digest.get("digest_date", "")).strip()
+    today = None
+    for fmt, text in (("%Y-%m-%d", raw[:10]), ("%A, %B %d, %Y", raw), ("%B %d, %Y", raw)):
+        try:
+            today = datetime.strptime(text, fmt)
+            break
+        except ValueError:
+            continue
+    if today is None:
+        return False
+    return 0 <= (today - reported).days <= days
+
+
 def render(digest: dict) -> str:
     from zoneinfo import ZoneInfo
     now = datetime.now(ZoneInfo("America/New_York"))
@@ -1251,14 +1283,19 @@ def render(digest: dict) -> str:
             # Deal table only lists deals officially attributed to the pledge
             # (the prompt no longer dumps unrelated corporate announcements here).
             deal_rows = ""
-            for kd in (investment_pkg.get("known_deals") or []):
+            new_rows = ""
+            _known = [kd for kd in (investment_pkg.get("known_deals") or []) if isinstance(kd, dict)]
+            for kd in _known:
                 sect = _esc(kd.get("sector", ""))
-                deal_rows += (f'<tr style="border-top:1px solid #E7EBF0;">'
-                              f'<td style="padding:7px 12px;font-size:13px;color:{INK};"><span style="font-weight:600;">{_esc(kd.get("company",""))}</span>'
-                              + (f' <span style="color:#6B7280;font-size:11px;">{sect}</span>' if sect else "")
-                              + f'</td>'
-                              f'<td style="padding:7px 12px 7px 8px;font-family:Georgia,serif;font-size:13px;font-weight:700;color:{UP_GREEN};text-align:right;white-space:nowrap;">{_esc(kd.get("value",""))}</td>'
-                              f'</tr>')
+                row = (f'<tr style="border-top:1px solid #E7EBF0;">'
+                       f'<td style="padding:7px 12px;font-size:13px;color:{INK};"><span style="font-weight:600;">{_esc(kd.get("company",""))}</span>'
+                       + (f' <span style="color:#6B7280;font-size:11px;">{sect}</span>' if sect else "")
+                       + f'</td>'
+                       f'<td style="padding:7px 12px 7px 8px;font-family:Georgia,serif;font-size:13px;font-weight:700;color:{UP_GREEN};text-align:right;white-space:nowrap;">{_esc(kd.get("value",""))}</td>'
+                       f'</tr>')
+                deal_rows += row
+                if _pledge_is_new(kd, digest):
+                    new_rows += row
             deal_box = ""
             if deal_rows:
                 deal_box = _box(
@@ -1266,12 +1303,31 @@ def render(digest: dict) -> str:
                     f'letter-spacing:1px;color:{TAEGUK_BLUE};font-weight:700;border-bottom:1px solid #DBE0E6;">$350B Pledge &middot; Selected Projects</div>'
                     f'<table width="100%" cellpadding="0" cellspacing="0" border="0" class="deal-breakdown">{deal_rows}</table>')
 
-            # In the brief, not on the reference page behind it. The pledge
-            # had no contents to show until September 2026, so it belonged with
-            # the standing material; now that projects are being selected, which
-            # one was chosen is news a reader should meet without following a
-            # link. The ledger and the policy watch stay on the trade page.
-            pillars.append(f'<div style="margin-top:18px;">{_pillar_h("Investment &middot; " + pledged + " pledge", accent=TAEGUK_BLUE)}{bar}{deal_box}</div>')
+            # The brief shows the pledge and what is new; the full project list
+            # lives on the trade page. The block printed every selected project
+            # and a three-line note every day, so a reader met the same Encinal
+            # row for weeks. Only a project reported in the last seven days (or
+            # one the model reported from today's sources) earns a row here.
+            n_sel = len(_known)
+            if n_sel:
+                first = _known[0]
+                summary = (f'{n_sel} project{"s" if n_sel != 1 else ""} selected so far'
+                           + (f', led by {_esc(first.get("company", ""))} ({_esc(first.get("value", ""))})'
+                              if first.get("value") else ""))
+            else:
+                summary = "No projects selected yet"
+            compact = (f'<div><span style="font-family:{MONO};color:{NAVY};font-size:20px;font-weight:700;">{pledged}</span>'
+                       f'<span style="font-size:13px;color:#6B7280;"> &nbsp;pledged &middot; {summary}</span></div>')
+            new_box = ""
+            if new_rows:
+                new_box = _box(
+                    f'<div style="background:#F5F7FA;padding:7px 12px;font-size:11px;text-transform:uppercase;'
+                    f'letter-spacing:1px;color:{TAEGUK_BLUE};font-weight:700;border-bottom:1px solid #DBE0E6;">New this week</div>'
+                    f'<table width="100%" cellpadding="0" cellspacing="0" border="0" class="deal-breakdown">{new_rows}</table>')
+            pillars.append(f'<div style="margin-top:18px;">{_pillar_h("Investment &middot; " + pledged + " pledge", accent=TAEGUK_BLUE)}'
+                           f'{bar if has_progress else compact}{new_box}</div>')
+            if deal_box:
+                standing.append(f'<div style="margin-top:18px;">{_pillar_h("Investment &middot; " + pledged + " pledge", accent=TAEGUK_BLUE)}{bar}{deal_box}</div>')
 
         # ── Pillar 2b: Bilateral Investment Ledger ─────────────────────────
         # Corporate investment flows BOTH directions, tracked separately from
@@ -1406,8 +1462,8 @@ def render(digest: dict) -> str:
                     f'letter-spacing:1.5px;text-transform:uppercase;color:{TAEGUK_BLUE};">'
                     f'Full trade reference &#8594;</span>'
                     f'<span style="display:block;font-family:Georgia,serif;font-size:13px;'
-                    f'color:{INK};margin-top:4px;line-height:1.45;">Investment ledger and '
-                    f'standing policy measures.</span></a></div>')
+                    f'color:{INK};margin-top:4px;line-height:1.45;">All $350B pledge projects, the '
+                    f'investment ledger and standing policy measures.</span></a></div>')
         digest["_trade_standing_html"] = "".join(standing)
         sections.append(f"""
         <div {_SEC}>
