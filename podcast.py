@@ -535,6 +535,8 @@ _SCRIPT_KEYS = ("re_line", "top_stories", "overnight_items", "kcna_delta", "key_
 # Capitalised words a script may use that need not appear in the brief: the
 # show's own frame, calendar words, and generic titles.
 _ALLOWED_CAPS = set("""
+U.S U.S. US UN Military Demarcation Line Joint Chiefs Staff Workers Central News Agency
+Intermediate-range Intercontinental Submarine-launched Liquefied Natural Gas Industry Finance
 I The This That These Those It It's Its In On At For From With And But Or So Yet
 Now Here Today Tomorrow Meanwhile Also First Next Finally Still Then And Why What
 How Who Where When Which Let Lets Let's We We're You You're Our Your Their There
@@ -565,6 +567,10 @@ _COUNT_NOUNS = {"countrie", "side", "message", "statement", "item", "storie", "t
 # things already named, not a count.
 _PRONOUN_NEXT = {"as", "agreed", "of", "have", "are", "were", "had", "met", "said", "will",
                  "would", "to", "in", "on", "at", "and", "also", "both", "spoke", "discussed"}
+# Units a voice spells out and a brief abbreviates ("900 km" / "900 kilometers").
+_UNIT_TOKENS = {"km": "kilometers", "kilometres": "kilometers", "kilometer": "kilometers",
+                "mi": "miles", "mile": "miles", "kg": "kilograms", "bn": "billion",
+                "mn": "million", "tn": "trillion", "pct": "percent"}
 _MARKET_WORDS = {"kospi", "won", "dollar", "dollars", "brent", "crude", "barrel", "percent",
                  "rate", "index", "points"}
 _MONTH_TOKENS = {"jan": "january", "feb": "february", "mar": "march", "apr": "april",
@@ -606,7 +612,7 @@ def _tokens(text: str) -> list[str]:
         elif last in tens and t in _NUMBER_WORDS and 1 <= int(_NUMBER_WORDS[t]) <= 9:
             out[-1] = str(int(prev) + int(_NUMBER_WORDS[t]))
         else:
-            out.append(_MONTH_TOKENS.get(t) or _NUMBER_WORDS.get(t, t))
+            out.append(_UNIT_TOKENS.get(t) or _MONTH_TOKENS.get(t) or _NUMBER_WORDS.get(t, t))
         last = t
     return out
 
@@ -693,10 +699,20 @@ def check_script(script: str, digest: dict, when: str = "") -> list[str]:
         if t[0].isdigit() and not _number_in_context(t, i, s_toks, src_toks, src_pos):
             ctx = " ".join(s_toks[max(0, i - 2):i + 3])
             problems.append(f"number not in the brief here: {t} ({ctx})")
-    for q in re.findall(r"[\"“]([^\"”]{12,})[\"”]", script):
+    # Quotes are paired within a paragraph, and a "quote" that begins or ends
+    # with a space is the gap between a closing mark and the next opening one,
+    # not a quotation; on 14 October that pairing flagged half of one sentence
+    # and the start of the next as an invented quote.
+    quotes = []
+    for para in script.split("\n"):
+        for q in re.findall(r"[\"“]([^\"”]{12,})[\"”]", para):
+            if q[:1].isspace() or q[-1:].isspace():
+                continue
+            quotes.append(q)
+    for q in quotes:
         if _norm(q).strip() and " ".join(_norm(q).split()) not in " ".join(blob.split()):
             problems.append(f"quotation not in the brief: {q[:60]!r}")
-    for sentence in re.split(r"(?<=[.!?:;])\s+|\n+", script):
+    for sentence in re.split(r"(?<=[.!?:;])\s+|(?<=[.!?,][\"”’])\s+|\n+", script):
         words = re.findall(r"[A-Za-z][A-Za-z'.-]*", sentence)
         for w in words[1:]:
             core = w.strip(".'-").replace("'s", "")
@@ -725,6 +741,8 @@ def write_script(digest: dict) -> tuple[str | None, list[str]]:
     key, the call errors, the framing lines are missing, or check_script finds
     anything the brief does not say.
     """
+    global LAST_REPAIR
+    LAST_REPAIR = []
     key = (os.environ.get("ANTHROPIC_API_KEY") or "").strip()
     if not key:
         return None, ["no ANTHROPIC_API_KEY"]
@@ -781,11 +799,71 @@ def write_script(digest: dict) -> tuple[str | None, list[str]]:
         return None, ["the script did not open with the show's opening line"]
     problems = check_script(text, digest, when)
     if problems:
-        return None, problems
+        repaired, dropped = _repair_script(text, problems, digest, when)
+        if repaired is None:
+            return None, problems
+        LAST_REPAIR = dropped
+        print(f"::notice title=Podcast script repaired::dropped {len(dropped)} sentence(s) "
+              f"the fact check could not match to the brief")
+        text = repaired
     text = re.sub(r"^\s*-{3,}\s*$", f"\n{SEGMENT}\n", text, flags=re.M)
     paras = [x.strip() if x.strip() == SEGMENT else speakable(x)
              for x in re.split(r"\n\s*\n", text) if x.strip()]
     return "\n\n".join(paras), []
+
+
+LAST_REPAIR: list[str] = []
+REPAIR_MAX_SHARE = 0.12          # drop at most this share of the script's words
+
+
+def _repair_script(text: str, problems: list[str], digest: dict, when: str,
+                   rounds: int = 2) -> tuple[str | None, list[str]]:
+    """Drop only the sentences the check objects to; None if that would cut too much.
+
+    A script that fails its revision used to be thrown away whole, so one
+    unmatched figure or name cost the listener the written episode. This cuts
+    the sentences holding a flagged number, quotation or name, re-checks the
+    whole script from scratch, and keeps it if the cuts stay small. Nothing is
+    added or reworded, so whatever survives is what the writer wrote and the
+    check has passed.
+    """
+    total = len(text.split()) or 1
+    dropped: list[str] = []
+    opening = f"This is the Korea Daily Brief from the CSIS Korea Chair. It's {when}."
+    closing = f"That's the Korea Daily Brief for {when}."
+    for _ in range(rounds):
+        nums = {m.group(1) for p in problems
+                for m in [re.match(r"number not in the brief here: (\S+)", p)] if m}
+        names = {m.group(1) for p in problems
+                 for m in [re.match(r"name not in the brief: (\S+)", p)] if m}
+        quotes = {m.group(1) for p in problems
+                  for m in [re.match(r"quotation not in the brief: '(.+)'$", p)] if m}
+        if not (nums or names or quotes):
+            return None, dropped
+        out_paras = []
+        for para in re.split(r"\n\s*\n", text):
+            if not para.strip() or para.strip().startswith(SEGMENT) or \
+                    para.strip().startswith((opening[:40], closing[:30])):
+                out_paras.append(para)
+                continue
+            keep = []
+            for sent in re.split(r"(?<=[.!?][\"”’])\s+|(?<=[.!?])\s+", para.strip()):
+                toks = set(_tokens(sent))
+                bad = (nums & toks) or any(re.search(rf"\b{re.escape(n)}\b", sent) for n in names) \
+                    or any(q[:40] in sent for q in quotes)
+                if bad:
+                    dropped.append(sent)
+                else:
+                    keep.append(sent)
+            if keep:
+                out_paras.append(" ".join(keep))
+        text = "\n\n".join(out_paras)
+        if sum(len(x.split()) for x in dropped) > REPAIR_MAX_SHARE * total:
+            return None, dropped
+        problems = check_script(text, digest, when)
+        if not problems:
+            return text, dropped
+    return None, dropped
 
 
 def estimate_minutes(script: str) -> float:
@@ -1321,6 +1399,7 @@ def produce(digest: dict, public: Path, web_base: str, date_slug: str) -> dict |
             # Every reason, not the four an annotation shows, so a rejected
             # rewrite can be diagnosed without the run log.
             **({"script_rejected": why[:40]} if source == "assembled" and why else {}),
+            **({"script_repaired": LAST_REPAIR[:20]} if source == "written" and LAST_REPAIR else {}),
         })
     return rec
 

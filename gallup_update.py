@@ -224,10 +224,6 @@ def main(argv=None) -> int:
         except Exception as e:
             print(f"  ⚠ Fetch failed: {e}")
 
-    # Carry-forward, NOT all-or-nothing: approval anchors the update; any party
-    # field the parse missed inherits the prior baseline value.
-    def _carry(field):
-        return _pct((baseline.get(field) or {}).get("value"))
 
     pres = rec.get("approval")
     if pres is None or not rec.get("sort_key"):
@@ -242,12 +238,29 @@ def main(argv=None) -> int:
                 f"Gallup Korea weekly numbers (gallup.co.kr, released Fridays).")
         return 0
 
-    dp = rec.get("dp") if rec.get("dp") is not None else _carry("party_ruling")
-    ppp = rec.get("ppp") if rec.get("ppp") is not None else _carry("party_opposition")
-    ind = rec.get("ind") if rec.get("ind") is not None else _carry("party_independent")
+    # All four or nothing. Carrying last week's party numbers forward under a
+    # new approval figure printed two different polls side by side on
+    # 16 October (approval from Oct 13-15, parties from Oct 6-8), which breaks
+    # the brief's same-poll-date rule. A partial parse now changes nothing and
+    # asks for a manual entry instead; a by-hand update must supply all four.
+    missing = [n for n, v in (("DP", rec.get("dp")), ("PPP", rec.get("ppp")),
+                              ("independents", rec.get("ind"))) if v is None]
+    if missing:
+        print(f"  ✗ Found approval {pres}% for {rec.get('survey_label') or rec['sort_key']} "
+              f"but not {', '.join(missing)} — baseline left unchanged (same-poll rule).")
+        _email_operator(
+            "Gallup update needs the party numbers",
+            f"The weekly Gallup update found a new poll ({rec.get('survey_label') or rec['sort_key']}, "
+            f"approval {pres}%) but could not read: {', '.join(missing)}.\n\n"
+            f"To keep every figure from the same survey, nothing was changed. "
+            f"Run the Gallup update workflow with all four numbers "
+            f"(approval, DP, PPP, independents) and the survey dates.")
+        print(f"::warning title=Gallup update incomplete::approval found but not "
+              f"{', '.join(missing)}; baseline unchanged")
+        return 0
+    dp, ppp, ind = rec["dp"], rec["ppp"], rec["ind"]
     label = rec.get("survey_label") or rec["sort_key"]
-    carried = [n for n, v in (("DP", rec.get("dp")), ("PPP", rec.get("ppp")),
-                              ("ind", rec.get("ind"))) if v is None]
+    carried = []
     _lbl = label[8:] if label.lower().startswith("week of ") else label  # avoid "week of week of ..."
     poll_name = f"Gallup Korea #{rec['poll_no']}" if rec.get("poll_no") else f"Gallup Korea (week of {_lbl})"
 
