@@ -109,5 +109,17 @@
     "bytes": 4700620,
     "seconds": 587,
     "script": "written"
+  },
+  {
+    "date": "2026-10-16",
+    "title": "Korea Daily Brief | Friday, October 16",
+    "summary": "NK-China bridge opens, SLCM test confirmed, U.S.-South Korea 2+2 finance debut, KOSPI rebounds 2%, OPCON row deepens.",
+    "file": "digest_2026-10-16.mp3",
+    "bytes": 6058570,
+    "seconds": 757,
+    "script": "assembled",
+    "script_rejected": [
+      "name not in the brief: Demarcation"
+    ]
   }
 ]

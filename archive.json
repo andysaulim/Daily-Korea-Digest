@@ -1592,5 +1592,12 @@
     "top_stories_count": 4,
     "word_count": 3659,
     "url": "digest_2026-10-15.html"
+  },
+  {
+    "date": "2026-10-16",
+    "headline_re": "NK-China bridge opens · SLCM test confirmed · US-ROK 2+2 finance debut · KOSPI rebounds 2% · OPCON row deepens",
+    "top_stories_count": 3,
+    "word_count": 3863,
+    "url": "digest_2026-10-16.html"
   }
 ]
