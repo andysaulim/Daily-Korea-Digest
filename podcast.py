@@ -741,6 +741,8 @@ def write_script(digest: dict) -> tuple[str | None, list[str]]:
     key, the call errors, the framing lines are missing, or check_script finds
     anything the brief does not say.
     """
+    global LAST_REPAIR
+    LAST_REPAIR = []
     key = (os.environ.get("ANTHROPIC_API_KEY") or "").strip()
     if not key:
         return None, ["no ANTHROPIC_API_KEY"]
@@ -797,11 +799,71 @@ def write_script(digest: dict) -> tuple[str | None, list[str]]:
         return None, ["the script did not open with the show's opening line"]
     problems = check_script(text, digest, when)
     if problems:
-        return None, problems
+        repaired, dropped = _repair_script(text, problems, digest, when)
+        if repaired is None:
+            return None, problems
+        LAST_REPAIR = dropped
+        print(f"::notice title=Podcast script repaired::dropped {len(dropped)} sentence(s) "
+              f"the fact check could not match to the brief")
+        text = repaired
     text = re.sub(r"^\s*-{3,}\s*$", f"\n{SEGMENT}\n", text, flags=re.M)
     paras = [x.strip() if x.strip() == SEGMENT else speakable(x)
              for x in re.split(r"\n\s*\n", text) if x.strip()]
     return "\n\n".join(paras), []
+
+
+LAST_REPAIR: list[str] = []
+REPAIR_MAX_SHARE = 0.12          # drop at most this share of the script's words
+
+
+def _repair_script(text: str, problems: list[str], digest: dict, when: str,
+                   rounds: int = 2) -> tuple[str | None, list[str]]:
+    """Drop only the sentences the check objects to; None if that would cut too much.
+
+    A script that fails its revision used to be thrown away whole, so one
+    unmatched figure or name cost the listener the written episode. This cuts
+    the sentences holding a flagged number, quotation or name, re-checks the
+    whole script from scratch, and keeps it if the cuts stay small. Nothing is
+    added or reworded, so whatever survives is what the writer wrote and the
+    check has passed.
+    """
+    total = len(text.split()) or 1
+    dropped: list[str] = []
+    opening = f"This is the Korea Daily Brief from the CSIS Korea Chair. It's {when}."
+    closing = f"That's the Korea Daily Brief for {when}."
+    for _ in range(rounds):
+        nums = {m.group(1) for p in problems
+                for m in [re.match(r"number not in the brief here: (\S+)", p)] if m}
+        names = {m.group(1) for p in problems
+                 for m in [re.match(r"name not in the brief: (\S+)", p)] if m}
+        quotes = {m.group(1) for p in problems
+                  for m in [re.match(r"quotation not in the brief: '(.+)'$", p)] if m}
+        if not (nums or names or quotes):
+            return None, dropped
+        out_paras = []
+        for para in re.split(r"\n\s*\n", text):
+            if not para.strip() or para.strip().startswith(SEGMENT) or \
+                    para.strip().startswith((opening[:40], closing[:30])):
+                out_paras.append(para)
+                continue
+            keep = []
+            for sent in re.split(r"(?<=[.!?][\"”’])\s+|(?<=[.!?])\s+", para.strip()):
+                toks = set(_tokens(sent))
+                bad = (nums & toks) or any(re.search(rf"\b{re.escape(n)}\b", sent) for n in names) \
+                    or any(q[:40] in sent for q in quotes)
+                if bad:
+                    dropped.append(sent)
+                else:
+                    keep.append(sent)
+            if keep:
+                out_paras.append(" ".join(keep))
+        text = "\n\n".join(out_paras)
+        if sum(len(x.split()) for x in dropped) > REPAIR_MAX_SHARE * total:
+            return None, dropped
+        problems = check_script(text, digest, when)
+        if not problems:
+            return text, dropped
+    return None, dropped
 
 
 def estimate_minutes(script: str) -> float:
@@ -1337,6 +1399,7 @@ def produce(digest: dict, public: Path, web_base: str, date_slug: str) -> dict |
             # Every reason, not the four an annotation shows, so a rejected
             # rewrite can be diagnosed without the run log.
             **({"script_rejected": why[:40]} if source == "assembled" and why else {}),
+            **({"script_repaired": LAST_REPAIR[:20]} if source == "written" and LAST_REPAIR else {}),
         })
     return rec
 
