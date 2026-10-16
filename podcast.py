@@ -535,6 +535,8 @@ _SCRIPT_KEYS = ("re_line", "top_stories", "overnight_items", "kcna_delta", "key_
 # Capitalised words a script may use that need not appear in the brief: the
 # show's own frame, calendar words, and generic titles.
 _ALLOWED_CAPS = set("""
+U.S U.S. US UN Military Demarcation Line Joint Chiefs Staff Workers Central News Agency
+Intermediate-range Intercontinental Submarine-launched Liquefied Natural Gas Industry Finance
 I The This That These Those It It's Its In On At For From With And But Or So Yet
 Now Here Today Tomorrow Meanwhile Also First Next Finally Still Then And Why What
 How Who Where When Which Let Lets Let's We We're You You're Our Your Their There
@@ -565,6 +567,10 @@ _COUNT_NOUNS = {"countrie", "side", "message", "statement", "item", "storie", "t
 # things already named, not a count.
 _PRONOUN_NEXT = {"as", "agreed", "of", "have", "are", "were", "had", "met", "said", "will",
                  "would", "to", "in", "on", "at", "and", "also", "both", "spoke", "discussed"}
+# Units a voice spells out and a brief abbreviates ("900 km" / "900 kilometers").
+_UNIT_TOKENS = {"km": "kilometers", "kilometres": "kilometers", "kilometer": "kilometers",
+                "mi": "miles", "mile": "miles", "kg": "kilograms", "bn": "billion",
+                "mn": "million", "tn": "trillion", "pct": "percent"}
 _MARKET_WORDS = {"kospi", "won", "dollar", "dollars", "brent", "crude", "barrel", "percent",
                  "rate", "index", "points"}
 _MONTH_TOKENS = {"jan": "january", "feb": "february", "mar": "march", "apr": "april",
@@ -606,7 +612,7 @@ def _tokens(text: str) -> list[str]:
         elif last in tens and t in _NUMBER_WORDS and 1 <= int(_NUMBER_WORDS[t]) <= 9:
             out[-1] = str(int(prev) + int(_NUMBER_WORDS[t]))
         else:
-            out.append(_MONTH_TOKENS.get(t) or _NUMBER_WORDS.get(t, t))
+            out.append(_UNIT_TOKENS.get(t) or _MONTH_TOKENS.get(t) or _NUMBER_WORDS.get(t, t))
         last = t
     return out
 
@@ -693,10 +699,20 @@ def check_script(script: str, digest: dict, when: str = "") -> list[str]:
         if t[0].isdigit() and not _number_in_context(t, i, s_toks, src_toks, src_pos):
             ctx = " ".join(s_toks[max(0, i - 2):i + 3])
             problems.append(f"number not in the brief here: {t} ({ctx})")
-    for q in re.findall(r"[\"“]([^\"”]{12,})[\"”]", script):
+    # Quotes are paired within a paragraph, and a "quote" that begins or ends
+    # with a space is the gap between a closing mark and the next opening one,
+    # not a quotation; on 14 October that pairing flagged half of one sentence
+    # and the start of the next as an invented quote.
+    quotes = []
+    for para in script.split("\n"):
+        for q in re.findall(r"[\"“]([^\"”]{12,})[\"”]", para):
+            if q[:1].isspace() or q[-1:].isspace():
+                continue
+            quotes.append(q)
+    for q in quotes:
         if _norm(q).strip() and " ".join(_norm(q).split()) not in " ".join(blob.split()):
             problems.append(f"quotation not in the brief: {q[:60]!r}")
-    for sentence in re.split(r"(?<=[.!?:;])\s+|\n+", script):
+    for sentence in re.split(r"(?<=[.!?:;])\s+|(?<=[.!?,][\"”’])\s+|\n+", script):
         words = re.findall(r"[A-Za-z][A-Za-z'.-]*", sentence)
         for w in words[1:]:
             core = w.strip(".'-").replace("'s", "")
