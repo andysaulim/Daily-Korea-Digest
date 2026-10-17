@@ -121,5 +121,18 @@
     "script_rejected": [
       "name not in the brief: Demarcation"
     ]
+  },
+  {
+    "date": "2026-10-17",
+    "title": "Korea Daily Brief | Saturday, October 17",
+    "summary": "North Korea tests AI-equipped 'Zam-2.0' torpedo, Belarus opens Pyongyang embassy, Takaichi Yasukuni offering draws Seoul rebuke, USFK commander sovereignty row.",
+    "file": "digest_2026-10-17.mp3",
+    "bytes": 5055677,
+    "seconds": 631,
+    "script": "written",
+    "script_repaired": [
+      "North Korea has now conducted six weapons tests this October alone — and the latest one carries a label we haven't seen before: artificial intelligence.",
+      "A statement made at a Washington seminar three days ago is now driving a political confrontation between South Korean lawmakers and the United States Forces Korea commander."
+    ]
   }
 ]
