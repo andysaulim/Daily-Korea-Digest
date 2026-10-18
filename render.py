@@ -270,13 +270,17 @@ def _arrow(val) -> str:
 
 def _link_or_text(text: str, url: str,
                   style: str = "color:#1B2A4A;text-decoration:underline;"
-                               "text-underline-offset:2px;") -> str:
+                               "text-decoration-color:#AEBBD0;text-decoration-thickness:1px;"
+                               "text-underline-offset:4px;") -> str:
     """Render as <a> only if url is a real link, otherwise plain text.
 
     Underlined, in the navy the rest of the brief uses for links. The default
     used to be undecorated ink, so in the scan sections a headline that opened
     an article and one that did not looked identical, and nothing told a
-    reader which lines were worth clicking.
+    reader which lines were worth clicking. The line is a light blue-grey,
+    one pixel, set below the descenders: still plainly a link, but no longer
+    the heaviest mark on the page under a 20px serif headline. Clients that
+    ignore decoration colour fall back to an ordinary underline.
 
     NOTE: `text` should already be HTML-escaped by the caller via _esc()."""
     if url and url != "#" and url.startswith("http"):
