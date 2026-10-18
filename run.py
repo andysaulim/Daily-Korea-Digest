@@ -907,7 +907,63 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
     except Exception as _e:
         print(f"  ⚠  Shared validation skipped (non-fatal): {_e}")
 
+    warnings.extend(magnitude_warnings(digest))
     return warnings
+
+
+_MONEY_RE = re.compile(r"\$\s?(\d[\d,]*(?:\.\d+)?)\s?(trillion|tn|T|billion|bn|B)\b")
+_KOREA_RE = re.compile(r"\b(Korea|Korean|ROK|Seoul)\b")
+_BALANCE_RE = re.compile(r"\b(surplus|surpluses|deficit|deficits)\b", re.I)
+# South Korea's trade balances, overall or with any one partner, run in the
+# tens of billions of dollars a year. A Korean surplus or deficit stated in
+# the hundreds of billions is a dropped decimal, not news.
+KOREA_BALANCE_CEILING_B = 300
+
+
+def magnitude_warnings(digest: dict) -> list[str]:
+    """Figures far out of scale for what they describe, usually a dropped decimal.
+
+    On 18 October the brief said Korea's surplus with the US 'reached $847B'
+    through September, heading for 'a first-ever annual figure above $100B,'
+    against 'last year's $495B' — $84.7B and $49.5B with the decimal point
+    lost — and Today at a Glance turned it into 'above $1 trillion'. Nothing
+    checked scale. This flags a Korean trade surplus or deficit stated above
+    KOREA_BALANCE_CEILING_B, which gets the model one regeneration with the
+    sentence in front of it.
+    """
+    out, seen = [], set()
+
+    def scan(text: str):
+        for sent in re.split(r"(?<=[.;!?])\s+", text):
+            if not (_KOREA_RE.search(sent) and _BALANCE_RE.search(sent)):
+                continue
+            for m in _MONEY_RE.finditer(sent):
+                try:
+                    v = float(m.group(1).replace(",", ""))
+                except ValueError:
+                    continue
+                unit = m.group(2).lower()
+                billions = v * 1000 if unit in ("trillion", "tn", "t") else v
+                if billions >= KOREA_BALANCE_CEILING_B and m.group(0) not in seen:
+                    seen.add(m.group(0))
+                    out.append(f"MAGNITUDE CRITICAL: \"{sent.strip()[:160]}\" states {m.group(0)} for a "
+                               f"South Korean trade balance; Korea's surpluses and deficits run in the tens of "
+                               f"billions. Check the source for a dropped decimal (e.g. $84.7B, not $847B) and "
+                               f"correct every place the figure appears, including the morning memo.")
+
+    def walk(v):
+        if isinstance(v, str):
+            scan(v)
+        elif isinstance(v, dict):
+            for k, x in v.items():
+                if k not in ("url", "source_links", "_trade_standing_html"):
+                    walk(x)
+        elif isinstance(v, list):
+            for x in v:
+                walk(x)
+
+    walk(digest)
+    return out
 
 
 def _headline_tokens(text: str) -> set[str]:
@@ -1605,6 +1661,10 @@ def main():
         # ── Step 2a: Pre-send validation gate ─────────────────────────────────
         validation_warnings = validate_digest(digest_data, payload=payload)
         critical_warnings = [w for w in validation_warnings if "CRITICAL" in w]
+        # A scale flag earns a regeneration, but on the last attempt it does
+        # not stop the brief: a heuristic should never cost a day's issue.
+        if validation_attempt >= MAX_VALIDATION_RETRIES:
+            critical_warnings = [w for w in critical_warnings if not w.startswith("MAGNITUDE")]
 
         # Don't retry for DUPLICATE TOPIC issues — dedup already handled them,
         # and retrying just causes dedup to fight the retry loop.
