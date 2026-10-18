@@ -1254,6 +1254,25 @@ def _ensure_pledge_projects(digest: dict) -> list[str]:
     return log
 
 
+def tariff_changes(digest: dict, previous: dict | None) -> list[str] | None:
+    """Sector names whose tariff rate is new or different from the previous issue."""
+    if not previous:
+        return None
+    def _rates(d):
+        tt = ((d.get("us_korea_deals") or {}).get("tariff_tracker") or {}) if isinstance(d, dict) else {}
+        out = {}
+        for sr in (tt.get("sector_rates") or []):
+            if isinstance(sr, dict) and sr.get("sector"):
+                key = " ".join(re.sub(r"[^a-z0-9 ]+", " ", str(sr["sector"]).lower()).split())
+                out[key] = (str(sr.get("rate", "")).strip(), sr["sector"])
+        return out
+    now, before = _rates(digest), _rates(previous)
+    if not before:
+        return None
+    return [name for key, (rate, name) in now.items()
+            if key not in before or before[key][0] != rate]
+
+
 def _postprocess_digest(digest_data: dict, payload: dict | None = None) -> tuple[dict, list[str]]:
     """Run dedup, deal filter, source diversity, and URL repair. Returns (digest, all_log_messages)."""
     log = []
@@ -1734,6 +1753,15 @@ def main():
     # measure the real ratio between the two counts, and trim against a
     # digest-word ceiling scaled by it. One extra render, and the number the
     # reader sees is the number that was enforced.
+    # Which sector tariff rates changed since the last issue. The brief shows
+    # only those; the full table lives on the trade page. None means the
+    # previous issue could not be read, and then nothing is shown inline.
+    try:
+        from podcast import _previous_issue
+        digest_data["_tariff_changes"] = tariff_changes(digest_data, _previous_issue(_date_slug))
+    except Exception as _e:                                     # noqa: BLE001
+        digest_data["_tariff_changes"] = None
+        print(f"  ⚠  Tariff change check skipped: {_e}")
     try:
         import length_budget
         _probe = render(digest_data)

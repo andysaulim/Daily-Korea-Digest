@@ -115,6 +115,7 @@ _DARK_TEXT = {
 }
 
 _DARK_BG = {
+    "#E8E8E8": "#3A4048",   # tag chips (company names under business items)
     "#EDF3FB":  "#16233A",  # Stat of the Day, edition tint
     "#7E93B3":  "#55688A",  # poll sparkline, earlier readings
     "#fff":     "#262A30",  # cards
@@ -200,6 +201,15 @@ def _dark_mode_css() -> str:
     # specificity, so order is the only thing that decides it.
     lines.append('      .wrapper .pill { background:#E8E6E1 !important; '
                  'color:#14181F !important; }')
+    # The Listen bar is the same case: a white card with dark type, which the
+    # generic mapping turned into dark type on a dark card (1.23:1). It keeps
+    # a light card in dark mode, with its play button in the brand blue.
+    lines.append('      .wrapper .listen-bar, .wrapper .listen-bar td { background:#E8E6E1 !important; }')
+    lines.append('      .wrapper .listen-bar .listen-title, .wrapper .listen-bar .listen-len '
+                 '{ color:#14181F !important; }')
+    lines.append('      .wrapper .listen-bar .listen-sub { color:#3A4150 !important; }')
+    lines.append('      .wrapper .listen-bar .listen-play { background:#0047A0 !important; '
+                 'color:#FFFFFF !important; }')
     # The poll sparkline. Its bars are graphics, not text, so the contrast
     # check never looked at them and the chart was half-unreadable in each
     # mode: the active bar is navy, which measures 2.00 against the dark
@@ -555,12 +565,12 @@ def render(digest: dict) -> str:
             'border-radius:4px;text-decoration:none;color:#14181F;">'
             '<table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation"><tr>'
             '<td width="34" style="vertical-align:middle;">'
-            f'<span style="display:inline-block;width:28px;height:28px;line-height:28px;border-radius:14px;'
+            f'<span class="listen-play" style="display:inline-block;width:28px;height:28px;line-height:28px;border-radius:14px;'
             f'background:{BAND};color:#FFFFFF;text-align:center;font-size:12px;font-family:Arial,sans-serif;">&#9654;&#xFE0E;</span></td>'
             '<td style="vertical-align:middle;font-family:Arial,sans-serif;">'
-            '<div style="font-size:14px;font-weight:700;color:#14181F;">Listen to today&#8217;s brief</div>'
-            '<div style="font-size:12px;color:#4A5160;margin-top:1px;">The audio edition, read aloud</div></td>'
-            f'<td align="right" style="vertical-align:middle;font-family:Arial,sans-serif;font-size:12px;font-weight:700;color:#4A5160;white-space:nowrap;">{_len}</td>'
+            '<div class="listen-title" style="font-size:14px;font-weight:700;color:#14181F;">Listen to today&#8217;s brief</div>'
+            '<div class="listen-sub" style="font-size:12px;color:#4A5260;margin-top:1px;">The audio edition, read aloud</div></td>'
+            f'<td class="listen-len" align="right" style="vertical-align:middle;font-family:Arial,sans-serif;font-size:12px;font-weight:700;color:#4A5260;white-space:nowrap;">{_len}</td>'
             '</tr></table></a>')
     elif re_line:
         _masthead_bar = ("<div style='margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.28);"
@@ -1242,7 +1252,34 @@ def render(digest: dict) -> str:
                     f'letter-spacing:1px;color:{TAEGUK_BLUE};font-weight:700;border-bottom:1px solid #DBE0E6;">Sector Rates</div>'
                     f'<table width="100%" cellpadding="0" cellspacing="0" border="0" class="tariff-sector">{sec_rows}</table>')
 
-            pillars.append(f'<div style="margin-top:6px;">{_pillar_h("Tariffs")}{hero}{watch}{sector_box}</div>')
+            # The brief carries the status and the date to watch; the sector
+            # table moves to the trade page, where it sat unchanged in the
+            # brief day after day. A rate that changed since the last issue
+            # still appears here, under "Changed since the last issue".
+            _changed = digest.get("_tariff_changes") or []
+            _keys = {" ".join(_re.sub(r"[^a-z0-9 ]+", " ", str(c).lower()).split()) for c in _changed}
+            changed_rows = ""
+            for sr in (tariff_tracker.get("sector_rates") or []):
+                k = " ".join(_re.sub(r"[^a-z0-9 ]+", " ", str(sr.get("sector", "")).lower()).split())
+                if k in _keys:
+                    sr_st = "ACTIVE" if sr.get("status", "ACTIVE") == "ESCALATION" else sr.get("status", "ACTIVE")
+                    changed_rows += (f'<tr style="border-top:1px solid #E7EBF0;">'
+                                     f'<td style="padding:7px 12px;font-size:13px;font-weight:600;color:{INK};">{_esc(sr.get("sector",""))}</td>'
+                                     f'<td style="padding:7px 12px 7px 8px;font-family:Georgia,serif;font-size:14px;font-weight:700;color:{_sec_colors.get(sr_st, TAEGUK_RED)};text-align:right;white-space:nowrap;">{_esc(str(sr.get("rate","")))}</td>'
+                                     f'</tr>')
+            n_rates = len(tariff_tracker.get("sector_rates") or [])
+            changed_box = ""
+            if changed_rows:
+                changed_box = _box(
+                    f'<div style="background:#F5F7FA;padding:7px 12px;font-size:11px;text-transform:uppercase;'
+                    f'letter-spacing:1px;color:{TAEGUK_BLUE};font-weight:700;border-bottom:1px solid #DBE0E6;">Changed since the last issue</div>'
+                    f'<table width="100%" cellpadding="0" cellspacing="0" border="0" class="tariff-sector">{changed_rows}</table>')
+            rates_note = (f'<div style="font-size:13px;color:#5A6472;margin-top:8px;">{n_rates} sector rates in force'
+                          + (", none changed since the last issue" if not changed_rows and digest.get("_tariff_changes") is not None else "")
+                          + '. Full table on the trade reference page.</div>') if n_rates else ""
+            pillars.append(f'<div style="margin-top:6px;">{_pillar_h("Tariffs")}{hero}{watch}{changed_box}{rates_note}</div>')
+            if sector_box:
+                standing.insert(0, f'<div style="margin-top:6px;">{_pillar_h("Sector tariff rates")}{sector_box}</div>')
 
         # ── Pillar 2: Investment ───────────────────────────────────────────
         if investment_pkg and investment_pkg.get("total_pledged"):
@@ -1462,8 +1499,8 @@ def render(digest: dict) -> str:
                     f'letter-spacing:1.5px;text-transform:uppercase;color:{TAEGUK_BLUE};">'
                     f'Full trade reference &#8594;</span>'
                     f'<span style="display:block;font-family:Georgia,serif;font-size:13px;'
-                    f'color:{INK};margin-top:4px;line-height:1.45;">All $350B pledge projects, the '
-                    f'investment ledger and standing policy measures.</span></a></div>')
+                    f'color:{INK};margin-top:4px;line-height:1.45;">Sector tariff rates, all $350B pledge projects, '
+                    f'the investment ledger and standing policy measures.</span></a></div>')
         digest["_trade_standing_html"] = "".join(standing)
         sections.append(f"""
         <div {_SEC}>
@@ -1926,11 +1963,11 @@ def render(digest: dict) -> str:
                         s_label = _esc(s.get("label", s.get("source", "")))
                         s_url = s.get("url", "")
                         if s_url and s_url != "#" and s_url.startswith("http"):
-                            _src_parts.append(f'<a href="{_esc(s_url)}" style="font-size:11px;font-family:monospace;color:#6B7280;text-decoration:none;">{s_label} ↗</a>')
+                            _src_parts.append(f'<a href="{_esc(s_url)}" style="font-size:11px;font-family:{MONO};color:#6B7280;text-decoration:none;">{s_label} ↗</a>')
                         else:
-                            _src_parts.append(f'<span style="font-size:11px;font-family:monospace;color:#6B7280;">{s_label} ↗</span>')
+                            _src_parts.append(f'<span style="font-size:11px;font-family:{MONO};color:#6B7280;">{s_label} ↗</span>')
                     else:
-                        _src_parts.append(f'<span style="font-size:11px;font-family:monospace;color:#6B7280;">{_esc(str(s))} ↗</span>')
+                        _src_parts.append(f'<span style="font-size:11px;font-family:{MONO};color:#6B7280;">{_esc(str(s))} ↗</span>')
                 source_links_html = "<div style='margin-top:8px;'>" + " &middot; ".join(_src_parts) + "</div>"
             bp_ids_html = ""
             if ir_bp_ids:
