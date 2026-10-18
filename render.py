@@ -115,6 +115,7 @@ _DARK_TEXT = {
 }
 
 _DARK_BG = {
+    "#E8E8E8": "#3A4048",   # tag chips (company names under business items)
     "#EDF3FB":  "#16233A",  # Stat of the Day, edition tint
     "#7E93B3":  "#55688A",  # poll sparkline, earlier readings
     "#fff":     "#262A30",  # cards
@@ -200,6 +201,15 @@ def _dark_mode_css() -> str:
     # specificity, so order is the only thing that decides it.
     lines.append('      .wrapper .pill { background:#E8E6E1 !important; '
                  'color:#14181F !important; }')
+    # The Listen bar is the same case: a white card with dark type, which the
+    # generic mapping turned into dark type on a dark card (1.23:1). It keeps
+    # a light card in dark mode, with its play button in the brand blue.
+    lines.append('      .wrapper .listen-bar, .wrapper .listen-bar td { background:#E8E6E1 !important; }')
+    lines.append('      .wrapper .listen-bar .listen-title, .wrapper .listen-bar .listen-len '
+                 '{ color:#14181F !important; }')
+    lines.append('      .wrapper .listen-bar .listen-sub { color:#3A4150 !important; }')
+    lines.append('      .wrapper .listen-bar .listen-play { background:#0047A0 !important; '
+                 'color:#FFFFFF !important; }')
     # The poll sparkline. Its bars are graphics, not text, so the contrast
     # check never looked at them and the chart was half-unreadable in each
     # mode: the active bar is navy, which measures 2.00 against the dark
@@ -555,12 +565,12 @@ def render(digest: dict) -> str:
             'border-radius:4px;text-decoration:none;color:#14181F;">'
             '<table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation"><tr>'
             '<td width="34" style="vertical-align:middle;">'
-            f'<span style="display:inline-block;width:28px;height:28px;line-height:28px;border-radius:14px;'
+            f'<span class="listen-play" style="display:inline-block;width:28px;height:28px;line-height:28px;border-radius:14px;'
             f'background:{BAND};color:#FFFFFF;text-align:center;font-size:12px;font-family:Arial,sans-serif;">&#9654;&#xFE0E;</span></td>'
             '<td style="vertical-align:middle;font-family:Arial,sans-serif;">'
-            '<div style="font-size:14px;font-weight:700;color:#14181F;">Listen to today&#8217;s brief</div>'
-            '<div style="font-size:12px;color:#4A5160;margin-top:1px;">The audio edition, read aloud</div></td>'
-            f'<td align="right" style="vertical-align:middle;font-family:Arial,sans-serif;font-size:12px;font-weight:700;color:#4A5160;white-space:nowrap;">{_len}</td>'
+            '<div class="listen-title" style="font-size:14px;font-weight:700;color:#14181F;">Listen to today&#8217;s brief</div>'
+            '<div class="listen-sub" style="font-size:12px;color:#4A5260;margin-top:1px;">The audio edition, read aloud</div></td>'
+            f'<td class="listen-len" align="right" style="vertical-align:middle;font-family:Arial,sans-serif;font-size:12px;font-weight:700;color:#4A5260;white-space:nowrap;">{_len}</td>'
             '</tr></table></a>')
     elif re_line:
         _masthead_bar = ("<div style='margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.28);"
@@ -1926,11 +1936,11 @@ def render(digest: dict) -> str:
                         s_label = _esc(s.get("label", s.get("source", "")))
                         s_url = s.get("url", "")
                         if s_url and s_url != "#" and s_url.startswith("http"):
-                            _src_parts.append(f'<a href="{_esc(s_url)}" style="font-size:11px;font-family:monospace;color:#6B7280;text-decoration:none;">{s_label} ↗</a>')
+                            _src_parts.append(f'<a href="{_esc(s_url)}" style="font-size:11px;font-family:{MONO};color:#6B7280;text-decoration:none;">{s_label} ↗</a>')
                         else:
-                            _src_parts.append(f'<span style="font-size:11px;font-family:monospace;color:#6B7280;">{s_label} ↗</span>')
+                            _src_parts.append(f'<span style="font-size:11px;font-family:{MONO};color:#6B7280;">{s_label} ↗</span>')
                     else:
-                        _src_parts.append(f'<span style="font-size:11px;font-family:monospace;color:#6B7280;">{_esc(str(s))} ↗</span>')
+                        _src_parts.append(f'<span style="font-size:11px;font-family:{MONO};color:#6B7280;">{_esc(str(s))} ↗</span>')
                 source_links_html = "<div style='margin-top:8px;'>" + " &middot; ".join(_src_parts) + "</div>"
             bp_ids_html = ""
             if ir_bp_ids:
