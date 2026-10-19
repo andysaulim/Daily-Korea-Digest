@@ -100,7 +100,7 @@ Write like a senior Economist correspondent: crisp, declarative, no throat-clear
 - "Confirmed" only when a second party verifies a first party's claim; an outlet repeating KCNA has not confirmed it, so write "KCNA said".
 - Never note that two things happened the same day or coincided unless a source links them.
 - No superlative or "first"/"in N years" claim unless a source states it, attributed in the sentence.
-- At most one em dash per item; no semicolons in headlines; headlines under 12 words, sentence case.
+- No em dashes, middle dots (·) or arrows anywhere; use a comma, colon or period. No semicolons in headlines; headlines under 12 words, sentence case.
 - Spell out every abbreviation on first use in each item (United Nations Command (UNC), wartime operational control (OPCON), MASGA); never "NK" in prose.
 - Use US spelling throughout (aluminum, defense, center).
 - Morning Memo: synthesize the factual connections across all tiers. What data points line up? What's the pattern? State it as fact, not opinion. The reader sees the implication

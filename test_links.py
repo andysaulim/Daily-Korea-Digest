@@ -290,7 +290,7 @@ def check_primary_label() -> list[str]:
          "url": "https://en.yna.co.kr/view/AEN1", "source_label": "MND"}]})
     if html.count(">Primary</span>") != 1:
         problems.append(f"'Primary' shown {html.count('>Primary</span>')} times for one government link")
-    if "Yonhap &#8599;" not in html:
+    if ">Yonhap</a>" not in html:
         problems.append("a news link on a ROK Government card is not labelled with its publisher")
     return problems
 

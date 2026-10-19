@@ -1,4 +1,4 @@
-"""Keep Korean script out of what the reader sees.
+"""Keep Korean script, and em dashes, out of what the reader sees.
 
 The brief is written in English for American readers. Korean reached the page
 three ways: outlet names taken from Korean-language feeds (뉴시스, 동아일보),
@@ -64,6 +64,24 @@ def outlet(name: str) -> str:
     return re.sub(r"\s{2,}", " ", s).strip(" ·—–-;,/")
 
 
+_DASH = re.compile(r"\s*[\u2014\u2015]\s*|\s+[\u2013]\s+|\s+--\s+")
+
+
+def dashes(text: str) -> str:
+    """Em dashes (and spaced en dashes) between words become commas.
+
+    A bare dash standing for a missing value is left alone, as are en dashes
+    in ranges (1,900\u20132,200, Jan\u2013Sep), which have no spaces around them.
+    """
+    s = str(text or "")
+    if not re.search(r"[A-Za-z0-9].*[\u2014\u2015\u2013-].*[A-Za-z0-9]", s):
+        return s
+    s = _DASH.sub(", ", s)
+    s = re.sub(r",\s*,", ",", s)
+    s = re.sub(r",\s*([.;:!?)])", r"\1", s)
+    return re.sub(r"^\s*,\s*|\s*,\s*$", "", s)
+
+
 def _translated_quote(text: str, start: int) -> bool:
     """Korean at `start` sits inside quotes followed (or preceded) by English in brackets/quotes."""
     window = text[max(0, start - 160): start + 220]
@@ -85,7 +103,7 @@ def apply(digest: dict) -> list[str]:
                 elif str(k).startswith("_") or k in ("url", "secondary_url", "source_url"):
                     continue
                 elif k in _LABEL_KEYS and isinstance(x, str):
-                    v[k] = outlet(x)
+                    v[k] = dashes(outlet(x))
                 else:
                     walk(x, f"{path}.{k}")
         elif isinstance(v, list):
@@ -109,7 +127,9 @@ def apply(digest: dict) -> list[str]:
             elif isinstance(v, list):
                 for i, x in enumerate(v):
                     prose(x, f"{path}[{i}]", v, i)
-            elif isinstance(v, str) and HANGUL.search(v) and parent is not None:
+            elif isinstance(v, str) and parent is not None and re.search(r"[\u2014\u2015]|\s[\u2013]\s|\s--\s", v):
+                parent[key] = v = dashes(v)
+            if isinstance(v, str) and HANGUL.search(v) and parent is not None:
                 s = v
                 for ko in _BY_LENGTH:
                     s = s.replace(ko, OUTLETS[ko])

@@ -51,7 +51,7 @@ def _top_story_sources(story: dict) -> str:
     _, tail = _linkq.split_outlets(raw)
     parts = [f'<a href="{_esc(l["url"])}" style="color:#6B7280;text-decoration:underline;'
              f'text-decoration-color:#C9D1DC;">{_esc(str(l["label"]))}</a>' for l in sl]
-    return " / ".join(parts) + (f" &mdash; {_esc(tail)}" if tail else "")
+    return " / ".join(parts) + (f", {_esc(tail)}" if tail else "")
 
 
 def _clean_src(raw: str) -> str:
@@ -307,10 +307,10 @@ def _arrow(val) -> str:
     except (TypeError, ValueError):
         return '<span style="color:#9FB3CC;">—</span>'
     if val > 0:
-        return f'<span style="color:#69C88E;">&#9650; +{val:.1f}%</span>'
+        return f'<span style="color:#69C88E;">+{val:.1f}%</span>'
     elif val < 0:
-        return f'<span style="color:#E8697A;">&#9660; {val:.1f}%</span>'
-    return '<span style="color:#9FB3CC;">— flat</span>'
+        return f'<span style="color:#E8697A;">&minus;{abs(val):.1f}%</span>'
+    return '<span style="color:#9FB3CC;">flat</span>'
 
 
 
@@ -417,11 +417,11 @@ def _compact_row(cat: str, headline: str, url: str, src: str, body: str = "") ->
     the sections around it — the eye had to change mode to scan it, which is
     the opposite of what a wire is for.
 
-    It is now the house item: a rule down the left, TAG · SOURCE in small grey
+    It is now the house item: a rule down the left, TAG&emsp;SOURCE in small grey
     caps, the headline, then the body. Same as the sections that read tightest,
     so The Wire scans like the rest of the brief instead of like a table.
     """
-    tag_line = " &middot; ".join(x for x in (cat, src) if x)
+    tag_line = "&emsp;".join(x for x in (cat, src) if x)
     return (f'<div style="margin-bottom:11px;padding-left:12px;'
             f'border-left:3px solid {TAEGUK_BLUE};">'
             + (f'<div style="font-family:Arial,sans-serif;font-size:10px;color:{MUTE};'
@@ -444,7 +444,7 @@ def _item_block(cat: str, src: str, headline: str, body: str, url: str,
     stitched together. This is the single form: white card, accent left rule,
     kicker, headline in ink with no underline, body, source last and muted.
     """
-    kicker = " &middot; ".join(x for x in (cat, src) if x)
+    kicker = "&emsp;".join(x for x in (cat, src) if x)
     if DESIGN == "v2":
         return _v2_item(cat, src, headline, body, url, bar_color, extra_html)
     if DESIGN == "refined":
@@ -517,7 +517,7 @@ def _count_rendered_words(html_body: str) -> int:
     """
     text = _re.sub(r"<(script|style)[^>]*>.*?</\1>", " ", html_body, flags=_re.S | _re.I)
     text = _re.sub(r"<[^>]+>", " ", text)
-    text = text.replace("&middot;", " ").replace("&nbsp;", " ").replace("&amp;", "&")
+    text = text.replace("&middot;", " ").replace("&emsp;", " ").replace("&nbsp;", " ").replace("&amp;", "&")
     text = _CHROME_WORDS.sub(" ", text)
     text = _re.sub(r"\s+", " ", text)
     return len([w for w in text.split() if any(c.isalnum() for c in w)])
@@ -685,7 +685,7 @@ def _status_line(digest: dict) -> str:
         return ""
     return (f'<table width="100%" cellpadding="0" cellspacing="0" border="0" class="status-line" '
             f'style="background:#0B1626;"><tr><td align="center" style="padding:7px 12px;font-family:Arial,sans-serif;'
-            f'font-size:12px;color:#B8C4D6;">' + " &nbsp;&middot;&nbsp; ".join(bits) + '</td></tr></table>')
+            f'font-size:12px;color:#B8C4D6;">' + "&emsp;".join(bits) + '</td></tr></table>')
 
 
 def render(digest: dict) -> str:
@@ -697,7 +697,7 @@ def render(digest: dict) -> str:
     word_count = 0          # resolved from the assembled body; see %%WORDS%%
     # Issue number, when run.py supplied one, so the brief is citable.
     _issue_no = digest.get("issue_no")
-    _issue_meta = (f'No. {int(_issue_no)} &middot; '
+    _issue_meta = (f'No. {int(_issue_no)}&emsp;'
                    if isinstance(_issue_no, (int, float)) and _issue_no > 0 else "")
     read_min = 0
 
@@ -717,7 +717,7 @@ def render(digest: dict) -> str:
                          f'style="{_foot_btn}">Trade reference</a>')
     sections = []
 
-    # ── 0. View in Browser bar (Read online · Print / PDF · Archive) ──────
+    # ── 0. View in Browser bar (Read online&emsp;Print / PDF&emsp;Archive) ──────
     if web_url:
         base = web_url[:-len("latest.html")] if web_url.endswith("latest.html") else ""
         # A solid pill. A translucent fill behind a hairline border renders
@@ -784,13 +784,13 @@ def render(digest: dict) -> str:
                 f'<a href="{_href}" style="display:inline-block;margin-top:8px;padding:6px 12px;background:#FFFFFF;'
                 'border-radius:14px;text-decoration:none;font-family:Arial,sans-serif;font-size:12px;font-weight:700;'
                 f'color:#14181F;white-space:nowrap;"><span style="color:{BAND};">&#9654;&#xFE0E;</span>&nbsp; Listen'
-                + (f' &middot; {_len}' if _len else "") + "</a>")
+                + (f'&emsp;{_len}' if _len else "") + "</a>")
     elif digest.get("audio_url"):
         _mins = digest.get("audio_minutes")
         _len = f"{int(_mins)} min" if isinstance(_mins, (int, float)) and _mins > 0 else "Audio"
         # The player page (chapters, transcript, subscribe) when there is one.
         _listen_href = digest.get("listen_url") or digest["audio_url"]
-        _listen_label = "Listen &middot; " + _len if _len != "Audio" else "Listen to today&#8217;s brief"
+        _listen_label = "Listen, " + _len if _len != "Audio" else "Listen to today&#8217;s brief"
         _masthead_bar = (
             f'<a href="{_esc(_listen_href)}" class="listen-bar" '
             'style="display:block;margin-top:14px;padding:11px 14px;background:#FFFFFF;'
@@ -802,7 +802,7 @@ def render(digest: dict) -> str:
             '<td style="vertical-align:middle;font-family:Arial,sans-serif;">'
             f'<div class="listen-title" style="font-size:14px;font-weight:700;color:#14181F;">{_listen_label}</div>'
             '<div class="listen-sub" style="font-size:12px;color:#353C48;margin-top:1px;">The audio edition, read aloud</div></td>'
-            f'<td class="listen-len" align="right" style="vertical-align:middle;font-family:Arial,sans-serif;font-size:12px;font-weight:700;color:#353C48;white-space:nowrap;">&#8250;</td>'
+            f'<td class="listen-len" align="right" style="vertical-align:middle;font-family:Arial,sans-serif;font-size:12px;font-weight:700;color:#353C48;white-space:nowrap;"></td>'
             '</tr></table></a>')
     elif re_line:
         _masthead_bar = ("<div style='margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.28);"
@@ -823,7 +823,7 @@ def render(digest: dict) -> str:
           <div style="margin-top:2px;font-size:16px;font-weight:400;color:{_md};font-family:Georgia,serif;">{_esc(date_str)}</div>
         </td>
         <td class="mast-meta" style="vertical-align:bottom;text-align:right;">
-          <div style="font-family:Arial,sans-serif;font-size:11px;letter-spacing:0.5px;color:{_mm};white-space:nowrap;">{_issue_meta}%%WORDS%% words &middot; %%READMIN%% min read</div>
+          <div style="font-family:Arial,sans-serif;font-size:11px;letter-spacing:0.5px;color:{_mm};white-space:nowrap;">{_issue_meta}%%WORDS%% words&emsp;%%READMIN%% min read</div>
           {_listen_pill}
         </td>
       </tr></table>
@@ -981,7 +981,7 @@ def render(digest: dict) -> str:
                 f'border-bottom:1px solid #EEF0F3;">'
                 f'<div>{_link_or_text(headline, url)}'
                 f'<span style="font-family:Arial,sans-serif;font-size:11px;color:#6B7280;">'
-                f' &middot; {src}</span></div>{tail}</td>'
+                f'&emsp;{src}</span></div>{tail}</td>'
                 f'</tr>')
         flash_html = (f'<table width="100%" cellpadding="0" cellspacing="0" border="0" '
                       f'class="flash-table" style="border-top:2px solid {TAEGUK_BLUE};">'
@@ -1050,7 +1050,7 @@ def render(digest: dict) -> str:
             if not qt:
                 continue
             speaker_line = f"<strong style='color:{RED_ON_NAVY};'>{speaker}</strong>"
-            src_line = f" <span style='color:#9FB3CC;'>— {src_art}</span>" if src_art else ""
+            src_line = f" <span style='color:#9FB3CC;'>({src_art})</span>" if src_art else ""
             quotes_html += f"""<div style='margin-bottom:10px;padding:1px 0 1px 14px;border-left:3px solid {TAEGUK_RED};'>
               <div style='font-size:13px;font-family:Georgia,serif;color:#E8E8E8;font-style:italic;line-height:1.5;'>&ldquo;{qt}&rdquo;</div>
               <div style='font-size:10px;margin-top:4px;'>{speaker_line}{src_line}</div>
@@ -1067,7 +1067,7 @@ def render(digest: dict) -> str:
             o_act = _esc(off.get("activity", ""))
             if not o_name or not o_act:
                 continue
-            role_line = (f"<span style='color:#9FB3CC;'> &middot; {o_role}</span>"
+            role_line = (f"<span style='color:#9FB3CC;'>&emsp;{o_role}</span>"
                          if o_role else "")
             senior_rows += (
                 f"<div style='margin-bottom:7px;'>"
@@ -1095,7 +1095,7 @@ def render(digest: dict) -> str:
                 kim_badge = (f' <span style="font-family:Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:0.5px;'
                              f'color:{RED_ON_NAVY};letter-spacing:0.5px;">KIM</span>'
                              if art.get("kim_related") else "")
-                src_tag = f" <span style='color:#9FB3CC;'>— {a_src}</span>" if a_src else ""
+                src_tag = f" <span style='color:#9FB3CC;'>({a_src})</span>" if a_src else ""
                 art_items += f"""<table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:8px;"><tr>
                   <td width="24" style="vertical-align:top;font-family:Arial,sans-serif;font-size:13px;font-weight:700;color:{BLUE_ON_NAVY};padding-top:1px;">{i}.</td>
                   <td style="vertical-align:top;">
@@ -1115,7 +1115,7 @@ def render(digest: dict) -> str:
           <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:{NAVY_PANEL};">
             <tr>
               <td style="padding:12px 32px;">
-                <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:{BLUE_ON_NAVY};font-family:Arial,sans-serif;border-bottom:2px solid {TAEGUK_RED};padding-bottom:5px;display:inline-block;">Pyongyang Watch &middot; KCNA</span>
+                <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:{BLUE_ON_NAVY};font-family:Arial,sans-serif;border-bottom:2px solid {TAEGUK_RED};padding-bottom:5px;display:inline-block;">Pyongyang Watch&emsp;KCNA</span>
               </td>
             </tr>
           </table>
@@ -1186,20 +1186,20 @@ def render(digest: dict) -> str:
                         _rows.append(
                             f'<span style="font-weight:700;color:{TAEGUK_BLUE};">Primary</span> '
                             f'<a href="{_esc(source_url)}" style="font-family:Georgia,serif;color:#353C48;text-decoration:none;">'
-                            f'{s_label} &#8599;</a>')
+                            f'{s_label}</a>')
                     else:
                         s_label = (_raw_label if _raw_label and _linkq.label_matches_url(_raw_label, source_url)
                                    else _linkq.publisher_name(source_url))
                         _rows.append(
                             f'<a href="{_esc(source_url)}" style="font-weight:700;color:#353C48;text-decoration:none;">'
-                            f'{_esc(s_label)} &#8599;</a>')
+                            f'{_esc(s_label)}</a>')
                 elif source_label:
                     _rows.append(f'<span style="font-weight:700;">Source</span> {source_label}')
                 if secondary_url and str(secondary_url).startswith("http"):
                     _rows.append(
                         f'<span style="font-weight:700;">Reported</span> '
                         f'<a href="{_esc(secondary_url)}" style="font-family:Georgia,serif;color:#353C48;text-decoration:none;">'
-                        f'{secondary_label or "coverage"} &#8599;</a>')
+                        f'{secondary_label or "coverage"}</a>')
                 elif secondary_label:
                     _rows.append(f'<span style="font-weight:700;">Reported</span> {secondary_label}')
                 src_link = ""
@@ -1287,7 +1287,7 @@ def render(digest: dict) -> str:
         sections.append(f"""
         <div {_SEC}>
           <a name="rok-gov" id="rok-gov"></a>{_sec_label("ROK Government")}
-          <div style="font-size:10px;color:#6B7280;font-family:Arial,sans-serif;margin-top:-10px;margin-bottom:10px;">President + Ministries &middot; {rok_date}</div>
+          <div style="font-size:10px;color:#6B7280;font-family:Arial,sans-serif;margin-top:-10px;margin-bottom:10px;">President and ministries, {rok_date}</div>
           <div style="padding-top:4px;">
             {gov_grid_html}
             {pers_html}
@@ -1455,7 +1455,7 @@ def render(digest: dict) -> str:
                 watch = (f'<div style="margin-top:12px;background:#FBF3F0;border:1px solid #F1D9D2;'
                          f'border-left:3px solid {TAEGUK_RED};border-radius:3px;padding:9px 13px;">'
                          f'<div style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#A93226;font-weight:700;">Watch this date</div>'
-                         f'<div style="font-size:13px;font-family:Georgia,serif;color:#353C48;margin-top:2px;">{" &middot; ".join(watch_bits)}</div></div>')
+                         f'<div style="font-size:13px;font-family:Georgia,serif;color:#353C48;margin-top:2px;">{"&emsp;".join(watch_bits)}</div></div>')
 
             _sec_colors = {"ACTIVE": TAEGUK_RED, "PAUSED": "#7F8C8D", "NEGOTIATING": TAEGUK_BLUE, "REDUCED": UP_GREEN}
             sec_rows = ""
@@ -1526,7 +1526,7 @@ def render(digest: dict) -> str:
                     latest = latest[:57].rstrip() + "…"
                 bar = (f'<div style="font-size:13px;font-family:Georgia,serif;color:#353C48;margin-bottom:7px;">'
                        f'<span style="font-family:{MONO};color:{NAVY};font-size:14px;font-weight:700;">{_esc(announced)}</span> '
-                       f'announced of {pledged} pledged &middot; {pct_int}% fulfilled</div>'
+                       f'announced of {pledged} pledged, {pct_int}% fulfilled</div>'
                        f'<div style="background:#E7EBF0;border-radius:6px;height:16px;overflow:hidden;">'
                        f'<div style="background:{TAEGUK_BLUE};width:{bar_w}%;height:100%;border-radius:6px 0 0 6px;"></div></div>'
                        + (f'<div style="font-size:11px;color:#6B7280;margin-top:5px;text-align:right;">newest: {latest}</div>' if latest else ""))
@@ -1560,7 +1560,7 @@ def render(digest: dict) -> str:
             if deal_rows:
                 deal_box = _box(
                     f'<div style="background:#F5F7FA;padding:7px 12px;font-size:11px;text-transform:uppercase;'
-                    f'letter-spacing:1px;color:{TAEGUK_BLUE};font-weight:700;border-bottom:1px solid #DBE0E6;">$350B Pledge &middot; Selected Projects</div>'
+                    f'letter-spacing:1px;color:{TAEGUK_BLUE};font-weight:700;border-bottom:1px solid #DBE0E6;">$350B Pledge: Selected Projects</div>'
                     f'<table width="100%" cellpadding="0" cellspacing="0" border="0" class="deal-breakdown">{deal_rows}</table>')
 
             # The brief shows the pledge and what is new; the full project list
@@ -1577,17 +1577,17 @@ def render(digest: dict) -> str:
             else:
                 summary = "No projects selected yet"
             compact = (f'<div><span style="font-family:{MONO};color:{NAVY};font-size:20px;font-weight:700;">{pledged}</span>'
-                       f'<span style="font-size:13px;color:#6B7280;"> &nbsp;pledged &middot; {summary}</span></div>')
+                       f'<span style="font-size:13px;color:#6B7280;"> &nbsp;pledged, {summary}</span></div>')
             new_box = ""
             if new_rows:
                 new_box = _box(
                     f'<div style="background:#F5F7FA;padding:7px 12px;font-size:11px;text-transform:uppercase;'
                     f'letter-spacing:1px;color:{TAEGUK_BLUE};font-weight:700;border-bottom:1px solid #DBE0E6;">New this week</div>'
                     f'<table width="100%" cellpadding="0" cellspacing="0" border="0" class="deal-breakdown">{new_rows}</table>')
-            pillars.append(f'<div style="margin-top:18px;">{_pillar_h("Investment &middot; " + pledged + " pledge", accent=TAEGUK_BLUE)}'
+            pillars.append(f'<div style="margin-top:18px;">{_pillar_h("Investment: " + pledged + " pledge", accent=TAEGUK_BLUE)}'
                            f'{bar if has_progress else compact}{new_box}</div>')
             if deal_box:
-                standing.append(f'<div style="margin-top:18px;">{_pillar_h("Investment &middot; " + pledged + " pledge", accent=TAEGUK_BLUE)}{bar}{deal_box}</div>')
+                standing.append(f'<div style="margin-top:18px;">{_pillar_h("Investment: " + pledged + " pledge", accent=TAEGUK_BLUE)}{bar}{deal_box}</div>')
 
         # ── Pillar 2b: Bilateral Investment Ledger ─────────────────────────
         # Corporate investment flows BOTH directions, tracked separately from
@@ -1601,8 +1601,8 @@ def render(digest: dict) -> str:
                                     _dir_groups["partnership"]).append(e)
             _status_chip = {"binding": ("#E4EFE7", "#1E7940"), "loi": ("#FBF3F0", "#B0212F"),
                             "mou": ("#EEF1F5", "#55607A"), "announced": ("#F1F4F8", "#55607A")}
-            _dir_meta = [("rok_to_us", "Korea &rarr; US", TAEGUK_RED),
-                         ("us_to_rok", "US &rarr; Korea", TAEGUK_BLUE),
+            _dir_meta = [("rok_to_us", "Korea to US", TAEGUK_RED),
+                         ("us_to_rok", "US to Korea", TAEGUK_BLUE),
                          ("partnership", "Partnerships &amp; supply", "#5A6472")]
             blocks = ""
             for key, lbl, color in _dir_meta:
@@ -1654,7 +1654,7 @@ def render(digest: dict) -> str:
                          f'color:#fff;background:{UP_GREEN};border-radius:3px;padding:1px 6px;margin-left:6px;">{value}</span>') if value else ""
             kind = ('<span style="display:inline-block;font-family:' + MONO + ';font-size:10px;font-weight:700;'
                     'letter-spacing:0.5px;padding:1px 6px;border-radius:3px;background:#E4EFE7;color:#1E7940;margin-left:6px;">New deal</span>')
-            meta = " &middot; ".join(b for b in (parties, src2) if b)
+            meta = "&emsp;".join(b for b in (parties, src2) if b)
             new_rows += (f'<tr><td style="padding:9px 0;border-top:1px solid #EAEDF1;">'
                          f'<div style="font-size:13px;font-weight:700;color:{INK};line-height:1.35;">{_link_or_text(headline, url, style="color:" + INK + ";text-decoration:none;")}{val_badge}{kind}</div>'
                          + (f'<div style="font-size:13px;font-family:Georgia,serif;color:#353C48;line-height:1.45;margin-top:2px;">{detail}</div>' if detail else "")
@@ -1688,7 +1688,7 @@ def render(digest: dict) -> str:
             st_color = _pol_colors.get(st, "#7F8C8D")
             head = _link_or_text(item_text, item_url, style="color:" + INK + ";text-decoration:none;")
             status_span = f'<span style="font-family:Arial,sans-serif;font-weight:700;letter-spacing:0.5px;color:{st_color};">{_esc(st)}</span>'
-            meta = " &middot; ".join(b for b in (agency, status_span) if b)
+            meta = "&emsp;".join(b for b in (agency, status_span) if b)
             pol_rows += (f'<tr><td style="padding:8px 0;border-top:1px solid #EAEDF1;">'
                          f'<div style="font-size:13px;font-weight:600;color:{INK};line-height:1.35;">{head}</div>'
                          + (f'<div style="font-size:13px;font-family:Georgia,serif;color:#353C48;line-height:1.45;margin-top:2px;">{detail_text}</div>' if detail_text else "")
@@ -1720,7 +1720,7 @@ def render(digest: dict) -> str:
                     f'border-radius:3px;text-decoration:none;">'
                     f'<span style="font-family:Arial,sans-serif;font-size:10px;font-weight:700;'
                     f'letter-spacing:1.5px;text-transform:uppercase;color:{TAEGUK_BLUE};">'
-                    f'Full trade reference &#8594;</span>'
+                    f'Full trade reference</span>'
                     f'<span style="display:block;font-family:Georgia,serif;font-size:13px;'
                     f'color:{INK};margin-top:4px;line-height:1.45;">Sector tariff rates, all $350B pledge projects, '
                     f'the investment ledger and standing policy measures.</span></a></div>')
@@ -1745,7 +1745,7 @@ def render(digest: dict) -> str:
         for item in hill_items:
             if not isinstance(item, dict):
                 continue
-            kicker = " &middot; ".join(_esc(_str(x)) for x in (item.get("chamber"), item.get("category"),
+            kicker = "&emsp;".join(_esc(_str(x)) for x in (item.get("chamber"), item.get("category"),
                                                                item.get("bill")) if _str(x))
             hill_html += _item_block(
                 cat=kicker,
@@ -1836,8 +1836,8 @@ def render(digest: dict) -> str:
             if is_reaction:
                 badge_label = "PRC SOURCE" if "China" in region else "STATE MEDIA"
                 reaction_badge = f'<span style="display:inline-block;padding:1px 5px;border-radius:3px;font-size:10px;font-weight:600;color:#fff;background:#5A6472;margin-left:6px;">{badge_label}</span>'
-            # "Trilateral · Trilateral" when the region tag and category coincide.
-            region_txt = _esc(region) + " &middot; " if region and region.lower() != cat_raw.lower() else ""
+            # "Trilateral&emsp;Trilateral" when the region tag and category coincide.
+            region_txt = _esc(region) + "&emsp;" if region and region.lower() != cat_raw.lower() else ""
             nea_html += _item_block(cat=f"{region_txt}{cat}{reaction_badge}", src=src,
                                     headline=headline, body=body, url=url, bar_color=bar_color)
         sections.append(f"""
@@ -1852,7 +1852,7 @@ def render(digest: dict) -> str:
     if world_items:
         world_html = ""
         for item in world_items:
-            kicker = " &middot; ".join(_esc(_str(x)) for x in (item.get("region"), item.get("category"))
+            kicker = "&emsp;".join(_esc(_str(x)) for x in (item.get("region"), item.get("category"))
                                        if _str(x))
             world_html += _item_block(
                 cat=kicker,
@@ -1888,15 +1888,15 @@ def render(digest: dict) -> str:
                 return ""
             pts, prior_label = _delta
             if pts > 0:
-                mark, colour, sign = "&#9650;", UP_GREEN, "+"
+                mark, colour, sign = "", UP_GREEN, "+"
             elif pts < 0:
-                mark, colour, sign = "&#9660;", DOWN_RED, ""
+                mark, colour, sign = "", DOWN_RED, "&minus;"
             else:
-                mark, colour, sign = "&mdash;", MUTE, ""
+                mark, colour, sign = "No change,", MUTE, ""
             against = f" vs {_esc(prior_label)}" if prior_label else " vs prior survey"
             return (f'<div style="font-family:Arial,sans-serif;font-size:11px;'
                     f'color:{colour};margin-top:4px;white-space:nowrap;">'
-                    f'{mark} {sign}{abs(pts) if pts else 0:g} pts'
+                    f'{mark + " " if mark else ""}{sign}{abs(pts) if pts else 0:g} pts'
                     f'<span style="color:{MUTE};">{against}</span></div>')
 
         def _party_short(data, fallback):
@@ -2003,7 +2003,7 @@ def render(digest: dict) -> str:
                                     if _wks else f"{_age} days old")
                         stale_html = f"""
             <div style="margin-top:8px;font-size:10px;color:{TAEGUK_RED};text-align:center;">
-              Gallup Korea publishes weekly &middot; this reading is {_how_old}
+              Gallup Korea publishes weekly; this reading is {_how_old}
               ({_esc(poll_updated)})
             </div>"""
             except Exception:
@@ -2025,7 +2025,7 @@ def render(digest: dict) -> str:
                 <div style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:#6B7280;font-family:Arial,sans-serif;">Presidential approval</div>
                 <div class="hero-num" style="font-family:Georgia,serif;font-size:42px;font-weight:700;color:{TAEGUK_BLUE};line-height:1.05;margin-top:4px;">{_esc(str(approval.get("value") or "--"))}</div>
                 {_delta_line()}
-                <div style="font-size:11px;color:#6B7280;font-family:Arial,sans-serif;margin-top:5px;">{_esc(str(approval.get("source") or ""))}{" &middot; " + _esc(str(approval.get("last_updated") or "")) if approval.get("last_updated") else ""}</div>
+                <div style="font-size:11px;color:#6B7280;font-family:Arial,sans-serif;margin-top:5px;">{_esc(str(approval.get("source") or ""))}{"&emsp;" + _esc(str(approval.get("last_updated") or "")) if approval.get("last_updated") else ""}</div>
                 {"<div style='margin-top:9px;'>" + _spark_html + "</div>" if _spark_html else ""}
               </td>
               <td valign="top" style="padding:4px 0 4px 18px;">
@@ -2130,7 +2130,7 @@ def render(digest: dict) -> str:
                 if not post:
                     continue
                 url = xp.get("url", "")
-                link = (f'<a href="{_esc(url)}" style="font-size:10px;color:{TAEGUK_BLUE};text-decoration:none;">View on X &#8594;</a>'
+                link = (f'<a href="{_esc(url)}" style="font-size:10px;color:{TAEGUK_BLUE};text-decoration:none;">View on X</a>'
                         if url and str(url).startswith("http") else "")
                 xp_html += (f'<div style="margin-bottom:9px;padding-bottom:9px;border-bottom:1px solid #E1E8F0;">'
                             f'<div style="font-size:13px;font-weight:600;color:{INK};">{name}'
@@ -2157,7 +2157,7 @@ def render(digest: dict) -> str:
             note = _esc(s.get("analyst_note", ""))
             url = s.get("url", "")
             badge_color = _social_badge(s.get("badge_class", "sb-p"))
-            source_link = f'<a href="{_esc(url)}" style="font-size:10px;color:{TAEGUK_BLUE};text-decoration:none;">Source &#8594;</a>' if url and url != "#" and url.startswith("http") else ""
+            source_link = f'<a href="{_esc(url)}" style="font-size:10px;color:{TAEGUK_BLUE};text-decoration:none;">Source</a>' if url and url != "#" and url.startswith("http") else ""
             sa_html += f"""
             <div style="margin-bottom:12px;padding:12px;background:#F8F9FA;border-radius:6px;border-left:3px solid {badge_color};">
               <table cellpadding="0" cellspacing="0" border="0" style="margin-bottom:6px;">
@@ -2202,7 +2202,7 @@ def render(digest: dict) -> str:
             summary = _emphasis(_esc(a.get("summary", "")))
             implication = _esc(a.get("policy_implication", ""))
             url = a.get("url", "")
-            read_link = f'<a href="{_esc(url)}" style="font-size:11px;color:{TAEGUK_BLUE};">Read &#8594;</a>' if url and url != "#" and url.startswith("http") else ""
+            read_link = f'<a href="{_esc(url)}" style="font-size:11px;color:{TAEGUK_BLUE};">Read</a>' if url and url != "#" and url.startswith("http") else ""
             title_html = f'<div style="font-family:Georgia,serif;font-size:14px;font-weight:600;color:{INK};line-height:1.35;margin:2px 0 3px;">{_link_or_text(title, url)}</div>' if title else ""
             _tier_chip = (f'<span style="display:inline-block;margin-left:6px;padding:1px 6px;'
                           f'border-radius:3px;background:#E7EBF0;font-family:Arial,sans-serif;'
@@ -2251,19 +2251,19 @@ def render(digest: dict) -> str:
                         s_label = _esc(s.get("label", s.get("source", "")))
                         s_url = s.get("url", "")
                         if s_url and s_url != "#" and s_url.startswith("http"):
-                            _src_parts.append(f'<a href="{_esc(s_url)}" style="font-size:11px;font-family:{MONO};color:#6B7280;text-decoration:none;">{s_label} ↗</a>')
+                            _src_parts.append(f'<a href="{_esc(s_url)}" style="font-size:11px;font-family:{MONO};color:#6B7280;text-decoration:none;">{s_label}</a>')
                         else:
                             # No arrow without a link: it promised a click that went nowhere.
                             _src_parts.append(f'<span style="font-size:11px;font-family:{MONO};color:#6B7280;">{s_label}</span>')
                     else:
                         _src_parts.append(f'<span style="font-size:11px;font-family:{MONO};color:#6B7280;">{_esc(str(s))}</span>')
-                source_links_html = "<div style='margin-top:8px;'>" + " &middot; ".join(_src_parts) + "</div>"
+                source_links_html = "<div style='margin-top:8px;'>" + "&emsp;".join(_src_parts) + "</div>"
             bp_ids_html = ""
             if ir_bp_ids:
-                bp_ids_html = "<div style='margin-top:6px;font-size:11px;color:#6B7280;'>→ " + " · ".join(_esc(str(b)) for b in ir_bp_ids) + "</div>"
+                bp_ids_html = "<div style='margin-top:6px;font-size:11px;color:#6B7280;'>" + ", ".join(_esc(str(b)) for b in ir_bp_ids) + "</div>"
             img_report_html = f"""
             <div style="margin-bottom:20px;padding:16px;border-left:3px solid {TAEGUK_BLUE};">
-              <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:{TAEGUK_BLUE};font-weight:600;margin-bottom:6px;">{ir_source} · {ir_date} — {ir_label}</div>
+              <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:{TAEGUK_BLUE};font-weight:600;margin-bottom:6px;">{ir_source}&emsp;{ir_date}&emsp;{ir_label}</div>
               <div style="font-size:17px;font-weight:700;color:{INK};line-height:1.3;margin-bottom:8px;">{ir_headline}</div>
               <div style="font-size:13px;line-height:1.6;font-family:Georgia,serif;color:#353C48;">{ir_body}</div>
               {bp_ids_html}
@@ -2320,7 +2320,7 @@ def render(digest: dict) -> str:
             _b = (digest.get("web_url", "")[:-len("latest.html")]
                   if digest.get("web_url", "").endswith("latest.html") else "")
             _link = (f' <a href="{_esc(_b + "locations.html")}" style="color:{TAEGUK_BLUE};">'
-                     f'Full location watch &#8594;</a>' if _b else "")
+                     f'Full location watch</a>' if _b else "")
             quiet_html = (f'<div style="font-size:13px;color:#5A6472;margin-top:10px;'
                           f'padding-top:9px;border-top:1px solid #EAEAEA;">'
                           + (f'{len(_quiet)} other monitored site{"s" if len(_quiet) != 1 else ""}: '
@@ -2332,7 +2332,7 @@ def render(digest: dict) -> str:
             _dates = sorted(str(l.get("last_source_date", ""))[:7]
                             for l in _quiet if l.get("last_source_date"))
             if _dates:
-                _oldest = f" &middot; oldest report {_esc(_dates[0])}"
+                _oldest = f" , oldest report {_esc(_dates[0])}"
             quiet_html = (f'<div style="font-size:11px;color:#6B7280;margin-top:10px;'
                           f'padding-top:9px;border-top:1px solid #EAEAEA;">'
                           f'{len(_quiet)} other monitored site{"s" if len(_quiet) != 1 else ""}: '
@@ -2378,9 +2378,9 @@ def render(digest: dict) -> str:
                     direction = loc.get("direction", "")
                     b_color, b_bg, b_label = _badge_styles.get(status, ("#7F8C8D", "#F5F6F7", "MONITOR"))
                     if direction == "up":
-                        b_label += " &#9650;"
+                        b_label += ", RISING"
                     elif direction == "down":
-                        b_label += " &#9660;"
+                        b_label += ", EASING"
                     # The status sits above the name on its own line. Sharing a
                     # line, a long site name pushed the status onto a second row
                     # inside a half-width column, so it landed under the name and
@@ -2411,7 +2411,7 @@ def render(digest: dict) -> str:
                             _src = _date(int(_dm.group(1)), int(_dm.group(2)), int(_dm.group(3) or 1))
                             _age = (datetime.now(timezone.utc).date() - _src).days
                             if _age > 90:
-                                stale_flag = (f' <span style="color:#9A5B00;">&middot; no recent reporting '
+                                stale_flag = (f' <span style="color:#9A5B00;">, no recent reporting '
                                               f'(~{_age // 30} mo)</span>')
                         except (ValueError, TypeError):
                             pass
@@ -2471,7 +2471,7 @@ def render(digest: dict) -> str:
         otd_rel = _esc(item.get("relevance", ""))
         otd_footer = f"""
         <div style="text-align:left;margin-bottom:18px;padding:12px 16px;background:rgba(143,182,232,0.10);border-radius:3px;border-left:2px solid {BLUE_ON_NAVY};">
-          <div style="font-size:10px;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,0.95);margin-bottom:6px;font-weight:600;">On This Day &middot; <span style="font-family:{MONO};">{otd_date}</span></div>
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,0.95);margin-bottom:6px;font-weight:600;">On This Day&emsp;<span style="font-family:{MONO};">{otd_date}</span></div>
           <div style="font-size:13px;color:rgba(255,255,255,0.85);line-height:1.5;font-family:Georgia,serif;">{otd_event}</div>
           <div style="font-size:11px;color:rgba(255,255,255,0.6);font-style:italic;margin-top:4px;line-height:1.4;">{otd_rel}</div>
         </div>"""
@@ -2527,7 +2527,7 @@ def render(digest: dict) -> str:
     </table>
     <table width="100%" cellpadding="0" cellspacing="0" border="0" class="footer-end" style="background:#FFFFFF;">
       <tr><td style="padding:12px 32px 18px;text-align:center;font-family:Arial,sans-serif;font-size:10px;letter-spacing:0.5px;color:#6B7280;">
-        &copy; {now.year} Center for Strategic and International Studies &nbsp;&middot;&nbsp; {_issue_meta}generated {gen_time}
+        &copy; {now.year} Center for Strategic and International Studies&emsp;{_issue_meta}generated {gen_time}
       </td></tr>
     </table>
     """)
@@ -2564,7 +2564,7 @@ def render(digest: dict) -> str:
                      '<span style="font-size:10px;font-weight:700;'
                      'text-transform:uppercase;letter-spacing:1.5px;'
                      'color:#6B7280;">In this issue &nbsp;</span>'
-                     + ' &nbsp;&middot;&nbsp; '.join(_links) + '</div>')
+                     + '&emsp;'.join(_links) + '</div>')
     body = body.replace("%%NAV%%", _nav_html)
 
     # Count what the body actually says, then stamp it into the masthead.
@@ -2588,7 +2588,7 @@ def render(digest: dict) -> str:
        client. Declaring both schemes is what stops that guesswork. -->
   <meta name="color-scheme" content="light dark">
   <meta name="supported-color-schemes" content="light dark">
-  <title>Korea Daily Brief &mdash; {_esc(date_str)}</title>
+  <title>Korea Daily Brief, {_esc(date_str)}</title>
   <style type="text/css">
     /* Reset */
     body, table, td, div, p {{ margin:0; padding:0; }}
@@ -2823,7 +2823,7 @@ def _v2_kicker(cat: str, src: str, alert: bool = False) -> str:
     kind = _v2_srctype(_re.sub(r"<[^>]+>", "", src))
     chip = (f' <span style="display:inline-block;margin-left:4px;padding:1px 5px;background:#E7EBF0;'
             f'color:#353C48;font-size:10px;letter-spacing:0.5px;vertical-align:1px;">{kind}</span>' if kind else "")
-    text = " &middot; ".join(x for x in (cat, src) if x)
+    text = "&emsp;".join(x for x in (cat, src) if x)
     if not text and not chip:
         return ""
     return (f'<div style="font-family:{_V2_SANS};font-size:11px;font-weight:700;letter-spacing:1px;'
@@ -2855,7 +2855,7 @@ def _v2_masthead(digest: dict, now, listen_bar: str) -> str:
     issue_txt = (f"No. {int(issue)}" if isinstance(issue, (int, float)) and issue > 0 else "")
     soft = "rgba(255,255,255,0.80)"
     dateline = (f'<span style="white-space:nowrap;">Seoul <b style="color:#FFFFFF;">{seoul:%H:%M}</b> {seoul:%a}</span> '
-                f'&middot; <span style="white-space:nowrap;">Washington <b style="color:#FFFFFF;">{now:%H:%M}</b> {now:%a}</span>')
+                f'&emsp;<span style="white-space:nowrap;">Washington <b style="color:#FFFFFF;">{now:%H:%M}</b> {now:%a}</span>')
     return f"""<!--v2--><a name="top" id="top"></a>
 <div bgcolor="{BAND}" style="background-color:{BAND};color:#FFFFFF;padding:20px 32px 18px;" class="sec mast-band">
 <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
@@ -2869,7 +2869,7 @@ def _v2_masthead(digest: dict, now, listen_bar: str) -> str:
 </td></tr></table>
 <!--c--><table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:14px;border-top:1px solid rgba(255,255,255,0.30);"><tr>
 <td class="mast-main" style="padding-top:9px;font-family:{_V2_SANS};font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:{soft};">{dateline}</td>
-<td class="mast-meta" style="padding-top:9px;text-align:right;font-family:{_V2_SANS};font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:{soft};white-space:nowrap;">%%WORDS%% words &middot; %%READMIN%% min</td>
+<td class="mast-meta" style="padding-top:9px;text-align:right;font-family:{_V2_SANS};font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:{soft};white-space:nowrap;">%%WORDS%% words&emsp;%%READMIN%% min</td>
 </tr></table><!--/c-->
 {_v2_restyle(listen_bar)}
 </div>"""
@@ -2886,9 +2886,9 @@ def _v2_numbers(digest: dict) -> str:
         except (TypeError, ValueError):
             return ""
         if v > 0:
-            return f'<span style="color:{UP_GREEN};">&#9650; {v:.1f}{unit}</span>'
+            return f'<span style="color:{UP_GREEN};">+{v:.1f}{unit}</span>'
         if v < 0:
-            return f'<span style="color:{DOWN_RED};">&#9660; {abs(v):.1f}{unit}</span>'
+            return f'<span style="color:{DOWN_RED};">&minus;{abs(v):.1f}{unit}</span>'
         return f'<span style="color:{MUTE};">flat</span>'
 
     def cell(label, value, sub):
@@ -2940,7 +2940,7 @@ def _v2_numbers(digest: dict) -> str:
         except Exception:                                       # noqa: BLE001
             seen = ""
         cell("Kim last seen", f"{days} day{'s' if days != 1 else ''}",
-             (f'<span style="color:{DOWN_RED};">' if days >= 7 else "<span>") + (f"ago &middot; {seen}" if seen else "ago") + "</span>")
+             (f'<span style="color:{DOWN_RED};">' if days >= 7 else "<span>") + (f"ago, {seen}" if seen else "ago") + "</span>")
     cell("BOK rate", _esc(str(r.get("value", ""))), _esc(str(r.get("last_change", ""))))
     if not cells:
         return ""
@@ -3052,7 +3052,7 @@ def _v2_kcna(html: str) -> str:
     Left as it was if the markup has moved.
     """
     pat = _re.compile(r'<div style="padding:0;border-bottom:1px solid #333;" class="sec kcna-dark">\s*'
-                      r'<table[^>]*>\s*<tr>\s*<td[^>]*>\s*<span[^>]*>Pyongyang Watch &middot; KCNA</span>\s*'
+                      r'<table[^>]*>\s*<tr>\s*<td[^>]*>\s*<span[^>]*>Pyongyang Watch&emsp;KCNA</span>\s*'
                       r'</td>\s*</tr>\s*</table>')
     if not pat.search(html):
         return html
@@ -3148,7 +3148,7 @@ def _v2_finish(body: str) -> str:
 
     def ref(m):
         n = nums.get(m.group(1))
-        return (f'<span style="font-family:{_V2_SANS};color:{MUTE};white-space:nowrap;">&rarr; '
+        return (f'<span style="font-family:{_V2_SANS};color:{MUTE};white-space:nowrap;">see '
                 f'<b style="color:{TAEGUK_RED};">{n:02d}</b></span>' if n else "")
     body = _re.sub(r"\s?%%V2REF:([\w-]+)%%", lambda m: (" " + ref(m)) if nums.get(m.group(1)) else "", body)
     links = ""
