@@ -648,7 +648,9 @@ def process_digest_entries(digest: dict) -> dict:
     # DPRK Escalations → provocations
     for story in all_stories:
         signal = story.get("signal_type", "")
-        cats = story.get("categories", story.get("category", ""))
+        # top_stories and overnight_items carry category_tag, not category;
+        # reading only the latter meant no top story could ever qualify.
+        cats = story.get("categories") or story.get("category") or story.get("category_tag") or ""
         if isinstance(cats, list):
             cats = " ".join(cats)
         cats = str(cats).upper()

@@ -91,6 +91,7 @@ jobs:
             kcna_tracker.json
             bp_tracker.json
             feed_health.json
+            gnews_cache.json
             metrics.jsonl
           key: tracker-data-v1
           restore-keys: |
@@ -193,6 +194,8 @@ jobs:
           ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
           ELEVENLABS_VOICE_ID: ${{ vars.ELEVENLABS_VOICE_ID }}
           ELEVENLABS_MODEL: ${{ vars.ELEVENLABS_MODEL }}
+          # Download counting via OP3 on the feed's enclosures; on unless set to 0.
+          PODCAST_OP3: ${{ vars.PODCAST_OP3 }}
           WEB_URL: https://andysaulim.github.io/Daily-Korea-Digest
         run: |
           set -o pipefail
@@ -234,7 +237,13 @@ jobs:
           cd /tmp/ghp
           old=$(ls -1 digest_*.mp3 2>/dev/null | sort | head -n -30)
           if [ -z "$old" ]; then echo "Nothing to prune"; exit 0; fi
-          for f in $old; do git rm -q "$f" "${f%.mp3}.txt" 2>/dev/null || git rm -q "$f"; done
+          # Each episode also has a transcript (.txt, .vtt), chapters
+          # (.chapters.json) and a player page (listen/DATE.html); they go
+          # with its MP3. --ignore-unmatch: older episodes lack some of them.
+          for f in $old; do
+            b="${f%.mp3}"; d="${b#digest_}"
+            git rm -q --ignore-unmatch "$f" "$b.txt" "$b.vtt" "$b.chapters.json" "listen/$d.html"
+          done
           git -c user.name="github-actions[bot]" \
               -c user.email="github-actions[bot]@users.noreply.github.com" \
               commit -q -m "Prune audio older than the 30 newest episodes [skip ci]"
@@ -280,6 +289,7 @@ jobs:
             kcna_tracker.json
             bp_tracker.json
             feed_health.json
+            gnews_cache.json
             metrics.jsonl
           key: tracker-data-v1-${{ github.run_id }}
 

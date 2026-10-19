@@ -125,12 +125,11 @@ def sparkline_html(color: str = "#0052B4", width_px: int = 108,
     # The sentence can, and the panel already leads with the current figure and
     # the change since the last reading, so this is the line that adds the
     # range rather than repeating it.
+    # In words, not an arrow: arrows and triangles read as machine-made
+    # formatting to this brief's readers.
     first_label = series[0].get("label") or str(series[0].get("date", ""))[:7]
-    direction = "&rarr;"
-    if values[-1] < values[0]:
-        direction = "&darr;"
-    elif values[-1] > values[0]:
-        direction = "&uarr;"
+    verb = "unchanged from" if values[-1] == values[0] else (
+        "down from" if values[-1] < values[0] else "up from")
     return (f'<div style="font-family:Arial,sans-serif;font-size:11px;'
-            f'color:#6B7280;padding-top:2px;">{values[0]:g}% since {first_label} '
-            f'{direction} {values[-1]:g}% across {len(values)} readings</div>')
+            f'color:#6B7280;padding-top:2px;">{values[-1]:g}%, {verb} {values[0]:g}% '
+            f'on {first_label}, across {len(values)} readings</div>')

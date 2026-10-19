@@ -27,7 +27,18 @@ from digest import _count_digest_words
 # sections it may never touch already come to roughly that. Rather than keep
 # losing reporting to an arbitrary number, the band moved to where the brief
 # actually sits when it is good. Quality first; the ceiling is the backstop.
-WORD_CEILING = 2750
+# 2,750 -> 2,800 (Oct 2026), with the user's approval, when Capitol Hill and
+# Korea and the World were added: at most seven items between them, and most
+# days fewer, since both are allowed to be empty.
+# 2,800 -> 3,300 (Oct 2026). This counts RENDERED words, and the page adds
+# about 1,000 words of labels, tables and standing panels to what the model
+# writes (rendered ~ 1,000 + 1.17 x digest words across 12-18 October). The
+# prompt asked for 2,500-2,750 words of its own text, which renders near
+# 4,000, so the trimmer threw away a third of every draft. The prompt now
+# asks for 1,700-2,000 words, which renders at about this ceiling. The owner
+# is content with a longer brief; what binds is Gmail clipping at 102 KB,
+# which EMAIL_BYTE_BUDGET and fit_email_bytes enforce after rendering.
+WORD_CEILING = 3300
 
 
 def _count_rendered_words_of(html: str) -> int:
@@ -47,6 +58,43 @@ def _count_rendered_words_of(html: str) -> int:
 GMAIL_CLIP_BYTES = 102_400
 EMAIL_BYTES_WARN = 78_000
 EMAIL_BYTES_CRITICAL = 96_000
+# The size the rendered, minified brief is trimmed to. 4 KB under the clip
+# leaves room for the Listen bar added after the audio is built, and for
+# Gmail's own wrapping.
+EMAIL_BYTE_BUDGET = 98_000
+
+
+def fit_email_bytes(digest: dict, render_fn, budget: int = EMAIL_BYTE_BUDGET,
+                    max_steps: int = 60) -> tuple[str, list[str]]:
+    """Render, and drop items until the minified email is under budget.
+
+    The word ceiling is a proxy; bytes are what Gmail clips on, and a day
+    heavy in Korean text (three bytes a character) or long URLs can pass the
+    first and fail the second. Items go one at a time in length_budget's
+    TRIM_ORDER, never below its floors, so this can only remove what the word
+    trim would have removed next. Returns (html, log lines); the html is the
+    last render, which is still over budget only when nothing more may go.
+    """
+    import length_budget
+    log: list[str] = []
+    html = minify_email_html(render_fn(digest))
+    size = len(html.encode("utf-8"))
+    start = size
+    for _ in range(max_steps):
+        if size <= budget:
+            break
+        step = length_budget.trim_one(digest)
+        if step is None:
+            log.append(f"still {size:,} bytes, over the {budget:,} budget, with every "
+                       f"trimmable section at its floor")
+            break
+        log.append(f"    {step}")
+        html = minify_email_html(render_fn(digest))
+        size = len(html.encode("utf-8"))
+    if size != start:
+        log.insert(0, f"over the email size budget: {start:,} bytes, trimmed to {size:,} "
+                      f"(budget {budget:,})")
+    return html, log
 
 
 _COND_OPEN = re.compile(r"<!--\[if\b", re.I)
@@ -275,6 +323,10 @@ SECTION_CAPS = {
     "calendar_watch":    (0, 5),
     "also_today":        (0, 6),
     "northeast_asia":    (0, 5),
+    # Both may be empty, and on most days should be: they carry only what the
+    # Hill and world feeds actually collected.
+    "capitol_hill":      (0, 4),
+    "korea_world":       (0, 3),
     "social_statements": (0, 3),
     "rok_government":    (0, 6),
     "rok_assembly":      (0, 3),
@@ -286,44 +338,6 @@ SECTION_CAPS = {
 }
 
 
-
-def _check_url(url: str, timeout: float = 5.0) -> tuple[str, bool, str]:
-    """HEAD-check a URL; returns (url, ok, reason).
-    Only flags 404/410 (definitively dead). Treats 403/405/429 as OK
-    since paywalled sites and bot-protected servers commonly return these."""
-    import requests
-    try:
-        resp = requests.head(url, timeout=timeout, allow_redirects=True,
-                             headers={"User-Agent": "Mozilla/5.0 Korea-Digest-Validator/1.0"})
-        # Only flag definitively dead URLs — 403/405/429/451 are normal for
-        # paywalled sites (WSJ, FT, Bloomberg) and bot-protected servers
-        if resp.status_code in (404, 410):
-            return (url, False, f"HTTP {resp.status_code}")
-        return (url, True, "")
-    except requests.exceptions.Timeout:
-        return (url, False, "timeout")
-    except requests.exceptions.ConnectionError:
-        return (url, False, "connection error")
-    except Exception as e:
-        return (url, False, str(e)[:50])
-
-
-def _validate_urls(urls: list[str]) -> list[tuple[str, str]]:
-    """Check URLs in parallel; returns list of (url, reason) for broken ones."""
-    broken = []
-    try:
-        with ThreadPoolExecutor(max_workers=10) as pool:
-            futures = {pool.submit(_check_url, u): u for u in urls}
-            for f in as_completed(futures, timeout=30):
-                try:
-                    url, ok, reason = f.result()
-                    if not ok:
-                        broken.append((url, reason))
-                except Exception:
-                    broken.append((futures[f], "check failed"))
-    except TimeoutError:
-        pass  # some URLs still pending — report what we have so far
-    return broken
 
 _STOP_WORDS = frozenset({"the", "a", "an", "in", "on", "of", "to", "for", "and", "is", "at", "by", "as", "with", "from",
                          "its", "new", "over", "after", "says", "said", "amid", "that", "has", "will", "may", "could",
@@ -352,12 +366,67 @@ _COMPANY_ENTITIES = {
 # All sections that contain items with URLs/headlines
 _ALL_ITEM_SECTIONS = ("top_stories", "overnight_items", "also_today",
                        "business_economy", "opeds_today", "academic_today",
-                       "social_statements", "northeast_asia")
+                       "social_statements", "northeast_asia",
+                       "capitol_hill", "korea_world")
 
-# Sections where duplicates get auto-stripped (priority order — first wins)
+# Sections where duplicates get auto-stripped (priority order — first wins).
+# One story ran in up to six places in a single issue: a top story, its
+# ministry card, the personnel note, a quote, a KCNA line and the imagery box.
+# Everything a reader sees as an item is now in the walk. Dotted names are
+# nested lists; imagery_report and discourse_flag are single values.
 _DEDUP_SECTIONS = ("top_stories", "overnight_items", "business_economy",
-                    "northeast_asia", "also_today", "opeds_today",
-                    "academic_today", "social_statements")
+                    "northeast_asia", "capitol_hill", "korea_world",
+                    "also_today", "opeds_today", "academic_today",
+                    "rok_government", "rok_assembly", "rok_personnel",
+                    "social_statements", "official_x_posts",
+                    "kcna_delta.top_articles", "imagery_report",
+                    "public_sentiment.discourse_flag")
+
+
+def _dedup_get(digest: dict, path: str) -> list:
+    """The items at a _DEDUP_SECTIONS path, as a list of dicts."""
+    if path == "imagery_report":
+        v = digest.get("imagery_report")
+        return [v] if isinstance(v, dict) else []
+    if "." in path:
+        parent, child = path.split(".", 1)
+        v = (digest.get(parent) or {}).get(child) if isinstance(digest.get(parent), dict) else None
+        if child == "discourse_flag":
+            return [{"headline": v}] if isinstance(v, str) and v.strip() else []
+        return v if isinstance(v, list) else []
+    v = digest.get(path)
+    return v if isinstance(v, list) else []
+
+
+def _dedup_set(digest: dict, path: str, kept: list) -> None:
+    if path == "imagery_report":
+        if not kept:
+            digest["imagery_report"] = None
+        return
+    if "." in path:
+        parent, child = path.split(".", 1)
+        if not isinstance(digest.get(parent), dict):
+            return
+        if child == "discourse_flag":
+            if not kept:
+                digest[parent][child] = None
+            return
+        digest[parent][child] = kept
+        return
+    digest[path] = kept
+
+
+def _dedup_text(item: dict) -> str:
+    """What an item is about, for sections that have no headline field."""
+    if item.get("headline"):
+        return str(item["headline"])
+    if item.get("action"):                       # rok_government, rok_assembly
+        return str(item["action"])
+    if item.get("name") or item.get("position"):  # rok_personnel
+        return f'{item.get("name", "")} {item.get("position", "")}'
+    if item.get("quote_text"):                   # statements and X posts
+        return f'{item.get("who", "")} ' + " ".join(str(item["quote_text"]).split()[:20])
+    return str(item.get("translated_title") or "")
 
 
 def _extract_entities(text: str) -> tuple[set[str], set[str]]:
@@ -377,7 +446,7 @@ def _extract_entities(text: str) -> tuple[set[str], set[str]]:
 
 def _headline_key(item: dict) -> tuple[str, set, set, set]:
     """Return (headline, keywords, topic_entities, company_entities) for an item."""
-    headline = (item.get("headline", "") or "").lower().strip()
+    headline = (_dedup_text(item) or "").lower().strip()
     words = {w for w in re.split(r'\W+', headline) if len(w) > 2 and w not in _STOP_WORDS}
     topics, companies = _extract_entities(headline)
     return headline, words, topics, companies
@@ -445,8 +514,8 @@ def _dedup_digest(digest: dict) -> tuple[dict, list[str]]:
     seen_urls_global = {}  # url -> section_key (track across ALL sections)
 
     for section_key in _DEDUP_SECTIONS:
-        items = digest.get(section_key)
-        if not items or not isinstance(items, list):
+        items = _dedup_get(digest, section_key)
+        if not items:
             continue
 
         floor = _SECTION_FLOORS.get(section_key, 0)
@@ -471,6 +540,10 @@ def _dedup_digest(digest: dict) -> tuple[dict, list[str]]:
 
             is_duplicate = False
             for prev_section, prev_headline, prev_words, prev_topics, prev_companies in seen:
+                # The one sanctioned twin: an imagery report and the news
+                # story that reports the same imagery (see the prompt).
+                if section_key == "imagery_report" and prev_section in ("top_stories", "overnight_items"):
+                    continue
                 reason = _is_dup(words, topics, companies, prev_words, prev_topics, prev_companies,
                                  same_section=(prev_section == section_key))
                 if reason:
@@ -501,7 +574,7 @@ def _dedup_digest(digest: dict) -> tuple[dict, list[str]]:
         for _item, msg in deferred_removals:
             log.append(msg)
 
-        digest[section_key] = kept
+        _dedup_set(digest, section_key, kept)
 
     return digest, log
 
@@ -511,7 +584,12 @@ _US_KEYWORDS = frozenset({
     "ustr", "commerce department", "white house", "pentagon", "congress",
     "treasury", "biden", "trump", "section 232", "section 301", "section 122",
     "ieepa", "cfius", "ita", "itc",
+    # US states that recur as the site of Korean investment.
+    "georgia", "texas", "alabama", "tennessee", "arizona", "louisiana", "philadelphia", "philly",
 })
+_US_KEYWORD_RE = re.compile(
+    r"(?<![a-z0-9])(?:" + "|".join(re.escape(k) for k in sorted(_US_KEYWORDS, key=len, reverse=True))
+    + r")(?![a-z0-9])")
 
 
 def _filter_non_us_deals(digest: dict) -> list[str]:
@@ -530,10 +608,16 @@ def _filter_non_us_deals(digest: dict) -> list[str]:
 
     kept = []
     for deal in deals:
-        # Check headline, detail, and parties for US connection
-        text = " ".join(str(deal.get(f, "")) for f in
-                        ("headline", "detail", "parties", "sector")).lower()
-        has_us = any(kw in text for kw in _US_KEYWORDS)
+        # The headline and the parties only. A Hyundai India deal passed
+        # because its note said "us-korea" (it was explaining why the deal
+        # did not belong), and the old substring match also found "us" in
+        # "business" and "industry". Whole words, on the fields that say
+        # who the deal is between.
+        parties = deal.get("parties", "")
+        if isinstance(parties, list):
+            parties = " ".join(str(p) for p in parties)
+        text = f'{deal.get("headline", "")} {parties}'.lower()
+        has_us = bool(_US_KEYWORD_RE.search(text))
         if has_us:
             kept.append(deal)
         else:
@@ -670,17 +754,20 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
     # The critical floor stays well below target so a genuinely slow news day
     # still sends; it exists to catch truncated output, not thin days. The
     # warning band is what pulls the model toward the 1,600-word target.
+    # Digest words, which the prompt's band is stated in: 1,700-2,000.
+    from digest import MIN_DIGEST_WORDS
     word_count = _count_digest_words(digest)
     if word_count < 1100:
         warnings.append(f"WORD COUNT CRITICAL: ~{word_count} words (hard minimum 1100 — the brief is too short)")
-    elif word_count < 1600:
-        warnings.append(f"WORD COUNT CRITICAL: ~{word_count} words (hard minimum 1600)")
-    elif word_count < 1700:
-        warnings.append(f"WORD COUNT: ~{word_count} words (band is 2500-2750)")
-    elif word_count > WORD_CEILING:
+    elif word_count < MIN_DIGEST_WORDS:
+        warnings.append(f"WORD COUNT CRITICAL: ~{word_count} words (hard minimum {MIN_DIGEST_WORDS})")
+    elif word_count < 1500:
+        warnings.append(f"WORD COUNT: ~{word_count} words (band is 1,700-2,000)")
+    elif word_count > 2100:
         # Not fatal: length_budget trims to the ceiling before rendering. This
-        # says the model is consistently over and its caps want another look.
-        warnings.append(f"WORD COUNT: ~{word_count} words, over the {WORD_CEILING} ceiling "
+        # says the model is over the prompt's 2,100 ceiling (digest words; the
+        # rendered WORD_CEILING is what the trim enforces).
+        warnings.append(f"WORD COUNT: ~{word_count} words, over the prompt's 2,100 ceiling "
                         f"— items will be trimmed before send")
 
     # ── KCNA delta should exist but is non-blocking ────────────────────────
@@ -743,13 +830,9 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
     if bad_urls:
         warnings.append(f"BAD URLS: {bad_urls} placeholder or invalid URLs found")
 
-    # Live URL accessibility check (HEAD requests in parallel)
-    all_urls = [u for u in seen_urls if u.startswith("http")]
-    if all_urls:
-        broken = _validate_urls(all_urls)
-        for url, reason in broken:
-            section = seen_urls.get(url, "unknown")
-            warnings.append(f"BROKEN LINK ({reason}): {url} in {section}")
+    # The live HEAD check moved to links.finalize, which runs once on the
+    # final digest, covers every URL field rather than these sections, and
+    # removes a dead link instead of warning about it and shipping it.
 
     if empty_body_count:
         warnings.append(f"EMPTY BODIES: {empty_body_count} items have no substantive body text")
@@ -780,21 +863,16 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
         warnings.append(f"DATE MISMATCH: digest says '{digest_date}', today is '{today_str}'")
 
     # ── Stale calendar_watch dates ──────────────────────────────────────
+    # Read through korea_calendar.normalize, which accepts both shapes the
+    # model has returned ({month, day, headline} and {date, event}); this
+    # check read only the first and so never saw a {date, event} item.
     today_date = datetime.now(ZoneInfo("America/New_York")).date()
-    _MONTH_MAP = {"jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6,
-                  "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12}
+    import korea_calendar
     for cal_item in (digest.get("calendar_watch") or []):
-        month_str = str(cal_item.get("month", "")).strip().lower()[:3]
-        day_num = cal_item.get("day")
-        if month_str in _MONTH_MAP and day_num:
-            try:
-                from datetime import date as _date
-                cal_date = _date(today_date.year, _MONTH_MAP[month_str], int(day_num))
-                if cal_date < today_date:
-                    headline = (cal_item.get("headline") or "")[:80]
-                    warnings.append(f"STALE CALENDAR: '{headline}' ({month_str.upper()} {day_num}) is in the past")
-            except (ValueError, TypeError):
-                pass
+        cal = korea_calendar.normalize(cal_item, today_date)
+        if cal and cal["_end"] < today_date.isoformat():
+            warnings.append(f"STALE CALENDAR: '{cal['headline'][:80]}' "
+                            f"({cal['month'].upper()} {cal['day']}) is in the past")
 
     # ── Public sentiment must have all 4 metrics ─────────────────────────
     sentiment = digest.get("public_sentiment") or {}
@@ -907,7 +985,7 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
     except Exception as _e:
         print(f"  ⚠  Shared validation skipped (non-fatal): {_e}")
 
-    warnings.extend(magnitude_warnings(digest))
+    warnings.extend(magnitude_warnings(digest, payload))
     return warnings
 
 
@@ -920,7 +998,7 @@ _BALANCE_RE = re.compile(r"\b(surplus|surpluses|deficit|deficits)\b", re.I)
 KOREA_BALANCE_CEILING_B = 300
 
 
-def magnitude_warnings(digest: dict) -> list[str]:
+def magnitude_warnings(digest: dict, payload: dict | None = None) -> list[str]:
     """Figures far out of scale for what they describe, usually a dropped decimal.
 
     On 18 October the brief said Korea's surplus with the US 'reached $847B'
@@ -963,6 +1041,99 @@ def magnitude_warnings(digest: dict) -> list[str]:
                 walk(x)
 
     walk(digest)
+    out.extend(_eok_scale_warnings(digest, payload))
+    return out
+
+
+# 847억 달러, 1000억弗, 120억불: a dollar amount in units of 억 (100 million).
+_EOK_USD_RE = re.compile(r"(\d[\d,]*(?:\.\d+)?)\s*억\s*(?:달러|弗|불|\$)")
+
+
+def _eok_scale_warnings(digest: dict, payload: dict | None = None) -> list[str]:
+    """A "$NNNB" figure that is ten times a 억-dollar figure in its cited Korean source.
+
+    억 is 100 million, so N억 달러 is N/10 billion. Read as N billion, the
+    figure comes out exactly ten times too big: 847억 달러 printed as $847B
+    on 18 October, and 1000억弗 as "$1 trillion". The trade-balance check
+    only sees surpluses and deficits; this sees any figure whose own source
+    carried the 억 form.
+
+    Each item is checked against what it cites: the collected article at its
+    URL when the payload is at hand, and its source label, which often quotes
+    the Korean headline. Checking against every article would flag the $350B
+    pledge whenever any story mentioned 350억 달러 of something else. The
+    morning memo and RE: line cite nothing, so a figure there is flagged when
+    the same figure was flagged in an item.
+    """
+    by_url: dict[str, str] = {}
+    for tier in ("tier1", "tier2", "tier3", "tier4"):
+        for a in ((payload or {}).get(tier) or []):
+            if a.get("url"):
+                by_url[a["url"].strip()] = f'{a.get("title", "")} {a.get("summary", "")}'
+
+    def eok_values(text: str) -> set[float]:
+        vals = set()
+        for m in _EOK_USD_RE.finditer(text):
+            try:
+                vals.add(float(m.group(1).replace(",", "")) / 10)
+            except ValueError:
+                pass
+        return vals
+
+    def billions_of(m: re.Match) -> float | None:
+        try:
+            v = float(m.group(1).replace(",", ""))
+        except ValueError:
+            return None
+        return v * 1000 if m.group(2).lower() in ("trillion", "tn", "t") else v
+
+    out: list[str] = []
+    flagged: dict[str, float] = {}      # "$847B" -> 84.7
+
+    def check_item(item: dict):
+        cited = " ".join(str(item.get(k) or "") for k in ("source", "src_line", "source_label"))
+        urls = [str(item.get("url") or "").strip()]
+        for link in item.get("source_links") or []:
+            if isinstance(link, dict):
+                urls.append(str(link.get("url") or "").strip())
+        cited += " " + " ".join(by_url.get(u, "") for u in urls if u)
+        truth = eok_values(cited)
+        if not truth:
+            return
+        for k, v in item.items():
+            if k in ("source", "src_line", "source_label", "url", "source_links") or not isinstance(v, str):
+                continue
+            for m in _MONEY_RE.finditer(v):
+                b = billions_of(m)
+                for tb in truth:
+                    if b and tb and abs(b - 10 * tb) < 0.01 * b and m.group(0) not in flagged:
+                        flagged[m.group(0)] = tb
+
+    for key, val in digest.items():
+        if key.startswith("_"):
+            continue
+        if isinstance(val, list):
+            for item in val:
+                if isinstance(item, dict):
+                    check_item(item)
+        elif isinstance(val, dict):
+            check_item(val)
+            for sub in val.values():          # us_korea_deals.deals and the like
+                if isinstance(sub, list):
+                    for item in sub:
+                        if isinstance(item, dict):
+                            check_item(item)
+
+    for fig, tb in flagged.items():
+        out.append(f"MAGNITUDE CRITICAL: {fig} is ten times the {tb * 10:g}억 dollars in its "
+                   f"Korean source; 억 is 100 million, so the figure is ${tb:g}B. Correct it "
+                   f"everywhere it appears, including morning_memo and key_stat.")
+    memo = " ".join(str(x) for x in (digest.get("morning_memo") or [])) + " " + str(digest.get("re_line") or "")
+    for m in _MONEY_RE.finditer(memo):
+        b = billions_of(m)
+        if b and any(abs(b - 10 * tb) < 0.01 * b for tb in flagged.values()):
+            out.append(f"MAGNITUDE CRITICAL: {m.group(0)} in the morning memo or RE: line repeats a "
+                       f"figure ten times its Korean source (억 = 100 million).")
     return out
 
 
@@ -999,17 +1170,19 @@ def _repair_digest_urls(digest: dict, payload: dict) -> list[str]:
     if not payload:
         return log
 
-    # Index every input article: (url, title, tokens)
+    # Index every input article: (url, title, tokens). Everything the model
+    # was shown counts, not only tiers 1-4: the satellite and Kim-tracker
+    # streams and the X signals are input too, and a link to one of them was
+    # being treated as fabricated.
+    import links as _links
+    _index = _links.corpus_index(payload)
     input_articles: list[tuple[str, str, set[str]]] = []
     input_urls: set[str] = set()
-    for tier_key in ("tier1", "tier2", "tier3", "tier4"):
-        for a in (payload.get(tier_key) or []):
-            u = (a.get("url") or "").strip()
-            if not u or not u.startswith("http"):
-                continue
-            input_urls.add(u)
-            title = (a.get("title") or a.get("headline") or "").strip()
-            input_articles.append((u, title, _headline_tokens(title)))
+    for a in _index.values():
+        u = (a.get("url") or "").strip()
+        input_urls.add(u)
+        title = (a.get("title") or a.get("headline") or "").strip()
+        input_articles.append((u, title, _headline_tokens(title)))
 
     if not input_urls:
         return log
@@ -1052,7 +1225,7 @@ def _repair_digest_urls(digest: dict, payload: dict) -> list[str]:
             if not url or not url.startswith("http"):
                 kept.append(item)
                 continue
-            if url in input_urls:
+            if url in input_urls or _links.lookup(url, _index):
                 kept.append(item)
                 continue
 
@@ -1090,8 +1263,11 @@ def _repair_digest_urls(digest: dict, payload: dict) -> list[str]:
             restored = restorable_drop[-need:]
             restorable_drop = restorable_drop[:-need]
             for item, _reason in restored:
+                # The text stays to hold the floor; the link we could not
+                # trace to any input does not ship.
+                item["url"] = ""
                 log.append(
-                    f"  ⚠ Kept fabricated item in {section_key} to protect "
+                    f"  ⚠ Kept unlinked item in {section_key} to protect "
                     f"floor (min {floor}): '{(item.get('headline') or '')[:60]}'")
                 kept.append(item)
 
@@ -1108,7 +1284,7 @@ def _repair_digest_urls(digest: dict, payload: dict) -> list[str]:
 
 _PLACEHOLDER_NAME_RE = re.compile(
     r"not\s+named|unnamed|not\s+specified|not\s+disclosed|unidentified|"
-    r"unknown|n/?a$|tbd|placeholder", re.IGNORECASE)
+    r"unknown|n/?a$|tbd|placeholder|see\s+source", re.IGNORECASE)
 
 
 def _drop_nameless_personnel(digest: dict) -> list[str]:
@@ -1147,7 +1323,7 @@ _MONTH_NUM = {m: i + 1 for i, m in enumerate(
      "august", "september", "october", "november", "december"])}
 
 
-def _drop_offdate_on_this_day(digest: dict) -> list[str]:
+def _drop_offdate_on_this_day(digest: dict, now: datetime | None = None) -> list[str]:
     """Drop on_this_day entries whose date isn't TODAY's exact month + day.
 
     "On This Day" must anchor to the current calendar date. The prompt says so,
@@ -1159,7 +1335,10 @@ def _drop_offdate_on_this_day(digest: dict) -> list[str]:
     otd = digest.get("on_this_day") or []
     if not otd:
         return log
-    now = datetime.now(ZoneInfo("America/New_York"))
+    if now is None:
+        now = datetime.now(ZoneInfo("America/New_York"))
+    from digest import VERIFIED_KOREA_DATES
+    verified = {(m, d, y) for m, d, y, _ev in VERIFIED_KOREA_DATES}
     kept = []
     for item in otd:
         date_str = str(item.get("date") or "")
@@ -1169,12 +1348,179 @@ def _drop_offdate_on_this_day(digest: dict) -> list[str]:
             continue
         month = _MONTH_NUM.get(m.group(1).lower())
         day = int(m.group(2))
-        if month == now.month and day == now.day:
-            kept.append(item)
-        else:
+        if month != now.month or day != now.day:
             log.append(f"  - dropped on_this_day {date_str!r} "
                        f"(not today {now.strftime('%B %-d')})")
+            continue
+        # The right day of the wrong year is still a wrong date. The year
+        # must be one the prompt's verified list gives for this day.
+        year = re.search(r"\b(1[89]\d\d|20\d\d)\b", date_str)
+        if not year or (month, day, int(year.group(1))) not in verified:
+            log.append(f"  - dropped on_this_day {date_str!r} "
+                       f"(year not in the verified list for {now.strftime('%B %-d')})")
+            continue
+        kept.append(item)
     digest["on_this_day"] = kept
+    return log
+
+
+# ── Process notes printed to readers ────────────────────────────────────────
+# The model narrates its own working: "See source article for name",
+# "(implied)", "(unspecified committee)", "excluded ... per scope rules",
+# "according to today's reporting", "the tracker's note". All of these
+# reached readers. A parenthetical note is cut out of the text; a sentence
+# that is a note is dropped; an item whose essential field was nothing but a
+# note is dropped whole, because there is nothing left to print.
+_NOTE_PAREN_RE = re.compile(
+    r"\s*\((?:implied|inferred|unspecified[^)]*|not\s+(?:named|specified|stated|given)[^)]*|"
+    r"unnamed[^)]*|name\s+not\s+(?:given|stated)[^)]*|see\s+source[^)]*|per\s+(?:the\s+)?source)\)",
+    re.I)
+_NOTE_SENTENCE_RE = re.compile(
+    r"\bsee\s+(?:the\s+)?source(?:\s+article)?\b|\bper\s+(?:the\s+)?scope\s+rules?\b|\bscope\s+rules?\b|"
+    r"\bthe\s+(?:BP\s+|KCNA\s+|Kim\s+|locations?\s+)?tracker'?s?\b|"
+    r"\btoday'?s\s+(?:articles|reporting|feed|input|source\s+articles|batch)\b|"
+    r"\bnot\s+named\s+in\s+(?:the\s+)?source\b|\(implied\)|\bunspecified\s+committee\b", re.I)
+# Fields that are the item. If one of these is emptied, the item goes.
+_NOTE_CORE_FIELDS = ("headline", "action", "name", "who", "quote_text", "body", "body_text",
+                     "detail", "finding", "number", "event", "committee", "position")
+# Never dropped whole: fixed sections the page lays out by position.
+_NOTE_KEEP_ITEMS = ("bp_locations", "market_indicators", "public_sentiment", "us_korea_deals",
+                    "kcna_delta", "morning_memo")
+_NOTE_SKIP_KEYS = ("url", "source", "src_line", "source_label", "source_links", "badge_class",
+                   "avatar_initials", "category", "category_tag", "region", "region_tag", "date",
+                   "month", "day", "last_updated", "last_source_date", "poll_date")
+
+
+def _clean_note_text(text: str) -> str:
+    """Text with process notes removed (may come back empty)."""
+    t = _NOTE_PAREN_RE.sub("", text)
+    if _NOTE_SENTENCE_RE.search(t):
+        parts = re.split(r"(?<=[.!?])\s+(?=[A-Z\"'“(])", t)
+        t = " ".join(p for p in parts if not _NOTE_SENTENCE_RE.search(p))
+    return t.strip()
+
+
+def _strip_process_notes(digest: dict) -> list[str]:
+    """Remove the model's descriptions of its own process from every field."""
+    log: list[str] = []
+
+    def clean_item(section: str, item: dict) -> bool:
+        """Clean in place; False if the item should be dropped."""
+        for k, v in list(item.items()):
+            if k in _NOTE_SKIP_KEYS or k.startswith("_"):
+                continue
+            if isinstance(v, str):
+                new = _clean_note_text(v)
+                if new != v.strip():
+                    log.append(f"  - {section}.{k}: {v[:90]!r} -> {new[:60]!r}")
+                    # Only a fixed section's own fields are protected; items
+                    # listed inside one (us_korea_deals.deals) can still go.
+                    if not new and k in _NOTE_CORE_FIELDS and section not in _NOTE_KEEP_ITEMS:
+                        return False
+                    item[k] = new if new else None
+            elif isinstance(v, list) and v and all(isinstance(x, str) for x in v):
+                new_list = [_clean_note_text(x) for x in v]
+                if new_list != [x.strip() for x in v]:
+                    log.append(f"  - {section}.{k}: {str(v)[:90]!r}")
+                    item[k] = [x for x in new_list if x]
+            elif isinstance(v, dict):
+                if not clean_item(f"{section}.{k}", v):
+                    log.append(f"  - dropped {section}.{k}: its content was a process note")
+                    item[k] = None
+            elif isinstance(v, list):
+                kept = [x for x in v if not isinstance(x, dict) or clean_item(f"{section}.{k}", x)]
+                if len(kept) != len(v):
+                    log.append(f"  - dropped {len(v) - len(kept)} item(s) from {section}.{k}")
+                    item[k] = kept
+        return True
+
+    for key in list(digest.keys()):
+        if key.startswith("_") or key in ("web_url", "audio_url", "listen_url", "digest_date"):
+            continue
+        val = digest[key]
+        if isinstance(val, list):
+            if val and all(isinstance(x, str) for x in val):
+                new = [_clean_note_text(x) for x in val]
+                if new != [x.strip() for x in val]:
+                    log.append(f"  - {key}: process note removed")
+                    digest[key] = [x for x in new if x]
+                continue
+            kept = []
+            for item in val:
+                if isinstance(item, dict) and not clean_item(key, item):
+                    hl = (item.get("headline") or item.get("action") or item.get("name")
+                          or item.get("who") or "")
+                    log.append(f"  - dropped {key} item that was a process note: {str(hl)[:70]!r}")
+                    continue
+                kept.append(item)
+            digest[key] = kept
+        elif isinstance(val, dict):
+            if not clean_item(key, val) and key not in _NOTE_KEEP_ITEMS:
+                log.append(f"  - dropped {key}: its content was a process note")
+                digest[key] = None
+        elif isinstance(val, str):
+            new = _clean_note_text(val)
+            if new != val.strip():
+                log.append(f"  - {key}: process note removed")
+                digest[key] = new or None
+    return log
+
+
+_PCT_RE = re.compile(r"(\d{1,2}(?:\.\d)?)\s?(?:%|percent)")
+
+
+def _drop_topline_spotlight(digest: dict) -> list[str]:
+    """Null the Gallup spotlight when it only restates the topline.
+
+    The spotlight is meant for the weekly special-topic question. On every
+    day from 9 to 18 October it repeated the approval and party figures
+    already shown beside it. If its numbers include the topline approval
+    figure, or two or more of the four topline figures, it is the topline.
+    """
+    ps = digest.get("public_sentiment")
+    if not isinstance(ps, dict) or not isinstance(ps.get("gallup_spotlight"), dict):
+        return []
+    spot = ps["gallup_spotlight"]
+    nums = {float(x) for x in _PCT_RE.findall(f'{spot.get("topic", "")} {spot.get("finding", "")}')}
+
+    def val(k):
+        raw = str((ps.get(k) or {}).get("value") or "").strip().rstrip("%")
+        try:
+            return float(raw)
+        except ValueError:
+            return None
+    top = {k: val(k) for k in ("presidential_approval", "party_ruling",
+                               "party_opposition", "party_independent")}
+    shared = {v for v in top.values() if v is not None} & nums
+    if top["presidential_approval"] in nums or len(shared) >= 2:
+        ps["gallup_spotlight"] = None
+        return [f"  - dropped gallup_spotlight that restated the topline: "
+                f"{str(spot.get('finding', ''))[:90]!r}"]
+    return []
+
+
+def _normalize_calendar(digest: dict, today=None) -> list[str]:
+    """Rewrite calendar_watch into the one shape everything reads.
+
+    Drops items with no readable day, events already over, and fixtures no
+    policy reader acts on. See korea_calendar.normalize.
+    """
+    import korea_calendar
+    today = today or datetime.now(ZoneInfo("America/New_York")).date()
+    log, kept = [], []
+    for raw in digest.get("calendar_watch") or []:
+        item = korea_calendar.normalize(raw, today)
+        label = (str(raw.get("headline") or raw.get("event") or "") if isinstance(raw, dict)
+                 else str(raw))[:70]
+        if item is None:
+            log.append(f"  - dropped calendar item with no readable date: {label!r}")
+        elif item["_end"] < today.isoformat():
+            log.append(f"  - dropped past calendar item: {label!r}")
+        elif korea_calendar.off_topic(item):
+            log.append(f"  - dropped off-topic calendar item: {label!r}")
+        else:
+            kept.append(item)
+    digest["calendar_watch"] = kept
     return log
 
 
@@ -1359,6 +1705,21 @@ def _postprocess_digest(digest_data: dict, payload: dict | None = None) -> tuple
         if repair_log:
             log.append(f"\n🔧  URL repair: fixed {len(repair_log)} mismatched URL(s) by headline match:")
             log.extend(repair_log)
+        # Every other URL in the digest (KCNA, imagery, ROK government, X
+        # posts, trade, deals...): repaired by headline or unlinked.
+        try:
+            import links as _links
+            link_log = _links.repair_all(digest_data, payload)
+        except Exception as _e:                                 # noqa: BLE001
+            link_log = [f"  link repair failed (non-fatal): {_e}"]
+        if link_log:
+            log.append(f"\n🔧  Link repair outside the item sections: {len(link_log)}")
+            log.extend(link_log)
+
+    notes_log = _strip_process_notes(digest_data)
+    if notes_log:
+        log.append(f"\n🧹  Removed {len(notes_log)} process note(s) written into reader-facing fields:")
+        log.extend(notes_log)
 
     digest_data, dedup_log = _dedup_digest(digest_data)
     if dedup_log:
@@ -1384,6 +1745,21 @@ def _postprocess_digest(digest_data: dict, payload: dict | None = None) -> tuple
     if offdate_log:
         log.append(f"\n🧹  Dropped {len(offdate_log)} on_this_day entr(ies) not on today's date:")
         log.extend(offdate_log)
+
+    for label, fn in (("Gallup spotlight", _drop_topline_spotlight),
+                      ("calendar", _normalize_calendar)):
+        _l = fn(digest_data)
+        if _l:
+            log.append(f"\n🧹  {label}:")
+            log.extend(_l)
+    try:
+        from bp_tracker import absolutize_digest_notes
+        _l = absolutize_digest_notes(digest_data)
+        if _l:
+            log.append("\n🧹  Location notes: relative dates made absolute:")
+            log.extend(_l)
+    except Exception as _e:                                     # noqa: BLE001
+        log.append(f"  ⚠  location-note dates skipped: {_e}")
 
     return digest_data, log
 
@@ -1772,12 +2148,19 @@ def main():
         print("\n  --no-push: skipping database updates")
 
     # ── Step 3: Render HTML ──────────────────────────────────────────────────
+    # Upcoming hearings come from the committee schedules, not from the model,
+    # so they are attached here as collected. Empty when every schedule failed,
+    # and then the brief simply has no Hill calendar line.
+    digest_data["hill_calendar"] = list((payload or {}).get("hill_calendar") or [])
     from render import render
 
     # Inject web URL for "Read Online" link (set via env or GitHub Pages)
     web_base = os.environ.get("WEB_URL", "")
     if web_base:
         digest_data["web_url"] = web_base.rstrip("/") + "/latest.html"
+    # The issue's own date, so its self-links (Read online, Download PDF)
+    # point at that day's files rather than whatever is latest.
+    digest_data["date_slug"] = datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d")
 
     # Issue number, so a reader can cite the brief in a footnote. Derived from
     # the archive manifest rather than a counter, so it stays correct across
@@ -1868,6 +2251,37 @@ def main():
     for _msg in _ensure_pledge_projects(digest_data):
         print(f"  🏗  {_msg}")
 
+    # ── Final link pass ────────────────────────────────────────────────────
+    # The digest is final: fix anchor text, link each outlet a top story
+    # names, drop trade links to unrelated stories and repeated URLs, decode
+    # the Google News redirects left, HEAD-check the rest. Bounded and
+    # non-fatal; see links.py.
+    try:
+        import links as _links
+        for _line in _links.finalize(digest_data, payload):
+            print(f"  {_line}")
+    except Exception as _e:                                     # noqa: BLE001
+        print(f"  ⚠  Link pass skipped (non-fatal): {_e}")
+
+    # English only on the page: Korean outlet names and labels to English,
+    # Korean headlines out of source fields. Prose is reported, not rewritten.
+    try:
+        import english
+        for _w in english.apply(digest_data):
+            print(f"::warning title=Korean text in brief::{_w}")
+    except Exception as _e:                                     # noqa: BLE001
+        print(f"  ⚠  English pass skipped (non-fatal): {_e}")
+
+    # The byte guard, before the audio is built so the listener still hears
+    # the issue the reader gets. Gmail clips past 102,400 bytes; the word
+    # ceiling above is a proxy for that, and this is the bound itself.
+    try:
+        _, _fit_log = fit_email_bytes(digest_data, render)
+        for _line in _fit_log:
+            print(f"  📦  {_line}")
+    except Exception as _e:                                     # noqa: BLE001
+        print(f"  (email size guard unavailable: {_e})")
+
     # ── Audio edition ──────────────────────────────────────────────────────
     # Built here, after every trim and cleanup, so the listener hears exactly
     # the issue the reader gets. Before render, so the email can carry a
@@ -1886,6 +2300,15 @@ def main():
                 if _wb:
                     digest_data["audio_url"] = f"{_wb}/digest_{_date_slug}.mp3"
                     digest_data["audio_minutes"] = max(1, round(_audio["audio_seconds"] / 60))
+                    # The Listen bar opens the player page (chapters,
+                    # transcript, subscribe) when one was written; otherwise
+                    # it stays on the MP3.
+                    if _audio.get("listen_page"):
+                        try:
+                            from listen import listen_url
+                            digest_data["listen_url"] = listen_url(_wb, _audio["listen_page"])
+                        except Exception as _le:                # noqa: BLE001
+                            print(f"  ⚠  Listen link stays on the MP3: {_le}")
                 print(f"  🎧  Audio: {_audio['audio_bytes']:,} bytes, "
                       f"~{_audio['audio_seconds'] // 60} min "
                       f"({_audio['tts_model']}, {_audio['tts_voice']})")
@@ -1907,6 +2330,13 @@ def main():
     if _post_min < _pre_min:
         print(f"  🗜  Minified: {_pre_min:,} → {_post_min:,} bytes "
               f"(−{100 * (_pre_min - _post_min) / _pre_min:.0f}%)")
+    # Backstop: the Listen bar is added after the guard ran. If that tipped
+    # the email over, trim again; the audio may then carry an item the email
+    # does not, which is better than a clipped email.
+    if len(html.encode("utf-8")) > EMAIL_BYTE_BUDGET:
+        html, _fit_log = fit_email_bytes(digest_data, render)
+        for _line in _fit_log:
+            print(f"  📦  {_line}")
     _final = _count_rendered_words_of(html)
     if _final > WORD_CEILING:
         print(f"  ⚠  still {_final} rendered words after trimming; the sections "
@@ -2095,6 +2525,8 @@ def main():
             "overnight_items": len(digest_data.get("overnight_items") or []),
             "business_economy": len(digest_data.get("business_economy") or []),
             "northeast_asia": len(digest_data.get("northeast_asia") or []),
+            "capitol_hill": len(digest_data.get("capitol_hill") or []),
+            "korea_world": len(digest_data.get("korea_world") or []),
             "opeds": len(digest_data.get("opeds_today") or []),
             "academic": len(digest_data.get("academic_today") or []),
             "statements": len(digest_data.get("social_statements") or []),

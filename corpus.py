@@ -38,6 +38,7 @@ import requests
 _DIGEST_ITEM_SECTIONS = (
     "top_stories", "overnight_items", "also_today", "business_economy",
     "opeds_today", "academic_today", "social_statements", "northeast_asia",
+    "capitol_hill", "korea_world",
 )
 
 # Summary cap — matches collect.py's _entry_to_article (summary[:800]).
@@ -108,6 +109,11 @@ def collect_digest_urls(digest_data: dict) -> dict:
             url = _norm_url(item.get("url"))
             if url.startswith("http") and url not in used:
                 used[url] = section
+            # A Google News link decoded for the reader (links.py) is still
+            # the corpus's URL for this article.
+            alt = _norm_url(item.get("gnews_url"))
+            if alt.startswith("http") and alt not in used:
+                used[alt] = section
     # US-Korea deals live nested under us_korea_deals.deals
     uk = digest_data.get("us_korea_deals")
     deals = uk.get("deals") if isinstance(uk, dict) else (uk if isinstance(uk, list) else [])

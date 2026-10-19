@@ -56,6 +56,93 @@ DEFAULT_LOCATIONS = [
 ]
 
 
+# ── Relative dates in carried-forward notes ─────────────────────────────────
+# A note is copied forward verbatim for weeks. "Earlier this week" written in
+# April still said "earlier this week" in October, and read as news. Each
+# relative phrase is pinned to the note's own report date; where that date is
+# unknown the note is flagged for the model instead.
+_MON = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+_RELATIVE_RE = re.compile(
+    r"\b(earlier this week|this week|last week|this month|last month|this year|"
+    r"yesterday|today|this morning|tonight)\b", re.I)
+
+
+def _report_date(last_source_date) -> tuple[int, int, int | None] | None:
+    """(year, month, day-or-None) from '2026-04', '2026-03-12' or 'Mar 12, 2026'."""
+    s = str(last_source_date or "").strip()
+    m = re.match(r"(\d{4})-(\d{1,2})(?:-(\d{1,2}))?", s)
+    if m:
+        return int(m.group(1)), int(m.group(2)), int(m.group(3)) if m.group(3) else None
+    for fmt in ("%b %d, %Y", "%B %d, %Y", "%d %b %Y", "%b %Y", "%B %Y"):
+        try:
+            d = datetime.strptime(s, fmt)
+            return d.year, d.month, (d.day if "%d" in fmt else None)
+        except ValueError:
+            continue
+    return None
+
+
+def absolutize_note(note: str, last_source_date) -> tuple[str, bool]:
+    """(note with relative time words pinned to the report date, still_relative).
+
+    still_relative is True when the note has relative words that could not be
+    pinned because the report date is unknown.
+    """
+    if not note or not _RELATIVE_RE.search(note):
+        return note, False
+    rd = _report_date(last_source_date)
+    if not rd:
+        return note, True
+    y, mo, d = rd
+    month = f"{_MON[mo - 1]} {y}"
+    prev = f"{_MON[(mo - 2) % 12]} {y if mo > 1 else y - 1}"
+    day = f"{_MON[mo - 1]} {d}, {y}" if d else None
+
+    def sub(m: re.Match) -> str:
+        w = m.group(1).lower()
+        if w in ("this month",):
+            return f"in {month}"
+        if w == "last month":
+            return f"in {prev}"
+        if w == "this year":
+            return f"in {y}"
+        if w in ("earlier this week", "this week"):
+            return f"the week of {day}" if day else f"in {month}"
+        if w == "last week":
+            return f"the week before {day}" if day else f"in {month}"
+        if w == "yesterday" and d:
+            try:
+                from datetime import date, timedelta
+                yd = date(y, mo, d) - timedelta(days=1)
+                return f"on {_MON[yd.month - 1]} {yd.day}, {yd.year}"
+            except ValueError:
+                pass
+        return f"on {day}" if day else f"in {month}"
+    return _RELATIVE_RE.sub(sub, note), False
+
+
+def absolutize_digest_notes(digest: dict) -> list[str]:
+    """Pin relative dates in the digest's bp_locations notes. Returns log lines."""
+    log = []
+    for loc in digest.get("bp_locations") or []:
+        if not isinstance(loc, dict) or not loc.get("note"):
+            continue
+        new, _ = absolutize_note(loc["note"], loc.get("last_source_date"))
+        if new != loc["note"]:
+            log.append(f"  - {loc.get('name', '?')}: {loc['note'][:60]!r} -> {new[:60]!r}")
+            loc["note"] = new
+    return log
+
+
+def _stale(last_source_date, today=None) -> bool:
+    """True when the last report is more than six months old."""
+    rd = _report_date(last_source_date)
+    if not rd:
+        return False
+    today = today or datetime.now(timezone.utc).date()
+    return (today.year - rd[0]) * 12 + (today.month - rd[1]) > 6
+
+
 def _load() -> dict:
     if TRACKER_FILE.exists():
         try:
@@ -99,11 +186,14 @@ def update_from_digest(digest: dict):
         status_changed = existing and existing.get("status", "normal") != status
 
         if has_substance or is_new or status_changed:
+            last = loc.get("last_source_date", (existing or {}).get("last_source_date", "unknown"))
+            kept_note = note if has_substance else (existing or {}).get("note", "No new reporting")
             data["locations"][name] = {
                 "name": name,
                 "status": status,
-                "note": note if has_substance else (existing or {}).get("note", "No new reporting"),
-                "last_source_date": loc.get("last_source_date", (existing or {}).get("last_source_date", "unknown")),
+                # Stored with absolute dates, since it will be carried forward.
+                "note": absolutize_note(kept_note, last)[0],
+                "last_source_date": last,
                 "direction": loc.get("direction", ""),
             }
 
@@ -125,15 +215,21 @@ def build_context_block() -> str:
         "note with 'No new reporting' — the tracker's note IS the most recent "
         "known status and must be preserved for readers. Only update a location's "
         "note when you have a concrete new source (satellite imagery, think tank "
-        "report, or news article) with new information.\n"
+        "report, or news article) with new information. When carrying a note "
+        "forward, replace relative time words with absolute dates.\n"
     )
 
     for name, loc in locs.items():
         status = loc.get("status", "normal")
-        note = loc.get("note", "No new reporting")
         last = loc.get("last_source_date", "unknown")
+        note, relative = absolutize_note(loc.get("note", "No new reporting"), last)
         direction = loc.get("direction", "")
         dir_str = f" (trending: {direction})" if direction else ""
-        lines.append(f"  - {name}: [{status}]{dir_str} — {note} (last report: {last})")
+        flags = ""
+        if relative:
+            flags += " [note uses relative time words and has no report date: state them as dates or drop them]"
+        if _stale(last):
+            flags += " [last report over six months old: present it as dated, not as the current state]"
+        lines.append(f"  - {name}: [{status}]{dir_str} — {note} (last report: {last}){flags}")
 
     return "\n".join(lines)

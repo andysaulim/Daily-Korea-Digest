@@ -18,6 +18,7 @@ Orchestrated by `run.py`. Triggered via external cron (cron-job.org) → GitHub 
 | `collect.py` | Parallel RSS scraper, market data (KOSPI, KRW, Brent), Gallup Korea polling, satellite imagery |
 | `digest.py` | Claude API integration — 80-line system prompt, structured JSON output, Sonnet-first with Opus retry |
 | `render.py` | 1,400-line HTML email renderer — table-based layout, inline CSS, dark mode, mobile responsive |
+| `listen.py` | Audio extras: chapters (JSON + ID3), VTT transcript, show notes, `listen/` player page |
 | `send_email.py` | Gmail SMTP sender (SSL, port 465) |
 | `databases.py` | NK-Russia bilateral timeline (270+ events), NK provocations history (540+ since 1958) |
 | `kim_tracker.py` | Kim Jong Un appearance log — computes "days since last seen" |
@@ -76,7 +77,15 @@ Run `python test_sources.py` after any change here.
 
 ## Length
 
-Target band **1,900-2,200 words**, hard ceiling **2,400** (`run.WORD_CEILING`).
+The prompt asks the model for **1,700-2,000 words** of its own text (hard
+ceiling 2,100). `run.WORD_CEILING` (**3,300**) counts *rendered* words, and the
+page adds about 1,000 words of labels and panels on top of what the model
+writes (rendered ≈ 1,000 + 1.17 × model words). Below 1,300 the brief is
+regenerated (`MIN_DIGEST_WORDS`).
+
+The binding limit is bytes, not words: Gmail clips a message over ~102KB and
+hides the rest behind "View entire message". `run.fit_email_bytes` drops items
+in `length_budget.TRIM_ORDER` until the minified email is under 98,000 bytes.
 
 Length is decided by `run.SECTION_CAPS`, not by the prompt's target. An issue
 shipped at 3,518 words because the caps permitted about 3,680 between them and
@@ -113,6 +122,15 @@ costs one day of listing, while writing a stub costs all of them.
 - **Tier 2 (Analysis, 36h)**: CSIS, Brookings, 38 North, Foreign Affairs, The Diplomat, RAND
 - **Tier 3 (Academic, 72h)**: International Security, Asian Survey, Pacific Affairs
 - **Tier 4 (DPRK, 24h)**: KCNA Watch, Rodong Sinmun, Daily NK, NK News
+- **Capitol Hill stream (48h; CRS and GovInfo 72h)**: congress.gov, GovInfo, CRS,
+  committee feeds, The Hill, Roll Call, Politico, Punchbowl (`collect.CAPITOL_HILL_FEEDS`).
+  Filtered for Korea, never in `KOREA_NATIVE_FEEDS`. Hearing schedules
+  (`HILL_CALENDAR_FEEDS`) feed `hill_calendar`, attached by run.py, not the model.
+- **Korea and the World stream (36h)**: targeted feeds for Europe/NATO, the Gulf,
+  South and Southeast Asia, the Global South, Ukraine, the UN and defence/nuclear
+  exports (`collect.KOREA_WORLD_FEEDS`). Filtered for Korea and a non-Northeast-Asia place.
+- Both streams have their own prompt blocks (they skip the tier-1 cut) and are
+  appended to tier 1 so validation and URL repair see them.
 
 ## Critical Rules
 
