@@ -332,6 +332,8 @@ def _sec_label(label: str, color: str = RING_ON_DARK) -> str:
     Solid background and a text glyph, so it survives clients that block
     images and clients that drop background images.
     """
+    if DESIGN == "v2":
+        return _v2_bar(label)
     if SECTION_STYLE == "rule":
         _t = label.replace("&amp;", "&")
         _t = _t[:1].upper() + _t[1:].lower().replace("kcna", "KCNA").replace("rok", "ROK").replace("us-korea", "US-Korea").replace("& ", "&amp; ")
@@ -398,6 +400,8 @@ def _item_block(cat: str, src: str, headline: str, body: str, url: str,
     kicker, headline in ink with no underline, body, source last and muted.
     """
     kicker = " &middot; ".join(x for x in (cat, src) if x)
+    if DESIGN == "v2":
+        return _v2_item(cat, src, headline, body, url, bar_color, extra_html)
     if DESIGN == "refined":
         # Secondary items as a list, not a stack of cards: a hairline between
         # items, the kicker above, nothing boxed. Cards inside sections inside
@@ -435,6 +439,9 @@ LISTEN_STYLE = "card"
 # lead with a larger headline, secondary items as a ruled list. "hybrid": the
 # classic cards and bars, plus a lead headline, large glance numerals and a
 # status line (approval, days since Kim was seen) under the market strip.
+# "v2": numbered two-language section bars with a matching contents list, a
+# two-city dateline, a hard-numbers strip, a tracker box, a lead story, serif
+# headlines over sans body. Styling only; see the "Design v2" block below.
 DESIGN = "classic"
 # Section headings: "bar" (black bar, white label) or "rule" (heavy ink rule,
 # serif heading in sentence case). Masthead: "band" (blue band) or "white".
@@ -780,6 +787,8 @@ def render(digest: dict) -> str:
       {_masthead_bar}
     </div>
     """)
+    if DESIGN == "v2":
+        sections[-1] = _v2_masthead(digest, now, _masthead_bar)
 
     # ── 1b. Forward CTA — removed (placeholder for future subscribe link) ──
 
@@ -819,6 +828,10 @@ def render(digest: dict) -> str:
         </table>
         {_status_line(digest) if DESIGN == "hybrid" else ""}
         """)
+    if DESIGN == "v2":
+        if markets:
+            sections.pop()
+        sections.append(_v2_numbers(digest))
 
     # ── 2c. Section navigation. Emitted as a placeholder here and resolved
     #      after every section is built, so links are only offered for
@@ -857,6 +870,8 @@ def render(digest: dict) -> str:
           {_happening_today(digest)}
         </div>
         """)
+        if DESIGN == "v2":
+            sections[-1] = _v2_glance(digest, memo_items)
 
     # ── 4. Top Stories ────────────────────────────────────────────────────
     top_stories = digest.get("top_stories") or []
@@ -884,6 +899,8 @@ def render(digest: dict) -> str:
           {stories_html}
         </div>
         """)
+        if DESIGN == "v2":
+            sections[-1] = _v2_top_stories(top_stories)
 
     # ── 4b. Overnight Flash (high-priority overnight items) ────────────
     overnight = digest.get("overnight_items") or []
@@ -1074,6 +1091,8 @@ def render(digest: dict) -> str:
           </div>
         </div>
         """)
+        if DESIGN == "v2":
+            sections[-1] = _v2_kcna(sections[-1])
 
     # ── 9. ROK Government (merged: Gov + Personnel + Assembly + Calendar) ─
     rok_gov = digest.get("rok_government") or []
@@ -2505,8 +2524,12 @@ def render(digest: dict) -> str:
             ("Trade", "trade"), ("Markets", "business"),
             ("Polling", "sentiment"), ("Upcoming", "upcoming"),
             ("Analysis", "analysis"), ("Satellite", "satellite")]
+    if DESIGN == "v2":
+        sections = [_v2_restyle(s) for s in sections]
     body = "\n".join(sections)
-    _links = [f'<a href="#{_a}" style="color:{TAEGUK_BLUE};text-decoration:underline;'
+    if DESIGN == "v2":
+        body = _v2_finish(body)
+    _links =[f'<a href="#{_a}" style="color:{TAEGUK_BLUE};text-decoration:underline;'
               f'text-underline-offset:2px;white-space:nowrap;">{_l}</a>'
               for _l, _a in _NAV if f'a name="{_a}"' in body]
     _nav_html = ""
@@ -2524,13 +2547,13 @@ def render(digest: dict) -> str:
     body = body.replace("%%NAV%%", _nav_html)
 
     # Count what the body actually says, then stamp it into the masthead.
-    word_count = _count_rendered_words(body)
+    word_count = _count_rendered_words(_v2_unchrome(body) if DESIGN == "v2" else body)
     read_min = max(1, round(word_count / 250))
     body = (body.replace("%%WORDS%%", f"{word_count:,}")
                 .replace("%%READMIN%%", str(read_min)))
     digest["_word_count"] = word_count      # run.py's floor check reads this
 
-    return f"""<!DOCTYPE html>
+    html = f"""<!DOCTYPE html>
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
 <head>
   <meta charset="utf-8">
@@ -2705,6 +2728,492 @@ def render(digest: dict) -> str:
   </table>
 </body>
 </html>"""
+    return _v2_page(html) if DESIGN == "v2" else html
+
+
+# ── Design v2 ──────────────────────────────────────────────────────────────
+# Selected by DESIGN = "v2". Styling only: the same sections in the same order,
+# from the same fields. Everything specific to it lives in this block; render()
+# calls in at a handful of marked points and otherwise runs unchanged.
+#
+#   * Every section bar carries a number and its Korean name. The numbers are
+#     the navigation: a contents list under the glance names them, and a reader
+#     on Gmail for iOS, where anchor links do nothing, scrolls to "07".
+#   * Two typefaces doing different jobs: Georgia for headlines and figures, a
+#     sans for running text, a size step between them (24px lead headline over
+#     15-16px body). The body was 13px Georgia, the same face as the headlines.
+#   * One lead story, then the rest boxed and smaller; the wire stays a list.
+#   * A hard-numbers strip under the masthead and a "what changed" box in the
+#     glance, both built from fields the digest already carries.
+#   * Flat fills, no drop shadow, no rounded cards, no extra colours: every
+#     colour here is already in the dark-mode maps.
+#
+# Classic sections are restyled in one pass (_v2_restyle) rather than edited,
+# so a section added later in the house card style comes out in v2 as well.
+
+_V2_SANS = "Helvetica,Arial"            # repeated on every text node, so kept short
+_V2_SERIF = "Georgia,Times,serif"      # the same face as SERIF; the spelling marks v2 output
+_V2_KO = "Helvetica,Arial,Apple SD Gothic Neo,Malgun Gothic,Noto Sans KR,sans-serif"
+_V2_FILL = "#F5F7FA"                   # box fill; dark-mapped to #22262C
+# Headline links in ink with a pale rule under them: still a link, but the
+# rule no longer outweighs a 25px serif.
+_V2_LINK = (f"color:{INK};text-decoration:underline;text-decoration-color:#C9D2DE;"
+            "text-decoration-thickness:1px;text-underline-offset:5px;")
+_V2_SEC = 'style="padding:22px 32px 24px;border-bottom:1px solid #EBEBEB;" class="sec"'
+
+_V2_KOREAN = {
+    "today at a glance": "오늘의 요점", "top stories": "주요 뉴스", "overnight": "밤사이",
+    "stat of the day": "오늘의 숫자", "pyongyang watch": "북한", "rok government": "정부",
+    "election tracker": "선거", "us-korea trade & investment": "한미 통상",
+    "business & economy": "경제", "northeast asia watch": "동북아", "public sentiment": "여론",
+    "upcoming": "일정", "the wire": "단신", "analysis": "분석",
+    "satellite & location watch": "위성 감시", "capitol hill": "미 의회",
+    "korea and the world": "한국과 세계", "korea & the world": "한국과 세계",
+}
+# Contents entries that would not fit a third of the column at full length.
+_V2_TOC_SHORT = {
+    "us-korea trade & investment": "Trade &amp; Investment",
+    "satellite & location watch": "Location Watch",
+    "northeast asia watch": "Northeast Asia",
+    "business & economy": "Business",
+}
+
+
+def _v2_bar(label: str, numbered: bool = True) -> str:
+    """Black bar: number, English label, Korean label.
+
+    The number is a placeholder until _v2_finish has seen which sections
+    rendered. Number and Korean sit inside chrome markers so the word count
+    the masthead prints, and run.py trims against, is the same as classic's.
+    """
+    key = label.replace("&amp;", "&").strip().lower()
+    ko = _V2_KOREAN.get(key, "")
+    num = (f'<!--c--><span style="font-family:{_V2_SERIF};font-size:17px;font-weight:700;color:#E8697A;'
+           f'padding-right:11px;margin-right:11px;border-right:1px solid #3A4048;">%%V2N:{label}%%</span><!--/c-->'
+           if numbered else "")
+    kor = (f'<!--c--><span style="font-family:{_V2_KO};font-size:13px;color:#A0AEC0;margin-left:10px;'
+           f'white-space:nowrap;">{ko}</span><!--/c-->' if ko else "")
+    return ('<table width="100%" cellpadding="0" cellspacing="0" border="0" class="sec-bar" '
+            'style="background:#14181F;margin-bottom:16px;"><tr><td style="padding:9px 14px;">'
+            f'{num}<span style="font-family:{_V2_SANS};font-size:12px;font-weight:700;'
+            f'letter-spacing:2px;text-transform:uppercase;color:#FFFFFF;">{label}</span>'
+            f'{kor}</td></tr></table>')
+
+
+def _v2_srctype(src: str) -> str:
+    """A small label for the kind of source, when the source line makes it plain."""
+    s = (src or "").lower()
+    if _re.search(r"\bkcna\b|rodong|uriminzokkiri|노동신문|조선중앙", s):
+        return "DPRK state media"
+    if _re.search(r"korea\.kr|\bmofa\b|\bmnd\b|ministry of|presidential office|대통령실|국방부|외교부|"
+                  r"통일부|bank of korea|kostat|joint chiefs|합참", s):
+        return "ROK primary"
+    return ""
+
+
+def _v2_kicker(cat: str, src: str, alert: bool = False) -> str:
+    kind = _v2_srctype(_re.sub(r"<[^>]+>", "", src))
+    chip = (f' <span style="display:inline-block;margin-left:4px;padding:1px 5px;background:#E7EBF0;'
+            f'color:#353C48;font-size:10px;letter-spacing:0.5px;vertical-align:1px;">{kind}</span>' if kind else "")
+    text = " &middot; ".join(x for x in (cat, src) if x)
+    if not text and not chip:
+        return ""
+    return (f'<div style="font-family:{_V2_SANS};font-size:11px;font-weight:700;letter-spacing:1px;'
+            f'text-transform:uppercase;color:{TAEGUK_RED if alert else TAEGUK_BLUE};margin-bottom:4px;">'
+            f'{text}{chip}</div>')
+
+
+def _v2_item(cat, src, headline, body, url, bar_color, extra_html) -> str:
+    """The house item in v2: a flat box, serif headline, sans body.
+
+    No left rule on every item; red is kept for the alert categories and moves
+    to the kicker, where it survives dark mode (the dark card rule repaints
+    every border).
+    """
+    return (f'<div class="item-card" style="margin-bottom:8px;padding:13px 16px;background:{_V2_FILL};">'
+            + _v2_kicker(cat, src, alert=bar_color == TAEGUK_RED)
+            + f'<div class="v2-h" style="font-family:{_V2_SERIF};font-size:17px;font-weight:700;'
+              f'color:{INK};line-height:1.3;">{_link_or_text(headline, url, style=_V2_LINK)}</div>'
+            + (f'<div style="font-family:{_V2_SANS};font-size:15px;line-height:1.55;color:{BODY_INK};'
+               f'margin-top:5px;">{body}</div>' if body else "")
+            + extra_html + '</div>')
+
+
+def _v2_masthead(digest: dict, now, listen_bar: str) -> str:
+    """Nameplate, then the two-city dateline the brief is written across."""
+    from zoneinfo import ZoneInfo
+    seoul = now.astimezone(ZoneInfo("Asia/Seoul"))
+    issue = digest.get("issue_no")
+    issue_txt = (f"No. {int(issue)}" if isinstance(issue, (int, float)) and issue > 0 else "")
+    soft = "rgba(255,255,255,0.80)"
+    dateline = (f'<span style="white-space:nowrap;">Seoul <b style="color:#FFFFFF;">{seoul:%H:%M}</b> {seoul:%a}</span> '
+                f'&middot; <span style="white-space:nowrap;">Washington <b style="color:#FFFFFF;">{now:%H:%M}</b> {now:%a}</span>')
+    return f"""<!--v2--><a name="top" id="top"></a>
+<div bgcolor="{BAND}" style="background-color:{BAND};color:#FFFFFF;padding:20px 32px 18px;" class="sec mast-band">
+<table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+<td class="mast-main" style="vertical-align:bottom;">
+<div style="font-family:{_V2_SANS};font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:{soft};">CSIS Korea Chair</div>
+<h1 style="margin:6px 0 0;font-family:{_V2_SERIF};font-size:34px;line-height:1.05;font-weight:700;letter-spacing:-0.3px;color:#FFFFFF;">Korea Daily Brief</h1>
+</td>
+<td class="mast-meta" style="vertical-align:bottom;text-align:right;">
+<div style="font-family:{_V2_SERIF};font-size:16px;color:#FFFFFF;white-space:nowrap;">{now:%A, %B} {now.day}, {now.year}</div>
+<!--c--><div style="font-family:{_V2_SANS};font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:{soft};margin-top:4px;">{issue_txt}</div><!--/c-->
+</td></tr></table>
+<!--c--><table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:14px;border-top:1px solid rgba(255,255,255,0.30);"><tr>
+<td class="mast-main" style="padding-top:9px;font-family:{_V2_SANS};font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:{soft};">{dateline}</td>
+<td class="mast-meta" style="padding-top:9px;text-align:right;font-family:{_V2_SANS};font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:{soft};white-space:nowrap;">%%WORDS%% words &middot; %%READMIN%% min</td>
+</tr></table><!--/c-->
+{_v2_restyle(listen_bar)}
+</div>"""
+
+
+def _v2_numbers(digest: dict) -> str:
+    """Peninsula hard numbers: six figures with their direction, readable in a glance."""
+    m = digest.get("market_indicators") or {}
+    cells = []
+
+    def delta(pct, unit="%"):
+        try:
+            v = float(pct)
+        except (TypeError, ValueError):
+            return ""
+        if v > 0:
+            return f'<span style="color:{UP_GREEN};">&#9650; {v:.1f}{unit}</span>'
+        if v < 0:
+            return f'<span style="color:{DOWN_RED};">&#9660; {abs(v):.1f}{unit}</span>'
+        return f'<span style="color:{MUTE};">flat</span>'
+
+    def cell(label, value, sub):
+        if value in (None, "", "None", "—", "$—"):
+            return
+        cells.append(
+            f'<td align="center" valign="top" style="padding:12px 4px 11px;border-left:1px solid #E4E7EB;">'
+            f'<div style="font-family:{_V2_SANS};font-size:10px;font-weight:700;letter-spacing:1px;'
+            f'text-transform:uppercase;color:{MUTE};white-space:nowrap;">{label}</div>'
+            f'<div style="font-family:{_V2_SERIF};font-size:19px;font-weight:700;color:{INK};'
+            f'margin-top:4px;line-height:1.1;white-space:nowrap;">{value}</div>'
+            f'<div style="font-family:{_V2_SANS};font-size:11px;line-height:1.35;color:{MUTE};'
+            f'margin-top:3px;">{sub or "&nbsp;"}</div></td>')
+
+    k, w, b, r = (m.get(x) or {} for x in ("kospi", "usd_krw", "brent", "bok_rate"))
+    cell("KOSPI", _esc(str(k.get("value", ""))), delta(k.get("change_pct")))
+    cell("USD/KRW", _esc(str(w.get("value", ""))), delta(w.get("change_pct")))
+    if b.get("value"):
+        cell("Brent", "$" + _esc(str(b.get("value"))), delta(b.get("change_pct")))
+    ap = ((digest.get("public_sentiment") or {}).get("presidential_approval") or {})
+    if ap.get("value"):
+        sub = ""
+        try:
+            from poll_history import delta as _poll_delta
+            d = _poll_delta()
+            if d:
+                sub = delta(d[0], unit=" pts").replace(".0 pts", " pts")
+        except Exception:                                       # noqa: BLE001
+            pass
+        when = _re.sub(r",?\s*\d{4}$", "", str(ap.get("last_updated") or "").strip())
+        when = _re.sub(r"^([A-Z][a-z]{2})[a-z]*", r"\1", when)
+        sub = " ".join(x for x in (sub, f'<span style="color:{MUTE};">{_esc(when)}</span>' if when else "") if x)
+        cell("Lee approval", _esc(str(ap["value"])), sub)
+    kc = digest.get("kcna_delta") or {}
+    days = kc.get("days_since_last_appearance")
+    if kc.get("kim_appearance_today"):
+        cell("Kim last seen", "Today", f'<span style="color:{UP_GREEN};">public appearance</span>')
+    elif isinstance(days, int) and days > 0:
+        seen = ""
+        try:
+            raw = str(digest.get("digest_date", "")).strip()
+            for fmt in ("%A, %B %d, %Y", "%Y-%m-%d", "%B %d, %Y"):
+                try:
+                    from datetime import timedelta
+                    seen = (datetime.strptime(raw, fmt) - timedelta(days=days)).strftime("%b %-d")
+                    break
+                except ValueError:
+                    continue
+        except Exception:                                       # noqa: BLE001
+            seen = ""
+        cell("Kim last seen", f"{days} day{'s' if days != 1 else ''}",
+             (f'<span style="color:{DOWN_RED};">' if days >= 7 else "<span>") + (f"ago &middot; {seen}" if seen else "ago") + "</span>")
+    cell("BOK rate", _esc(str(r.get("value", ""))), _esc(str(r.get("last_change", ""))))
+    if not cells:
+        return ""
+    cells[0] = cells[0].replace("border-left:1px solid #E4E7EB;", "", 1)
+    return (f'<!--v2--><!--c--><a name="markets" id="markets"></a>'
+            f'<table width="100%" cellpadding="0" cellspacing="0" border="0" class="v2-hn" '
+            f'style="background:{_V2_FILL};border-bottom:1px solid #E4E7EB;"><tr>'
+            + "".join(cells) + '</tr></table><!--/c-->')
+
+
+def _v2_trackers(digest: dict) -> str:
+    """What changed since the last issue. Changed rows in ink; the rest collapse to one grey line."""
+    rows, same = [], []
+    lab = (lambda t, c=INK: f'<span style="font-family:{_V2_SANS};font-size:11px;font-weight:700;'
+                            f'letter-spacing:1px;text-transform:uppercase;color:{c};">{t}</span>&nbsp; ')
+    kc = digest.get("kcna_delta") or {}
+    if kc and any(kc.values()):
+        if kc.get("silence_today") and not kc.get("data_unavailable"):
+            rows.append(lab("KCNA", TAEGUK_RED) + "Complete silence today %%V2REF:kcna%%")
+        elif kc.get("watch_flag"):
+            rows.append(lab("KCNA", TAEGUK_RED) + "Watch flag up %%V2REF:kcna%%")
+        else:
+            same.append("no KCNA watch flag")
+        days = kc.get("days_since_last_appearance")
+        if kc.get("kim_appearance_today"):
+            act = _esc(kc.get("kim_activity") or "")
+            rows.append(lab("Kim Jong Un") + "Public appearance" + (f": {act}" if act else ""))
+        elif isinstance(days, int) and days >= 7:
+            rows.append(lab("Kim Jong Un", TAEGUK_RED) + f"Not seen for {days} days")
+        elif isinstance(days, int) and days > 0:
+            same.append(f"Kim Jong Un not seen ({days} day{'s' if days != 1 else ''})")
+    bp = digest.get("_bp_changes")
+    n_sites = len(digest.get("bp_locations") or [])
+    if isinstance(bp, list) and n_sites:
+        if bp:
+            rows.append(lab("Location watch") + "New reporting: " + ", ".join(_esc(x) for x in bp[:4])
+                        + (f" and {len(bp) - 4} more" if len(bp) > 4 else "") + " %%V2REF:satellite%%")
+        else:
+            same.append(f"no new reporting at the {n_sites} monitored sites")
+    tc = digest.get("_tariff_changes")
+    if isinstance(tc, list) and ((digest.get("us_korea_deals") or {}) if isinstance(digest.get("us_korea_deals"), dict) else {}).get("tariff_tracker"):
+        if tc:
+            rows.append(lab("Tariffs") + "Rate changed: " + ", ".join(_esc(x) for x in tc[:4]) + " %%V2REF:trade%%")
+        else:
+            same.append("tariff rates unchanged")
+    if not rows and not same:
+        return ""
+    body = "".join(f'<tr><td class="v2-rule" style="padding:8px 0;border-bottom:1px solid #E4E7EB;'
+                   f'font-family:{_V2_SANS};font-size:14px;line-height:1.45;color:{INK};">{r}</td></tr>' for r in rows)
+    if same:
+        txt = "; ".join(same)
+        body += (f'<tr><td style="padding:8px 0 0;font-family:{_V2_SANS};font-size:13px;line-height:1.45;color:{MUTE};">'
+                 f'<b>No change:</b> {txt[:1].upper() + txt[1:]}.</td></tr>')
+    return (f'<!--c--><table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:18px;">'
+            f'<tr><td class="v2-rule" style="padding:0 0 6px;border-bottom:2px solid {INK};font-family:{_V2_SERIF};'
+            f'font-size:16px;font-weight:700;color:{INK};">What changed'
+            f'<span style="font-family:{_V2_SANS};font-size:12px;font-weight:400;color:{MUTE};"> &nbsp;trackers since the last issue</span>'
+            f'</td></tr>{body}</table><!--/c-->')
+
+
+def _v2_glance(digest: dict, memo_items: list) -> str:
+    rows = ""
+    for i, mi in enumerate(memo_items[:3]):
+        text = mi if isinstance(mi, str) else (mi.get("text", "") if isinstance(mi, dict) else str(mi or ""))
+        rule = "border-top:1px solid #D5DEEA;" if i else ""
+        rows += (f'<tr><td width="30" valign="top" class="v2-rule" style="padding:11px 0;{rule}font-family:{_V2_SERIF};'
+                 f'font-size:21px;line-height:1.05;font-weight:700;color:{TAEGUK_BLUE};">{i + 1}</td>'
+                 f'<td valign="top" class="v2-rule" style="padding:11px 0 11px 4px;{rule}">{_emphasis(_esc(text))}</td></tr>')
+    return (f'<!--v2--><div style="padding:22px 32px 22px;" class="sec"><a name="memo" id="memo"></a>'
+            f'<table width="100%" cellpadding="0" cellspacing="0" border="0" class="glance-panel" style="background:#EDF2FA;">'
+            f'<tr><td style="padding:0;">{_v2_bar("Today at a Glance", numbered=False)}</td></tr>'
+            f'<tr><td style="padding:0 20px 6px 18px;"><table width="100%" cellpadding="0" cellspacing="0" border="0" '
+            f'style="font-family:{_V2_SANS};font-size:16px;line-height:1.5;color:{INK};">{rows}</table></td></tr>'
+            f'</table>{_v2_trackers(digest)}{_happening_today(digest)}%%TOC%%</div>')
+
+
+def _v2_top_stories(stories: list) -> str:
+    """The first story leads, unboxed and large; the rest follow in boxes."""
+    out = ""
+    for i, st in enumerate(stories):
+        cat = _esc(_str(st.get("category_tag", st.get("category", ""))))
+        headline = _emphasis(_esc(st.get("headline", "")))
+        body = _emphasis(_esc(st.get("body", "")))
+        src = _esc(_clean_src(st.get("src_line", st.get("source", ""))))
+        url = st.get("url", "")
+        if i == 0:
+            out += (f'<div style="padding:2px 0 18px;">{_v2_kicker(cat, "")}'
+                    f'<h3 class="v2-lead" style="margin:0 0 9px;font-family:{_V2_SERIF};font-size:25px;line-height:1.22;'
+                    f'font-weight:700;letter-spacing:-0.2px;color:{INK};">'
+                    f'{_link_or_text(headline, url, style=_V2_LINK)}</h3>'
+                    f'<p style="margin:0;font-family:{_V2_SANS};font-size:16px;line-height:1.6;color:{BODY_INK};">{body}</p>'
+                    f'<div style="font-family:{_V2_SANS};font-size:12px;color:{MUTE};margin-top:8px;">{src}</div></div>')
+        else:
+            out += (f'<div class="item-card story-card" style="margin-bottom:8px;padding:14px 16px;background:{_V2_FILL};">'
+                    f'{_v2_kicker(cat, "")}'
+                    f'<h3 class="v2-h" style="margin:0 0 6px;font-family:{_V2_SERIF};font-size:18px;line-height:1.3;'
+                    f'font-weight:700;color:{INK};">{_link_or_text(headline, url, style=_V2_LINK)}</h3>'
+                    f'<p style="margin:0;font-family:{_V2_SANS};font-size:15px;line-height:1.55;color:{BODY_INK};">{body}</p>'
+                    f'<div style="font-family:{_V2_SANS};font-size:12px;color:{MUTE};margin-top:7px;">{src}</div></div>')
+    return (f'<!--v2--><div {_V2_SEC}><a name="top-stories" id="top-stories"></a>'
+            f'{_sec_label("Top Stories")}{out}</div>')
+
+
+def _v2_kcna(html: str) -> str:
+    """Give Pyongyang Watch the same numbered bar as every other section.
+
+    Its own header was a blue label on the navy panel, the one section a
+    reader could not find by number. The panel becomes a box under the bar.
+    Left as it was if the markup has moved.
+    """
+    pat = _re.compile(r'<div style="padding:0;border-bottom:1px solid #333;" class="sec kcna-dark">\s*'
+                      r'<table[^>]*>\s*<tr>\s*<td[^>]*>\s*<span[^>]*>Pyongyang Watch &middot; KCNA</span>\s*'
+                      r'</td>\s*</tr>\s*</table>')
+    if not pat.search(html):
+        return html
+    html = pat.sub(lambda _m: f'<div {_V2_SEC}>{_v2_bar("Pyongyang Watch")}<div class="kcna-dark">', html, count=1)
+    html = html.replace(f"padding:16px 32px;background:{NAVY_PANEL};", f"padding:18px 20px;background:{NAVY_PANEL};", 1)
+    return html.rstrip() + "</div>"
+
+
+_V2_HEAD = {13: 16, 14: 17, 15: 17, 16: 18, 17: 19, 18: 20}   # serif headline sizes
+_V2_BODY = {12: 14, 13: 15, 14: 16}                            # running text, now in the sans
+_V2_SMALL = {10: 11, 12: 13, 13: 14}                           # sans labels and meta
+
+
+def _v2_style(style: str) -> str:
+    """Restyle one inline style declaration for v2. v2's own markup is left alone."""
+    parts = [p.split(":", 1) for p in style.split(";") if ":" in p]
+    decl = {k.strip().lower(): v.strip() for k, v in parts}
+    fam = decl.get("font-family", "")
+    if fam in (_V2_SANS, _V2_SERIF, _V2_KO):
+        return style
+    if style.startswith("color:#1B2A4A;text-decoration:underline;text-decoration-color:#AEBBD0"):
+        return _V2_LINK
+    if style.startswith("padding:17px 32px;border-bottom:1px solid #EBEBEB"):
+        return style.replace("padding:17px 32px;", "padding:22px 32px 24px;", 1)
+    serif = fam.startswith("Georgia")
+    sans = fam.startswith("Arial") or "Courier" in fam or fam.startswith("-apple")
+    m = _re.match(r"(\d+)px$", decl.get("font-size", ""))
+    size = int(m.group(1)) if m else None
+    wt = decl.get("font-weight", "400")
+    wt = 700 if wt == "bold" else int(wt) if wt.isdigit() else 400
+    color = decl.get("color", "").upper()
+    new = {}
+    if sans:
+        new["font-family"] = _V2_SANS
+    if style.startswith("padding:7px 0;vertical-align:top;font-family:Georgia"):
+        wt = 700            # an Overnight headline cell: quick items, but each still has a headline
+    if serif and decl.get("font-style") != "italic":
+        if wt >= 600 or color in (INK, NAVY):
+            if wt >= 600:
+                new["font-weight"] = "700"
+            if size in _V2_HEAD:
+                new["font-size"] = f"{_V2_HEAD[size]}px"
+                new["line-height"] = "1.3"
+        elif size is None or size <= 14:
+            new["font-family"] = _V2_SANS
+            if style.startswith("font-family:Georgia,serif;font-size:13px;line-height:1.45;color:#353C48;margin-top:2px"):
+                new["font-weight"] = "400"      # the Overnight clause, under its bold headline
+            if size in _V2_BODY:
+                new["font-size"] = f"{_V2_BODY[size]}px"
+                new["line-height"] = "1.55"
+    elif serif:
+        if size in _V2_BODY:
+            new["font-size"] = f"{_V2_BODY[size]}px"
+    elif not fam and wt >= 700 and color == INK and size and size >= 14:
+        new["font-family"] = _V2_SERIF
+        new["font-size"] = f"{_V2_HEAD.get(size, size + 2)}px"
+    elif size in _V2_SMALL:
+        new["font-size"] = f"{_V2_SMALL[size]}px"
+    if not new:
+        return style
+    out, seen = [], set()
+    for k, v in parts:
+        k = k.strip().lower()
+        seen.add(k)
+        out.append(f"{k}:{new.get(k, v.strip())}")
+    out += [f"{k}:{v}" for k, v in new.items() if k not in seen]
+    return ";".join(out) + ";"
+
+
+def _v2_restyle(section: str) -> str:
+    """Apply the v2 type and spacing to a classic section. Sections v2 built itself pass through."""
+    if section.lstrip().startswith("<!--v2-->"):
+        return section
+    section = _re.sub(r'style="([^"]*)"', lambda m: f'style="{_v2_style(m.group(1))}"', section)
+    return _re.sub(r"style='([^']*)'", lambda m: f"style='{_v2_style(m.group(1))}'", section)
+
+
+def _v2_finish(body: str) -> str:
+    """Number the bars in the order they rendered, then build the contents list from them."""
+    anchors = [(m.start(), m.group(1)) for m in _re.finditer(r'<a name="([\w-]+)"', body)]
+    toc, nums, prev = [], {}, -1
+    for m in _re.finditer(r"%%V2N:(.*?)%%", body):
+        name = ""
+        for pos, a in anchors:
+            if prev < pos < m.start():
+                name = a
+        prev = m.start()
+        toc.append((m.group(1), name))
+        if name:
+            nums[name] = len(toc)
+    counter = iter(range(1, len(toc) + 1))
+    body = _re.sub(r"%%V2N:(.*?)%%", lambda m: f"{next(counter):02d}", body)
+
+    def ref(m):
+        n = nums.get(m.group(1))
+        return (f'<span style="font-family:{_V2_SANS};color:{MUTE};white-space:nowrap;">&rarr; '
+                f'<b style="color:{TAEGUK_RED};">{n:02d}</b></span>' if n else "")
+    body = _re.sub(r"\s?%%V2REF:([\w-]+)%%", lambda m: (" " + ref(m)) if nums.get(m.group(1)) else "", body)
+    links = ""
+    for i, (label, name) in enumerate(toc, 1):
+        key = label.replace("&amp;", "&").strip().lower()
+        text = _V2_TOC_SHORT.get(key, label)
+        inner = f'<b style="font-family:{_V2_SERIF};color:{TAEGUK_RED};">{i:02d}</b>&nbsp; {text}'
+        st = f"display:inline-block;width:33%;padding:5px 0;color:{INK};text-decoration:none;"
+        links += (f'<a class="v2-toc" href="#{name}" style="{st}">{inner}</a>' if name
+                  else f'<span class="v2-toc" style="{st}">{inner}</span>')
+    toc_html = ""
+    if len(toc) >= 4:
+        toc_html = (f'<!--c--><table width="100%" cellpadding="0" cellspacing="0" border="0" class="v2-toc-box" style="margin-top:18px;">'
+                    f'<tr><td class="v2-rule" style="padding:0 0 6px;border-bottom:2px solid {INK};font-family:{_V2_SERIF};'
+                    f'font-size:16px;font-weight:700;color:{INK};">In this issue'
+                    f'<span style="font-family:{_V2_SANS};font-size:12px;font-weight:400;color:{MUTE};"> &nbsp;section numbers match the bars below</span></td></tr>'
+                    f'<tr><td style="padding:8px 0 0;font-family:{_V2_SANS};font-size:14px;">'
+                    f'{links}</td></tr></table><!--/c-->')
+    if "%%TOC%%" in body:
+        return body.replace("%%TOC%%", toc_html).replace("%%NAV%%", "")
+    return body.replace("%%NAV%%", f'<div class="sec" style="padding:0 32px 6px;">{toc_html}</div>' if toc_html else "")
+
+
+def _v2_unchrome(body: str) -> str:
+    """The body without v2's furniture, so the word count matches what classic counts."""
+    return _re.sub(r"<!--c-->.*?<!--/c-->", " ", body, flags=_re.S)
+
+
+_V2_CSS = """
+    @media only screen and (max-width: 620px) {
+      .v2-hn td { display:inline-block !important; width:33.3% !important; box-sizing:border-box !important;
+        border-left:0 !important; padding:9px 2px !important; }
+      .v2-toc { width:50% !important; }
+      h3.v2-lead { font-size:22px !important; }
+      .v2-h { font-size:17px !important; }
+      .wrapper .sec-bar td { padding:9px 12px !important; }
+      .mast-band h1 { font-size:28px !important; }
+      .kcna-dark table td { padding-left:0 !important; padding-right:0 !important; }
+    }
+    @media only screen and (min-width: 621px) and (max-width: 768px) {
+      .wrapper { max-width:640px !important; }
+      .mast-band h1 { font-size:32px !important; }
+    }
+    @media print { .v2-toc-box { display:none !important; } }
+    @media (prefers-color-scheme: dark) {
+      body > table { background:#121212 !important; }
+      .wrapper .v2-rule, .wrapper .v2-hn, .wrapper .v2-hn td, .wrapper .flash-table td,
+      .wrapper .flash-table tr { border-color:#3A4048 !important; }
+      .wrapper a[style*="decoration-color:#C9D2DE"] { text-decoration-color:#5A6472 !important; }
+    }
+"""
+
+
+def _v2_page(html: str) -> str:
+    """Page-level v2: its stylesheet, the narrower column, and a leaner file.
+
+    Gmail clips a message at about 102KB, and classic already reaches it on a
+    long day. Comments and indentation are dropped here (conditional comments
+    for Outlook are kept), which more than pays for v2's additions.
+    """
+    html = html.replace("</style>", _V2_CSS + "  </style>", 1)
+    html = html.replace('class="wrapper" width="680"', 'class="wrapper" width="640"', 1)
+    html = html.replace("width:680px;max-width:100%;margin:0 auto;background:#FFFFFF;"
+                        "font-family:Arial,Helvetica,sans-serif;box-shadow:0 2px 20px rgba(0,0,0,0.08);",
+                        f"width:640px;max-width:100%;margin:0 auto;background:#FFFFFF;font-family:{_V2_KO};", 1)
+    html = html.replace('<table width="680" cellpadding', '<table width="640" cellpadding', 1)
+    html = _re.sub(r"<!--(?!\[if)(?!<!\[endif\]).*?-->", "", html, flags=_re.S)
+    head, sep, rest = html.partition("</head>")
+    head = _re.sub(r"/\*.*?\*/", "", head, flags=_re.S)
+    html = head + sep + rest
+    html = _re.sub(r"\n\s+", "\n", html)
+    # A line break next to a block or table tag renders as nothing at all.
+    return _re.sub(r"\n+(?=</?(?:div|table|tr|td|tbody|p|h[1-6]|a name)[\s>])|(?:(?<=</div>)|(?<=</td>)|(?<=</tr>))\n+", "", html)
 
 
 if __name__ == "__main__":
