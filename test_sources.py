@@ -21,6 +21,7 @@ Run: python test_sources.py
 """
 from __future__ import annotations
 
+import json
 import re
 import sys
 
@@ -975,6 +976,184 @@ def check_audio_extras():
     return problems
 
 
+def check_korean_units_are_scaled() -> list[str]:
+    """847억 달러 is $84.7B. Printed as $847B, and as "$1 trillion" in the memo.
+
+    The prompt states the rule; magnitude_warnings must catch a figure ten
+    times its cited Korean source even when it is not a trade balance, and
+    must not flag the correct figure or the $350B pledge.
+    """
+    import run
+    problems = []
+    if "847억 달러 is $84.7 billion" not in digest.SYSTEM_PROMPT:
+        problems.append("the prompt has no 억/조 conversion rule")
+    src = "뉴시스 — 대미 무역흑자 847억 달러…美 1000억弗 돌파 목전"
+    bad = {"key_stat": {"number": "$847B", "label": "Exports to the US, Jan-Sep",
+                        "context": "Shipments reached $847B.", "source": src},
+           "morning_memo": ["Exports to the US hit $847B through September."]}
+    found = " ".join(run.magnitude_warnings(bad))
+    if "$847B" not in found:
+        problems.append("a $847B figure from an 847억 달러 source is not flagged")
+    if "morning memo" not in found:
+        problems.append("the same wrong figure in the morning memo is not flagged")
+    good = {"key_stat": {"number": "$84.7B", "label": "Exports to the US",
+                         "context": "Shipments reached $84.7B; the $350B pledge is unchanged.",
+                         "source": src}}
+    if run.magnitude_warnings(good):
+        problems.append(f"a correct $84.7B is flagged: {run.magnitude_warnings(good)}")
+    return problems
+
+
+def check_process_notes_never_reach_readers() -> list[str]:
+    """'See source article for name', '(implied)', 'per scope rules' all shipped."""
+    import run
+    problems = []
+    if "Never describe your own process" not in digest.SYSTEM_PROMPT.splitlines()[-1]:
+        problems.append("the process-note rule is not the last line of the system prompt")
+    d = {
+        "rok_personnel": [{"name": "See source article for name", "position": "Vice minister",
+                           "action": "appointed"},
+                          {"name": "Kim Ji-yong", "position": "SCIA director", "action": "nominated"}],
+        "rok_assembly": [{"committee": "National Assembly (unspecified committee)",
+                          "action": "Audit of KEPCO breach", "detail": "Members pressed KEPCO."},
+                         {"committee": "Intelligence Committee (implied)", "action": "NIS briefing",
+                          "detail": "The NIS briefed members on the DPRK."}],
+        "us_korea_deals": {"deals": [{"headline": "Hyundai $15.5B India investment",
+                                      "parties": "Hyundai Motor Group — India",
+                                      "detail": "A Korea-India deal; excluded per scope rules."}]},
+        "top_stories": [{"headline": "Seoul demands apology", "url": "https://x/1",
+                         "body": "Seoul recalled its envoy. It continues to demand an apology as of today's reporting."}],
+    }
+    run._strip_process_notes(d)
+    run._drop_nameless_personnel(d)
+    text = json.dumps(d, ensure_ascii=False)
+    for phrase in ("See source", "(implied)", "unspecified", "scope rules", "today's reporting"):
+        if phrase.lower() in text.lower():
+            problems.append(f"{phrase!r} survived the validators")
+    if [p["name"] for p in d["rok_personnel"]] != ["Kim Ji-yong"]:
+        problems.append("the nameless personnel entry was not dropped, or a real one was")
+    if d["us_korea_deals"]["deals"]:
+        problems.append("a deal whose detail was only a process note was kept")
+    if d["top_stories"][0]["body"] != "Seoul recalled its envoy.":
+        problems.append(f"the note sentence was not cut cleanly: {d['top_stories'][0]['body']!r}")
+    if not run._PLACEHOLDER_NAME_RE.search("See source article for name"):
+        problems.append("_PLACEHOLDER_NAME_RE does not catch 'see source'")
+    return problems
+
+
+def check_non_us_deals_are_filtered() -> list[str]:
+    """Match the US on the headline and parties, never on the detail or note."""
+    import run
+    problems = []
+    deals = [
+        {"headline": "Hyundai Motor Group announces $15.5B investment in India",
+         "parties": "Hyundai Motor Group — India operations",
+         "detail": "Not a us-korea deal.", "note": "us-korea scope", "sector": "Business"},
+        {"headline": "Samsung Heavy wins Oceania LNG carrier order", "parties": ["Samsung Heavy"],
+         "detail": "Industry analysts expect more business."},
+        {"headline": "LS Electric wins transformer order in US", "parties": ["LS Electric"]},
+        {"headline": "Hanwha Ocean expands Philly Shipyard",
+         "parties": ["Hanwha Ocean", "Philly Shipyard"], "detail": ""},
+        {"headline": "Trump touts Hyundai's Georgia plant", "parties": "Hyundai Motor Group"},
+    ]
+    d = {"us_korea_deals": {"deals": deals}}
+    run._filter_non_us_deals(d)
+    kept = [x["headline"] for x in d["us_korea_deals"]["deals"]]
+    if any("India" in h or "Oceania" in h for h in kept):
+        problems.append(f"a non-US deal passed: {kept}")
+    if len(kept) != 3:
+        problems.append(f"a US deal was dropped: {kept}")
+    return problems
+
+
+def check_calendar_items_render() -> list[str]:
+    """26 model items over ten days rendered as 0: the shapes did not match.
+
+    The model returned {date, event}; merge and render read {month, day,
+    headline}. Both must now render, in Upcoming and in Happening today, and
+    in the audio edition; past, undated and off-topic items must not.
+    """
+    import korea_calendar
+    import podcast
+    import render
+    import run
+    from datetime import date
+    problems = []
+    text = _prompt_text()
+    block = text.split("- calendar_watch:", 1)[-1][:1200]
+    for field in ('month ("Oct")', "day (integer", "headline (under 12 words)", "detail", "source"):
+        if field not in block:
+            problems.append(f"the calendar_watch schema does not name {field!r}")
+    today = date(2026, 10, 18)
+    items = [
+        {"date": "Oct 19-23, 2026", "event": "HD Hyundai Heavy union widens partial strike",
+         "detail": "Shipbuilding output at risk.", "source": "경향신문"},
+        {"month": "Oct", "day": 20, "headline": "Hoguk field exercise begins",
+         "detail": "Annual ROK exercise.", "source": "Yonhap"},
+        {"date": "Oct 18, 2026", "event": "Telemedicine rules published", "source": "동아일보"},
+        {"date": "Oct 20, 2026", "event": "KBO semi-playoff Game 3 — KIA vs LG", "source": "동아일보"},
+        {"date": "November 2026 (no fixed date)", "event": "SCM after the midterms", "source": "Yonhap"},
+        {"date": "Oct 12, 2026", "event": "Audit hearing", "source": "Newsis"},
+    ]
+    merged = korea_calendar.merge(items, today)
+    heads = [m["headline"] for m in merged]
+    for want in ("HD Hyundai Heavy union widens partial strike", "Hoguk field exercise begins"):
+        if want not in heads:
+            problems.append(f"{want!r} did not survive merge")
+    for unwanted in ("KBO", "SCM", "Audit hearing"):
+        if any(unwanted in h for h in heads):
+            problems.append(f"{unwanted!r} should have been dropped from the calendar")
+    d = {"digest_date": "Sunday, October 18, 2026", "calendar_watch": items}
+    if "Telemedicine rules published" not in render._happening_today(d):
+        problems.append("Happening today does not read a {date, event} item")
+    if "Telemedicine rules published" not in podcast.happening_today(d):
+        problems.append("the audio's happening_today does not read a {date, event} item")
+    norm = {"calendar_watch": [dict(i) for i in items]}
+    run._normalize_calendar(norm, today=today)
+    if not all({"month", "day", "headline"} <= set(i) for i in norm["calendar_watch"]):
+        problems.append("postprocessing leaves calendar items without month/day/headline")
+    html = render.render({"digest_date": "Sunday, October 18, 2026", "calendar_watch": items,
+                          "top_stories": [], "morning_memo": []})
+    if "Hoguk field exercise begins" not in html or 'id="upcoming"' not in html:
+        problems.append("Upcoming does not render the model's items")
+    return problems
+
+
+def check_email_fits_gmail() -> list[str]:
+    """Gmail clips past 102,400 bytes. The byte guard must trim until it fits.
+
+    Trims only from length_budget's TRIM_ORDER, so top stories survive, and
+    stops at the floors rather than looping.
+    """
+    import run
+    problems = []
+    if run.EMAIL_BYTE_BUDGET >= run.GMAIL_CLIP_BYTES:
+        problems.append("the byte budget is not under Gmail's clip")
+
+    def fake_render(d):
+        n = sum(len(d.get(k) or []) for k in ("also_today", "overnight_items", "business_economy",
+                                              "top_stories", "social_statements"))
+        return "<html><body>" + ("x" * 5_000 + "\n") * n + "</body></html>"
+    d = {"top_stories": [{}] * 4, "overnight_items": [{}] * 8, "business_economy": [{}] * 6,
+         "also_today": [{"headline": f"wire {i}"} for i in range(6)],
+         "social_statements": [{}] * 3}
+    html, log = run.fit_email_bytes(d, fake_render, budget=100_000)
+    if len(html.encode()) > 100_000:
+        problems.append(f"fit_email_bytes left {len(html.encode()):,} bytes over a 100,000 budget")
+    if len(d["top_stories"]) != 4:
+        problems.append("fit_email_bytes trimmed top_stories")
+    if len(d["also_today"]) >= 6 or not log:
+        problems.append("fit_email_bytes did not trim from the TRIM_ORDER tail first")
+    # A brief that cannot fit stops at the floors instead of looping.
+    huge = {"top_stories": [{}] * 40}
+    html, log = run.fit_email_bytes(huge, fake_render, budget=1_000)
+    if not log or "floor" not in log[-1]:
+        problems.append("fit_email_bytes does not report when nothing more may be trimmed")
+    if "1,700-2,000 WORDS" not in _prompt_text():
+        problems.append("the prompt's length band is not the one the ceiling enforces")
+    return problems
+
+
 CHECKS = [
     ("API cost is recorded and kept", check_api_cost_is_recorded),
     ("audio chapters, transcript, feed and player page", check_audio_extras),
@@ -1001,6 +1180,11 @@ CHECKS = [
     ("Hill and world feeds follow the sourcing rules", check_new_streams_sourcing),
     ("new sections render in place", check_new_sections_render),
     ("new sections are narrated", check_new_sections_audio),
+    ("Korean 억 figures are scaled", check_korean_units_are_scaled),
+    ("process notes never reach readers", check_process_notes_never_reach_readers),
+    ("non-US deals are filtered on headline and parties", check_non_us_deals_are_filtered),
+    ("calendar items render in every reader", check_calendar_items_render),
+    ("the email fits under Gmail's clip", check_email_fits_gmail),
 ]
 
 

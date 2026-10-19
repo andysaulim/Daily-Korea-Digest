@@ -20,6 +20,7 @@ event is not.
 """
 from __future__ import annotations
 
+import re
 from datetime import date, timedelta
 
 # (month, day, headline, detail). Fixed observances only — nothing that can be
@@ -106,6 +107,111 @@ def upcoming(today: date | None = None, days: int = 30) -> list[dict]:
     return sorted(out, key=lambda item: item["_date"])
 
 
+_MONTH_NUM = {m.lower(): i for i, m in enumerate(_MONTHS, 1)}
+_DATE_RE = re.compile(
+    r"([A-Za-z]{3})[a-z]*\.?\s+(\d{1,2})(?!\d)"                # Oct 19, not "October 2026"
+    r"(?:\s*[-–]\s*(?:([A-Za-z]{3})[a-z]*\.?\s+)?(\d{1,2})(?!\d))?"   # -23 / -Nov 2
+    r"(?:,?\s*(\d{4}))?")                                       # , 2026
+
+
+def _nearest_year(month: int, day: int, today: date) -> date | None:
+    """The occurrence of month/day closest to today (an undated "Jan 5" read
+    in December is next January; "Oct 10" read on 19 October is this year)."""
+    best = None
+    for year in (today.year - 1, today.year, today.year + 1):
+        try:
+            cand = date(year, month, day)
+        except ValueError:
+            continue
+        if best is None or abs((cand - today).days) < abs((best - today).days):
+            best = cand
+    return best
+
+
+def normalize(item, today: date | None = None) -> dict | None:
+    """One calendar item in the shape every reader uses, or None.
+
+    The prompt never named the fields, so the model returned
+    {date, event, detail, source} while merge() and the renderer read
+    {month, day, headline}: 26 model items over ten days rendered as none.
+    Both shapes are accepted; the result always carries month ("Oct"),
+    day (int, first day of a range), headline, detail, source, and the
+    ISO start and end dates in _date and _end. An item with no day that can
+    be read ("November", "after the midterms") is not a calendar entry and
+    returns None.
+    """
+    if not isinstance(item, dict):
+        return None
+    today = today or date.today()
+    headline = str(item.get("headline") or item.get("event") or "").strip()
+    if not headline:
+        return None
+    start = end = None
+    month = str(item.get("month") or "").strip()[:3].lower()
+    if month in _MONTH_NUM and str(item.get("day") or "").strip():
+        try:
+            start = _nearest_year(_MONTH_NUM[month], int(str(item["day"]).split("-")[0]), today)
+        except (TypeError, ValueError):
+            start = None
+        end = start
+    if start is None:
+        m = _DATE_RE.search(str(item.get("date") or ""))
+        if m and m.group(1).lower() in _MONTH_NUM:
+            mon, d1 = _MONTH_NUM[m.group(1).lower()], int(m.group(2))
+            try:
+                start = (date(int(m.group(5)), mon, d1) if m.group(5)
+                         else _nearest_year(mon, d1, today))
+            except ValueError:
+                start = None
+            if start and m.group(4):
+                emon = _MONTH_NUM.get((m.group(3) or m.group(1)).lower(), mon)
+                try:
+                    end = date(start.year + (1 if emon < start.month else 0), emon, int(m.group(4)))
+                except ValueError:
+                    end = start
+            else:
+                end = start
+    if start is None:
+        return None
+    out = dict(item)
+    out.update({
+        "month": _MONTHS[start.month - 1],
+        "day": start.day,
+        "headline": headline,
+        "detail": str(item.get("detail") or item.get("note") or "").strip(),
+        "source": item.get("source") or "",
+        "_date": start.isoformat(),
+        "_end": (end or start).isoformat(),
+    })
+    out.pop("event", None)
+    out.pop("note", None)
+    return out
+
+
+# What a US Korea-policy official would not act on. The prompt says so; this
+# catches what got through anyway (a KBO playoff game and a commemorative
+# stamp both reached the calendar in October 2026).
+_OFF_TOPIC = re.compile(
+    r"\b(KBO|baseball|football|soccer|playoffs?|semi-playoff|postseason|K League|"
+    r"stamps?|K-?pop|concert|idol|drama|film festival|box office|esports?|"
+    r"provocation anniversar(?:y|ies))\b", re.I)
+
+
+def off_topic(item: dict) -> bool:
+    text = f'{item.get("headline") or item.get("event") or ""} {item.get("detail") or ""}'
+    return bool(_OFF_TOPIC.search(text))
+
+
+def happening_on(items: list | None, day: date) -> list[dict]:
+    """Normalized calendar items whose span includes `day`."""
+    out = []
+    for item in items or []:
+        n = normalize(item, day)
+        if n and n["_date"] <= day.isoformat() <= n["_end"]:
+            out.append(n)
+    return out
+
+
 def merge(model_items: list | None, today: date | None = None,
           days: int = 30, limit: int = 5) -> list[dict]:
     """Combine the model's dated events with the computed observances.
@@ -119,18 +225,13 @@ def merge(model_items: list | None, today: date | None = None,
     merged: list[dict] = []
     seen_days: set[tuple[str, int]] = set()
 
-    for item in (model_items or []):
-        if not isinstance(item, dict):
-            continue
-        headline = str(item.get("headline") or "").strip()
-        if not headline:
+    for raw in (model_items or []):
+        item = normalize(raw, today)
+        # Unreadable dates, and events that are already over, are not upcoming.
+        if item is None or item["_end"] < today.isoformat() or off_topic(item):
             continue
         merged.append(item)
-        month = str(item.get("month") or "").strip()[:3]
-        try:
-            seen_days.add((month, int(item.get("day"))))
-        except (TypeError, ValueError):
-            pass
+        seen_days.add((item["month"], item["day"]))
 
     for item in upcoming(today, days):
         if len(merged) >= limit:

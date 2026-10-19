@@ -610,20 +610,17 @@ def _happening_today(digest: dict) -> str:
             continue
     if today is None:
         return ""
-    rows = []
-    for c in digest.get("calendar_watch") or []:
-        if not isinstance(c, dict) or not c.get("event"):
-            continue
-        span = _calendar_span(c.get("date", ""), today.year)
-        if span and span[0] <= today <= span[1]:
-            rows.append(c)
+    # Same normalized shape as Upcoming and the audio edition: the model has
+    # returned both {date, event} and {month, day, headline}.
+    import korea_calendar
+    rows = [c["headline"] for c in korea_calendar.happening_on(digest.get("calendar_watch"), today)]
     for ev in hill_events(digest)[0]:
-        rows.append({"event": hill_event_text(ev) + (f" ({ev['time']})" if ev.get("time") else "")})
+        rows.append(hill_event_text(ev) + (f" ({ev['time']})" if ev.get("time") else ""))
     if not rows:
         return ""
     items = "".join(
         f'<tr><td style="padding:5px 0;font-family:Georgia,serif;font-size:14px;line-height:1.5;color:{INK};">'
-        f'{_esc(_str(c.get("event", "")))}</td></tr>' for c in rows[:3])
+        f'{_esc(_str(c))}</td></tr>' for c in rows[:3])
     return (f'<table width="100%" cellpadding="0" cellspacing="0" border="0" class="happening" '
             f'style="margin-top:12px;border-top:2px solid {INK};">'
             f'<tr><td style="padding:9px 0 2px;font-family:Arial,sans-serif;font-size:12px;font-weight:700;'
@@ -1101,12 +1098,12 @@ def render(digest: dict) -> str:
     # empty once and past-dated before that; neither is possible now.
     try:
         import korea_calendar
-        calendar_watch = korea_calendar.merge(digest.get("calendar_watch"))
+        calendar_watch = korea_calendar.merge(digest.get("calendar_watch"), _issue_day(digest))
     except Exception:
         calendar_watch = digest.get("calendar_watch") or []
     rok_personnel = digest.get("rok_personnel") or []
     rok_assembly = digest.get("rok_assembly") or []
-    if rok_gov or calendar_watch or rok_personnel or rok_assembly:
+    if rok_gov or rok_personnel or rok_assembly:
         # 2x2 grid of ministry cards
         gov_rows = ""
         for i in range(0, len(rok_gov), 2):
@@ -1184,36 +1181,6 @@ def render(digest: dict) -> str:
             <table width="100%" cellpadding="0" cellspacing="0" border="0" class="gov-grid">
               {gov_rows}
             </table>"""
-
-        # Calendar — upcoming events (simple: date + headline + detail)
-        cal_html = ""
-        if calendar_watch:
-            cal_items = ""
-            for cal in calendar_watch:
-                cal_month = _esc(cal.get("month", ""))
-                cal_day = _esc(str(cal.get("day", "")))
-                cal_headline = _emphasis(_esc(cal.get("headline", "")))
-                cal_detail = _emphasis(_esc(cal.get("detail", "")))
-                cal_items += f"""
-                <table class="cal-table" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-bottom:1px solid #E8E8E8;">
-                  <tr>
-                    <td width="50" style="padding:10px 10px 10px 0;text-align:center;vertical-align:top;">
-                      <div style="font-size:10px;text-transform:uppercase;color:#6B7280;letter-spacing:0.5px;">{cal_month}</div>
-                      <div class="cal-date" style="font-family:{MONO};font-size:17px;font-weight:700;color:{TAEGUK_BLUE};line-height:1.2;">{cal_day}</div>
-                    </td>
-                    <td style="padding:10px 0;vertical-align:top;">
-                      <div style="font-size:13px;font-weight:600;color:#1B2A4A;margin-bottom:2px;">{cal_headline}</div>
-                      <div style="font-size:13px;line-height:1.4;font-family:Georgia,serif;color:#353C48;">{cal_detail}</div>
-                    </td>
-                  </tr>
-                </table>"""
-            cal_html = f"""
-            <div style="margin-top:20px;">
-              <div style="padding:8px 0;border-bottom:1px solid {TAEGUK_BLUE};margin-bottom:4px;">
-                <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:{TAEGUK_BLUE};">Upcoming</span>
-              </div>
-              {cal_items}
-            </div>"""
 
         # Personnel changes (inline in ROK Gov)
         pers_html = ""

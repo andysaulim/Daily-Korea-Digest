@@ -97,3 +97,22 @@ def apply(digest: dict, count_fn, ceiling: int) -> list[str]:
         lines.append("    still over after trimming every section that may be "
                      "trimmed; the fixed sections are carrying the excess")
     return lines
+
+
+def trim_one(digest: dict) -> str | None:
+    """Drop the last item of the first section in TRIM_ORDER still above its floor.
+
+    The step the byte guard in run.py repeats until the rendered email fits.
+    Same order and floors as the word trim, so the two never disagree about
+    what goes first. Returns a log line, or None when nothing may be trimmed.
+    """
+    for section, floor in TRIM_ORDER:
+        items = digest.get(section)
+        if isinstance(items, list) and len(items) > floor:
+            dropped = items.pop()
+            label = ""
+            if isinstance(dropped, dict):
+                label = str(dropped.get("headline") or dropped.get("action")
+                            or dropped.get("who") or dropped.get("name") or "")[:60]
+            return f"{section}: dropped {label!r} ({len(items)} left)"
+    return None
