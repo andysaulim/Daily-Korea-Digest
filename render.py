@@ -257,7 +257,10 @@ def _dark_mode_css() -> str:
         "      .wrapper .footer-end { background:#1a1a1a !important; }",
         "      .wrapper .sec-bar { background:#0B0E13 !important; }",
         "      .wrapper .kcna-dark, .wrapper .kcna-dark table, .wrapper .kcna-dark > div { background:#0A1E38 !important; }",
-        "      .wrapper .item-card, .wrapper .story-card, .wrapper .gov-grid div, .wrapper .loc-grid div { background:#262A30 !important; border-color:#3A4048 !important; }",
+        # Not the divs inside the ROK Government and Location Watch cards: the
+        # card is the cell, and painting each line's div a shade lighter than
+        # the cell striped every card in dark mode.
+        "      .wrapper .item-card, .wrapper .story-card { background:#262A30 !important; border-color:#3A4048 !important; }",
         "      .wrapper .sentiment-spotlight { background:#16222F !important; }",
         "      .wrapper .item-row { border-bottom-color:#3A4048 !important; }",
         "      .wrapper .sentiment-discourse { background:#2A1518 !important; }",
@@ -1701,7 +1704,12 @@ def render(digest: dict) -> str:
             value = _esc(deal.get("value", "")) if deal.get("value") else ""
             detail = _emphasis(_esc(deal.get("detail", "")))
             src2 = _esc(deal.get("source", ""))
-            parties = _esc(deal.get("parties", ""))
+            # The model sometimes sends the parties as a list, which printed
+            # as a Python literal: ['TAIHAN CABLE & SOLUTION', '...'].
+            _parties = deal.get("parties", "")
+            if isinstance(_parties, (list, tuple)):
+                _parties = ", ".join(str(x) for x in _parties if x)
+            parties = _esc(_parties)
             url = deal.get("url", "")
             val_badge = (f'<span style="display:inline-block;font-family:{MONO};font-size:11px;font-weight:700;'
                          f'color:#fff;background:{UP_GREEN};border-radius:3px;padding:1px 6px;margin-left:6px;">{value}</span>') if value else ""
