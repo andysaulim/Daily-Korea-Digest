@@ -111,7 +111,16 @@ TIER1_FEEDS = {
     "JTBC":               _gnews("site:news.jtbc.co.kr"),
     "KBS":                _gnews("site:news.kbs.co.kr"),
     "MBC":                _gnews("site:imnews.imbc.com"),
-    "SBS":                _gnews("site:news.sbs.co.kr"),
+    # SBS's search fallback was 542 of the 1,150 Google News items one run
+    # collected, and every one a redirect. Its own section feeds instead
+    # (01 politics, 02 economy, 07 international); the search stays behind
+    # each, narrowed so a native outage does not bring the flood back.
+    "SBS":                _native("https://news.sbs.co.kr/news/SectionRssFeed.do?sectionId=01&plink=RSSREADER",
+                                  "site:news.sbs.co.kr"),
+    "SBS 경제":            _native("https://news.sbs.co.kr/news/SectionRssFeed.do?sectionId=02&plink=RSSREADER",
+                                  "경제 site:news.sbs.co.kr"),
+    "SBS 국제":            _native("https://news.sbs.co.kr/news/SectionRssFeed.do?sectionId=07&plink=RSSREADER",
+                                  "북한 OR 한미 OR 미국 site:news.sbs.co.kr"),
     "YTN":                _gnews("site:ytn.co.kr"),
     # A guessed publisher feed here does not resolve at all (no such host),
     # so it cost a DNS failure every run and delivered nothing.
@@ -120,7 +129,10 @@ TIER1_FEEDS = {
     # ── Korean business dailies ──────────────────────────────────────────
     "매일경제":            _native("https://www.mk.co.kr/rss/30000001/", "site:mk.co.kr"),
     "한국경제":            _native("https://www.hankyung.com/feed/all-news", "site:hankyung.com"),
-    "Korea Economic Daily": _gnews("Korea+site:kedglobal.com"),
+    # KED Global's own feed, unverified from here; the search answers if wrong.
+    "Korea Economic Daily": ["https://www.kedglobal.com/newsRss",
+                             "https://www.kedglobal.com/rss/allArticle.xml",
+                             _gnews("Korea+site:kedglobal.com")],
     # ── Major international — Korea correspondents ────────────────────────
     "WSJ Korea":          _gnews("Korea+site:wsj.com"),
     "NYT Korea":          _gnews("Korea+site:nytimes.com"),
@@ -290,13 +302,16 @@ TIER4_FEEDS = {
     "KCNA Watch":         _native("https://kcnawatch.org/newstream/feed/",
                                   "KCNA+site:kcnawatch.org"),
     # Wire services / outlets that relay KCNA content daily (primary indirect)
-    "KCNA (Yonhap)":      _gnews("KCNA+Yonhap"),
+    # Yonhap's North Korea section feed: the wire that relays KCNA first.
+    "KCNA (Yonhap)":      _native("https://en.yna.co.kr/RSS/northkorea.xml", "KCNA site:en.yna.co.kr"),
     "KCNA (Reuters)":     _gnews("KCNA+site:reuters.com"),
     "KCNA (AP)":          _gnews("KCNA+site:apnews.com"),
     "KCNA (AFP)":         _gnews("KCNA+OR+%22North+Korea+state+media%22+site:france24.com"),
     # NK-specialist outlets that cite KCNA
-    "KCNA (38 North)":    _gnews("KCNA+site:38north.org"),
-    "KCNA (Daily NK)":    _gnews("KCNA+site:dailynk.com"),
+    # Both outlets write about nothing but North Korea, so their own feeds
+    # are as relevant as the KCNA-only search and are real article links.
+    "KCNA (38 North)":    _native("https://www.38north.org/feed/", "KCNA+site:38north.org"),
+    "KCNA (Daily NK)":    _native("https://www.dailynk.com/english/feed/", "KCNA+site:dailynk.com"),
     "KCNA (NK News)":     _gnews("KCNA+site:nknews.org"),
     # The guessed NK News category feed 404s. KCNA Watch proper now delivers
     # through its own entry, so this one stays on its search.
@@ -471,7 +486,7 @@ KOREA_NATIVE_FEEDS = {
     # Korean-language outlets
     "조선일보", "한겨레", "동아일보", "경향신문", "뉴스1", "연합뉴스",
     "중앙일보", "한국일보", "뉴시스", "서울신문",
-    "MBN", "JTBC", "KBS", "MBC", "SBS", "YTN", "Channel A", "Arirang News",
+    "MBN", "JTBC", "KBS", "MBC", "SBS", "SBS 경제", "YTN", "Channel A", "Arirang News",
     "매일경제", "한국경제", "서울경제", "머니투데이",
     # English-language Korea desks whose entire output is Korea
     "Yonhap English", "Korea Herald", "Korea Times", "Korea JoongAng Daily",
@@ -485,7 +500,7 @@ KOREA_NATIVE_FEEDS = {
 KOREAN_LANGUAGE_FEEDS = {
     "조선일보", "한겨레", "동아일보", "경향신문", "뉴스1", "연합뉴스",
     "중앙일보", "한국일보", "뉴시스", "서울신문",
-    "MBN", "JTBC", "KBS", "MBC", "SBS", "YTN", "Channel A",
+    "MBN", "JTBC", "KBS", "MBC", "SBS", "SBS 경제", "SBS 국제", "YTN", "Channel A",
     "매일경제", "한국경제", "서울경제", "머니투데이",
     "ROK Presidential Office", "ROK Unification Ministry", "ROK MOEF",
     "ROK DAPA", "ROK National Assembly", "ROK Prosecution Service",
