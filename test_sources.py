@@ -493,6 +493,34 @@ def check_api_cost_is_recorded():
     return problems
 
 
+def check_coverage_audit():
+    """A story three outlets ran must be flagged when the brief lacks it, and not otherwise.
+
+    The words of a story have to appear together in one item: on 18 October
+    "Samsung", "union" and "strike" each appeared in unrelated items, and a
+    whole-brief match would have called a missed Samsung strike covered.
+    """
+    import coverage_audit as ca
+    digest = {"top_stories": [{"headline": "North Korea tests AI-guided torpedo",
+                               "body": "KCNA said the torpedo test succeeded."}],
+              "business_economy": [{"headline": "Samsung shares rise", "body_text": "Chip demand."}],
+              "calendar_watch": [{"event": "HD Hyundai union strike widens"}]}
+    arts = [{"title": t, "source": s} for t, s in (
+        ("North Korea tests AI-guided torpedo - Reuters", "Reuters"),
+        ("N. Korea tests new AI torpedo - Yonhap", "Yonhap"),
+        ("North Korea claims AI torpedo test - AP", "AP"),
+        ("Samsung union launches general strike over bonuses - Reuters", "Reuters"),
+        ("Samsung union begins general strike - Bloomberg", "Bloomberg"),
+        ("Samsung workers stage general strike over bonus - Korea Herald", "Korea Herald"))]
+    found = [m["headline"] for m in ca.missed({"tier1": arts}, digest)]
+    problems = []
+    if not any("Samsung" in h for h in found):
+        problems.append("missed Samsung strike not flagged")
+    if any("torpedo" in h.lower() for h in found):
+        problems.append("covered torpedo story wrongly flagged")
+    return problems
+
+
 def check_audio_script_is_the_brief():
     """The narration may only say what the brief printed, in a form a voice can read.
 
@@ -579,6 +607,7 @@ CHECKS = [
     ("major feeds have native paths", check_major_feeds_have_native_paths),
     ("length has a ceiling", check_length_has_a_ceiling),
     ("audio narrates only the brief", check_audio_script_is_the_brief),
+    ("coverage audit flags missed stories", check_coverage_audit),
 ]
 
 

@@ -29,7 +29,11 @@ SERIF = "Georgia,'Times New Roman',serif"
 SANS = "Arial,Helvetica,sans-serif"
 
 
-def build(standing_html: str, *, date_str: str = "", web_base: str = "") -> str:
+def build(standing_html: str, *, date_str: str = "", web_base: str = "",
+          title: str = "US&ndash;Korea Trade Reference",
+          intro: str = ("The investment ledger, pledge tracker and standing policy measures below change "
+                        "monthly at most. They are published here rather than in the daily brief so the "
+                        "brief can carry what changed today.")) -> str:
     """Return the full standing page. Empty input still produces a valid page
     saying so, rather than a broken link from the daily brief."""
     generated = datetime.now(ZoneInfo("America/New_York")).strftime("%B %-d, %Y at %-I:%M %p ET")
@@ -43,7 +47,7 @@ def build(standing_html: str, *, date_str: str = "", web_base: str = "") -> str:
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>US–Korea Trade Reference · CSIS Korea Chair</title>
+<title>{title.replace("&ndash;", "–")} · CSIS Korea Chair</title>
 <style>
   /* The page set no font, so every node without its own declaration fell to
      the browser default serif: 73 of them rendered in Times New Roman, and
@@ -57,13 +61,11 @@ def build(standing_html: str, *, date_str: str = "", web_base: str = "") -> str:
 <div class="wrap">
   <div class="pad" style="background:{BAND};color:#fff;padding:16px 32px 16px;">
     <div style="font-family:{SANS};font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.78);margin-bottom:7px;">CSIS Korea Chair</div>
-    <h1 style="margin:0 0 4px;font-family:{SERIF};font-size:26px;font-weight:700;">US&ndash;Korea Trade Reference</h1>
+    <h1 style="margin:0 0 4px;font-family:{SERIF};font-size:26px;font-weight:700;">{title}</h1>
     <div style="font-family:{SERIF};font-size:15px;color:rgba(255,255,255,0.85);">Standing status &middot; rebuilt daily</div>
   </div>
   <div class="pad" style="padding:18px 32px 12px;font-family:{SERIF};font-size:13px;line-height:1.65;color:#4A5260;border-bottom:1px solid #E4E7EB;">
-    The investment ledger, pledge tracker and standing policy measures below change
-    monthly at most. They are published here rather than in the daily brief so the
-    brief can carry what changed today. This page is regenerated on every run.
+    {intro} This page is regenerated on every run.
     {f'<br>Last rebuilt {generated}.' if generated else ''}
   </div>
   <div class="pad" style="padding:20px 32px 28px;">
@@ -87,6 +89,20 @@ def write(standing_html: str, public_dir: Path, *, web_base: str = "") -> Path |
         public_dir.mkdir(parents=True, exist_ok=True)
         path = public_dir / "trade.html"
         path.write_text(build(standing_html, web_base=web_base), encoding="utf-8")
+        return path
+    except OSError:
+        return None
+
+
+def write_locations(standing_html: str, public_dir: Path, *, web_base: str = "") -> Path | None:
+    """Write locations.html: every monitored site, linked from the brief. Never raises."""
+    try:
+        public_dir.mkdir(parents=True, exist_ok=True)
+        path = public_dir / "locations.html"
+        path.write_text(build(standing_html, web_base=web_base, title="Satellite &amp; Location Watch",
+                              intro=("All eleven monitored sites with their latest known status. The daily "
+                                     "brief shows only the sites with new reporting since the previous issue.")),
+                        encoding="utf-8")
         return path
     except OSError:
         return None
