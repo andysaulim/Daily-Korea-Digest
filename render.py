@@ -139,6 +139,7 @@ _DARK_BG = {
 # (masthead, market strip, KCNA panel, footer, accent chips) or are white on
 # an accent fill.
 _DARK_EXEMPT = {
+    "#0B1626", "#B8C4D6",   # hybrid status line: already a dark strip in both modes
     "#fff", "#FFFFFF", "#8FA0B5", "#8FB6E8", "#7B90AC", "#E8697A",
     "#0047A0", "#0052B4", "#1B2A4A", "#051F3D", "#0A1E38", "#2E3644",
     "#EBEBEB", "#E4E7EB", "#E8E8E8", "#EEF0F3", "#D5DAE1", "#F2F3F5",
@@ -430,7 +431,9 @@ def _item_block(cat: str, src: str, headline: str, body: str, url: str,
 LISTEN_STYLE = "card"
 
 # "classic": every item in a bordered card. "refined": the first top story as a
-# lead with a larger headline, secondary items as a ruled list.
+# lead with a larger headline, secondary items as a ruled list. "hybrid": the
+# classic cards and bars, plus a lead headline, large glance numerals and a
+# status line (approval, days since Kim was seen) under the market strip.
 DESIGN = "classic"
 # Section headings: "bar" (black bar, white label) or "rule" (heavy ink rule,
 # serif heading in sentence case). Masthead: "band" (blue band) or "white".
@@ -553,6 +556,22 @@ def _happening_today(digest: dict) -> str:
             f'style="margin-top:12px;border-top:2px solid {INK};">'
             f'<tr><td style="padding:9px 0 2px;font-family:Arial,sans-serif;font-size:12px;font-weight:700;'
             f'color:{INK};">Happening today</td></tr>{items}</table>')
+
+
+def _status_line(digest: dict) -> str:
+    """One line under the market strip: the brief's own running indicators."""
+    bits = []
+    ap = ((digest.get("public_sentiment") or {}).get("presidential_approval") or {}).get("value")
+    if ap:
+        bits.append(f'Lee approval <b style="color:#FFFFFF;">{_esc(ap)}</b>')
+    days = (digest.get("kcna_delta") or {}).get("days_since_last_appearance")
+    if isinstance(days, int) and days > 0:
+        bits.append(f'Kim Jong Un last seen <b style="color:#FFFFFF;">{days} day{"s" if days != 1 else ""} ago</b>')
+    if not bits:
+        return ""
+    return (f'<table width="100%" cellpadding="0" cellspacing="0" border="0" class="status-line" '
+            f'style="background:#0B1626;"><tr><td align="center" style="padding:7px 12px;font-family:Arial,sans-serif;'
+            f'font-size:12px;color:#B8C4D6;">' + " &nbsp;&middot;&nbsp; ".join(bits) + '</td></tr></table>')
 
 
 def render(digest: dict) -> str:
@@ -730,6 +749,7 @@ def render(digest: dict) -> str:
             </td>
           </tr>
         </table>
+        {_status_line(digest) if DESIGN == "hybrid" else ""}
         """)
 
     # ── 2c. Section navigation. Emitted as a placeholder here and resolved
@@ -750,7 +770,7 @@ def render(digest: dict) -> str:
             <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:10px;">
               <tr>
                 <td width="28" style="vertical-align:top;padding-top:2px;">
-                  <div style="width:24px;height:24px;border-radius:50%;background:{TAEGUK_BLUE};color:#FFFFFF;text-align:center;line-height:24px;font-size:13px;font-weight:700;font-family:Georgia,serif;">{num}</div>
+                  {f'<div class="glance-num" style="font-family:Georgia,serif;font-size:34px;line-height:0.95;font-weight:700;color:{TAEGUK_RED};">{num}</div>' if DESIGN == "hybrid" else f'<div style="width:24px;height:24px;border-radius:50%;background:{TAEGUK_BLUE};color:#FFFFFF;text-align:center;line-height:24px;font-size:13px;font-weight:700;font-family:Georgia,serif;">{num}</div>'}
                 </td>
                 <td style="padding-left:10px;vertical-align:top;">
                   <div style="font-size:14px;line-height:1.6;color:#2C3E50;font-family:Georgia,serif;">{memo_text}</div>
@@ -784,7 +804,7 @@ def render(digest: dict) -> str:
             stories_html += f"""
             <div class="item-card story-card" style="margin-bottom:10px;padding:12px 15px;background:#fff;border-radius:3px;border-left:3px solid {TAEGUK_BLUE};border-top:1px solid #EEF0F3;border-right:1px solid #EEF0F3;border-bottom:1px solid #EEF0F3;">
               {cat_badge}
-              <h3 style="margin:0 0 6px 0;font-size:{"21px" if DESIGN == "refined" and _si == 0 else "16px"};font-weight:{"700" if DESIGN == "refined" else "600"};color:{INK};font-family:Georgia,serif;line-height:{"1.25" if DESIGN == "refined" and _si == 0 else "1.4"};">
+              <h3 style="margin:0 0 6px 0;font-size:{"22px" if DESIGN in ("refined", "hybrid") and _si == 0 else "16px"};font-weight:{"700" if DESIGN in ("refined", "hybrid") else "600"};color:{INK};font-family:Georgia,serif;line-height:{"1.25" if DESIGN in ("refined", "hybrid") and _si == 0 else "1.4"};">
                 {_link_or_text(headline, url)}
               </h3>
               <p style="margin:0 0 6px 0;font-size:14px;line-height:1.55;font-family:Georgia,serif;color:#353C48;">{body}</p>
