@@ -111,6 +111,7 @@ _DARK_TEXT = {
     "#CD2E3A": "#F08A94",   # alert red
     "#A93226": "#F08A94",   # semantic down
     "#2E7D4F": "#5FBF87",   # semantic up
+    "#1E7940": "#5FBF87",   # positive chip type (New deal, binding, reduced)
     "#9A5B00": "#E0A64A",   # semantic caution
 }
 
