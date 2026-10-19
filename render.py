@@ -330,6 +330,11 @@ def _sec_label(label: str, color: str = RING_ON_DARK) -> str:
     Solid background and a text glyph, so it survives clients that block
     images and clients that drop background images.
     """
+    if SECTION_STYLE == "rule":
+        _t = label.replace("&amp;", "&")
+        _t = _t[:1].upper() + _t[1:].lower().replace("kcna", "KCNA").replace("rok", "ROK").replace("us-korea", "US-Korea").replace("& ", "&amp; ")
+        return (f'<div class="sec-rule" style="border-top:3px solid #14181F;padding-top:8px;margin-bottom:12px;">'
+                f'<span style="font-family:Georgia,serif;font-size:21px;font-weight:700;color:#14181F;">{_t}</span></div>')
     return (
         '<table width="100%" cellpadding="0" cellspacing="0" border="0" '
         'class="sec-bar" style="background:#14181F;margin-bottom:14px;">'
@@ -427,6 +432,10 @@ LISTEN_STYLE = "card"
 # "classic": every item in a bordered card. "refined": the first top story as a
 # lead with a larger headline, secondary items as a ruled list.
 DESIGN = "classic"
+# Section headings: "bar" (black bar, white label) or "rule" (heavy ink rule,
+# serif heading in sentence case). Masthead: "band" (blue band) or "white".
+SECTION_STYLE = "bar"
+MAST_STYLE = "band"
 
 _CHROME_WORDS = _re.compile(
     r"For Internal Use Only|Read online|Download PDF|Listen to today.s brief|"
@@ -611,6 +620,10 @@ def render(digest: dict) -> str:
         """)
 
     # ── 1. Header ────────────────────────────────────────────────────────
+    if MAST_STYLE == "white":
+        _mb, _mf, _mk, _md, _mm = "#FFFFFF", "#14181F", TAEGUK_BLUE, "#5A6472", "#6B7280"
+    else:
+        _mb, _mf, _mk, _md, _mm = BAND, "#fff", "rgba(255,255,255,0.78)", "rgba(255,255,255,0.85)", "rgba(255,255,255,0.72)"
     # The bar under the nameplate: the audio edition when there is one, the
     # RE line otherwise. Email clients will not play audio inline (Gmail and
     # Outlook strip <audio>), so the bar is one large link to the episode,
@@ -663,17 +676,17 @@ def render(digest: dict) -> str:
         _masthead_bar = ""
     sections.append(f"""
     <a name="top" id="top"></a>
-    <div bgcolor="{BAND}" style="background-color:{BAND};color:#fff;padding:16px 32px 16px;border-bottom:1px solid rgba(255,255,255,0.18);" class="sec mast-band">
+    <div bgcolor="{_mb}" style="background-color:{_mb};color:{_mf};padding:{"22px 32px 16px" if MAST_STYLE == "white" else "16px 32px 16px"};border-bottom:{"4px double #14181F" if MAST_STYLE == "white" else "1px solid rgba(255,255,255,0.18)"};" class="sec mast-band{" mast-white" if MAST_STYLE == "white" else ""}">
       <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
         <td class="mast-main" style="vertical-align:top;">
-          <div style="font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.78);margin-bottom:7px;">CSIS Korea Chair</div>
-          <h1 style="margin:0 0 4px 0;font-size:26px;font-weight:700;font-family:Georgia,'Times New Roman',serif;color:#fff;letter-spacing:0.5px;">
+          <div style="font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:{_mk};margin-bottom:7px;">CSIS Korea Chair</div>
+          <h1 style="margin:0 0 4px 0;font-size:{"36px" if MAST_STYLE == "white" else "26px"};font-weight:700;font-family:Georgia,'Times New Roman',serif;color:{_mf};letter-spacing:{"-0.3px" if MAST_STYLE == "white" else "0.5px"};">
             Korea Daily Brief
           </h1>
-          <div style="margin-top:2px;font-size:16px;font-weight:400;color:rgba(255,255,255,0.85);font-family:Georgia,serif;">{_esc(date_str)}</div>
+          <div style="margin-top:2px;font-size:16px;font-weight:400;color:{_md};font-family:Georgia,serif;">{_esc(date_str)}</div>
         </td>
         <td class="mast-meta" style="vertical-align:bottom;text-align:right;">
-          <div style="font-family:Arial,sans-serif;font-size:11px;letter-spacing:0.5px;color:rgba(255,255,255,0.72);white-space:nowrap;">{_issue_meta}%%WORDS%% words &middot; %%READMIN%% min read</div>
+          <div style="font-family:Arial,sans-serif;font-size:11px;letter-spacing:0.5px;color:{_mm};white-space:nowrap;">{_issue_meta}%%WORDS%% words &middot; %%READMIN%% min read</div>
           {_listen_pill}
         </td>
       </tr></table>
