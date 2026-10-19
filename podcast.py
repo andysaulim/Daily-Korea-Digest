@@ -299,7 +299,7 @@ _SECTION_LEADS = ("Our top story", "Here's what else", "Now to Pyongyang", "The 
 def happening_today(digest: dict) -> list[str]:
     """Scheduled events falling on the issue date, as the email's strip shows them."""
     try:
-        from render import _calendar_span
+        import korea_calendar
     except Exception:                                           # noqa: BLE001
         return []
     raw = str(digest.get("digest_date", "")).strip()
@@ -312,12 +312,8 @@ def happening_today(digest: dict) -> list[str]:
             continue
     if today is None:
         return []
-    out = []
-    for c in digest.get("calendar_watch") or []:
-        if isinstance(c, dict) and c.get("event"):
-            span = _calendar_span(c.get("date", ""), today.year)
-            if span and span[0] <= today <= span[1]:
-                out.append(str(c["event"]))
+    # The same normalized shape the email's strip reads.
+    out = [c["headline"] for c in korea_calendar.happening_on(digest.get("calendar_watch"), today)]
     # Hearings from the committee schedules, the same ones the email's strip shows.
     try:
         from render import hill_events, hill_event_text
@@ -493,10 +489,15 @@ def build_script(digest: dict) -> str:
     _y = re.search(r"\b(20\d{2})\b", str(digest.get("digest_date") or ""))
     year = _y.group(1) if _y else ""
     ahead = []
-    for c in (digest.get("calendar_watch") or []):
+    try:
+        import korea_calendar
+        _cal = [korea_calendar.normalize(c) or c for c in (digest.get("calendar_watch") or [])]
+    except Exception:                                           # noqa: BLE001
+        _cal = digest.get("calendar_watch") or []
+    for c in _cal:
         if not isinstance(c, dict):
             continue
-        date = str(c.get("date") or "").strip()
+        date = str(c.get("date") or (f'{c["month"]} {c["day"]}' if c.get("month") and c.get("day") else "")).strip()
         if year:
             date = re.sub(rf",?\s*{year}\b", "", date).strip()
         date = re.sub(r"\s*\(.*?\)", "", date).strip()
