@@ -674,8 +674,11 @@ def render(digest: dict) -> str:
     elif digest.get("audio_url"):
         _mins = digest.get("audio_minutes")
         _len = f"{int(_mins)} min" if isinstance(_mins, (int, float)) and _mins > 0 else "Audio"
+        # The player page (chapters, transcript, subscribe) when there is one.
+        _listen_href = digest.get("listen_url") or digest["audio_url"]
+        _listen_label = "Listen &middot; " + _len if _len != "Audio" else "Listen to today&#8217;s brief"
         _masthead_bar = (
-            f'<a href="{_esc(digest["audio_url"])}" class="listen-bar" '
+            f'<a href="{_esc(_listen_href)}" class="listen-bar" '
             'style="display:block;margin-top:14px;padding:11px 14px;background:#FFFFFF;'
             'border-radius:4px;text-decoration:none;color:#14181F;">'
             '<table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation"><tr>'
@@ -683,9 +686,9 @@ def render(digest: dict) -> str:
             f'<span class="listen-play" style="display:inline-block;width:28px;height:28px;line-height:28px;border-radius:14px;'
             f'background:{BAND};color:#FFFFFF;text-align:center;font-size:12px;font-family:Arial,sans-serif;">&#9654;&#xFE0E;</span></td>'
             '<td style="vertical-align:middle;font-family:Arial,sans-serif;">'
-            '<div class="listen-title" style="font-size:14px;font-weight:700;color:#14181F;">Listen to today&#8217;s brief</div>'
+            f'<div class="listen-title" style="font-size:14px;font-weight:700;color:#14181F;">{_listen_label}</div>'
             '<div class="listen-sub" style="font-size:12px;color:#353C48;margin-top:1px;">The audio edition, read aloud</div></td>'
-            f'<td class="listen-len" align="right" style="vertical-align:middle;font-family:Arial,sans-serif;font-size:12px;font-weight:700;color:#353C48;white-space:nowrap;">{_len}</td>'
+            f'<td class="listen-len" align="right" style="vertical-align:middle;font-family:Arial,sans-serif;font-size:12px;font-weight:700;color:#353C48;white-space:nowrap;">&#8250;</td>'
             '</tr></table></a>')
     elif re_line:
         _masthead_bar = ("<div style='margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.28);"
