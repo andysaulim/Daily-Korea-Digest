@@ -27,7 +27,7 @@ permissions:
 
 jobs:
   send-digest:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
       # Guard: for fallback crons, skip if dispatch already succeeded today
@@ -168,6 +168,9 @@ jobs:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASS: ${{ secrets.GMAIL_APP_PASS }}
           DIGEST_TO: ${{ secrets.DIGEST_TO }}
+          # Optional: the same issue in the candidate design, to these
+          # addresses only (run.send_design_preview). Unset sends nothing.
+          DESIGN_PREVIEW_TO: ${{ vars.DESIGN_PREVIEW_TO || secrets.DESIGN_PREVIEW_TO }}
           # Optional. Unset is fine: send_email.py already defaults the reply
           # and visible-to addresses to alim@csis.org. GMAIL_FROM only works
           # once that address is verified in Gmail under Send mail as —

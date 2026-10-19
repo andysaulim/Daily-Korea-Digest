@@ -40,6 +40,9 @@ from digest import _count_digest_words
 # which EMAIL_BYTE_BUDGET and fit_email_bytes enforce after rendering.
 WORD_CEILING = 3300
 
+# The layout trialled against real issues by send_design_preview.
+PREVIEW_DESIGN = "v2"
+
 
 def _count_rendered_words_of(html: str) -> int:
     """The reader's word count: what render() stamps into the masthead.
@@ -1887,6 +1890,39 @@ def _build_index_html() -> str:
 </html>"""
 
 
+
+def send_design_preview(digest_data: dict, send_fn, lead: str = "") -> list:
+    """Send the same issue in the candidate design to DESIGN_PREVIEW_TO only.
+
+    A trial of a new layout against real issues, read side by side with the
+    live one, without the list seeing it. Same digest, same audio link; only
+    render.DESIGN differs. Returns the addresses it went to; empty when the
+    variable is unset or the candidate is already live. Never raises.
+    """
+    to = [a.strip() for a in re.split(r"[,;\s]+", os.environ.get("DESIGN_PREVIEW_TO", "")) if "@" in a]
+    if not to:
+        return []
+    try:
+        import copy
+        import render as _render_mod
+        from send_email import build_subject
+        if _render_mod.DESIGN == PREVIEW_DESIGN:
+            return []
+        saved = _render_mod.DESIGN
+        try:
+            _render_mod.DESIGN = PREVIEW_DESIGN
+            preview = minify_email_html(_render_mod.render(copy.deepcopy(digest_data)))
+        finally:
+            _render_mod.DESIGN = saved
+        subject = "[Design preview] " + build_subject(digest_data.get("re_line"), lead)
+        send_fn(preview, subject=subject, recipients=to)
+        print(f"  🎨  Design preview ({PREVIEW_DESIGN}, {len(preview.encode('utf-8')):,} bytes) "
+              f"sent to {len(to)} address(es)")
+        return to
+    except Exception as e:                                      # noqa: BLE001
+        print(f"  ⚠  Design preview skipped (non-fatal): {e}")
+        return []
+
 def main():
     parser = argparse.ArgumentParser(description="Korea Daily Brief pipeline")
     parser.add_argument("--no-send",    action="store_true", help="Render to file only, do not send email")
@@ -2495,6 +2531,7 @@ def main():
             send(html, re_line=re_line, lead=_lead, recipients=_test_to)
         else:
             send(html, re_line=re_line, lead=_lead)
+            send_design_preview(digest_data, send, _lead)
 
     # ── Step 5: Pipeline health checks ─────────────────────────────────────
     health_report = {}
