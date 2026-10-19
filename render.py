@@ -8,6 +8,51 @@ import re as _re
 from datetime import datetime, timezone
 from urllib.parse import urlparse as _urlparse
 
+import links as _linkq
+
+
+def _issue_file(digest: dict, base: str, ext: str) -> str:
+    """This issue's own published file: digest_{date}.{ext} under base.
+
+    "Read online" and "Download PDF" pointed at latest.html and latest.pdf,
+    so an email opened a week later showed that day's brief, not its own. The
+    archive publishes digest_{date}.html and .pdf for every issue; the date
+    comes from run.py (date_slug), else from digest_date. Falls back to the
+    latest file only when no date can be found.
+    """
+    slug = str(digest.get("date_slug") or "").strip()
+    if not _re.fullmatch(r"\d{4}-\d{2}-\d{2}", slug):
+        slug = ""
+        raw = str(digest.get("digest_date") or "").strip()
+        for fmt in ("%A, %B %d, %Y", "%B %d, %Y", "%Y-%m-%d"):
+            try:
+                slug = datetime.strptime(raw, fmt).strftime("%Y-%m-%d")
+                break
+            except ValueError:
+                continue
+    if not base:
+        return ""
+    return f"{base}digest_{slug}.{ext}" if slug else f"{base}latest.{ext}"
+
+
+def _top_story_sources(story: dict) -> str:
+    """The source line under a top story, HTML.
+
+    When run.py found a link for each outlet the story names (source_links),
+    each outlet is its own link. Otherwise the line is shown as written;
+    run.py has already cut it to the outlet the headline actually opens, so
+    it never names an outlet a reader cannot reach.
+    """
+    raw = str(story.get("src_line") or story.get("source") or "")
+    sl = [l for l in (story.get("source_links") or [])
+          if isinstance(l, dict) and str(l.get("url", "")).startswith("http") and l.get("label")]
+    if len(sl) < 2:
+        return _esc(_clean_src(raw))
+    _, tail = _linkq.split_outlets(raw)
+    parts = [f'<a href="{_esc(l["url"])}" style="color:#6B7280;text-decoration:underline;'
+             f'text-decoration-color:#C9D1DC;">{_esc(str(l["label"]))}</a>' for l in sl]
+    return " / ".join(parts) + (f" &mdash; {_esc(tail)}" if tail else "")
+
 
 def _clean_src(raw: str) -> str:
     """Strip raw URLs from source lines, keeping only human-readable text.
@@ -679,9 +724,10 @@ def render(digest: dict) -> str:
               'letter-spacing:0.5px;color:#14181F;background:#FFFFFF;'
               'border-radius:3px;'
               'text-decoration:none;white-space:nowrap;')
-        links = [f'<a class="pill" href="{_esc(web_url)}" style="{_a}">Read online</a>']
+        _online = _issue_file(digest, base, "html") or web_url
+        links = [f'<a class="pill" href="{_esc(_online)}" style="{_a}">Read online</a>']
         if base:
-            links.append(f'<a class="pill" href="{_esc(base + "latest.pdf")}" style="{_a}">Download PDF</a>')
+            links.append(f'<a class="pill" href="{_esc(_issue_file(digest, base, "pdf"))}" style="{_a}">Download PDF</a>')
             # Only when run.py has confirmed an MP3 exists for this issue. The
             # link points at the dated file, not latest.mp3, so an old email
             # keeps playing its own day rather than whatever is newest.
@@ -866,7 +912,7 @@ def render(digest: dict) -> str:
             cat = _esc(_str(story.get("category_tag", story.get("category", ""))))
             headline = _emphasis(_esc(story.get("headline", "")))
             body = _emphasis(_esc(story.get("body", "")))
-            src_line = _esc(_clean_src(story.get("src_line", story.get("source", ""))))
+            src_line = _top_story_sources(story)
             url = story.get("url", "")
             cat_badge = f'<div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:{TAEGUK_BLUE};font-weight:700;margin-bottom:4px;">{cat}</div>' if cat else ""
             stories_html += f"""
@@ -1118,14 +1164,24 @@ def render(digest: dict) -> str:
                 secondary_label = _esc(item.get("secondary_label", ""))
                 _rows = []
                 if source_url and source_url != "#" and source_url.startswith("http"):
-                    s_label = source_label if source_label else ministry
-                    _rows.append(
-                        f'<span style="font-weight:700;color:{TAEGUK_BLUE};">Primary</span> '
-                        f'<a href="{_esc(source_url)}" style="font-family:Georgia,serif;color:#353C48;text-decoration:none;">'
-                        f'{_esc(s_label)} &#8599;</a>')
+                    # "Primary" only for the government's own document. All 30
+                    # cards in a ten-issue audit said Primary and every one
+                    # opened a news outlet; those now name the outlet.
+                    _raw_label = str(item.get("source_label") or "")
+                    if _linkq.is_primary_url(source_url):
+                        s_label = source_label if source_label else ministry
+                        _rows.append(
+                            f'<span style="font-weight:700;color:{TAEGUK_BLUE};">Primary</span> '
+                            f'<a href="{_esc(source_url)}" style="font-family:Georgia,serif;color:#353C48;text-decoration:none;">'
+                            f'{s_label} &#8599;</a>')
+                    else:
+                        s_label = (_raw_label if _raw_label and _linkq.label_matches_url(_raw_label, source_url)
+                                   else _linkq.publisher_name(source_url))
+                        _rows.append(
+                            f'<a href="{_esc(source_url)}" style="font-weight:700;color:#353C48;text-decoration:none;">'
+                            f'{_esc(s_label)} &#8599;</a>')
                 elif source_label:
-                    _rows.append(f'<span style="font-weight:700;color:{TAEGUK_BLUE};">Primary</span> '
-                                 f'{source_label}')
+                    _rows.append(f'<span style="font-weight:700;">Source</span> {source_label}')
                 if secondary_url and str(secondary_url).startswith("http"):
                     _rows.append(
                         f'<span style="font-weight:700;">Reported</span> '
@@ -2214,9 +2270,10 @@ def render(digest: dict) -> str:
                         if s_url and s_url != "#" and s_url.startswith("http"):
                             _src_parts.append(f'<a href="{_esc(s_url)}" style="font-size:11px;font-family:{MONO};color:#6B7280;text-decoration:none;">{s_label} ↗</a>')
                         else:
-                            _src_parts.append(f'<span style="font-size:11px;font-family:{MONO};color:#6B7280;">{s_label} ↗</span>')
+                            # No arrow without a link: it promised a click that went nowhere.
+                            _src_parts.append(f'<span style="font-size:11px;font-family:{MONO};color:#6B7280;">{s_label}</span>')
                     else:
-                        _src_parts.append(f'<span style="font-size:11px;font-family:{MONO};color:#6B7280;">{_esc(str(s))} ↗</span>')
+                        _src_parts.append(f'<span style="font-size:11px;font-family:{MONO};color:#6B7280;">{_esc(str(s))}</span>')
                 source_links_html = "<div style='margin-top:8px;'>" + " &middot; ".join(_src_parts) + "</div>"
             bp_ids_html = ""
             if ir_bp_ids:
@@ -2471,7 +2528,7 @@ def render(digest: dict) -> str:
         </div>
       </td></tr>
       <tr><td style="padding:14px 32px 4px;text-align:center;">
-        <a class="pill" href="{_esc(web_url)}" style="{_foot_btn}">Read online</a>
+        <a class="pill" href="{_esc(_issue_file(digest, _b, "html") or web_url)}" style="{_foot_btn}">Read online</a>
         {f'<a class="pill" href="{_esc(digest["audio_url"])}" style="{_foot_btn}">Listen</a>' if digest.get("audio_url") else ""}
         <a class="pill" href="{_esc(archive_url)}" style="{_foot_btn}">Past issues</a>{_footer_trade}
       </td></tr>
