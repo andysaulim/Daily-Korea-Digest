@@ -186,6 +186,7 @@ def _dark_mode_css() -> str:
         "      .wrapper .kcna-dark, .wrapper .kcna-dark table, .wrapper .kcna-dark > div { background:#0A1E38 !important; }",
         "      .wrapper .item-card, .wrapper .story-card, .wrapper .gov-grid div, .wrapper .loc-grid div { background:#262A30 !important; border-color:#3A4048 !important; }",
         "      .wrapper .sentiment-spotlight { background:#16222F !important; }",
+        "      .wrapper .item-row { border-bottom-color:#3A4048 !important; }",
         "      .wrapper .sentiment-discourse { background:#2A1518 !important; }",
         "      .wrapper .mkt-table td { border-color:rgba(255,255,255,0.08) !important; }",
         "      .wrapper .sentiment-table td, .wrapper .cal-table { border-color:#3A4048 !important; }",
@@ -390,6 +391,23 @@ def _item_block(cat: str, src: str, headline: str, body: str, url: str,
     kicker, headline in ink with no underline, body, source last and muted.
     """
     kicker = " &middot; ".join(x for x in (cat, src) if x)
+    if DESIGN == "refined":
+        # Secondary items as a list, not a stack of cards: a hairline between
+        # items, the kicker above, nothing boxed. Cards inside sections inside
+        # bars was the most template-looking thing in the brief, and the
+        # borders and padding cost height on every item.
+        _k = ("<div style='font-family:Arial,sans-serif;font-size:10px;text-transform:uppercase;"
+              "letter-spacing:1px;color:" + TAEGUK_BLUE + ";font-weight:700;margin-bottom:3px;'>" + kicker + "</div>") if kicker else ""
+        _b = ("<div style='font-family:Georgia,serif;font-size:13px;line-height:1.5;color:#353C48;margin-top:3px;'>"
+              + body + "</div>") if body else ""
+        _rule = "border-left:3px solid " + bar_color + ";padding-left:10px;" if bar_color != TAEGUK_BLUE else ""
+        return f"""
+            <div class="item-row" style="padding:10px 0;border-bottom:1px solid #E6E8EC;{_rule}">
+              {_k}
+              <div style="font-size:15px;font-weight:700;color:#1A222E;font-family:Georgia,serif;line-height:1.35;">{_link_or_text(headline, url)}</div>
+              {_b}
+              {extra_html}
+            </div>"""
     return f"""
             <div class="item-card" style="margin-bottom:8px;padding:10px 13px;background:#fff;border-radius:3px;border-left:3px solid {bar_color};border-top:1px solid #EEF0F3;border-right:1px solid #EEF0F3;border-bottom:1px solid #EEF0F3;">
               {"<div style='font-size:10px;text-transform:uppercase;letter-spacing:1px;color:" + TAEGUK_BLUE + ";font-weight:700;margin-bottom:4px;'>" + kicker + "</div>" if kicker else ""}
@@ -405,6 +423,10 @@ def _item_block(cat: str, src: str, headline: str, body: str, url: str,
 # nameplate), "line" (one quiet line in the RE line's place) or "pill" (a small
 # button beside the issue meta).
 LISTEN_STYLE = "card"
+
+# "classic": every item in a bordered card. "refined": the first top story as a
+# lead with a larger headline, secondary items as a ruled list.
+DESIGN = "classic"
 
 _CHROME_WORDS = _re.compile(
     r"For Internal Use Only|Read online|Download PDF|Listen to today.s brief|"
@@ -739,7 +761,7 @@ def render(digest: dict) -> str:
     top_stories = digest.get("top_stories") or []
     if top_stories:
         stories_html = ""
-        for story in top_stories:
+        for _si, story in enumerate(top_stories):
             cat = _esc(_str(story.get("category_tag", story.get("category", ""))))
             headline = _emphasis(_esc(story.get("headline", "")))
             body = _emphasis(_esc(story.get("body", "")))
@@ -749,7 +771,7 @@ def render(digest: dict) -> str:
             stories_html += f"""
             <div class="item-card story-card" style="margin-bottom:10px;padding:12px 15px;background:#fff;border-radius:3px;border-left:3px solid {TAEGUK_BLUE};border-top:1px solid #EEF0F3;border-right:1px solid #EEF0F3;border-bottom:1px solid #EEF0F3;">
               {cat_badge}
-              <h3 style="margin:0 0 6px 0;font-size:16px;font-weight:600;color:{INK};font-family:Georgia,serif;line-height:1.4;">
+              <h3 style="margin:0 0 6px 0;font-size:{"21px" if DESIGN == "refined" and _si == 0 else "16px"};font-weight:{"700" if DESIGN == "refined" else "600"};color:{INK};font-family:Georgia,serif;line-height:{"1.25" if DESIGN == "refined" and _si == 0 else "1.4"};">
                 {_link_or_text(headline, url)}
               </h3>
               <p style="margin:0 0 6px 0;font-size:14px;line-height:1.55;font-family:Georgia,serif;color:#353C48;">{body}</p>
