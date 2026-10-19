@@ -30,7 +30,15 @@ from digest import _count_digest_words
 # 2,750 -> 2,800 (Oct 2026), with the user's approval, when Capitol Hill and
 # Korea and the World were added: at most seven items between them, and most
 # days fewer, since both are allowed to be empty.
-WORD_CEILING = 2800
+# 2,800 -> 3,300 (Oct 2026). This counts RENDERED words, and the page adds
+# about 1,000 words of labels, tables and standing panels to what the model
+# writes (rendered ~ 1,000 + 1.17 x digest words across 12-18 October). The
+# prompt asked for 2,500-2,750 words of its own text, which renders near
+# 4,000, so the trimmer threw away a third of every draft. The prompt now
+# asks for 1,700-2,000 words, which renders at about this ceiling. The owner
+# is content with a longer brief; what binds is Gmail clipping at 102 KB,
+# which EMAIL_BYTE_BUDGET and fit_email_bytes enforce after rendering.
+WORD_CEILING = 3300
 
 
 def _count_rendered_words_of(html: str) -> int:
@@ -50,6 +58,43 @@ def _count_rendered_words_of(html: str) -> int:
 GMAIL_CLIP_BYTES = 102_400
 EMAIL_BYTES_WARN = 78_000
 EMAIL_BYTES_CRITICAL = 96_000
+# The size the rendered, minified brief is trimmed to. 4 KB under the clip
+# leaves room for the Listen bar added after the audio is built, and for
+# Gmail's own wrapping.
+EMAIL_BYTE_BUDGET = 98_000
+
+
+def fit_email_bytes(digest: dict, render_fn, budget: int = EMAIL_BYTE_BUDGET,
+                    max_steps: int = 60) -> tuple[str, list[str]]:
+    """Render, and drop items until the minified email is under budget.
+
+    The word ceiling is a proxy; bytes are what Gmail clips on, and a day
+    heavy in Korean text (three bytes a character) or long URLs can pass the
+    first and fail the second. Items go one at a time in length_budget's
+    TRIM_ORDER, never below its floors, so this can only remove what the word
+    trim would have removed next. Returns (html, log lines); the html is the
+    last render, which is still over budget only when nothing more may go.
+    """
+    import length_budget
+    log: list[str] = []
+    html = minify_email_html(render_fn(digest))
+    size = len(html.encode("utf-8"))
+    start = size
+    for _ in range(max_steps):
+        if size <= budget:
+            break
+        step = length_budget.trim_one(digest)
+        if step is None:
+            log.append(f"still {size:,} bytes, over the {budget:,} budget, with every "
+                       f"trimmable section at its floor")
+            break
+        log.append(f"    {step}")
+        html = minify_email_html(render_fn(digest))
+        size = len(html.encode("utf-8"))
+    if size != start:
+        log.insert(0, f"over the email size budget: {start:,} bytes, trimmed to {size:,} "
+                      f"(budget {budget:,})")
+    return html, log
 
 
 _COND_OPEN = re.compile(r"<!--\[if\b", re.I)
@@ -578,7 +623,7 @@ _US_KEYWORDS = frozenset({
     "treasury", "biden", "trump", "section 232", "section 301", "section 122",
     "ieepa", "cfius", "ita", "itc",
     # US states that recur as the site of Korean investment.
-    "georgia", "texas", "alabama", "tennessee", "arizona", "louisiana", "philadelphia",
+    "georgia", "texas", "alabama", "tennessee", "arizona", "louisiana", "philadelphia", "philly",
 })
 _US_KEYWORD_RE = re.compile(
     r"(?<![a-z0-9])(?:" + "|".join(re.escape(k) for k in sorted(_US_KEYWORDS, key=len, reverse=True))
@@ -747,17 +792,20 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
     # The critical floor stays well below target so a genuinely slow news day
     # still sends; it exists to catch truncated output, not thin days. The
     # warning band is what pulls the model toward the 1,600-word target.
+    # Digest words, which the prompt's band is stated in: 1,700-2,000.
+    from digest import MIN_DIGEST_WORDS
     word_count = _count_digest_words(digest)
     if word_count < 1100:
         warnings.append(f"WORD COUNT CRITICAL: ~{word_count} words (hard minimum 1100 — the brief is too short)")
-    elif word_count < 1600:
-        warnings.append(f"WORD COUNT CRITICAL: ~{word_count} words (hard minimum 1600)")
-    elif word_count < 1700:
-        warnings.append(f"WORD COUNT: ~{word_count} words (band is 2500-2750)")
-    elif word_count > WORD_CEILING:
+    elif word_count < MIN_DIGEST_WORDS:
+        warnings.append(f"WORD COUNT CRITICAL: ~{word_count} words (hard minimum {MIN_DIGEST_WORDS})")
+    elif word_count < 1500:
+        warnings.append(f"WORD COUNT: ~{word_count} words (band is 1,700-2,000)")
+    elif word_count > 2100:
         # Not fatal: length_budget trims to the ceiling before rendering. This
-        # says the model is consistently over and its caps want another look.
-        warnings.append(f"WORD COUNT: ~{word_count} words, over the {WORD_CEILING} ceiling "
+        # says the model is over the prompt's 2,100 ceiling (digest words; the
+        # rendered WORD_CEILING is what the trim enforces).
+        warnings.append(f"WORD COUNT: ~{word_count} words, over the prompt's 2,100 ceiling "
                         f"— items will be trimmed before send")
 
     # ── KCNA delta should exist but is non-blocking ────────────────────────
@@ -1125,7 +1173,7 @@ def _eok_scale_warnings(digest: dict, payload: dict | None = None) -> list[str]:
     memo = " ".join(str(x) for x in (digest.get("morning_memo") or [])) + " " + str(digest.get("re_line") or "")
     for m in _MONEY_RE.finditer(memo):
         b = billions_of(m)
-        if m.group(0) not in flagged and b and any(abs(b - 10 * tb) < 0.01 * b for tb in flagged.values()):
+        if b and any(abs(b - 10 * tb) < 0.01 * b for tb in flagged.values()):
             out.append(f"MAGNITUDE CRITICAL: {m.group(0)} in the morning memo or RE: line repeats a "
                        f"figure ten times its Korean source (억 = 100 million).")
     return out
@@ -2227,6 +2275,16 @@ def main():
     for _msg in _ensure_pledge_projects(digest_data):
         print(f"  🏗  {_msg}")
 
+    # The byte guard, before the audio is built so the listener still hears
+    # the issue the reader gets. Gmail clips past 102,400 bytes; the word
+    # ceiling above is a proxy for that, and this is the bound itself.
+    try:
+        _, _fit_log = fit_email_bytes(digest_data, render)
+        for _line in _fit_log:
+            print(f"  📦  {_line}")
+    except Exception as _e:                                     # noqa: BLE001
+        print(f"  (email size guard unavailable: {_e})")
+
     # ── Audio edition ──────────────────────────────────────────────────────
     # Built here, after every trim and cleanup, so the listener hears exactly
     # the issue the reader gets. Before render, so the email can carry a
@@ -2275,6 +2333,13 @@ def main():
     if _post_min < _pre_min:
         print(f"  🗜  Minified: {_pre_min:,} → {_post_min:,} bytes "
               f"(−{100 * (_pre_min - _post_min) / _pre_min:.0f}%)")
+    # Backstop: the Listen bar is added after the guard ran. If that tipped
+    # the email over, trim again; the audio may then carry an item the email
+    # does not, which is better than a clipped email.
+    if len(html.encode("utf-8")) > EMAIL_BYTE_BUDGET:
+        html, _fit_log = fit_email_bytes(digest_data, render)
+        for _line in _fit_log:
+            print(f"  📦  {_line}")
     _final = _count_rendered_words_of(html)
     if _final > WORD_CEILING:
         print(f"  ⚠  still {_final} rendered words after trimming; the sections "
