@@ -30,22 +30,29 @@ from urllib.parse import quote
 DEFAULT_WEB_BASE = "https://andysaulim.github.io/Daily-Korea-Digest"
 LISTEN_DIR = "listen"
 
-# Chapter titles for the assembled script's section leads (podcast.build_script).
-# A lead not listed here — a section added later — is titled from its own
-# opening words, so a new section degrades to a plain title, never an error.
+# Chapter titles for the segment cues (podcast.LEAD_CUES and podcast.CUE_*),
+# which both the written and the assembled script open segments with. A lead
+# story ("First, ...") is titled from the top story it tells instead. A lead
+# not listed here — a section added later — is titled from its own opening
+# words, so a new section degrades to a plain title, never an error. The
+# older cues stay listed so a re-made old episode still gets its titles.
 _LEAD_TITLES = (
-    ("Our top story", "Top stories"), ("Here's what else", "Overnight"),
     ("Now to Pyongyang", "Pyongyang"), ("The number of the day", "Number of the day"),
-    ("In Seoul,", "Seoul: government and Assembly"), ("On the economy", "Economy"),
-    ("On Capitol Hill", "Capitol Hill"), ("Elsewhere in the region", "The region"),
-    ("Beyond the region", "Korea and the World"), ("How is the public", "Polling"),
-    ("In their own words", "In their own words"), ("What's coming up", "Coming up"),
-    ("A few more things", "Also today"), ("And from the analysts", "Analysis"),
-    ("From satellite imagery", "Satellite imagery"),
     ("The rest of the news", "The round-up"),
+    ("In Seoul", "Seoul: government and Assembly"), ("On the economy", "Economy"),
+    ("On Capitol Hill", "Capitol Hill"), ("Elsewhere in the region", "The region"),
+    ("Beyond the region", "Korea and the World"), ("In the polls", "Polling"),
+    ("In their own words", "In their own words"), ("Coming up", "Coming up"),
+    ("A few more things", "Also today"), ("From the analysts", "Analysis"),
+    ("From satellite imagery", "Satellite imagery"),
     ("Finally, the markets", "Markets"),
     ("That's the Korea Daily Brief", "Close"),
+    # Cues of the assembled script before 19 October.
+    ("Our top story", "Top stories"), ("Here's what else", "Overnight"),
+    ("How is the public", "Polling"), ("What's coming up", "Coming up"),
+    ("And from the analysts", "Analysis"),
 )
+_ORDINAL_CUE = re.compile(r"^(First|Second|Third|Fourth|Fifth),\s")
 
 
 # ── Show notes ───────────────────────────────────────────────────────────────
@@ -82,9 +89,11 @@ def _segment_title(text: str, n: int, total: int, digest: dict, source: str,
     """(title, link) for one segment of the script."""
     import podcast
     head = text.strip()
-    for lead, title in _LEAD_TITLES:
-        if head.startswith(lead):
-            return title, ""
+    numbered = _ORDINAL_CUE.match(head)
+    if not numbered:
+        for lead, title in _LEAD_TITLES:
+            if head.startswith(lead):
+                return title, ""
     if n == 0:
         return "Today's headlines", ""
     # A lead story: the top story whose headline the segment's opening shares
@@ -100,6 +109,13 @@ def _segment_title(text: str, n: int, total: int, digest: dict, source: str,
             s = len(hw & opening) / len(hw)
             if s > score:
                 best, score = (i, item), s
+    if numbered and not (best and score >= 0.3):
+        # A numbered lead whose words don't match a headline (the assembled
+        # script tells the body alone): the next top story not yet titled.
+        rest = [(i, it) for i, it in enumerate(podcast._items(digest, "top_stories")) if i not in used]
+        best, score = (rest[0], 1.0) if rest else (None, 0.0)
+        if not best:
+            return f"Lead story: {numbered.group(1).lower()}", ""
     if best and score >= 0.3:
         used.add(best[0])
         url = str(best[1].get("url") or "")
@@ -240,7 +256,7 @@ def vtt(chunks: list[dict]) -> str:
     """WebVTT for the whole episode."""
     lines = ["WEBVTT", ""]
     for i, c in enumerate(cues(chunks), 1):
-        text = c["text"].replace("-->", "→")
+        text = c["text"].replace("-->", "to")
         lines += [str(i), f"{_ts(c['start'])} --> {_ts(c['end'])}", text, ""]
     return "\n".join(lines)
 

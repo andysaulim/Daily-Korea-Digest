@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import html as _html
 import json
+import unicodedata
 import os
 import re
 import shutil
@@ -53,8 +54,15 @@ DEFAULT_MODEL = "gpt-4o-mini-tts"
 DEFAULT_VOICE = "marin"          # OpenAI's recommended voice for quality narration
 FALLBACK_VOICE = "ash"           # if the model ever refuses the default
 SEGMENT = "---"                  # a line on its own: a segment break, voiced as a pause
-PAUSE_PARAGRAPH = 0.7            # seconds of silence between requests within a segment
-PAUSE_SEGMENT = 1.5              # ... and between segments
+# Pauses are exact: each request's own leading and trailing silence is
+# trimmed in _master before these are put in. Before that trim, a voice's
+# ~0.3 s of padding at each end turned a 1.5 s segment break into about two
+# seconds of dead air, fifteen times an episode. Radio leaves about a second
+# between stories when there is no music to fill it.
+PAUSE_PARAGRAPH = 0.6            # seconds of silence between requests within a segment
+PAUSE_SEGMENT = 1.2              # ... and between segments
+EDGE_SILENCE = 0.08              # kept at each end of a request when trimming
+SILENCE_LEVEL = 330              # |sample| below this (about -40 dBFS) counts as silence
 PCM_RATE = 24000                 # OpenAI's native speech rate; everything is mixed at it
 LAST_ERROR = ""              # why the most recent synthesis produced nothing
 # How the voice reads, sent with every request to models that take it. The
@@ -101,12 +109,36 @@ def _legacy_opening(when: str) -> str:
     return f"This is the Korea Daily Brief from the CSIS Korea Chair. It's {when}."
 
 # ── Making text speakable ────────────────────────────────────────────────────
+#
+# The house rules for what a voice is sent. Everything here changes how a
+# sentence is written, never what it says; check_script compares a script
+# against the brief passed through the same rules, so a figure written "$84.7B"
+# in print and "84.7 billion dollars" on air is the same figure to the check.
+#
+#   Numbers      digits, as printed; "%" is "percent"; "-7.6%" is "down 7.6 percent"
+#   Money        "$84.7B" and "$84.7 billion" are "84.7 billion dollars"; "₩" and
+#                KRW are "won"; "~" is "about"
+#   Dates        month names in full ("Oct 3" is "October 3"); ranges with "to"
+#                ("Oct 13-15" is "October 13 to 15"); "Q3" is "the third quarter"
+#   Acronyms     a listener decodes country and institution acronyms worse than
+#                a reader, so they are expanded (DPRK, ROK, USFK, UNC, IAEA, NDAA,
+#                CRS, OPCON, BOK...). Those said as a word or as letters by
+#                everyone in the field stay: KCNA, DMZ, KOSPI, MASGA, CSIS, AI.
+#                "US" and "UN" gain their dots so no voice says "us" or "un".
+#   Characters   no em dash, middle dot, arrow, bracket, slash, asterisk, URL,
+#                handle or Korean script reaches the voice or the transcript.
+#
+# Pronunciation is handled by respelling in for_voice(), never by markup: the
+# eleven_v3 family ignores SSML <phoneme> tags, and an unsupported tag is read
+# aloud or dropped unpredictably. The transcript keeps the standard spelling.
 
 _HANGUL = re.compile(r"[ᄀ-ᇿ㄰-㆏가-힣]+")
-_URL = re.compile(r"https?://\S+")
-_MONEY = re.compile(r"\$\s?(\d[\d,]*(?:\.\d+)?)\s?(tn|T|bn|B|mn|M|K|k)\b")
+_URL = re.compile(r"https?://\S+|\bwww\.\S+")
+_MONEY = re.compile(r"(?:US)?\$\s?(\d[\d,]*(?:\.\d+)?)\s?(tn|T|bn|B|mn|M|K|k|trillion|billion|million)\b")
+_DOLLARS = re.compile(r"(?:US)?\$\s?(\d[\d,]*(?:\.\d+)?)(?![\d.,]*\s?(?:tn|T|bn|B|mn|M|K|k|trillion|billion|million)\b)")
 _UNITS = {"tn": "trillion", "t": "trillion", "bn": "billion", "b": "billion",
-          "mn": "million", "m": "million", "k": "thousand"}
+          "mn": "million", "m": "million", "k": "thousand",
+          "trillion": "trillion", "billion": "billion", "million": "million"}
 # ROK / DPRK become the adjective form only before a noun known to follow them
 # in this brief ("ROK soldiers", "DPRK territory"). Everything else gets the
 # noun. The first version guessed the other way — adjective unless the next
@@ -125,53 +157,207 @@ _ADJ_BEFORE = {
     "counterpart", "counterparts", "workers", "companies", "firms", "exports",
     "imports", "warships", "drones", "hackers", "spy", "agents", "defector",
     "defectors", "fishing", "vessel", "vessels", "ship", "ships", "warplanes",
+    # Added after reading five issues aloud: "South Korea sovereignty",
+    # "the sixth North Korea weapons event", "North Korea soldier".
+    "sovereignty", "territorial", "weapon", "weapons", "soldier", "testing",
+    "provocation", "provocations",
+    "response", "position", "policy", "officer", "officers", "diplomat",
+    "diplomats", "lawmakers", "voters", "public", "nationals", "ambassador",
+    "artillery", "submarine", "submarines", "torpedo", "cyber", "hacking",
+    "laborers", "labourers", "restaurant", "refugees", "multilateral",
+    "microsatellite", "satellite", "satellites", "economic", "business",
+    "businesses", "industry", "industries", "shipbuilders", "shipyards",
+    "chipmakers", "automakers", "investors", "investment", "stocks",
+    "currency", "trade", "steel", "auto", "autos", "semiconductor",
 }
 
 
+_NOUN_NEXT = {"and", "or", "but", "has", "is", "was", "will", "would", "can", "could", "may",
+              "must", "should", "did", "does", "do", "had", "have", "are", "were", "itself",
+              "ties", "relations", "alone", "also", "first", "now", "again", "still", "says",
+              "said", "say", "agree", "agreed", "sign", "signed", "hold", "held", "plans"}
+
+
 def _country(text: str, abbr: str, noun: str, adjective: str) -> str:
+    """ROK -> "South Korea" or "South Korean", by the word that follows.
+
+    The adjective before a noun ("ROK sovereignty", "ROK Finance Minister"),
+    the noun before a verb, a preposition or punctuation ("DPRK rejects",
+    "ties with the ROK."). A third-person verb ends in -s or -ed; a plural
+    noun that also does is listed in _ADJ_BEFORE.
+    """
     def repl(m: re.Match) -> str:
-        nxt = (m.group(1) or "").strip().lower()
-        return (adjective if nxt in _ADJ_BEFORE else noun) + (m.group(1) or "")
-    return re.sub(rf"\b{abbr}\b(\s+\w+|(?=[^\w]|$))", repl, text)
+        nxt = (m.group(1) or "").strip()
+        w = nxt.lower().split("'")[0].split("’")[0]
+        if not w:
+            adj = False
+        elif w in _ADJ_BEFORE:
+            adj = True
+        elif nxt[:1].isupper():
+            adj = True                                          # "ROK Defense Ministry"
+        elif w in _NOT_A_NOUN or w in _NOUN_NEXT or w.endswith("ed") or w.isdigit() \
+                or (w.endswith("s") and not w.endswith("ss")):
+            adj = False
+        else:
+            adj = True                                          # "ROK democratization movements"
+        return (adjective if adj else noun) + (m.group(1) or "")
+    return re.sub(rf"\b{abbr}\b(\s+[\w'’]+|(?=[^\w]|$))", repl, text)
 
 
 _NOT_A_NOUN = {"in", "to", "of", "for", "and", "or", "a", "an", "the", "on",
                "over", "by", "from", "with", "per", "at", "as", "this", "last",
-               "next", "is", "was", "will", "would"}
+               "next", "is", "was", "will", "would", "through", "since", "into",
+               "annually", "a", "each", "this", "that", "until", "by", "between"}
+_DETERMINERS = {"a", "an", "the", "its", "their", "his", "her", "our", "this", "that",
+                "each", "every", "another", "seoul's", "korea's", "washington's",
+                "tokyo's", "beijing's", "pyongyang's"}
 
 
 _MONTH_NAMES = {"Jan": "January", "Feb": "February", "Mar": "March", "Apr": "April",
            "Jun": "June", "Jul": "July", "Aug": "August", "Sep": "September",
            "Oct": "October", "Nov": "November", "Dec": "December"}
+_MONTH_ABBR = r"(Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sept?|Oct|Nov|Dec)"
 _ORDINAL = {"1": "first", "2": "second", "3": "third", "4": "fourth"}
-# Ministry acronyms a reader decodes and a listener can't.
-_SPOKEN_NAMES = (("MOFA", "Foreign Ministry"), ("MOTIE", "Industry Ministry"),
-                 ("MND", "Defense Ministry"), ("MOEF", "Finance Ministry"),
-                 ("MDL", "military demarcation line"),
-                 ("NK Pro", "N.K. Pro"), ("NK News", "N.K. News"),
-                 ("IRBMs?", "intermediate-range missile"), ("ICBMs?", "intercontinental ballistic missile"),
-                 ("SLBMs?", "submarine-launched ballistic missile"), ("LNG", "liquefied natural gas"),
-                 ("POWs", "prisoners of war"), ("POW", "prisoner of war"),
-                 ("KBO", "Korean baseball"), ("IPs", "internet addresses"))
+# Acronyms a reader decodes and a listener can't: (pattern, singular, plural).
+# Applied after the country and institution expansions, longest first where
+# one is a prefix of another (NK Pro before NK).
+_SPOKEN_NAMES = (("MOFA", "Foreign Ministry", None), ("MOTIE", "Industry Ministry", None),
+                 ("MND", "Defense Ministry", None), ("MOEF", "Finance Ministry", None),
+                 ("MDL", "military demarcation line", None),
+                 ("NK Pro", "N.K. Pro", None), ("NK News", "N.K. News", None),
+                 ("Daily NK", "Daily N.K.", None),
+                 ("IRBM", "intermediate-range missile", "intermediate-range missiles"),
+                 ("ICBM", "intercontinental ballistic missile", "intercontinental ballistic missiles"),
+                 ("SLBM", "submarine-launched ballistic missile", "submarine-launched ballistic missiles"),
+                 ("SLCM", "submarine-launched cruise missile", "submarine-launched cruise missiles"),
+                 ("SRBM", "short-range ballistic missile", "short-range ballistic missiles"),
+                 ("HGV", "hypersonic glide vehicle", "hypersonic glide vehicles"),
+                 ("LNG", "liquefied natural gas", None),
+                 ("POW", "prisoner of war", "prisoners of war"),
+                 ("KBO", "Korean baseball", None), ("IPs", "internet addresses", None),
+                 ("OPCON", "wartime operational control", None),
+                 ("FT", "the Financial Times", None), ("WSJ", "the Wall Street Journal", None),
+                 ("NYT", "the New York Times", None), ("WaPo", "the Washington Post", None),
+                 ("DP", "Democratic Party", None), ("PPP", "People Power Party", None),
+                 ("LDP", "Liberal Democratic Party", None), ("CCP", "Chinese Communist Party", None),
+                 ("WPK", "Workers' Party", None), ("CoS", "chief of staff", None),
+                 ("WB", "World Bank", None), ("IT", "I.T.", None),
+                 ("LOI", "letter of intent", "letters of intent"),
+                 ("MOU", "memorandum of understanding", "memorandums of understanding"),
+                 ("FY", "fiscal", None), ("YoY", "year on year", None), ("yoy", "year on year", None))
+# Institutions: the expansion takes "the" where English needs it ("UNC said"
+# is "the U.N. Command said"; "UNC authority" stays "U.N. Command authority").
+_INSTITUTIONS = (("USFK", "U.S. Forces Korea", False), ("UNC", "U.N. Command", True),
+                 ("UNSC", "U.N. Security Council", True), ("CFC", "Combined Forces Command", True),
+                 ("JCS", "Joint Chiefs of Staff", True), ("IAEA", "International Atomic Energy Agency", True),
+                 ("NDAA", "National Defense Authorization Act", True),
+                 ("CRS", "Congressional Research Service", True),
+                 ("BOK", "Bank of Korea", True), ("KRX", "Korea Exchange", True),
+                 ("DOJ", "Justice Department", True), ("NIS", "National Intelligence Service", True),
+                 ("FSS", "Financial Supervisory Service", True), ("FSC", "Financial Services Commission", True),
+                 ("DAPA", "Defense Acquisition Program Administration", True),
+                 ("JSA", "Joint Security Area", True), ("NLL", "Northern Limit Line", True),
+                 ("NSC", "National Security Council", True), ("KDI", "Korea Development Institute", True),
+                 ("USTR", "U.S. Trade Representative", True), ("OFAC", "Treasury's sanctions office", False))
+_ARTICLE_BEFORE = re.compile(r"\b(?:the|a|an|its|their|his|her)\s+$", re.I)
+_PREP_BEFORE = re.compile(r"\b(?:by|of|from|to|at|with|for|in|on|and|or|under|between|against|told|"
+                          r"says|said|urged|asked|warned|that|as|via|before|after|toward|towards|"
+                          r"within|across|without)\s+$", re.I)
+_VERB_AFTER = re.compile(r"^(?:'s\s+)?\s*(?:[a-z]+ly\s+)?(?:is|was|has|had|have|are|were|will|would|said|says|could|can|"
+                         r"may|must|should|did|does|[a-z]+ed)\b")
+_TITLES = (("Lt. Gen.", "Lieutenant General"), ("Maj. Gen.", "Major General"),
+           ("Brig. Gen.", "Brigadier General"), ("Gen.", "General"), ("Adm.", "Admiral"),
+           ("Rep.", "Representative"), ("Sen.", "Senator"), ("Gov.", "Governor"),
+           ("Amb.", "Ambassador"), ("Col.", "Colonel"), ("Lt.", "Lieutenant"))
+_DAY_ABBR = {"Tue": "Tuesday", "Tues": "Tuesday", "Wed": "Wednesday", "Thu": "Thursday",
+             "Thur": "Thursday", "Thurs": "Thursday"}
+
+
+def _institution(text: str, abbr: str, name: str, article: bool) -> str:
+    def repl(m: re.Match) -> str:
+        before, after = m.string[:m.start()], m.string[m.end():]
+        if not article or _ARTICLE_BEFORE.search(before):
+            return name
+        if not before.strip() or before.rstrip()[-1] in ".!?\"“":
+            return "The " + name
+        if before.rstrip()[-1] in ":;":
+            return "the " + name
+        if _PREP_BEFORE.search(before) or _VERB_AFTER.match(after):
+            return "the " + name
+        return name
+    return re.sub(rf"\b{abbr}\b", repl, text)
 
 
 def _money(m: re.Match) -> str:
-    """$22.3B -> "22.3 billion dollars", or "dollar" when it modifies a noun."""
-    amount, unit = m.group(1), _UNITS[m.group(2).lower()]
-    nxt = re.match(r"\s+([A-Za-z]+)", m.string[m.end():])
-    as_adjective = bool(nxt) and nxt.group(1).lower() not in _NOT_A_NOUN
-    return f"{amount} {unit} dollar{'' if as_adjective else 's'}"
+    """$22.3B -> "22.3 billion dollars", or "dollar" when it modifies a noun.
+
+    It modifies a noun when a noun follows it: "a $350B
+    pledge", "the $150B shipbuilding component", "extend $10B currency swap".
+    Before a verb or a preposition it is an amount ("totaling $49.9B announced
+    in October"), which the first version read as "49.9 billion dollar announced".
+    """
+    amount = m.group(1)
+    unit = _UNITS[m.group(2).lower()] if m.lastindex and m.lastindex >= 2 and m.group(2) else ""
+    before = [w.lower().strip(",") for w in m.string[:m.start()].split()[-3:]]
+    nxt = re.match(r"\s+([A-Za-z][\w-]*)", m.string[m.end():])
+    det = -1
+    for i, w in enumerate(before):
+        if w in _DETERMINERS or w.endswith(("'s", "’s")):
+            det = i
+    np_ok = det >= 0 and not any(w in _NOT_A_NOUN or w.endswith("ed") for w in before[det + 1:])
+    word = nxt.group(1) if nxt else ""
+    noun_next = (bool(word) and word.lower() not in _NOT_A_NOUN | {"up", "down", "last", "more", "less"}
+                 and not word.endswith(("ed", "ing", "ly")))
+    # A lower-case noun straight after the amount is what it modifies
+    # ("extend $10B currency swap"); after a determiner a capitalised one too.
+    as_adjective = noun_next and (word[:1].islower() or np_ok)
+    if not unit and amount.replace(",", "") in ("1", "1.0", "1.00"):
+        return "1 dollar"
+    return f"{amount} {unit + ' ' if unit else ''}dollar{'' if as_adjective else 's'}"
+
+
+_SENT_ABBR = re.compile(r"(?:\b(?:U\.S|U\.N|U\.K|N\.K|I\.T|a\.m|p\.m|Gen|Lt|Col|Adm|Rep|Sen|Gov|Amb|Dr|Mr|"
+                        r"Ms|Mrs|St|No|Jr|Sr|vs|etc|Inc|Corp|Co|e\.g|i\.e|Jan|Feb|Mar|Apr|Jun|Jul|"
+                        r"Aug|Sept?|Oct|Nov|Dec)\.|\b[A-Z]\.)$")
+
+
+def _sentences(text: str) -> list[str]:
+    """Split prose into sentences without breaking at "U.S." or "Gen."."""
+    parts = re.split(r"(?<=[.!?])\s+(?=[A-Z0-9\"'“‘])|(?<=[.!?][\"'”’])\s+", str(text or "").strip())
+    out: list[str] = []
+    for p in parts:
+        if not p:
+            continue
+        if out and _SENT_ABBR.search(out[-1]):
+            out[-1] += " " + p
+        else:
+            out.append(p)
+    return out
+
+
+def _clip(text: str, max_words: int) -> str:
+    """Whole sentences from the start, up to max_words; always at least one.
+
+    Nothing is reworded: a long item loses its later sentences, so whatever is
+    read is still the brief's own text.
+    """
+    out, n = [], 0
+    for s in _sentences(text):
+        w = len(s.split())
+        if out and n + w > max_words:
+            break
+        out.append(s)
+        n += w
+    return " ".join(out)
 
 
 def speakable(text: str) -> str:
     """Rewrite a printed sentence so a speech engine says it the way a reader means it.
 
-    Only presentation changes — never wording or facts. Markdown emphasis goes,
-    because the engine would read the asterisks; Hangul goes, because an English
-    voice mangles it and every Korean term in the brief is already given in
-    English beside it; "US" becomes "U.S." because engines otherwise say "us";
-    "$22.3B" becomes "22.3 billion dollars"; ROK and DPRK are expanded, as noun
-    or adjective by what follows them.
+    Only presentation changes — never wording or facts. See the house rules
+    above. Markdown emphasis goes, because the engine would read the
+    asterisks; Hangul goes, because an English voice mangles it and every
+    Korean term in the brief is already given in English beside it.
     """
     if not text:
         return ""
@@ -179,35 +365,104 @@ def speakable(text: str) -> str:
     t = _URL.sub("", t)
     t = re.sub(r"\*{1,2}([^*]+)\*{1,2}", r"\1", t)
     t = _HANGUL.sub("", t)
-    t = re.sub(r"\(\s*[,;/·]*\s*\)", "", t)          # parentheses Hangul left empty
+    # A translated quote prints as "<Korean> ['<English>']": keep the English.
+    t = re.sub(r"\[\s*['\"‘“]?([^\[\]]*?)['\"’”]?\s*\]", r"\1", t)
+    t = re.sub(r"\(\s*[,;/·]+\s*", "(", t)            # "(중대범죄수사청 / SCIA)" -> "(SCIA)"
+    t = re.sub(r"\s*[,;/·]+\s*\)", ")", t)
+    t = re.sub(r"\(\s*[,;/·.]*\s*\)", "", t)          # parentheses Hangul left empty
+    t = re.sub(r"^[\s.,;:]+", "", t)                    # punctuation Hangul left leading
     t = re.sub(r"\s*·\s*", ", ", t)
+    t = re.sub(r"\b(20\d\d)-(\d\d)-(\d\d)\b",                         # ISO dates
+               lambda m: (f"{datetime(int(m.group(1)), int(m.group(2)), int(m.group(3))):%B} "
+                          f"{int(m.group(3))}, {m.group(1)}") if 1 <= int(m.group(2)) <= 12
+               and 1 <= int(m.group(3)) <= 31 else m.group(0), t)
+    t = re.sub(r"\b(\d)\+(\d)\b", r"\1-plus-\2", t)                   # "2+2 talks"
+    t = re.sub(r"\b(\d[\d,.]*)\+(?=\s|$|[,.;])", r"more than \1", t)       # "268+ events"
+    # Dashes: an em dash or a spaced en dash between words is a comma to the
+    # ear; an unspaced en dash between numbers is a range ("Oct 3–5").
+    t = re.sub(r"\s*[—―]\s*|\s+–\s+|\s+--\s+", ", ", t)
+    t = re.sub(rf"\b{_MONTH_ABBR}\.?\s*[–-]\s*(?=[A-Z])",
+               lambda m: _MONTH_NAMES[m.group(1)[:3]] + " to ", t)                   # "Sep–October"
+    t = re.sub(r"(\d)\s*[–−-]\s*(\d)", r"\1 to \2", t)                       # "Oct 3–5"
+    t = t.replace("–", "-")
+    # Symbols a voice reads literally, or skips.
+    t = re.sub(r"\s*(?:→|->|⇒|➔)\s*", " to ", t)
+    t = re.sub(r"[▲↑]\s*", "up ", t)
+    t = re.sub(r"[▼↓]\s*", "down ", t)
+    t = re.sub(r"(\d)\s?MWe\b", r"\1-megawatt", t)
+    t = re.sub(r"\s?°\s?C\b", " degrees Celsius", t)
+    t = t.replace("°", " degrees").replace("²", "-squared").replace("³", "-cubed")
+    t = re.sub(r"[•►▶◆■□●○✓✔#]", " ", t)
+    t = re.sub(r"\s*&\s*", " and ", t)
+    t = re.sub(r"[~≈]\s*(?=\$?\d)", "about ", t)
+    t = re.sub(r"(?<![\w.])\+\s?(\d[\d.,]*)\s?%", r"up \1 percent", t)
+    t = re.sub(r"(?<![\w.])[-−]\s?(\d[\d.,]*)\s?%", r"down \1 percent", t)
+    t = re.sub(r"(\d)\s?%", r"\1 percent", t)
+    t = re.sub(r"(\d)\s?(?:pp|ppt|%p)\b", r"\1 percentage points", t)
+    t = re.sub(r"(\d)\s?bps?\b", r"\1 basis points", t)
     t = _MONEY.sub(_money, t)
+    t = _DOLLARS.sub(_money, t)
+    t = re.sub(r"(?:₩|\bKRW)\s?(\d[\d,.]*(?:\s(?:thousand|million|billion|trillion))?)", r"\1 won", t)
+    t = re.sub(r"(\d[\d,.]*(?:\s(?:thousand|million|billion|trillion))?)\s?KRW\b", r"\1 won", t)
+    t = re.sub(r"(\d)\s?(am|pm|a\.m\.|p\.m\.)(?=[\s,.;]|$)",
+               lambda m: f"{m.group(1)} {m.group(2)[0]}.m.", t)
+    for short, full in _TITLES:
+        t = re.sub(rf"(?<![\w.]){re.escape(short)}\s+(?=[A-Z])", full + " ", t)
+    # A gloss in brackets that only repeats the acronym: "operational control
+    # (OPCON)", "Korea Electric Power Corporation (KEPCO)". Read aloud it is
+    # the same name twice.
+    t = re.sub(r"\s*\((?:[A-Z]{2,7}s?|[A-Z][a-z]?[A-Z]{1,6})\)", "", t)
     t = re.sub(r"\bUS\b", "U.S.", t)
+    t = re.sub(r"\bUN\b", "U.N.", t)
+    t = re.sub(r"\bU\.S\.(?=[A-Za-z])", "U.S. ", t)
+    t = re.sub(r"\bCommander,?\s+UNC/CFC/USFK\b", "The commander of U.S. Forces Korea", t)
     t = _country(t, "DPRK", "North Korea", "North Korean")
     t = _country(t, "ROK", "South Korea", "South Korean")
+    for abbr, name, article in _INSTITUTIONS:
+        t = _institution(t, abbr, name, article)
     # "the DPRK said" is English; "the North Korea said" is not. Drop the
     # article before the noun form only — "the North Korean side" keeps it.
     t = re.sub(r"\b[Tt]he ((?:North|South) Korea)\b(?!n)", r"\1", t)
-    t = re.sub(r"\bBOK\b", "Bank of Korea", t)
     t = re.sub(r"\bFMs\b", "foreign ministers", t)
     t = re.sub(r"\bFM\b", "Foreign Minister", t)
     t = re.sub(r"\bPM\b", "Prime Minister", t)
-    t = re.sub(r"(\d)\s*[–-]\s*(\d)", r"\1 to \2", t)          # "Oct 3–5"
     t = re.sub(r"\s+/\s+", " and ", t)                            # "NK News / NK Pro"
-    t = re.sub(r"\bvs\.?\b", "versus", t)
+    t = re.sub(r"\bvs\.?(?=\s)", "versus", t)
     t = re.sub(r"\(?\b[A-Z]{3}\d{8,}\b\)?", "", t)                  # wire story IDs
-    t = re.sub(r",?\s*@\w+\s*,?", "", t)                               # social handles
-    t = re.sub(r"\b(Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sept?|Oct|Nov|Dec)\.?\s+(?=\d)",
-               lambda m: _MONTH_NAMES[m.group(1)[:3]] + " ", t)
+    t = re.sub(r",?\s*@\w+\s*,?", " ", t)                              # social handles
+    t = re.sub(rf"\b{_MONTH_ABBR}\.(?=\s+[A-Z])", lambda m: _MONTH_NAMES[m.group(1)[:3]] + ".", t)
+    t = re.sub(rf"\b{_MONTH_ABBR}\.?(?=\s+\d|\s*[:;,]|\s*$|\s+20\d\d)",
+               lambda m: _MONTH_NAMES[m.group(1)[:3]], t)
+    t = re.sub(r"\b(Tues|Tue|Wed|Thurs|Thur|Thu)\b\.?", lambda m: _DAY_ABBR[m.group(1)], t)
     t = re.sub(r"\bQ([1-4])\s+(20\d\d)\b",
                lambda m: f"the {_ORDINAL[m.group(1)]} quarter of {m.group(2)}", t)
+    def _quarter(m: re.Match) -> str:
+        prev = (m.string[:m.start()].split() or [""])[-1].lower()
+        nxt = re.match(r"\s([a-z]+)", m.string[m.end():])
+        if nxt and nxt.group(1) not in _NOT_A_NOUN | {"up", "down", "when", "after", "before"}:
+            return f"{_ORDINAL[m.group(1)]}-quarter"                 # "Q3 revenue"
+        return ("" if prev == "the" else "the ") + f"{_ORDINAL[m.group(1)]} quarter"
+    t = re.sub(r"\bQ([1-4])\b", _quarter, t)
+    t = re.sub(r"\bthe the\b", "the", t)
+    t = re.sub(r"\bFY\s?(20\d\d)\b", r"fiscal \1", t)
     t = re.sub(r"(\d)\s?km\b", r"\1 kilometers", t)
-    for short, full in _SPOKEN_NAMES:
+    t = re.sub(r"\b(\d+(?:\.\d+)?)x\b", r"\1 times", t)
+    t = re.sub(r"(?<!Daily )\bNK\b(?! (?:News|Pro)\b)", "NK_", t)            # NK alone, after the names
+    for short, full, plural in _SPOKEN_NAMES:
+        if plural:
+            t = re.sub(rf"\b{short}s\b", plural, t)
         t = re.sub(rf"\b{short}\b", full, t)
+    t = _country(t.replace("NK_", "NK"), "NK", "North Korea", "North Korean")
+    t = re.sub(r"(?<!\w)the the\b", "the", t, flags=re.I)
+    t = re.sub(r"\b(of|from|to|by|at|in|with) [Tt]he (the Financial|the Wall|the New York|the Washington)", r"\1 \2", t)
     t = re.sub(r"\b([A-Za-z]+)/([A-Za-z]+)\b", r"\1 and \2", t)          # "Taiwan/Russia"
+    t = t.replace("/", " ")
     t = re.sub(r"\s*\(([^()]{1,60})\)", r", \1,", t)                    # asides, not brackets
+    t = re.sub(r"[()\[\]{}]", "", t)
+    # Any symbol left (™, †, ★, emoji...) is dropped: a voice either names it
+    # or stumbles. Currency signs were turned into words above.
+    t = "".join(ch for ch in t if not unicodedata.category(ch).startswith("S") or ch in "'`^")
     t = re.sub(r",\s*([,.;:!?])", r"\1", t)
-    t = re.sub(r",\s*—", " —", t)
     # "..., per KCNA via Reuters and the Kyiv Post." — a chain of sources read
     # after the claim; the listener needs the first one, said plainly.
     t = re.sub(r",?\s+per ([A-Z][\w.'&-]*(?: [A-Z][\w.'&-]*)*)(?: via [^.;]+)?(?=[.;])",
@@ -218,10 +473,35 @@ def speakable(text: str) -> str:
     # "South Korea 747 billion dollar energy transition" (from "ROK $747B ...")
     t = re.sub(r"\b((?:North|South) Korea) (\d[\d.,]* (?:thousand|million|billion|trillion) dollar)\b",
                r"\1's \2", t)
-    t = re.sub(r"\s+([,.;:])", r"\1", t)
+    # "an submarine-launched", "a intercontinental": articles fixed after expansion.
+    t = re.sub(r"\b([Aa])n (?=(?:submarine|short-range|hypersonic|wartime|liquefied|prisoner|"
+               r"military|Korean|Democratic|People|National|Joint|Bank|Combined|Justice)\b)", r"\1 ", t)
+    t = re.sub(r"\b([Aa]) (?=(?:intermediate|intercontinental|internet|International|I\.T\.)\b)", r"\1n ", t)
+    t = re.sub(r"\b(up|down) \1\b", r"\1", t)
+    t = re.sub(r"(^|[.!?]\s+)(the|an?) ", lambda m: m.group(1) + m.group(2).capitalize() + " ", t)
+    t = re.sub(r"\s+([,.;:!?])", r"\1", t)
+    t = re.sub(r"([,;:])(?=[A-Za-z])", r"\1 ", t)
     t = re.sub(r"\s{2,}", " ", t).strip()
+    t = t.rstrip(",;: ")
     if t and (t[-1] not in ".?!\"'”’" or (t[-1] in "\"'”’" and t[-2:-1] not in ".?!,")):
         t += "."
+    return t
+
+
+# What only the voice hears. Respellings for names a voice is known to get
+# wrong, applied to each request and never to the script, the transcript or
+# the captions, which keep the standard romanization. Plain respelling rather
+# than <phoneme> or alias tags, because eleven_v3 ignores those tags.
+# All-caps words that are said as words, not letters, go in title case.
+_SAY_AS = (("KOSPI", "Kospi"), ("KOSDAQ", "Kosdaq"), ("MASGA", "Masga"), ("KEPCO", "Kepco"),
+           ("THAAD", "Thaad"), ("Choe", "Chweh"), ("Son Hui", "Son-hee"), ("Juche", "Joo-cheh"))
+
+
+def for_voice(text: str) -> str:
+    """A request's text as the voice should receive it: respellings applied."""
+    t = text
+    for word, said in _SAY_AS:
+        t = re.sub(rf"\b{re.escape(word)}\b", said, t)
     return t
 
 
@@ -262,7 +542,7 @@ def _names(text: str) -> set[str]:
             if w.lower().strip(".'") not in _COMMON_NAMES}
 
 
-def _story(item: dict, body_key: str = "body") -> str:
+def _story(item: dict, body_key: str = "body", words: int | None = None) -> str:
     """One item as spoken: the body alone when it already tells the headline.
 
     In print a headline then a body is how a page is scanned. Read aloud it is
@@ -272,28 +552,26 @@ def _story(item: dict, body_key: str = "body") -> str:
     headline is dropped. Otherwise — short wire items whose body is a fragment
     that leans on its headline — both are kept.
     """
-    head = speakable(item.get("headline", ""))
+    head = _drop_outlet_suffix(speakable(item.get("headline", "")), item.get("source", ""))
     body = speakable(item.get(body_key) or item.get("body_text") or item.get("body") or "")
     if not body:
         return head
     if not head:
         return body
+    if words:
+        # Room for the headline and the body's opening, or the body alone:
+        # a print headline is no sentence to end on.
+        both = _clip(f"{head} {body}", words)
+        if len(both) <= len(head) + 1:
+            return _clip(body, words)
     # The opening forty words, not the first "sentence": abbreviations such as
     # "Sept. 21" end a sentence for a splitter and not for a reader, and cut
     # the comparison short enough that every headline looked new.
     first = " ".join(body.split()[:40])
     hw = _words(head)
     if hw and len(hw & _words(first)) / len(hw) >= 0.4:
-        return body
-    return f"{head} {body}"
-
-
-_SECTION_LEADS = ("Our top story", "Here's what else", "Now to Pyongyang", "The number of the day",
-                  "In Seoul,", "On Capitol Hill", "On the economy", "Elsewhere in the region",
-                  "Beyond the region", "How is the public",
-                  "In their own words", "What's coming up", "A few more things",
-                  "And from the analysts", "From satellite imagery", "Finally, the markets",
-                  "That's the Korea Daily Brief")
+        return _clip(body, words) if words else body
+    return _clip(f"{head} {body}", words) if words else f"{head} {body}"
 
 
 def happening_today(digest: dict) -> list[str]:
@@ -323,21 +601,93 @@ def happening_today(digest: dict) -> list[str]:
     return out[:3]
 
 
+# The spoken cues that open each segment, shared by both scripts and by
+# listen.py's chapter titles. A lead story opens with its number; every other
+# segment with a short fixed phrase, so a listener always knows where they are.
+LEAD_CUES = ("First,", "Second,", "Third,", "Fourth,", "Fifth,")
+CUE_PYONGYANG = "Now to Pyongyang."
+CUE_NUMBER = "The number of the day."
+CUE_ROUNDUP = "The rest of the news, quickly."
+CUE_SEOUL = "In Seoul."
+CUE_HILL = "On Capitol Hill."
+CUE_ECONOMY = "On the economy."
+CUE_REGION = "Elsewhere in the region."
+CUE_WORLD = "Beyond the region."
+CUE_POLL = "In the polls."
+CUE_QUOTES = "In their own words."
+CUE_AHEAD = "Coming up."
+CUE_ALSO = "A few more things worth knowing."
+CUE_ANALYSTS = "From the analysts."
+CUE_IMAGERY = "From satellite imagery."
+CUE_MARKETS = "Finally, the markets."
+CLOSE_LEAD = "That's the Korea Daily Brief"
+_SECTION_LEADS = (*LEAD_CUES, CUE_PYONGYANG, CUE_NUMBER, CUE_ROUNDUP, CUE_SEOUL, CUE_HILL,
+                  CUE_ECONOMY, CUE_REGION, CUE_WORLD, CUE_POLL, CUE_QUOTES, CUE_AHEAD,
+                  CUE_ALSO, CUE_ANALYSTS, CUE_IMAGERY, CUE_MARKETS, CLOSE_LEAD)
+
+# The fallback's length. About ten minutes at the voice's pace: the leading
+# daily briefs run about that, and past it a listener on a commute stops.
+# Lead stories are told in full up to LEAD_WORDS; round-up items are cut to
+# their opening sentences; then whole round-up items are dropped, weakest
+# section first (ROUNDUP_TRIM), until the script fits AUDIO_WORDS.
+AUDIO_WORDS = 1550
+LEAD_WORDS = 170
+ITEM_WORDS = 55
+# (section, keep at least): trimmed in this order, one item at a time.
+ROUNDUP_TRIM = (("also", 0), ("analysts", 1), ("quotes", 1), ("ahead", 2), ("imagery", 0),
+                ("overnight", 3), ("region", 1), ("economy", 1), ("seoul", 2), ("analysts", 0),
+                ("quotes", 0), ("ahead", 1), ("overnight", 2), ("world", 1), ("hill", 1),
+                ("economy", 0), ("region", 0), ("seoul", 1))
+_LOWER_FIRST = {"The", "A", "An", "This", "That", "These", "Those", "Its", "Their", "Any",
+                "Each", "Both", "Despite", "While", "Without", "With", "Amid", "As", "After"}
+_VERB_FIRST = re.compile(r"^(?:[A-Z][a-z]+s|Is|Was|Has|Calls|Says)\b(?! of\b)")
+_PIECE = re.compile(r"^(?:The|This) (piece|article|essay|report|paper|analysis|study|commentary) ")
+
+
+def _lower_first(text: str) -> str:
+    """"The test..." -> "the test..." after a spoken cue; names keep their capital."""
+    first = text.split(" ", 1)[0]
+    return text[0].lower() + text[1:] if first in _LOWER_FIRST else text
+
+
+def _drop_outlet_suffix(headline: str, source: str) -> str:
+    """"North Korea tests torpedo, Reuters" -> "North Korea tests torpedo"."""
+    m = re.search(r"[,:]\s*(?:the )?([A-Z][\w.'&]*(?:\s+[A-Z][\w.'&]*){0,3})\.?$", headline)
+    if not m or not source:
+        return headline
+    name = m.group(1).lower().replace(".", "")
+    known = f"{source} {speakable(source)}".lower().replace(".", "")
+    return headline[:m.start()].rstrip(" ,:") + "." if name in known else headline
+
+
+def _quote_text(raw: str) -> str:
+    """The English of a quote: a translated Korean quote keeps only its translation."""
+    s = str(raw or "")
+    if _HANGUL.search(s):
+        english = re.findall(r"\[\s*['\"‘“]([^\]]+?)['\"’”]\s*\]", s)
+        rest = re.sub(r"[^\[\]]*\[[^\]]*\]", "", s).strip()
+        s = " ".join(english + ([rest] if rest and not _HANGUL.search(rest) else []))
+    return _clip(s.strip(), 40)
+
+
 def build_script(digest: dict) -> str:
-    """The whole brief as a spoken script, in the order it is printed.
+    """The brief as a spoken script, about ten minutes, in broadcast order.
 
-    Every section is read except US–Korea Trade & Investment, which is a
-    standing reference — tariff tables, the pledge ledger — not the day's news,
-    and which the editor asked to leave out of the audio. The morning memo is
-    replaced by the RE line, because the memo retells the top stories.
+    The shape is the one the written script follows: the open and the menu,
+    the lead stories by number, Pyongyang, the round-up (Seoul, the wire,
+    Capitol Hill, the economy, the region, Korea and the wider world, the
+    polls, what's coming), then the markets and the close. US–Korea Trade &
+    Investment is left out: a standing reference — tariff tables, the pledge
+    ledger — not the day's news, which the editor asked to keep off the air.
+    The morning memo is replaced by the RE line, because the memo retells the
+    top stories.
 
-    Connective phrases are the only words added, and none carries a fact. A
-    story already told in an earlier section is not told again: sections such
-    as ROK Government often restate a top story, and a listener, unlike a
+    Connective cues are the only words added, and none carries a fact. Long
+    items lose their later sentences, never their wording. A story already
+    told in an earlier section is not told again: a listener, unlike a
     reader, cannot skip the repeat.
     """
     when = _spoken_date(digest)
-    out: list[str] = [opening_line(when)]
     told: list[set] = []
     told_names: list[tuple[set, set]] = []
 
@@ -359,81 +709,101 @@ def build_script(digest: dict) -> str:
         told_names.append((w, names))
         return True
 
-    def section(lead: str, items: list[str]) -> None:
-        items = [i for i in items if i and fresh(i)]
-        if items:
-            out.append(f"{lead} {items[0]}")
-            out.extend(items[1:])
-
-    parts = [speakable(x).rstrip(".") for x in str(digest.get("re_line") or "").split("·")]
-    parts = [x for x in parts if x]
+    # ── Open: the show, the disclosure, the date, then the menu at once.
+    open_lines = [opening_line(when)]
+    parts = [speakable(x).rstrip(".,;: ") for x in str(digest.get("re_line") or "").split("·")]
+    parts = [x if i == 0 else _lower_first(x) for i, x in enumerate(p for p in parts if p)]
     if len(parts) > 1:
-        out.append("In today's brief: " + "; ".join(parts[:-1]) + "; and " + parts[-1] + ".")
+        open_lines.append("In today's brief: " + "; ".join(parts[:-1]) + "; and " + parts[-1] + ".")
     elif parts:
-        out.append(f"In today's brief: {parts[0]}.")
+        open_lines.append(f"In today's brief: {parts[0]}.")
     today_events = happening_today(digest)
     if today_events:
-        out.append("Happening today: " + "; ".join(speakable(e).rstrip(".") for e in today_events) + ".")
+        open_lines.append("Happening today: " + "; ".join(speakable(e).rstrip(".") for e in today_events) + ".")
+    segs: list[list[str]] = [[" ".join(open_lines)]]
 
+    # ── The lead stories, by number. The menu has just named them, so the
+    # body is told alone when it stands on its own; a print headline read
+    # straight after it is the same story twice.
     top = _items(digest, "top_stories")
-    for n, item in enumerate(top):
-        told_text = _story(item)
+    for n, item in enumerate(top[:len(LEAD_CUES)]):
+        body = speakable(item.get("body") or item.get("body_text") or "")
+        told_text = body if len(body.split()) >= 30 else _story(item)
+        told_text = _clip(told_text, LEAD_WORDS)
         fresh(told_text)
-        lead = "Our top story:" if n == 0 else ("And one more top story:" if n == len(top) - 1 else "Also making news:")
-        out.append(f"{lead} {told_text}")
+        segs.append([f"{LEAD_CUES[n]} {_lower_first(told_text)}"])
 
-    section("Here's what else moved overnight.",
-            [_story(i, "body_text") for i in _items(digest, "overnight_items")])
-
+    # ── Pyongyang: the top state-media articles, always, even one a lead
+    # story covered (then only its headline, as how Pyongyang played it).
     kcna = digest.get("kcna_delta") or {}
     if isinstance(kcna, dict):
-        # Always the top state-media articles, even when a top story already
-        # covered one: then just its headline, as how Pyongyang played it.
-        top_arts = [a for a in (kcna.get("top_articles") or []) if isinstance(a, dict)][:3]
-        arts = []
-        for a in top_arts:
-            full = _story({"headline": a.get("headline", ""), "body": a.get("summary", "")})
+        arts, mine = [], []
+        for a in [a for a in (kcna.get("top_articles") or []) if isinstance(a, dict)][:3]:
+            head = _drop_outlet_suffix(speakable(a.get("headline", "")), a.get("source", ""))
+            full = _story({"headline": head, "body": a.get("summary", "")})
             w = _words(full)
-            if w and any(len(w & t) / min(len(w), len(t)) >= 0.5 for t in told):
-                arts.append(speakable(a.get("headline", "")))
+            # Three outlets' headlines on one KCNA report are one article.
+            if not w or any(len(w & m) / min(len(w), len(m)) >= 0.5 for m in mine):
+                continue
+            mine.append(w)
+            if any(len(w & t) / min(len(w), len(t)) >= 0.5 for t in told):
+                arts.append(head)
             else:
                 told.append(w)
-                arts.append(full)
+                arts.append(_clip(full, ITEM_WORDS))
+        lines = []
         if arts:
-            lead = ("State media's top stories today. " if len(arts) > 1 else "State media's top story today. ")
-            arts = [lead + " ".join(arts)]
+            lines.append(("State media's top stories today. " if len(arts) > 1 else
+                          "State media's top story today. ") + " ".join(arts))
         if kcna.get("bottom_line"):
-            bl = "The bottom line: " + speakable(kcna["bottom_line"])
+            bl = "The bottom line: " + _lower_first(_clip(speakable(kcna["bottom_line"]), 70))
             days = kcna.get("days_since_last_appearance")
-            if isinstance(days, int) and days > 0 and not kcna.get("kim_appearance_today"):
-                bl += f" Kim Jong Un was last seen in public {days} day{'s' if days != 1 else ''} ago."
-            arts.append(bl)
-        if arts:
-            out.append("Now to Pyongyang. " + " ".join(arts))
+            # Said once: a bottom line that already counts Kim's absence
+            # would otherwise be followed by the same fact as a number.
+            if isinstance(days, int) and days > 0 and not kcna.get("kim_appearance_today") \
+                    and not re.search(r"appearance|seen in public|absence", bl, re.I):
+                bl += (" Kim Jong Un was last seen in public yesterday." if days == 1 else
+                       f" Kim Jong Un was last seen in public {days} days ago.")
+            lines.append(bl)
+        if lines:
+            segs.append([CUE_PYONGYANG + " " + " ".join(lines)])
 
+    # ── The number of the day, unless it is a lead story's figure again.
     ks = digest.get("key_stat") or {}
     if isinstance(ks, dict) and ks.get("number"):
         stat = speakable(f'{ks["number"]}: {ks.get("label", "")}.').rstrip(".") + "."
         if ks.get("context"):
-            stat += " " + speakable(ks["context"])
-        out.append(f"The number of the day. {stat}")
+            stat += " " + _clip(speakable(ks["context"]), 45)
+        if fresh(stat):
+            segs.append([f"{CUE_NUMBER} {stat}"])
+
+    # ── The round-up. Each section: its cue, then its items, trimmed below.
+    roundup: list[tuple[str, str, list[str]]] = []
+
+    def section(key: str, cue: str, items: list[str], words: int = ITEM_WORDS) -> None:
+        kept = [_clip(i, words) for i in items if i and fresh(i)]
+        if kept:
+            roundup.append((key, cue, kept))
+
+    section("overnight", CUE_ROUNDUP, [_story(i, "body_text", ITEM_WORDS) for i in _items(digest, "overnight_items")])
 
     gov = []
     for g in _items(digest, "rok_government"):
-        gov.append(_story({"headline": g.get("action", ""), "body": g.get("detail", "")}))
+        gov.append(_story({"headline": g.get("action", ""), "body": g.get("detail", "")}, words=ITEM_WORDS))
     for a in _items(digest, "rok_assembly"):
-        committee = re.sub(r"^\s*National Assembly\s*[—:-]+\s*", "", str(a.get("committee") or ""))
-        story = _story({"headline": a.get("action", ""), "body": a.get("detail", "")})
-        gov.append((f"At the National Assembly's {speakable(committee).rstrip('.')}: " if committee else
+        committee = re.sub(r"^\s*National Assembly\b[\s,:(—-]*", "", str(a.get("committee") or "")).strip(" )")
+        story = _story({"headline": a.get("action", ""), "body": a.get("detail", "")}, words=ITEM_WORDS)
+        named = "committee" in committee.lower() and "unspecified" not in committee.lower()
+        gov.append((f"At the National Assembly's {speakable(committee).rstrip('.')}: " if named else
                     "At the National Assembly: ") + story)
     for r in _items(digest, "rok_personnel"):
         gov.append(_story({"headline": f'{r.get("name", "")}, {r.get("position", "")}: {r.get("action", "")}',
-                           "body": r.get("detail", "")}))
-    section("In Seoul, the government side.", gov)
+                           "body": r.get("detail", "")}, words=ITEM_WORDS))
+    section("seoul", CUE_SEOUL, gov)
 
     # Capitol Hill: the day's items, then the week's collected hearings (today's
     # were already read in "Happening today"). Silent when there are neither.
-    hill = [_story(i, "body_text") for i in _items(digest, "capitol_hill")]
+    hill = [_story(i, "body_text", ITEM_WORDS) for i in _items(digest, "capitol_hill")]
     try:
         from render import hill_events, hill_event_text, _issue_day
         _day = _issue_day(digest)
@@ -450,22 +820,22 @@ def build_script(digest: dict) -> str:
             hill.append("Coming up on the Hill: " + "; ".join(spoken) + ".")
     except Exception:                                           # noqa: BLE001
         pass
-    section("On Capitol Hill.", hill)
+    section("hill", CUE_HILL, hill, words=70)
 
-    section("On the economy.", [_story(i, "body_text") for i in _items(digest, "business_economy")])
-    section("Elsewhere in the region.", [_story(i, "body_text") for i in _items(digest, "northeast_asia")])
-    section("Beyond the region.", [_story(i, "body_text") for i in _items(digest, "korea_world")])
+    section("economy", CUE_ECONOMY, [_story(i, "body_text", ITEM_WORDS) for i in _items(digest, "business_economy")])
+    section("region", CUE_REGION, [_story(i, "body_text", ITEM_WORDS) for i in _items(digest, "northeast_asia")])
+    section("world", CUE_WORLD, [_story(i, "body_text", ITEM_WORDS) for i in _items(digest, "korea_world")])
 
     ps = digest.get("public_sentiment") or {}
     ap = ps.get("presidential_approval") or {}
     if isinstance(ap, dict) and ap.get("value"):
-        src = ap.get("source") or "the latest"
-        polled = re.sub(r",?\s*20\d\d", "", str(ap.get("last_updated") or ""))
-        dated = f", from {polled}" if polled else ""
-        line = (f"In the latest {src} poll{dated}, President Lee's approval is "
+        src = re.sub(r"\s*\(.*?\)", "", str(ap.get("source") or "")).strip() or "the latest"
+        polled = re.sub(r",?\s*20\d\d", "", speakable(str(ap.get("last_updated") or ""))).rstrip(".")
+        dated = f", taken {polled}," if polled else ""
+        line = (f"In the latest {src} poll{dated} President Lee's approval is "
                 f"{str(ap['value']).replace('%', ' percent')}")
         if ap.get("trend") in ("up", "down"):
-            line += f", {ap['trend']} from the poll before"
+            line += f", {ap['trend']} from the previous poll"
         line += "."
         parties = []
         for key in ("party_ruling", "party_opposition"):
@@ -478,17 +848,18 @@ def build_script(digest: dict) -> str:
         if parties:
             line += " By party: " + ", ".join(parties[:-1]) + ", and " + parties[-1] + "." \
                 if len(parties) > 1 else " By party: " + parties[0] + "."
-        out.append(f"How is the public reading all this? {line}")
+        roundup.append(("poll", CUE_POLL, [line]))
 
     quotes = []
     for q in _items(digest, "social_statements") + _items(digest, "official_x_posts"):
-        if q.get("quote_text") and q.get("who"):
-            quotes.append(speakable(f'{q["who"]} said: "{q["quote_text"]}"'))
-    section("In their own words.", quotes)
+        text = _quote_text(q.get("quote_text"))
+        if text and q.get("who"):
+            quotes.append(speakable(f'{q["who"]} said: "{text}"'))
+    section("quotes", CUE_QUOTES, quotes[:2], words=60)
 
     _y = re.search(r"\b(20\d{2})\b", str(digest.get("digest_date") or ""))
     year = _y.group(1) if _y else ""
-    ahead = []
+    ahead_items = []
     try:
         import korea_calendar
         _cal = [korea_calendar.normalize(c) or c for c in (digest.get("calendar_watch") or [])]
@@ -500,35 +871,45 @@ def build_script(digest: dict) -> str:
         date = str(c.get("date") or (f'{c["month"]} {c["day"]}' if c.get("month") and c.get("day") else "")).strip()
         if year:
             date = re.sub(rf",?\s*{year}\b", "", date).strip()
-        date = re.sub(r"\s*\(.*?\)", "", date).strip()
-        event = speakable(c.get("event") or c.get("headline") or "")
+        date = speakable(re.sub(r"\s*\(.*?\)", "", date)).rstrip(".")
+        event = _clip(speakable(c.get("event") or c.get("headline") or ""), 30)
         if event:
-            ahead.append((f"{date}: " if date else "") + event)
-    if ahead:
-        out.append("What's coming up? " + " ".join(ahead))
+            ahead_items.append((f"{date}: " if date else "") + event)
+    if ahead_items:
+        roundup.append(("ahead", CUE_AHEAD, ahead_items[:4]))
 
-    section("A few more things worth knowing.", [_story(i, "body_text") for i in _items(digest, "also_today")])
+    section("also", CUE_ALSO, [_story(i, "body_text", ITEM_WORDS) for i in _items(digest, "also_today")])
 
     analysis = []
     for o in _items(digest, "opeds_today") + _items(digest, "academic_today"):
         head = speakable(o.get("headline", "")).rstrip(".")
         by = o.get("authors")
-        by = ", ".join(by) if isinstance(by, list) else (by or "")
+        by = [str(x) for x in by if x] if isinstance(by, list) else [x.strip() for x in str(by or "").split(",") if x.strip()]
+        names = (" and ".join(by) if len(by) <= 2 else ", ".join(by[:-1]) + ", and " + by[-1]) if by else ""
         src = speakable(o.get("source") or o.get("journal") or "").rstrip(".")
-        arg = speakable(o.get("central_argument") or o.get("summary") or "")
-        if arg and src:
+        arg = _clip(speakable(o.get("central_argument") or o.get("summary") or ""), ITEM_WORDS)
+        piece = _PIECE.match(arg)
+        if arg and src and piece:
+            # "The piece examines..." -> "A piece in World Politics Review examines..."
+            analysis.append(f"A {piece.group(1)} in {src}" + (f" by {names}" if names else "")
+                            + " " + arg[piece.end():])
+        elif arg and src and not _VERB_FIRST.match(arg):
+            # "Kendall-Taylor and Fontaine, writing in Foreign Affairs, argue that..."
+            who = f"{names}, writing in {src}," if names else src
+            plural = len(by) > 1
+            analysis.append(f"{who} argue{'' if plural else 's'} that {_lower_first(arg)}")
+        elif arg and src:
             # What the piece argues and who published it; a title read aloud
             # ("Brewing Korea Crisis? Mines, Missiles, & POWs") is noise.
-            analysis.append(f"From {src}" + (f", {by}" if by else "") + f": {arg}")
+            analysis.append(f"From {src}" + (f", {names}" if names else "") + f": {arg}")
         else:
-            intro = head + (f", by {by}" if by else "") + (f", in {src}" if src else "") + "."
+            intro = head + (f", by {names}" if names else "") + (f", in {src}" if src else "") + "."
             analysis.append(f"{intro} {arg}".strip())
-    section("And from the analysts.", analysis)
+    section("analysts", CUE_ANALYSTS, analysis, words=ITEM_WORDS + 15)
 
     im = digest.get("imagery_report") or {}
     if isinstance(im, dict) and (im.get("headline") or im.get("body")):
-        section("From satellite imagery.",
-                [_story({"headline": im.get("headline", ""), "body": im.get("body", "")})])
+        section("imagery", CUE_IMAGERY, [_story({"headline": im.get("headline", ""), "body": im.get("body", "")}, words=ITEM_WORDS)])
 
     # usd_krw is dollars-to-won, so a fall means the won strengthened. Say
     # what the number is — "the dollar is at 1,338 won" — rather than "the won
@@ -545,29 +926,37 @@ def build_script(digest: dict) -> str:
         if not isinstance(v, dict) or not v.get("value"):
             continue
         val = str(v["value"])
-        if places is not None:
-            try:
-                num = float(val.replace(",", ""))
-                val = f"{num:,.{places}f}"
-            except ValueError:
-                pass
+        try:
+            num = float(val.replace(",", "").rstrip("%"))
+            val = (f"{num:,.{places}f}" if places is not None else f"{num:g}") + ("%" if val.endswith("%") else "")
+        except ValueError:
+            pass
         phrase = fmt.format(v=val.replace("%", " percent"))
         chg = v.get("change_pct")
         if isinstance(chg, (int, float)) and chg:
             phrase += f", {'up' if chg > 0 else 'down'} about {abs(round(chg, 1)):g} percent"
         spoken_mk.append(phrase + ".")
-    if spoken_mk:
-        out.append("Finally, the markets. " + " ".join(spoken_mk))
+    close = [f"{CLOSE_LEAD} for {when}. The full text, with a "
+             f"link to every source, is in today's email."]
 
-    out.append(f"That's the Korea Daily Brief for {when}. The full text, with a "
-               f"link to every source, is in today's email.")
-    # A pause before each section, as the written script has between segments.
-    marked: list[str] = []
-    for x in (x.strip() for x in out if x and x.strip()):
-        if marked and x.startswith(_SECTION_LEADS):
-            marked.append(SEGMENT)
-        marked.append(x)
-    return "\n\n".join(marked)
+    # ── Fit the budget: drop whole round-up items, weakest section first.
+    def total() -> int:
+        n = sum(len(" ".join(s).split()) for s in segs) + len(" ".join(spoken_mk).split()) + 25
+        return n + sum(len(c.split()) + len(" ".join(i).split()) for _, c, i in roundup)
+
+    for key, floor in ROUNDUP_TRIM:
+        for k, _, items in roundup:
+            while k == key and len(items) > floor and total() > AUDIO_WORDS:
+                items.pop()
+    roundup = [r for r in roundup if r[2]]
+    for _, cue, items in roundup:
+        segs.append([f"{cue} {items[0]}", *items[1:]])
+    if spoken_mk:
+        segs.append([f"{CUE_MARKETS} " + " ".join(spoken_mk)])
+    segs.append(close)
+    # A pause between segments; paragraphs within a segment run on.
+    return f"\n\n{SEGMENT}\n\n".join("\n\n".join(x.strip() for x in s if x and x.strip())
+                                     for s in segs if any(x and x.strip() for x in s))
 
 
 # ── The written-for-the-ear script ───────────────────────────────────────────
@@ -582,25 +971,32 @@ FACTS. This rule outranks every other:
 - Write every number as the brief writes it, with no more than two numbers per story. Market figures may be rounded the way a presenter says them ("1,338.38 won" as "about 1,338 won", "down 1.98 percent" as "down about 2 percent").
 - If something in the brief is unclear, leave it out rather than interpret it.
 
-SHAPE. Five segments, in this order. Put a line containing only --- between segments (the producer puts a pause there).
+SHAPE. Up to seven segments, in this order. Put a line containing only --- between segments (the producer puts a pause there, and each segment becomes a chapter). Every segment opens with its fixed cue, word for word, so a listener always knows where they are.
 1. OPEN (about 50 words). The listener must have the date and all three headlines inside the first 20 seconds. The fixed opening line gives the date; follow it at once with one menu line, "Three things today: ...", naming the three lead stories in a few words each. Then one sentence on why the first story matters, told as a tension, not a summary. If calendar_watch or hill_calendar has events dated today, add one short line saying what is happening today. No throat-clearing, nothing before the menu.
-2. THE THREE LEAD STORIES (about 250 words each), one after another, with --- between them. Start each with a plain numbered cue so a listener always knows where they are: "First, ...", "Second, ...", "Third, ...". Usually the top stories. For each: what happened, why it matters to someone who works on Korea policy (from the brief), and what to watch next. Fold in related items from other sections (government reactions, the National Assembly, statements, analysis, imagery) so each lead is one connected story, not a list. Keep one strand per story: if several items are about the same military situation (a warning, missile launches, satellite imagery, a weapons analysis), they belong in one lead together.
-3. PYONGYANG. Start with the cue "Now to Pyongyang." Name every one of the top KCNA articles in kcna_delta.top_articles, even one a lead story already told (then one sentence on how state media framed it is enough), then the bottom line.
-4. THE ROUND-UP. Start with a short cue that names it, such as "The rest of the news, quickly." Everything else worth a listener's time, one or two sentences each, linked by quick spoken transitions: overnight items, government and appointments, Capitol Hill (only when capitol_hill has items or hill_calendar has hearings; one short segment, hearings named only as hill_calendar lists them), the economy, the region, Korea and the wider world (only when korea_world has items; one short segment), the poll (say when it was taken), what is coming up, the rest of the wire, analysis. Never tell a story the leads already told. Leave out US-Korea trade and investment entirely. Satellite imagery only if it is included.
-5. CLOSE. Start with "Finally, the markets." Two or three short sentences, then the fixed closing line, which sends the listener to the email for the sources.
+2. THE THREE LEAD STORIES (about 250 words each), one after another, with --- between them. Cues: "First, ...", "Second, ...", "Third, ...". Usually the top stories. For each: what happened, why it matters to someone who works on Korea policy (from the brief), and what to watch next. Fold in related items from other sections (government reactions, the National Assembly, statements, analysis, imagery) so each lead is one connected story, not a list. Keep one strand per story: if several items are about the same military situation (a warning, missile launches, satellite imagery, a weapons analysis), they belong in one lead together.
+3. PYONGYANG (about 120 words). Cue: "Now to Pyongyang." Name every one of the top KCNA articles in kcna_delta.top_articles, even one a lead story already told (then one sentence on how state media framed it is enough), then the bottom line.
+4. THE ROUND-UP (about 350 words). Cue: "The rest of the news, quickly." Everything else worth a listener's time, one or two sentences each, linked by quick spoken transitions: overnight items, government and appointments, the economy, the region, the poll (say when it was taken), what is coming up, the rest of the wire, analysis. Never tell a story the leads already told. Leave out US-Korea trade and investment entirely. Satellite imagery only if it is included.
+5. CAPITOL HILL (about 60 words; only when capitol_hill has items or hill_calendar has hearings). Cue: "On Capitol Hill." Hearings named only as hill_calendar lists them.
+6. KOREA AND THE WORLD (about 60 words; only when korea_world has items). Cue: "Beyond the region."
+7. CLOSE. Cue: "Finally, the markets." Two or three short sentences, then the fixed closing line, which sends the listener to the email for the sources.
 
 WRITE FOR THE EAR. These are broadcast writing rules:
 - One idea per sentence. Most sentences under 20 words, none over 25. Vary the rhythm: a short sentence after a long one.
 - Attribution before the claim: "South Korea's Defense Ministry says...", not "..., the ministry said."
-- Full name and title once, then a short form ("Unification Minister Chung Dong-young", then "Chung").
+- Full name and title once, then a short form ("Unification Minister Chung Dong-young", then "Chung"). Korean names exactly as the brief romanizes them, family name first.
 - Say "you" to the listener now and then. Contractions.
 - Join stories by cause, contrast or consequence ("That warning lands the same day Seoul..."). Never "Next," "Also," "In other news," "Moving on."
 - End each lead story by restating its key fact in a few words, because the listener can't re-read it.
-- No acronyms a listener can't decode: say "the Foreign Ministry" not "MOFA", "intermediate-range missile" not "IRBM", "Seoul's main stock index" not "KOSPI", "prisoners of war" not "POWs", "liquefied natural gas" not "LNG". DMZ, KCNA, U.S. and UN are fine.
 - Give a quote its context: who said it, and when or why, before the words themselves.
 - Never title-read: say what an analysis argues and who published it, not its headline.
-- No headline-ese, no strings of fragments, no lists read out, no parentheses.
+- No headline-ese, no strings of fragments, no lists read out.
 - Never use these phrases: "let's dive in", "dive into", "delve", "in today's rapidly evolving", "it's worth noting", "notably", "a stark reminder", "only time will tell", "remains to be seen", "buckle up", "game-changer", "in a world where", "at the end of the day". Don't end sentences on a list of three for effect. Don't open with a rhetorical question.
+
+WRITE FOR THE VOICE. A speech engine reads exactly what you write:
+- Numbers as words around digits: "84.7 billion dollars", not "$84.7B"; "28,500 troops"; "1.2 trillion won"; "7.6 percent", never "%"; "down 7.6 percent", not "-7.6%".
+- Dates in full: "October 13 to 15", not "Oct 13-15"; "the third quarter", not "Q3"; no weekday or month abbreviations.
+- Acronyms a listener can't decode are said in full: "North Korea" and "South Korea", never DPRK or ROK; "U.S. Forces Korea" (USFK); "the U.N. Command" (UNC); "the Bank of Korea" (BOK); "the National Defense Authorization Act" (NDAA); "the Congressional Research Service" (CRS); "the International Atomic Energy Agency" (IAEA); "wartime operational control" (OPCON); "the Foreign Ministry" (MOFA); "intermediate-range missile" (IRBM); "prisoners of war" (POWs); "liquefied natural gas" (LNG). Say "Seoul's main stock index, the KOSPI" the first time. KCNA, DMZ, MASGA, U.S. and U.N. are fine as they are; always write U.S. and U.N. with their dots.
+- Only words and plain punctuation: commas, full stops, question marks, colons, quotation marks for quotes. No em dashes, slashes, parentheses, brackets, arrows, middle dots, ampersands, asterisks, URLs, social handles or Korean script.
 
 FORMAT: plain spoken text only, paragraphs separated by a blank line, segments separated by a line containing only ---. No headings, no stage directions, no sound cues, no markdown, no bullet points. Begin exactly with: "{opening}" End exactly with: "That's the Korea Daily Brief for {when}. The full text, with a link to every source, is in today's email." The episode runs about ten minutes: aim for 1,350 to 1,550 words, and never more than 1,650."""
 
@@ -612,7 +1008,9 @@ _SCRIPT_KEYS = ("re_line", "top_stories", "overnight_items", "kcna_delta", "key_
                 "academic_today", "imagery_report", "market_indicators")
 
 # Capitalised words a script may use that need not appear in the brief: the
-# show's own frame, calendar words, and generic titles.
+# show's own frame, calendar words, generic titles, and the two leaders the
+# assembled script names in its own words ("Kim Jong Un was last seen...",
+# "President Lee's approval"), whether or not that day's brief spells them.
 _ALLOWED_CAPS = set("""
 U.S U.S. US UN Military Demarcation Line Joint Chiefs Staff Workers Central News Agency
 Intermediate-range Intercontinental Submarine-launched Liquefied Natural Gas Industry Finance
@@ -626,7 +1024,8 @@ President Minister Ministry Prime Defense Foreign Unification National Assembly
 Party Government Committee Chairman Secretary General Commander Command State
 U.S. US KCNA DPRK ROK Mr Ms Dr
 Washington Beijing Moscow Tokyo United States Bank Second Third
-Capitol Hill Congress Senate House
+Capitol Hill Congress Senate House Fourth Fifth
+Kim Jong Un Lee Jae-myung
 """.split())
 _COUNTED_FACTS = {"soldier", "people", "troop", "missile", "satellite", "killed", "injured",
                   "dead", "wounded", "launche", "launch", "rocket", "ship", "vessel", "day",
@@ -728,8 +1127,28 @@ def check_script(script: str, digest: dict, when: str = "") -> list[str]:
     the brief. Deliberately strict — a false alarm costs one day of the plain
     assembled script, and a missed invention costs the brief its credibility.
     """
-    src = json.dumps({k: digest.get(k) for k in _SCRIPT_KEYS}, ensure_ascii=False)
+    data = {k: digest.get(k) for k in _SCRIPT_KEYS}
+    src = json.dumps(data, ensure_ascii=False)
     src += " " + str(digest.get("digest_date") or "") + " " + when
+    # The brief also as it is spoken: every script, written or assembled, is
+    # passed through speakable(), so "$84.7B" is "84.7 billion dollars", "UNC"
+    # is "the U.N. Command" and "US" is "U.S." on air. Comparing against the
+    # same rules applied to the brief is the brief's own text, reformatted —
+    # it lets no new figure, name or quotation through.
+    strings: list[str] = []
+
+    def _walk(v) -> None:
+        if isinstance(v, dict):
+            for k, x in v.items():
+                if k not in ("url", "source_links", "secondary_url"):
+                    _walk(x)
+        elif isinstance(v, list):
+            for x in v:
+                _walk(x)
+        elif isinstance(v, str) and v.strip():
+            strings.append(v)
+    _walk(data)
+    src += " " + " ".join(speakable(x) for x in strings)
     blob = _norm(src)
     problems = []
     src_toks = _tokens(src)
@@ -799,7 +1218,7 @@ def check_script(script: str, digest: dict, when: str = "") -> list[str]:
             if not core or not core[0].isupper() or core in _ALLOWED_CAPS or len(core) < 3:
                 continue
             # "U.S.-ROK": a compound of names each allowed or in the brief.
-            if "-" in core and all(x in _ALLOWED_CAPS or not x[:1].isupper()
+            if "-" in core and all(x in _ALLOWED_CAPS or not x[:1].isupper() or len(x) < 2
                                    or f" {_norm(x).strip()} " in f" {' '.join(blob.split())} "
                                    for x in core.split("-") if x):
                 continue
@@ -1054,7 +1473,7 @@ def _eleven_tts(text: str, key: str, voice_id: str, model: str,
     the main thing OpenAI's stateless requests could not do.
     """
     import requests
-    body = {"text": text, "model_id": model,
+    body = {"text": for_voice(text), "model_id": model,
             "voice_settings": {"stability": 0.45, "similarity_boost": 0.8, "style": 0.2,
                                "use_speaker_boost": True, "speed": ELEVEN_SPEED}}
     if previous:
@@ -1075,7 +1494,7 @@ def _eleven_tts(text: str, key: str, voice_id: str, model: str,
 
 def _openai_tts(text: str, key: str, model: str, voice: str) -> bytes:
     import requests
-    body = {"model": model, "voice": voice, "input": text, "response_format": "mp3"}
+    body = {"model": model, "voice": voice, "input": for_voice(text), "response_format": "mp3"}
     if model.startswith("gpt-4o"):
         body["instructions"] = (os.environ.get("TTS_STYLE") or "").strip() or DELIVERY
     r = requests.post("https://api.openai.com/v1/audio/speech",
@@ -1148,6 +1567,25 @@ def _pcm(data: bytes | Path) -> bytes:
     return r.stdout
 
 
+def _trim_silence(pcm: bytes, level: int = SILENCE_LEVEL, keep: float = EDGE_SILENCE) -> bytes:
+    """16-bit mono PCM without the silence a voice pads each request with.
+
+    Only the ends are touched, and EDGE_SILENCE is kept so no consonant is
+    clipped. Audio that is all silence is returned unchanged: an empty
+    request is a problem for the coverage check to report, not to hide.
+    """
+    from array import array
+    a = array("h")
+    a.frombytes(pcm[:len(pcm) - len(pcm) % 2])
+    n = len(a)
+    start = next((i for i in range(n) if abs(a[i]) >= level), None)
+    if start is None:
+        return pcm
+    end = next(i for i in range(n - 1, -1, -1) if abs(a[i]) >= level) + 1
+    pad = int(keep * PCM_RATE)
+    return a[max(0, start - pad):min(n, end + pad)].tobytes()
+
+
 def _pace(default: float) -> float:
     """TTS_PACE if set, else the voice's default, kept to a range that sounds natural."""
     try:
@@ -1194,7 +1632,7 @@ def _master(parts: list[tuple[bytes, float]], out_path: Path,
     at: list[tuple[int, int]] = []
     for i, (part, pause) in enumerate(parts):
         start = len(voice)
-        voice.frombytes(_pcm(part))
+        voice.frombytes(_trim_silence(_pcm(part)))
         at.append((start, len(voice)))
         if i < len(parts) - 1:
             voice.frombytes(bytes(2 * int(pause * PCM_RATE)))

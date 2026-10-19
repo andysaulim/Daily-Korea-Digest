@@ -831,7 +831,7 @@ def check_new_sections_audio() -> list[str]:
     for lead in ("On Capitol Hill.", "Beyond the region.", "Coming up on the Hill"):
         if lead not in s:
             problems.append(f"audio script has no {lead!r} segment")
-    if "Senate Foreign Relations hearing" not in s.split("Our top story")[0]:
+    if "Senate Foreign Relations hearing" not in s.split("\nFirst, ")[0]:
         problems.append("today's hearing is not in the audio's Happening today line")
     e = copy.deepcopy(d)
     e["capitol_hill"], e["korea_world"], e["hill_calendar"] = [], [], []
@@ -1180,7 +1180,123 @@ def check_english_only():
     return problems
 
 
+def check_audio_formatting() -> list[str]:
+    """The house rules for what the voice is sent, and the shape of the episode.
+
+    Numbers, money, dates and acronyms are written for the ear; no character
+    a voice reads literally or skips reaches it; the cues that open each
+    segment are the same in the prompt, the assembled script and the chapter
+    titles; the assembled script holds to about ten minutes; and the fact
+    check still catches an invented figure, name or quotation after the
+    brief is compared in its spoken form.
+    """
+    import re
+    from array import array
+    import listen
+    import podcast
+    problems = []
+    sp = podcast.speakable
+    for raw, want in (
+            ("Exports hit $84.7B", "84.7 billion dollars"),
+            ("a first-ever annual $1 trillion surplus", "1 trillion dollar surplus"),
+            ("totaling $49.9B announced in Oct 2025", "49.9 billion dollars announced in October 2025"),
+            ("KOSPI -7.6%; won +0.4%", "KOSPI down 7.6 percent; won up 0.4 percent"),
+            ("polled Oct 13-15", "polled October 13 to 15"),
+            ("Q3 revenue; in Q3 2026", "third-quarter revenue; in the third quarter of 2026"),
+            ("₩1.2 trillion", "1.2 trillion won"),
+            ("~28,500 USFK troops", "about 28,500 U.S. Forces Korea troops"),
+            ("UNC clarified; the armistice grants UNC authority", "The U.N. Command clarified; the armistice grants U.N. Command authority"),
+            ("from UNC's perspective", "from the U.N. Command's perspective"),
+            ("IAEA said", "The International Atomic Energy Agency said"),
+            ("the NDAA keeps the floor", "the National Defense Authorization Act keeps"),
+            ("a CRS report", "a Congressional Research Service report"),
+            ("the BOK held", "the Bank of Korea held"),
+            ("wartime operational control (OPCON) transfer", "wartime operational control transfer"),
+            ("an SLBM and a ICBM", "a submarine-launched ballistic missile and an intercontinental"),
+            ("DPRK rejects ROK sovereignty claim", "North Korea rejects South Korean sovereignty claim"),
+            ("NK-Russia ties; Daily NK", "North Korea-Russia ties; Daily N.K."),
+            ("Gen. Xavier Brunson at 6:14 pm", "General Xavier Brunson at 6:14 p.m."),
+            ("US and UN officials", "U.S. and U.N. officials"),
+            ("Agency (중대범죄수사청 / SCIA) said", "Agency said"),
+            ("Lee said \"고인의 희생을 잊지 않겠습니다. ['I will not forget.']\"", "I will not forget."),
+            ("North Korea SLCM test (5th in month)", "test, 5th in month."),
+            ("Bank of Korea · rate → 2.50% ▲", "Bank of Korea, rate to 2.50 percent up.")):
+        got = sp(raw)
+        if want.lower() not in got.lower():
+            problems.append(f"speakable({raw!r}) gave {got!r}, wanted {want!r}")
+    bad_chars = re.compile(r"[\u2014\u2015\u2013·→←↑↓▲▼•()\[\]{}/*%$&#@~\uac00-\ud7a3]|https?://")
+    bad_abbr = re.compile(r"\b(?:DPRK|ROK|USFK|UNC|BOK|NDAA|CRS|IAEA|OPCON|SLCMs?|ICBMs?|MOFA|NK|US|UN|Q[1-4])\b")
+    long = ("The ministry said the measure, first floated in the spring, would be reviewed again "
+            "by the end of the year after consultations with lawmakers and industry. ") * 4
+    d = {"digest_date": "2026-10-19", "re_line": "DPRK SLCM test · USFK sovereignty row · KOSPI -7.6%",
+         "top_stories": [{"headline": f"Lead {n} headline", "source": "Yonhap",
+                          "body": f"Story {n}: DPRK fired an SLCM (5th in month) — per KCNA — and "
+                                  f"USFK said ~28,500 troops stay; IAEA cited Q3 data. " + long}
+                         for n in range(4)],
+         "kcna_delta": {"top_articles": [
+             {"headline": "North Korea tests AI torpedo — KCNA", "source": "KCNA", "summary": "A test."},
+             {"headline": "North Korea tests AI torpedo, KCNA says — Reuters", "source": "Reuters",
+              "summary": "Reuters on the same test."}],
+             "bottom_line": "The surge goes on.", "days_since_last_appearance": 1},
+         "overnight_items": [{"headline": f"Wire item {n} on topic {chr(65 + n)}{n}x",
+                              "body_text": f"Item {n} about subject{n} and matter{n}: " + long} for n in range(8)],
+         "also_today": [{"headline": f"Also {n} zeta{n}", "body_text": f"Extra{n} detail{n}. " + long} for n in range(5)],
+         "social_statements": [{"who": "FM Cho Hyun", "quote_text": "고인의 희생을 잊지 않겠습니다. ['US ties are firm.']"}],
+         "public_sentiment": {"presidential_approval": {"value": "39%", "source": "Gallup Korea (Oct 13-15)",
+                                                        "last_updated": "October 13-15, 2026", "trend": "up"}},
+         "calendar_watch": [{"date": "Oct 20", "event": "ROK Hoguk exercise begins"},
+                            {"date": "Nov", "event": "NDAA conference (CRS brief)"}],
+         "market_indicators": {"kospi": {"value": "5,668.12", "change_pct": 2.03},
+                               "bok_rate": {"value": "2.50%"}}}
+    s = podcast.build_script(d)
+    spoken = podcast.spoken_text(s)
+    if bad_chars.search(spoken):
+        problems.append(f"a character the voice would read reaches it: {bad_chars.search(spoken).group(0)!r}")
+    if bad_abbr.search(spoken):
+        problems.append(f"an acronym a listener can't decode reaches the voice: {bad_abbr.search(spoken).group(0)!r}")
+    words = len(spoken.split())
+    if words > podcast.AUDIO_WORDS + 60:
+        problems.append(f"assembled script runs {words} words, over the ten-minute budget")
+    for cue in (*podcast.LEAD_CUES[:4], podcast.CUE_PYONGYANG, podcast.CUE_MARKETS):
+        if f"\n{cue} " not in "\n" + s:
+            problems.append(f"assembled script lost a segment it must keep: {cue!r}")
+    if "last seen in public yesterday" not in s or s.count("tests AI torpedo") > 1:
+        problems.append("Pyongyang segment repeats an article or misstates Kim's absence")
+    if "The Bank of Korea's base rate is 2.5 percent" not in s or "October 13 to 15" not in s:
+        problems.append("markets or poll date not spoken as a presenter says them")
+    # Cues: the same words in the prompt, the assembled script and the chapters.
+    for cue in (*podcast.LEAD_CUES[:3], podcast.CUE_PYONGYANG, podcast.CUE_ROUNDUP,
+                podcast.CUE_HILL, podcast.CUE_WORLD, podcast.CUE_MARKETS):
+        if cue not in podcast._SCRIPT_SYSTEM:
+            problems.append(f"the script prompt does not use the cue {cue!r}")
+    titled = [lead for lead, _ in listen._LEAD_TITLES]
+    for cue in podcast._SECTION_LEADS:
+        if cue in podcast.LEAD_CUES:
+            if not listen._ORDINAL_CUE.match(cue + " "):
+                problems.append(f"a lead cue gets no lead-story chapter: {cue!r}")
+        elif not any(cue.startswith(t) for t in titled):
+            problems.append(f"a segment cue has no chapter title: {cue!r}")
+    # The check compares against the brief in spoken form, and still catches inventions.
+    when = podcast._spoken_date(d)
+    if podcast.check_script(s, d, when):
+        problems.append(f"check_script flags the assembled script: {podcast.check_script(s, d, when)[:3]}")
+    for invented in ("U.S. Forces Korea said 29,500 troops stay.", "Senator Wexley said so.",
+                     'The minister said: "We will never accept the new conditions at all."'):
+        if not podcast.check_script(f"{podcast.opening_line(when)}\n\n{invented}", d, when):
+            problems.append(f"check_script no longer catches an invention: {invented!r}")
+    # Respellings reach the voice only.
+    if podcast.for_voice("KOSPI and Choe Son Hui") != "Kospi and Chweh Son-hee" or "Kospi" in spoken:
+        problems.append("pronunciation respellings leak into the script or do not reach the voice")
+    # Pauses are exact: a request's padding is trimmed before they are added.
+    pad = array("h", [0] * 2400 + [8000, -8000] * 1200 + [0] * 2400).tobytes()
+    trimmed = len(podcast._trim_silence(pad)) // 2
+    if not 2400 <= trimmed <= 2400 + 2 * int(podcast.EDGE_SILENCE * podcast.PCM_RATE) + 2:
+        problems.append(f"silence trim left {trimmed} samples of a 2,400-sample sound")
+    return problems
+
+
 CHECKS = [
+    ("audio is formatted for the ear", check_audio_formatting),
     ("no Korean script on the page", check_english_only),
     ("API cost is recorded and kept", check_api_cost_is_recorded),
     ("audio chapters, transcript, feed and player page", check_audio_extras),
