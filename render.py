@@ -74,6 +74,9 @@ def _clean_src(raw: str) -> str:
             return raw
     # Remove inline URLs from mixed text
     cleaned = _re.sub(r'https?://\S+', '', raw).strip()
+    # Middle dots between outlets ("NK News · KCNA") read as machine-made
+    # formatting; the linked form of the same line already uses a slash.
+    cleaned = _re.sub(r'\s*\u00b7\s*', ' / ', cleaned)
     # Collapse multiple spaces
     cleaned = _re.sub(r'  +', ' ', cleaned)
     return cleaned if cleaned else raw
@@ -1033,7 +1036,7 @@ def render(digest: dict) -> str:
             kim_icon = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#27AE60;margin-right:6px;vertical-align:middle;"></span>'
             kim_line = "Public appearance"
             if kim_activity:
-                kim_line += f" — {kim_activity}"
+                kim_line += f": {kim_activity}"
         else:
             kim_icon = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#C0392B;margin-right:6px;vertical-align:middle;"></span>'
             kim_line = "No appearance"
@@ -1120,7 +1123,7 @@ def render(digest: dict) -> str:
             </tr>
           </table>
           <div style="padding:16px 32px;background:{NAVY_PANEL};font-family:Georgia,serif;color:#E0E0E0;">
-            {"<div style='margin-bottom:12px;padding:8px 14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);border-radius:3px;font-size:13px;font-family:Georgia,serif;color:#C8D4E2;'>No new KCNA dispatches ingested today &mdash; showing last known status.</div>" if data_unavailable else ""}
+            {"<div style='margin-bottom:12px;padding:8px 14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);border-radius:3px;font-size:13px;font-family:Georgia,serif;color:#C8D4E2;'>No new KCNA dispatches ingested today; showing last known status.</div>" if data_unavailable else ""}
             {"<div style='margin-bottom:12px;padding:8px 14px;background:" + TAEGUK_RED + ";color:#fff;border-radius:3px;font-size:13px;font-weight:600;'>Complete KCNA silence today</div>" if silence else ""}
             <div style="padding:0 0 12px;margin-bottom:14px;border-bottom:1px solid rgba(255,255,255,0.14);">
               <span style="font-family:Arial,sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:#9FB3CC;">Kim Jong Un</span>
@@ -1634,7 +1637,7 @@ def render(digest: dict) -> str:
                            f'margin:12px 0 2px;">{lbl}</div>'
                            f'<table width="100%" cellpadding="0" cellspacing="0" border="0" class="ledger">{r_html}</table>')
             _led_note = ('<div style="font-size:11px;color:#6B7280;line-height:1.5;margin-top:4px;">'
-                         'Corporate investment flows — separate from the $350B pledge. '
+                         'Corporate investment flows, separate from the $350B pledge. '
                          'MOU/LOI entries are non-binding; figures as reported, not summed.</div>')
             standing.append(f'<div style="margin-top:18px;">'
                            f'{_pillar_h("Bilateral Investment Ledger", accent=NAVY)}{blocks}{_led_note}</div>')
@@ -1697,7 +1700,7 @@ def render(digest: dict) -> str:
         if pol_rows:
             standing.append(f'<div style="margin-top:18px;">{_pillar_h("Trade Policy Watch", accent="#5A6472")}'
                            f'<div style="font-size:11px;color:#6B7280;line-height:1.5;margin:-4px 0 8px;">'
-                           f'Standing US non-tariff measures affecting Korea &mdash; ongoing status, not new this week.</div>'
+                           f'Standing US non-tariff measures affecting Korea: ongoing status, not new this week.</div>'
                            f'<table width="100%" cellpadding="0" cellspacing="0" border="0">{pol_rows}</table></div>')
 
         # The pledge tracker, bilateral ledger and standing policy watch move
@@ -2332,7 +2335,7 @@ def render(digest: dict) -> str:
             _dates = sorted(str(l.get("last_source_date", ""))[:7]
                             for l in _quiet if l.get("last_source_date"))
             if _dates:
-                _oldest = f" , oldest report {_esc(_dates[0])}"
+                _oldest = f", oldest report {_esc(_dates[0])}"
             quiet_html = (f'<div style="font-size:11px;color:#6B7280;margin-top:10px;'
                           f'padding-top:9px;border-top:1px solid #EAEAEA;">'
                           f'{len(_quiet)} other monitored site{"s" if len(_quiet) != 1 else ""}: '
@@ -2521,7 +2524,7 @@ def render(digest: dict) -> str:
           To report errors or other issues, please contact Andy Lim at <a href="mailto:alim@csis.org" style="color:rgba(255,255,255,0.95);">alim@csis.org</a>.
         </div>
         <div style="margin-top:16px;">
-          <a href="#top" style="font-family:Arial,sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.95);text-decoration:none;">&#8593; Back to top</a>
+          <a href="#top" style="font-family:Arial,sans-serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.95);text-decoration:none;">Back to top</a>
         </div>
       </td></tr>
     </table>
@@ -2669,8 +2672,11 @@ def render(digest: dict) -> str:
       .mkt-table div[style*="font-size:16px"] {{ font-size:14px !important; }}
       .mkt-table div[style*="font-size:14px"] {{ font-size:13px !important; }}
       /* (A11) Grids stack - declared once each */
-      .loc-grid td, .gov-grid td {{ display:block !important; width:100% !important; padding:5px 0 !important; }}
-      .loc-grid tr, .gov-grid tr {{ display:block !important; }}
+      /* Child selectors only. A descendant selector also reached the td
+         inside each card, zeroed its padding, and the text sat flush against
+         the card's fill on every phone. */
+      .loc-grid > tbody > tr > td, .gov-grid > tbody > tr > td {{ display:block !important; width:100% !important; padding:5px 0 !important; }}
+      .loc-grid > tbody > tr, .gov-grid > tbody > tr {{ display:block !important; }}
       .loc-grid div[style*="font-size:10px"] {{ font-size:11px !important; }}
       /* Calendar watch */
       .cal-table td[width="50"] {{ width:40px !important; padding:8px 6px 8px 0 !important; }}
