@@ -148,5 +148,35 @@
       "On the same day Brunson's sovereignty remarks were generating bipartisan calls for an apology, the official USFK social media account posted a historical commemoration of Korean War-era events — a juxtaposition that drew notice given the ongoing tensions over the alliance's communication.",
       "He told CNBC on the sidelines of the same IMF and World Bank meeting that the semiconductor market outlook remains solid through at least 2027."
     ]
+  },
+  {
+    "date": "2026-10-19",
+    "title": "Korea Daily Brief | Monday, October 19",
+    "summary": "Kim Yo Jong threatens loudspeaker restart, Lee demands wartime operational control return, Hoguk exercise begins with U.S. drills, North Korea-China trade surges to 299 million dollars.",
+    "file": "digest_2026-10-19.mp3",
+    "bytes": 4858122,
+    "seconds": 607,
+    "script": "written",
+    "transcript_text": "digest_2026-10-19.txt",
+    "notes": [
+      {
+        "headline": "Kim Yo Jong threatens loudspeaker restart, calls southern border 'very unstable'",
+        "source": "NK News",
+        "url": "https://www.nknews.org/2026/10/kim-yo-jong-threatens-restart-of-north-korean-loudspeakers-amid-border-tensions/"
+      },
+      {
+        "headline": "Lee demands early OPCON return, calls it 'repatriation' not 'transfer'",
+        "source": "Yonhap English",
+        "url": "https://en.yna.co.kr/view/AEN20261019010552315"
+      },
+      {
+        "headline": "North Korea-China trade hits $299M in September, second-highest this year",
+        "source": "NK News",
+        "url": "https://www.nknews.org/2026/10/north-korea-china-trade-soared-to-300m-last-month-ahead-of-bridge-opening-data/"
+      }
+    ],
+    "transcript": "digest_2026-10-19.vtt",
+    "chapters": "digest_2026-10-19.chapters.json",
+    "page": "listen/2026-10-19.html"
   }
 ]

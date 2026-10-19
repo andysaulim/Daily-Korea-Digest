@@ -1,0 +1,106 @@
+{
+ "date": "2026-10-19",
+ "possibly_missed": [
+  {
+   "headline": "Religious sect leader sentenced to 33 years in prison for sexual assault",
+   "outlets": 4,
+   "sample_outlets": [
+    "cna",
+    "korea",
+    "reuters",
+    "yonhap"
+   ],
+   "key_words": [
+    "sect",
+    "sexual",
+    "leader",
+    "years",
+    "sentenced",
+    "assault"
+   ],
+   "articles": 4
+  },
+  {
+   "headline": "1 KATUSA killed, 3 USFK soldiers injured in rollover crash in Daegu",
+   "outlets": 3,
+   "sample_outlets": [
+    "korea",
+    "stars",
+    "yonhap"
+   ],
+   "key_words": [
+    "killed",
+    "injured",
+    "daegu",
+    "crash",
+    "rollover",
+    "usfk"
+   ],
+   "articles": 3
+  }
+ ],
+ "feed_counts": {
+  "tier1": {
+   "뉴시스": 100,
+   "조선일보": 97,
+   "Korea Times": 96,
+   "Yonhap English": 73,
+   "동아일보": 51,
+   "경향신문": 50,
+   "한국경제": 50,
+   "매일경제": 50,
+   "한겨레": 30,
+   "SBS": 29,
+   "SBS 경제": 29,
+   "Korea Economic Daily": 20,
+   "NK News": 5,
+   "Hankyoreh : English Edition": 4,
+   "Arirang TV": 4,
+   "Bloomberg.com": 4,
+   "The Korea Herald": 4,
+   "CNA": 3,
+   "뉴스1": 2,
+   "SBS 국제": 2,
+   "Financial Times": 2,
+   "新华网": 2,
+   "Seoul Economic Daily": 2,
+   "BigGo Finance": 2,
+   "Vietnam.vn": 2,
+   "Korea JoongAng Daily": 2,
+   "The New York Times": 1,
+   "연합뉴스": 1,
+   "Nikkei Korea": 1,
+   "CNBC": 1,
+   "Reuters": 1,
+   "Stars and Stripes": 1,
+   "Stripes Korea": 1,
+   "bok.or.kr": 1,
+   "Global Times": 1,
+   "아시아경제": 1,
+   "The Korea Times": 1,
+   "Singapore Economic Development Board (EDB)": 1,
+   "Báo VietNamNet": 1,
+   "BusinessWorld Online": 1,
+   "Defence24.com": 1,
+   "Yonhap News Agency": 1,
+   "Telangana Today": 1,
+   "ThePrint": 1,
+   "The Nation (Pakistan )": 1
+  },
+  "tier2": {
+   "NKPro": 1,
+   "세종연구소": 1
+  },
+  "tier3": {},
+  "tier4": {
+   "Reuters": 33,
+   "Yonhap News Agency": 3,
+   "NewsCord": 1,
+   "Internazionale": 1,
+   "Devdiscourse": 1
+  }
+ },
+ "silent_feeds": [
+  "upstream mix: 44 native feeds, 169 via Google News (79% of delivering feeds depend on one service)"
+ ]
+}

@@ -1,0 +1,53 @@
+{
+ "version": "1.2.0",
+ "chapters": [
+  {
+   "startTime": 0.0,
+   "title": "Today's headlines",
+   "endTime": 43.61
+  },
+  {
+   "startTime": 43.61,
+   "title": "Kim Yo Jong threatens loudspeaker restart, calls southern border…",
+   "url": "https://www.nknews.org/2026/10/kim-yo-jong-threatens-restart-of-north-korean-loudspeakers-amid-border-tensions/",
+   "endTime": 120.74
+  },
+  {
+   "startTime": 120.74,
+   "title": "Lee demands early OPCON return, calls it 'repatriation' not 'transfer'",
+   "url": "https://en.yna.co.kr/view/AEN20261019010552315",
+   "endTime": 212.03
+  },
+  {
+   "startTime": 212.03,
+   "title": "North Korea-China trade hits $299M in September, second-highest this…",
+   "url": "https://www.nknews.org/2026/10/north-korea-china-trade-soared-to-300m-last-month-ahead-of-bridge-opening-data/",
+   "endTime": 288.21
+  },
+  {
+   "startTime": 288.21,
+   "title": "Pyongyang",
+   "endTime": 335.7
+  },
+  {
+   "startTime": 335.7,
+   "title": "The round-up",
+   "endTime": 507.96
+  },
+  {
+   "startTime": 507.96,
+   "title": "Capitol Hill",
+   "endTime": 537.99
+  },
+  {
+   "startTime": 537.99,
+   "title": "Korea and the World",
+   "endTime": 572.36
+  },
+  {
+   "startTime": 572.36,
+   "title": "Markets",
+   "endTime": 607.14
+  }
+ ]
+}

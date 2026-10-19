@@ -1,17 +1,32 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd">
+<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" xmlns:podcast="https://podcastindex.org/namespace/1.0" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Korea Daily Brief</title>
-    <link>https://andysaulim.github.io/Daily-Korea-Digest/archive.html</link>
-    <description>The CSIS Korea Chair's daily brief on the Korean Peninsula, read aloud. Every item is from the printed brief, which links its sources.</description>
+    <link>https://andysaulim.github.io/Daily-Korea-Digest/listen/index.html</link>
+    <atom:link href="https://andysaulim.github.io/Daily-Korea-Digest/podcast.xml" rel="self" type="application/rss+xml"/>
+    <description>The CSIS Korea Chair's daily brief on the Korean Peninsula, read aloud by an AI voice. Every item is from the printed brief, which links its sources.</description>
     <language>en-us</language>
     <itunes:author>CSIS Korea Chair</itunes:author>
     <itunes:explicit>false</itunes:explicit>
     <itunes:block>Yes</itunes:block>
     <item>
+      <title>Korea Daily Brief | Monday, October 19</title>
+      <description>&lt;p&gt;Kim Yo Jong threatens loudspeaker restart, Lee demands wartime operational control return, Hoguk exercise begins with U.S. drills, North Korea-China trade surges to 299 million dollars.&lt;/p&gt;&lt;p&gt;Lead stories:&lt;/p&gt;&lt;ul&gt;&lt;li&gt;&lt;a href="https://www.nknews.org/2026/10/kim-yo-jong-threatens-restart-of-north-korean-loudspeakers-amid-border-tensions/"&gt;Kim Yo Jong threatens loudspeaker restart, calls southern border &amp;#x27;very unstable&amp;#x27;&lt;/a&gt; (NK News)&lt;/li&gt;&lt;li&gt;&lt;a href="https://en.yna.co.kr/view/AEN20261019010552315"&gt;Lee demands early OPCON return, calls it &amp;#x27;repatriation&amp;#x27; not &amp;#x27;transfer&amp;#x27;&lt;/a&gt; (Yonhap English)&lt;/li&gt;&lt;li&gt;&lt;a href="https://www.nknews.org/2026/10/north-korea-china-trade-soared-to-300m-last-month-ahead-of-bridge-opening-data/"&gt;North Korea-China trade hits $299M in September, second-highest this year&lt;/a&gt; (NK News)&lt;/li&gt;&lt;/ul&gt;&lt;p&gt;&lt;a href="https://andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-19.html"&gt;Read the full brief, with every source&lt;/a&gt; · &lt;a href="https://andysaulim.github.io/Daily-Korea-Digest/listen/2026-10-19.html"&gt;Chapters and transcript&lt;/a&gt;&lt;/p&gt;&lt;p&gt;This is an AI-narrated edition of today&amp;#x27;s Korea Daily Brief from the CSIS Korea Chair.&lt;/p&gt;</description>
+      <content:encoded><![CDATA[<p>Kim Yo Jong threatens loudspeaker restart, Lee demands wartime operational control return, Hoguk exercise begins with U.S. drills, North Korea-China trade surges to 299 million dollars.</p><p>Lead stories:</p><ul><li><a href="https://www.nknews.org/2026/10/kim-yo-jong-threatens-restart-of-north-korean-loudspeakers-amid-border-tensions/">Kim Yo Jong threatens loudspeaker restart, calls southern border &#x27;very unstable&#x27;</a> (NK News)</li><li><a href="https://en.yna.co.kr/view/AEN20261019010552315">Lee demands early OPCON return, calls it &#x27;repatriation&#x27; not &#x27;transfer&#x27;</a> (Yonhap English)</li><li><a href="https://www.nknews.org/2026/10/north-korea-china-trade-soared-to-300m-last-month-ahead-of-bridge-opening-data/">North Korea-China trade hits $299M in September, second-highest this year</a> (NK News)</li></ul><p><a href="https://andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-19.html">Read the full brief, with every source</a> · <a href="https://andysaulim.github.io/Daily-Korea-Digest/listen/2026-10-19.html">Chapters and transcript</a></p><p>This is an AI-narrated edition of today&#x27;s Korea Daily Brief from the CSIS Korea Chair.</p>]]></content:encoded>
+      <enclosure url="https://op3.dev/e/andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-19.mp3" length="4858122" type="audio/mpeg"/>
+      <guid isPermaLink="false">korea-daily-brief-2026-10-19</guid>
+      <pubDate>Mon, 19 Oct 2026 11:00:00 +0000</pubDate>
+      <itunes:duration>10:07</itunes:duration>
+      <link>https://andysaulim.github.io/Daily-Korea-Digest/listen/2026-10-19.html</link>
+      <podcast:chapters url="https://andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-19.chapters.json" type="application/json+chapters"/>
+      <podcast:transcript url="https://andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-19.vtt" type="text/vtt" language="en"/>
+      <podcast:transcript url="https://andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-19.txt" type="text/plain" language="en"/>
+    </item>
+    <item>
       <title>Korea Daily Brief | Sunday, October 18</title>
-      <description>North Korea AI torpedo confirmed, USFK commander sovereignty row, South Korea trade surplus nears record, Bank of Korea hold expected.</description>
-      <enclosure url="https://andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-18.mp3" length="4366880" type="audio/mpeg"/>
+      <description>&lt;p&gt;North Korea AI torpedo confirmed, USFK commander sovereignty row, South Korea trade surplus nears record, Bank of Korea hold expected.&lt;/p&gt;&lt;p&gt;&lt;a href="https://andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-18.html"&gt;Read the full brief, with every source&lt;/a&gt;&lt;/p&gt;&lt;p&gt;This is an AI-narrated edition of today&amp;#x27;s Korea Daily Brief from the CSIS Korea Chair.&lt;/p&gt;</description>
+      <content:encoded><![CDATA[<p>North Korea AI torpedo confirmed, USFK commander sovereignty row, South Korea trade surplus nears record, Bank of Korea hold expected.</p><p><a href="https://andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-18.html">Read the full brief, with every source</a></p><p>This is an AI-narrated edition of today&#x27;s Korea Daily Brief from the CSIS Korea Chair.</p>]]></content:encoded>
+      <enclosure url="https://op3.dev/e/andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-18.mp3" length="4366880" type="audio/mpeg"/>
       <guid isPermaLink="false">korea-daily-brief-2026-10-18</guid>
       <pubDate>Sun, 18 Oct 2026 11:00:00 +0000</pubDate>
       <itunes:duration>9:05</itunes:duration>
@@ -19,8 +34,9 @@
     </item>
     <item>
       <title>Korea Daily Brief | Saturday, October 17</title>
-      <description>North Korea tests AI-equipped 'Zam-2.0' torpedo, Belarus opens Pyongyang embassy, Takaichi Yasukuni offering draws Seoul rebuke, USFK commander sovereignty row.</description>
-      <enclosure url="https://andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-17.mp3" length="5055677" type="audio/mpeg"/>
+      <description>&lt;p&gt;North Korea tests AI-equipped &amp;#x27;Zam-2.0&amp;#x27; torpedo, Belarus opens Pyongyang embassy, Takaichi Yasukuni offering draws Seoul rebuke, USFK commander sovereignty row.&lt;/p&gt;&lt;p&gt;&lt;a href="https://andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-17.html"&gt;Read the full brief, with every source&lt;/a&gt;&lt;/p&gt;&lt;p&gt;This is an AI-narrated edition of today&amp;#x27;s Korea Daily Brief from the CSIS Korea Chair.&lt;/p&gt;</description>
+      <content:encoded><![CDATA[<p>North Korea tests AI-equipped &#x27;Zam-2.0&#x27; torpedo, Belarus opens Pyongyang embassy, Takaichi Yasukuni offering draws Seoul rebuke, USFK commander sovereignty row.</p><p><a href="https://andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-17.html">Read the full brief, with every source</a></p><p>This is an AI-narrated edition of today&#x27;s Korea Daily Brief from the CSIS Korea Chair.</p>]]></content:encoded>
+      <enclosure url="https://op3.dev/e/andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-17.mp3" length="5055677" type="audio/mpeg"/>
       <guid isPermaLink="false">korea-daily-brief-2026-10-17</guid>
       <pubDate>Sat, 17 Oct 2026 11:00:00 +0000</pubDate>
       <itunes:duration>10:31</itunes:duration>
@@ -28,8 +44,9 @@
     </item>
     <item>
       <title>Korea Daily Brief | Friday, October 16</title>
-      <description>NK-China bridge opens, SLCM test confirmed, U.S.-South Korea 2+2 finance debut, KOSPI rebounds 2%, OPCON row deepens.</description>
-      <enclosure url="https://andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-16.mp3" length="6058570" type="audio/mpeg"/>
+      <description>&lt;p&gt;NK-China bridge opens, SLCM test confirmed, U.S.-South Korea 2+2 finance debut, KOSPI rebounds 2%, OPCON row deepens.&lt;/p&gt;&lt;p&gt;&lt;a href="https://andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-16.html"&gt;Read the full brief, with every source&lt;/a&gt;&lt;/p&gt;&lt;p&gt;This is an AI-narrated edition of today&amp;#x27;s Korea Daily Brief from the CSIS Korea Chair.&lt;/p&gt;</description>
+      <content:encoded><![CDATA[<p>NK-China bridge opens, SLCM test confirmed, U.S.-South Korea 2+2 finance debut, KOSPI rebounds 2%, OPCON row deepens.</p><p><a href="https://andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-16.html">Read the full brief, with every source</a></p><p>This is an AI-narrated edition of today&#x27;s Korea Daily Brief from the CSIS Korea Chair.</p>]]></content:encoded>
+      <enclosure url="https://op3.dev/e/andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-16.mp3" length="6058570" type="audio/mpeg"/>
       <guid isPermaLink="false">korea-daily-brief-2026-10-16</guid>
       <pubDate>Fri, 16 Oct 2026 11:00:00 +0000</pubDate>
       <itunes:duration>12:37</itunes:duration>
@@ -37,8 +54,9 @@
     </item>
     <item>
       <title>Korea Daily Brief | Thursday, October 15</title>
-      <description>North Korea SLCM test, 5th in month, New Yalu Bridge opens, KOSPI -7.6% circuit breaker, OPCON row, Sue Mi Terry charges dropped.</description>
-      <enclosure url="https://andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-15.mp3" length="4700620" type="audio/mpeg"/>
+      <description>&lt;p&gt;North Korea SLCM test, 5th in month, New Yalu Bridge opens, KOSPI -7.6% circuit breaker, OPCON row, Sue Mi Terry charges dropped.&lt;/p&gt;&lt;p&gt;&lt;a href="https://andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-15.html"&gt;Read the full brief, with every source&lt;/a&gt;&lt;/p&gt;&lt;p&gt;This is an AI-narrated edition of today&amp;#x27;s Korea Daily Brief from the CSIS Korea Chair.&lt;/p&gt;</description>
+      <content:encoded><![CDATA[<p>North Korea SLCM test, 5th in month, New Yalu Bridge opens, KOSPI -7.6% circuit breaker, OPCON row, Sue Mi Terry charges dropped.</p><p><a href="https://andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-15.html">Read the full brief, with every source</a></p><p>This is an AI-narrated edition of today&#x27;s Korea Daily Brief from the CSIS Korea Chair.</p>]]></content:encoded>
+      <enclosure url="https://op3.dev/e/andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-15.mp3" length="4700620" type="audio/mpeg"/>
       <guid isPermaLink="false">korea-daily-brief-2026-10-15</guid>
       <pubDate>Thu, 15 Oct 2026 11:00:00 +0000</pubDate>
       <itunes:duration>9:47</itunes:duration>
@@ -46,8 +64,9 @@
     </item>
     <item>
       <title>Korea Daily Brief | Wednesday, October 14</title>
-      <description>NK museum flaunts Hwasong-20, New Yalu Bridge opens Thu, DOJ North Korea IT crackdown, Sue Mi Terry charges dropped, Lee names new CoS.</description>
-      <enclosure url="https://andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-14.mp3" length="5675928" type="audio/mpeg"/>
+      <description>&lt;p&gt;NK museum flaunts Hwasong-20, New Yalu Bridge opens Thu, DOJ North Korea IT crackdown, Sue Mi Terry charges dropped, Lee names new CoS.&lt;/p&gt;&lt;p&gt;&lt;a href="https://andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-14.html"&gt;Read the full brief, with every source&lt;/a&gt;&lt;/p&gt;&lt;p&gt;This is an AI-narrated edition of today&amp;#x27;s Korea Daily Brief from the CSIS Korea Chair.&lt;/p&gt;</description>
+      <content:encoded><![CDATA[<p>NK museum flaunts Hwasong-20, New Yalu Bridge opens Thu, DOJ North Korea IT crackdown, Sue Mi Terry charges dropped, Lee names new CoS.</p><p><a href="https://andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-14.html">Read the full brief, with every source</a></p><p>This is an AI-narrated edition of today&#x27;s Korea Daily Brief from the CSIS Korea Chair.</p>]]></content:encoded>
+      <enclosure url="https://op3.dev/e/andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-14.mp3" length="5675928" type="audio/mpeg"/>
       <guid isPermaLink="false">korea-daily-brief-2026-10-14</guid>
       <pubDate>Wed, 14 Oct 2026 11:00:00 +0000</pubDate>
       <itunes:duration>11:49</itunes:duration>
@@ -55,8 +74,9 @@
     </item>
     <item>
       <title>Korea Daily Brief | Tuesday, October 13</title>
-      <description>North Korea tactical missile test + Defense Revolution Museum opening, KOSPI -5.5% on chip selloff, Trump floats Kim meeting, South Korea-U.S. intel rift deepens.</description>
-      <enclosure url="https://andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-13.mp3" length="5537584" type="audio/mpeg"/>
+      <description>&lt;p&gt;North Korea tactical missile test + Defense Revolution Museum opening, KOSPI -5.5% on chip selloff, Trump floats Kim meeting, South Korea-U.S. intel rift deepens.&lt;/p&gt;&lt;p&gt;&lt;a href="https://andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-13.html"&gt;Read the full brief, with every source&lt;/a&gt;&lt;/p&gt;&lt;p&gt;This is an AI-narrated edition of today&amp;#x27;s Korea Daily Brief from the CSIS Korea Chair.&lt;/p&gt;</description>
+      <content:encoded><![CDATA[<p>North Korea tactical missile test + Defense Revolution Museum opening, KOSPI -5.5% on chip selloff, Trump floats Kim meeting, South Korea-U.S. intel rift deepens.</p><p><a href="https://andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-13.html">Read the full brief, with every source</a></p><p>This is an AI-narrated edition of today&#x27;s Korea Daily Brief from the CSIS Korea Chair.</p>]]></content:encoded>
+      <enclosure url="https://op3.dev/e/andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-13.mp3" length="5537584" type="audio/mpeg"/>
       <guid isPermaLink="false">korea-daily-brief-2026-10-13</guid>
       <pubDate>Tue, 13 Oct 2026 11:00:00 +0000</pubDate>
       <itunes:duration>11:32</itunes:duration>
@@ -64,8 +84,9 @@
     </item>
     <item>
       <title>Korea Daily Brief | Monday, October 12</title>
-      <description>NK fires 4th missile salvo in a month, Russian emergency minister in Pyongyang, KOSPI -3.65% on tech selloff, Bank of Korea rate hold defended.</description>
-      <enclosure url="https://andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-12.mp3" length="4357894" type="audio/mpeg"/>
+      <description>&lt;p&gt;NK fires 4th missile salvo in a month, Russian emergency minister in Pyongyang, KOSPI -3.65% on tech selloff, Bank of Korea rate hold defended.&lt;/p&gt;&lt;p&gt;&lt;a href="https://andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-12.html"&gt;Read the full brief, with every source&lt;/a&gt;&lt;/p&gt;&lt;p&gt;This is an AI-narrated edition of today&amp;#x27;s Korea Daily Brief from the CSIS Korea Chair.&lt;/p&gt;</description>
+      <content:encoded><![CDATA[<p>NK fires 4th missile salvo in a month, Russian emergency minister in Pyongyang, KOSPI -3.65% on tech selloff, Bank of Korea rate hold defended.</p><p><a href="https://andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-12.html">Read the full brief, with every source</a></p><p>This is an AI-narrated edition of today&#x27;s Korea Daily Brief from the CSIS Korea Chair.</p>]]></content:encoded>
+      <enclosure url="https://op3.dev/e/andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-12.mp3" length="4357894" type="audio/mpeg"/>
       <guid isPermaLink="false">korea-daily-brief-2026-10-12</guid>
       <pubDate>Mon, 12 Oct 2026 11:00:00 +0000</pubDate>
       <itunes:duration>9:04</itunes:duration>
@@ -73,8 +94,9 @@
     </item>
     <item>
       <title>Korea Daily Brief | Sunday, October 11</title>
-      <description>North Korea marks party anniversary modestly, U.S.-Korea intelligence friction deepens, Arctic route completes, SK chip cluster push, AI bank hacks.</description>
-      <enclosure url="https://andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-11.mp3" length="4648376" type="audio/mpeg"/>
+      <description>&lt;p&gt;North Korea marks party anniversary modestly, U.S.-Korea intelligence friction deepens, Arctic route completes, SK chip cluster push, AI bank hacks.&lt;/p&gt;&lt;p&gt;&lt;a href="https://andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-11.html"&gt;Read the full brief, with every source&lt;/a&gt;&lt;/p&gt;&lt;p&gt;This is an AI-narrated edition of today&amp;#x27;s Korea Daily Brief from the CSIS Korea Chair.&lt;/p&gt;</description>
+      <content:encoded><![CDATA[<p>North Korea marks party anniversary modestly, U.S.-Korea intelligence friction deepens, Arctic route completes, SK chip cluster push, AI bank hacks.</p><p><a href="https://andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-11.html">Read the full brief, with every source</a></p><p>This is an AI-narrated edition of today&#x27;s Korea Daily Brief from the CSIS Korea Chair.</p>]]></content:encoded>
+      <enclosure url="https://op3.dev/e/andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-11.mp3" length="4648376" type="audio/mpeg"/>
       <guid isPermaLink="false">korea-daily-brief-2026-10-11</guid>
       <pubDate>Sun, 11 Oct 2026 11:00:00 +0000</pubDate>
       <itunes:duration>9:41</itunes:duration>
@@ -82,8 +104,9 @@
     </item>
     <item>
       <title>Korea Daily Brief | Saturday, October 10</title>
-      <description>WPK 81st anniversary, October 10, South Korean envoy returns from Kyiv, U.S. flags alliance intel concerns, Daegu ceiling collapse 38 hurt, Kim silent day 5.</description>
-      <enclosure url="https://andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-10.mp3" length="4544722" type="audio/mpeg"/>
+      <description>&lt;p&gt;WPK 81st anniversary, October 10, South Korean envoy returns from Kyiv, U.S. flags alliance intel concerns, Daegu ceiling collapse 38 hurt, Kim silent day 5.&lt;/p&gt;&lt;p&gt;&lt;a href="https://andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-10.html"&gt;Read the full brief, with every source&lt;/a&gt;&lt;/p&gt;&lt;p&gt;This is an AI-narrated edition of today&amp;#x27;s Korea Daily Brief from the CSIS Korea Chair.&lt;/p&gt;</description>
+      <content:encoded><![CDATA[<p>WPK 81st anniversary, October 10, South Korean envoy returns from Kyiv, U.S. flags alliance intel concerns, Daegu ceiling collapse 38 hurt, Kim silent day 5.</p><p><a href="https://andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-10.html">Read the full brief, with every source</a></p><p>This is an AI-narrated edition of today&#x27;s Korea Daily Brief from the CSIS Korea Chair.</p>]]></content:encoded>
+      <enclosure url="https://op3.dev/e/andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-10.mp3" length="4544722" type="audio/mpeg"/>
       <guid isPermaLink="false">korea-daily-brief-2026-10-10</guid>
       <pubDate>Sat, 10 Oct 2026 11:00:00 +0000</pubDate>
       <itunes:duration>9:28</itunes:duration>
@@ -91,8 +114,9 @@
     </item>
     <item>
       <title>Korea Daily Brief | Friday, October 9</title>
-      <description>South Korea HGV test, Seoul recalls Ukraine envoy, NIS snub roils alliance, October 10 North Korea watch, AI cyber campaign widens.</description>
-      <enclosure url="https://andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-09.mp3" length="5283465" type="audio/mpeg"/>
+      <description>&lt;p&gt;South Korea HGV test, Seoul recalls Ukraine envoy, NIS snub roils alliance, October 10 North Korea watch, AI cyber campaign widens.&lt;/p&gt;&lt;p&gt;&lt;a href="https://andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-09.html"&gt;Read the full brief, with every source&lt;/a&gt;&lt;/p&gt;&lt;p&gt;This is an AI-narrated edition of today&amp;#x27;s Korea Daily Brief from the CSIS Korea Chair.&lt;/p&gt;</description>
+      <content:encoded><![CDATA[<p>South Korea HGV test, Seoul recalls Ukraine envoy, NIS snub roils alliance, October 10 North Korea watch, AI cyber campaign widens.</p><p><a href="https://andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-09.html">Read the full brief, with every source</a></p><p>This is an AI-narrated edition of today&#x27;s Korea Daily Brief from the CSIS Korea Chair.</p>]]></content:encoded>
+      <enclosure url="https://op3.dev/e/andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-09.mp3" length="5283465" type="audio/mpeg"/>
       <guid isPermaLink="false">korea-daily-brief-2026-10-09</guid>
       <pubDate>Fri, 09 Oct 2026 11:00:00 +0000</pubDate>
       <itunes:duration>11:00</itunes:duration>
@@ -100,8 +124,9 @@
     </item>
     <item>
       <title>Korea Daily Brief | Thursday, October 8</title>
-      <description>South Korea recalls Ukraine envoy over NK prisoner of war row, South Korea test-fires first hypersonic glide vehicle, AI-driven cyberattack on Korean banks, DMZ mine provocation escalates.</description>
-      <enclosure url="https://andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-08.mp3" length="5265492" type="audio/mpeg"/>
+      <description>&lt;p&gt;South Korea recalls Ukraine envoy over NK prisoner of war row, South Korea test-fires first hypersonic glide vehicle, AI-driven cyberattack on Korean banks, DMZ mine provocation escalates.&lt;/p&gt;&lt;p&gt;&lt;a href="https://andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-08.html"&gt;Read the full brief, with every source&lt;/a&gt;&lt;/p&gt;&lt;p&gt;This is an AI-narrated edition of today&amp;#x27;s Korea Daily Brief from the CSIS Korea Chair.&lt;/p&gt;</description>
+      <content:encoded><![CDATA[<p>South Korea recalls Ukraine envoy over NK prisoner of war row, South Korea test-fires first hypersonic glide vehicle, AI-driven cyberattack on Korean banks, DMZ mine provocation escalates.</p><p><a href="https://andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-08.html">Read the full brief, with every source</a></p><p>This is an AI-narrated edition of today&#x27;s Korea Daily Brief from the CSIS Korea Chair.</p>]]></content:encoded>
+      <enclosure url="https://op3.dev/e/andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-08.mp3" length="5265492" type="audio/mpeg"/>
       <guid isPermaLink="false">korea-daily-brief-2026-10-08</guid>
       <pubDate>Thu, 08 Oct 2026 11:00:00 +0000</pubDate>
       <itunes:duration>10:58</itunes:duration>
@@ -109,8 +134,9 @@
     </item>
     <item>
       <title>Korea Daily Brief | Wednesday, October 7</title>
-      <description>North Korea warns Seoul over DMZ demining, Kim letter to Putin, Nuri-5 launches 15 satellites, South Korea's 747 billion dollar energy transition.</description>
-      <enclosure url="https://andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-07.mp3" length="4579412" type="audio/mpeg"/>
+      <description>&lt;p&gt;North Korea warns Seoul over DMZ demining, Kim letter to Putin, Nuri-5 launches 15 satellites, South Korea&amp;#x27;s 747 billion dollar energy transition.&lt;/p&gt;&lt;p&gt;&lt;a href="https://andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-07.html"&gt;Read the full brief, with every source&lt;/a&gt;&lt;/p&gt;&lt;p&gt;This is an AI-narrated edition of today&amp;#x27;s Korea Daily Brief from the CSIS Korea Chair.&lt;/p&gt;</description>
+      <content:encoded><![CDATA[<p>North Korea warns Seoul over DMZ demining, Kim letter to Putin, Nuri-5 launches 15 satellites, South Korea&#x27;s 747 billion dollar energy transition.</p><p><a href="https://andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-07.html">Read the full brief, with every source</a></p><p>This is an AI-narrated edition of today&#x27;s Korea Daily Brief from the CSIS Korea Chair.</p>]]></content:encoded>
+      <enclosure url="https://op3.dev/e/andysaulim.github.io/Daily-Korea-Digest/digest_2026-10-07.mp3" length="4579412" type="audio/mpeg"/>
       <guid isPermaLink="false">korea-daily-brief-2026-10-07</guid>
       <pubDate>Wed, 07 Oct 2026 11:00:00 +0000</pubDate>
       <itunes:duration>9:32</itunes:duration>
