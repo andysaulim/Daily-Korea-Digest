@@ -774,7 +774,7 @@ def render(digest: dict) -> str:
         sections.append(f"""
         <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#2E3644;" class="util-row">
           <tr>
-            <td class="util-cell" style="padding:7px 32px;font-family:Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.72);white-space:nowrap;">For Internal Use Only</td>
+            <td class="util-cell" style="padding:7px 32px;font-family:Arial,sans-serif;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.72);">For Internal Use Only</td>
             <td class="util-cell" align="right" style="padding:5px 32px 5px 0;text-align:right;">{sep.join(links)}</td>
           </tr>
         </table>
@@ -2794,15 +2794,16 @@ def render(digest: dict) -> str:
   <![endif]-->
 </head>
 <body style="margin:0;padding:0;background:#F2F3F5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;">
-  <!-- Centered fixed-width TABLE wrapper (not a max-width div): survives when
-       a client strips the <style> block on forward/reply, so the layout keeps
-       its shape. The .wrapper class lets the mobile media query flex it to
-       100% while the <style> block is present. -->
+  <!-- Centered TABLE wrapper, fluid up to 680px. It was fixed at 680px with
+       max-width:100%, which needs the mobile media query to shrink: a table's
+       percentage max-width inside an auto-width cell is ignored, so when a
+       client stripped the <style> block the brief stayed 680px wide on a
+       phone. Outlook, which ignores max-width, gets the fixed ghost table. -->
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0;padding:0;background:#F2F3F5;">
     <tr>
       <td align="center" valign="top" style="padding:0;">
         <!--[if mso]><table width="680" cellpadding="0" cellspacing="0" border="0" align="center"><tr><td><![endif]-->
-        <table role="presentation" class="wrapper" width="680" cellpadding="0" cellspacing="0" border="0" align="center" style="width:680px;max-width:100%;margin:0 auto;background:#FFFFFF;font-family:Arial,Helvetica,sans-serif;box-shadow:0 2px 20px rgba(0,0,0,0.08);">
+        <table role="presentation" class="wrapper" width="680" cellpadding="0" cellspacing="0" border="0" align="center" style="width:100%;max-width:680px;margin:0 auto;background:#FFFFFF;font-family:Arial,Helvetica,sans-serif;box-shadow:0 2px 20px rgba(0,0,0,0.08);">
           <tr>
             <td style="padding:0;">
               {body}
@@ -3406,13 +3407,9 @@ def _v2_page(html: str) -> str:
     for v2's additions.
     """
     html = html.replace("</style>", _V2_CSS + "  </style>", 1)
-    # Fluid to 640px rather than fixed at it. "width:640px;max-width:100%"
-    # needed the stylesheet's media query to shrink: a table's percentage
-    # max-width inside an auto-width cell is ignored, so with <style>
-    # stripped the page stayed 640px wide on a phone and the app scaled it
-    # down to unreadable type. Outlook keeps its fixed 640px ghost table.
+    # The column, fluid to 640px; Outlook's ghost table is fixed at 640.
     html = html.replace('class="wrapper" width="680"', 'class="wrapper" width="640"', 1)
-    html = html.replace("width:680px;max-width:100%;margin:0 auto;background:#FFFFFF;"
+    html = html.replace("width:100%;max-width:680px;margin:0 auto;background:#FFFFFF;"
                         "font-family:Arial,Helvetica,sans-serif;box-shadow:0 2px 20px rgba(0,0,0,0.08);",
                         f"width:100%;max-width:640px;margin:0 auto;background:#FFFFFF;font-family:{_V2_KO};", 1)
     html = html.replace('<table width="680" cellpadding', '<table width="640" cellpadding', 1)
