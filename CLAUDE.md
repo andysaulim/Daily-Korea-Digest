@@ -18,6 +18,7 @@ Orchestrated by `run.py`. Triggered via external cron (cron-job.org) → GitHub 
 | `collect.py` | Parallel RSS scraper, market data (KOSPI, KRW, Brent), Gallup Korea polling, satellite imagery |
 | `digest.py` | Claude API integration — 80-line system prompt, structured JSON output, Sonnet-first with Opus retry |
 | `render.py` | 1,400-line HTML email renderer — table-based layout, inline CSS, dark mode, mobile responsive |
+| `listen.py` | Audio extras: chapters (JSON + ID3), VTT transcript, show notes, `listen/` player page |
 | `send_email.py` | Gmail SMTP sender (SSL, port 465) |
 | `databases.py` | NK-Russia bilateral timeline (270+ events), NK provocations history (540+ since 1958) |
 | `kim_tracker.py` | Kim Jong Un appearance log — computes "days since last seen" |

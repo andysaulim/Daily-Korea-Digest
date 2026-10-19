@@ -852,8 +852,132 @@ def check_new_sections_audio() -> list[str]:
     return problems
 
 
+def check_audio_extras():
+    """Chapters, transcript, feed tags, player page and AI disclosure, offline.
+
+    Built from a made-up timeline, no voice or network needed. Also proves the
+    rule that matters most: when every new step fails, the episode is still
+    produced exactly as before.
+    """
+    import os
+    import tempfile
+    import xml.etree.ElementTree as ET
+    from pathlib import Path
+    import listen
+    import podcast
+    problems = []
+    when = "Sunday, October 18"
+    digest = {"digest_date": "Sunday, October 18, 2026", "re_line": "DPRK torpedo · ROK surplus",
+              "top_stories": [
+                  {"headline": "North Korea tests AI torpedo — sixth event", "source": "Reuters",
+                   "url": "https://example.com/a", "body": "KCNA reported a torpedo test."},
+                  {"headline": "ROK trade surplus nears record", "source": "Yonhap",
+                   "url": "https://example.com/b", "body": "The surplus grew."}]}
+    script = (f"{podcast.opening_line(when)}\n\nThree things today: a torpedo and trade.\n\n---\n\n"
+              "First, North Korea tests an AI torpedo. KCNA reported a torpedo test.\n\n---\n\n"
+              "Second, South Korea's trade surplus nears a record. The surplus grew.\n\n---\n\n"
+              "Finally, the markets. That's the Korea Daily Brief for Sunday, October 18.")
+    # Disclosure: spoken in the opening, printed in feed and page, never flagged.
+    if podcast.SPOKEN_DISCLOSURE not in podcast.opening_line(when):
+        problems.append("the opening line no longer carries the AI disclosure")
+    if podcast.SPOKEN_DISCLOSURE not in podcast.build_script(digest).split("\n")[0]:
+        problems.append("the assembled script does not open with the disclosure")
+    flagged = podcast.check_script(podcast.opening_line(when) + " The surplus grew.", digest, when)
+    if flagged:
+        problems.append(f"check_script flags the disclosure line: {flagged}")
+    for needle in ("{opening}", '"First, ..."', "ten minutes", "email for the sources"):
+        if needle not in podcast._SCRIPT_SYSTEM:
+            problems.append(f"script prompt lost its signposting: {needle!r}")
+    # A timeline as _master reports it: 4 segments, one split over two requests.
+    chunks = [{"start": 2.4, "end": 9.0, "segment": 0, "text": podcast.segments(script)[0]},
+              {"start": 10.5, "end": 14.0, "segment": 1, "text": "First, North Korea tests an AI torpedo."},
+              {"start": 14.7, "end": 18.0, "segment": 1, "text": "KCNA reported a torpedo test."},
+              {"start": 19.5, "end": 25.0, "segment": 2, "text": podcast.segments(script)[2]},
+              {"start": 26.5, "end": 30.0, "segment": 3, "text": podcast.segments(script)[3]}]
+    if [n for _, _, n in podcast._chunks_indexed(script)] != [0, 1, 2, 3]:
+        problems.append("requests are not tagged with their segment")
+    ch = listen.build_chapters(chunks, script, digest, "written", 33.0)
+    if [c["startTime"] for c in ch] != [0.0, 10.5, 19.5, 26.5] or ch[-1]["endTime"] != 33.0:
+        problems.append(f"chapter times wrong: {[c['startTime'] for c in ch]}")
+    if not ch[1]["title"].startswith("North Korea tests AI torpedo") or ch[1].get("url") != "https://example.com/a":
+        problems.append(f"a lead story chapter is not titled and linked from its story: {ch[1]}")
+    v = listen.vtt(chunks)
+    if not v.startswith("WEBVTT\n") or "00:00:10.500 --> " not in v or "\n\n\n" in v:
+        problems.append("VTT is malformed or mistimed")
+    # The feed: well-formed, namespaced, still blocked, OP3 switchable.
+    ep = {"date": "2026-10-18", "title": "Korea Daily Brief | Sunday, October 18", "summary": "S",
+          "file": "digest_2026-10-18.mp3", "bytes": 1, "seconds": 600,
+          "chapters": "digest_2026-10-18.chapters.json", "transcript": "digest_2026-10-18.vtt",
+          "transcript_text": "digest_2026-10-18.txt", "page": "listen/2026-10-18.html",
+          "notes": listen.show_notes(digest)}
+    old = os.environ.pop("PODCAST_OP3", None)
+    try:
+        root = ET.fromstring(podcast._feed_xml([ep], "https://h.example/x"))
+        ns = "{https://podcastindex.org/namespace/1.0}"
+        item = root.find("channel/item")
+        if item.find(f"{ns}chapters") is None or len(item.findall(f"{ns}transcript")) != 2:
+            problems.append("podcast:chapters / podcast:transcript missing or not namespaced")
+        if root.find("channel/{http://www.itunes.com/dtds/podcast-1.0.dtd}block") is None:
+            problems.append("itunes:block was dropped from the feed")
+        if not item.find("enclosure").get("url").startswith("https://op3.dev/e/h.example/"):
+            problems.append("OP3 prefix not on by default")
+        desc = item.find("description").text
+        from html import escape
+        if "https://example.com/a" not in desc or escape(podcast.DISCLOSURE) not in desc or "digest_2026-10-18.html" not in desc:
+            problems.append("show notes lack source links, the brief link, or the disclosure")
+        os.environ["PODCAST_OP3"] = "0"
+        if podcast.measured("https://h.example/x.mp3") != "https://h.example/x.mp3":
+            problems.append("PODCAST_OP3=0 does not turn the prefix off")
+    except ET.ParseError as e:
+        problems.append(f"podcast.xml is not well-formed: {e}")
+    finally:
+        os.environ.pop("PODCAST_OP3", None)
+        if old is not None:
+            os.environ["PODCAST_OP3"] = old
+    page = listen.render_page(date_slug="2026-10-18", digest=digest, web_base="https://h.example/x",
+                              minutes=10, chapters=ch, chunks=chunks, script=script,
+                              notes=listen.show_notes(digest), episodes=None)
+    for needle, what in (("<audio", "an audio player"), ('data-t="10.5"', "seekable chapters"),
+                         ("Transcript", "the transcript"), ("../digest_2026-10-18.html", "a link to the brief"),
+                         ("podcast://h.example/x/podcast.xml", "Apple Podcasts"), ("overcast://", "Overcast"),
+                         ("pktc://subscribe/", "Pocket Casts"), ("Copy feed URL", "copy feed"),
+                         (podcast.DISCLOSURE.replace("'", "&#x27;"), "the AI disclosure"),
+                         ("prefers-color-scheme:dark", "dark mode")):
+        if needle not in page:
+            problems.append(f"player page lacks {what}")
+    if "spotify" in page.lower():
+        problems.append("player page offers Spotify, which cannot take a private feed")
+    # Failure never blocks: every new step raising still yields the episode.
+    saved = (podcast.synthesize, podcast._previous_issue, listen.build_chapters,
+             listen.write_pages, listen.show_notes, listen.vtt)
+
+    def boom(*a, **k):
+        raise RuntimeError("injected")
+
+    def fake_synth(s, path):
+        path.write_bytes(b"\x00" * 100)
+        return {"tts_model": "m", "tts_voice": "v", "audio_bytes": 100, "audio_seconds": 600,
+                "_chunks": chunks}
+    try:
+        podcast.synthesize, podcast._previous_issue = fake_synth, (lambda s: None)
+        listen.build_chapters = listen.write_pages = listen.show_notes = listen.vtt = boom
+        with tempfile.TemporaryDirectory() as tmp:
+            rec = podcast.produce(digest, Path(tmp), "", "2026-10-18")
+            if not rec or "listen_page" in rec or "_chunks" in rec:
+                problems.append("a failing chapter/page step changed or blocked the episode")
+            if not (Path(tmp) / "latest.mp3").exists():
+                problems.append("a failing chapter/page step stopped latest.mp3")
+    except Exception as e:                                      # noqa: BLE001
+        problems.append(f"a failing new audio step raised out of produce(): {e}")
+    finally:
+        (podcast.synthesize, podcast._previous_issue, listen.build_chapters,
+         listen.write_pages, listen.show_notes, listen.vtt) = saved
+    return problems
+
+
 CHECKS = [
     ("API cost is recorded and kept", check_api_cost_is_recorded),
+    ("audio chapters, transcript, feed and player page", check_audio_extras),
     ("no raw markdown reaches the reader", check_no_raw_markdown_reaches_the_reader),
     ("subject line is the house format", check_subject_is_the_house_format),
     ("prestige rule is enforceable", check_prestige_rule_is_enforceable),

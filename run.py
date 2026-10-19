@@ -1899,6 +1899,15 @@ def main():
                 if _wb:
                     digest_data["audio_url"] = f"{_wb}/digest_{_date_slug}.mp3"
                     digest_data["audio_minutes"] = max(1, round(_audio["audio_seconds"] / 60))
+                    # The Listen bar opens the player page (chapters,
+                    # transcript, subscribe) when one was written; otherwise
+                    # it stays on the MP3.
+                    if _audio.get("listen_page"):
+                        try:
+                            from listen import listen_url
+                            digest_data["listen_url"] = listen_url(_wb, _audio["listen_page"])
+                        except Exception as _le:                # noqa: BLE001
+                            print(f"  ⚠  Listen link stays on the MP3: {_le}")
                 print(f"  🎧  Audio: {_audio['audio_bytes']:,} bytes, "
                       f"~{_audio['audio_seconds'] // 60} min "
                       f"({_audio['tts_model']}, {_audio['tts_voice']})")
