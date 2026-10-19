@@ -1154,7 +1154,34 @@ def check_email_fits_gmail() -> list[str]:
     return problems
 
 
+def check_english_only():
+    """No Korean script on the page except a translated quote."""
+    import english
+    problems = []
+    d = {"top_stories": [{"headline": "x", "source": "뉴시스 / 경향신문",
+                          "src_line": "뉴시스 — '대중·대미 무역수지 4년만에' ", "body": "A 경향신문 editorial said so."}],
+         "rok_government": [{"ministry": "MND", "ministry_korean": "국방부", "source_label": "뉴시스"}],
+         "public_sentiment": {"party_ruling": {"party": "Democratic Party", "party_kr": "더불어민주당"}},
+         "social_statements": [{"quote_text": 'Lee said "국민이 주인" ("the people are the owners").'}],
+         "overnight_items": [{"headline": "y", "body": "Officials said 비상 without explanation."}]}
+    warns = english.apply(d)
+    if d["top_stories"][0]["source"] != "Newsis / Kyunghyang Shinmun":
+        problems.append(f"outlet names not mapped: {d['top_stories'][0]['source']!r}")
+    if english.HANGUL.search(d["top_stories"][0]["src_line"]):
+        problems.append("Korean headline left in a source line")
+    if "ministry_korean" in d["rok_government"][0] or "party_kr" in d["public_sentiment"]["party_ruling"]:
+        problems.append("Korean-only label fields kept")
+    if "Kyunghyang Shinmun editorial" not in d["top_stories"][0]["body"]:
+        problems.append("outlet name in prose not mapped")
+    if any("social_statements" in w for w in warns):
+        problems.append("a translated quote was flagged")
+    if not any("overnight_items" in w for w in warns):
+        problems.append("untranslated Korean in prose was not reported")
+    return problems
+
+
 CHECKS = [
+    ("no Korean script on the page", check_english_only),
     ("API cost is recorded and kept", check_api_cost_is_recorded),
     ("audio chapters, transcript, feed and player page", check_audio_extras),
     ("no raw markdown reaches the reader", check_no_raw_markdown_reaches_the_reader),

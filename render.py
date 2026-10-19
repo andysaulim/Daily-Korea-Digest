@@ -1157,7 +1157,6 @@ def render(digest: dict) -> str:
             for j in range(i, min(i + 2, len(rok_gov))):
                 item = rok_gov[j]
                 ministry = _esc(item.get("ministry", ""))
-                ministry_korean = _esc(item.get("ministry_korean", ""))
                 action = _esc(item.get("action", ""))
                 detail = _emphasis(_esc(item.get("detail", "")))
                 source_url = item.get("url", "")
@@ -1169,8 +1168,6 @@ def render(digest: dict) -> str:
                     f'<div style="font-size:13px;font-family:Georgia,serif;color:#353C48;margin-bottom:4px;">{official}</div>'
                     if official and official.lower() not in ("none", "null", "n/a") else "")
                 ministry_header = ""
-                if ministry_korean:
-                    ministry_header = f'<span style="font-size:11px;color:#6B7280;">{ministry_korean} · </span>'
                 ministry_header += f'<span style="font-size:10px;color:#6B7280;text-transform:uppercase;letter-spacing:0.5px;">{ministry}</span>'
                 # A ministry release and a story about it are not the same kind
                 # of thing, and the card used to show one unlabelled link for
@@ -2785,15 +2782,6 @@ _V2_LINK = (f"color:{INK};text-decoration:underline;text-decoration-color:#C9D2D
             "text-decoration-thickness:1px;text-underline-offset:5px;")
 _V2_SEC = 'style="padding:22px 32px 24px;border-bottom:1px solid #EBEBEB;" class="sec"'
 
-_V2_KOREAN = {
-    "today at a glance": "오늘의 요점", "top stories": "주요 뉴스", "overnight": "밤사이",
-    "stat of the day": "오늘의 숫자", "pyongyang watch": "북한", "rok government": "정부",
-    "election tracker": "선거", "us-korea trade & investment": "한미 통상",
-    "business & economy": "경제", "northeast asia watch": "동북아", "public sentiment": "여론",
-    "upcoming": "일정", "the wire": "단신", "analysis": "분석",
-    "satellite & location watch": "위성 감시", "capitol hill": "미 의회",
-    "korea and the world": "한국과 세계", "korea & the world": "한국과 세계",
-}
 # Contents entries that would not fit a third of the column at full length.
 _V2_TOC_SHORT = {
     "us-korea trade & investment": "Trade &amp; Investment",
@@ -2804,24 +2792,20 @@ _V2_TOC_SHORT = {
 
 
 def _v2_bar(label: str, numbered: bool = True) -> str:
-    """Black bar: number, English label, Korean label.
+    """Black bar: number and English label.
 
     The number is a placeholder until _v2_finish has seen which sections
-    rendered. Number and Korean sit inside chrome markers so the word count
+    rendered. The number sits inside chrome markers so the word count
     the masthead prints, and run.py trims against, is the same as classic's.
     """
-    key = label.replace("&amp;", "&").strip().lower()
-    ko = _V2_KOREAN.get(key, "")
     num = (f'<!--c--><span style="font-family:{_V2_SERIF};font-size:17px;font-weight:700;color:#E8697A;'
            f'padding-right:11px;margin-right:11px;border-right:1px solid #3A4048;">%%V2N:{label}%%</span><!--/c-->'
            if numbered else "")
-    kor = (f'<!--c--><span style="font-family:{_V2_KO};font-size:13px;color:#A0AEC0;margin-left:10px;'
-           f'white-space:nowrap;">{ko}</span><!--/c-->' if ko else "")
     return ('<table width="100%" cellpadding="0" cellspacing="0" border="0" class="sec-bar" '
             'style="background:#14181F;margin-bottom:16px;"><tr><td style="padding:9px 14px;">'
             f'{num}<span style="font-family:{_V2_SANS};font-size:12px;font-weight:700;'
             f'letter-spacing:2px;text-transform:uppercase;color:#FFFFFF;">{label}</span>'
-            f'{kor}</td></tr></table>')
+            '</td></tr></table>')
 
 
 def _v2_srctype(src: str) -> str:

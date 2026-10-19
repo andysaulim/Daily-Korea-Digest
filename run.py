@@ -2263,6 +2263,15 @@ def main():
     except Exception as _e:                                     # noqa: BLE001
         print(f"  ⚠  Link pass skipped (non-fatal): {_e}")
 
+    # English only on the page: Korean outlet names and labels to English,
+    # Korean headlines out of source fields. Prose is reported, not rewritten.
+    try:
+        import english
+        for _w in english.apply(digest_data):
+            print(f"::warning title=Korean text in brief::{_w}")
+    except Exception as _e:                                     # noqa: BLE001
+        print(f"  ⚠  English pass skipped (non-fatal): {_e}")
+
     # The byte guard, before the audio is built so the listener still hears
     # the issue the reader gets. Gmail clips past 102,400 bytes; the word
     # ceiling above is a proxy for that, and this is the bound itself.
