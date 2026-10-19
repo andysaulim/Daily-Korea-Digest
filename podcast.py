@@ -275,6 +275,31 @@ _SECTION_LEADS = ("Our top story", "Here's what else", "Now to Pyongyang", "The 
                   "That's the Korea Daily Brief")
 
 
+def happening_today(digest: dict) -> list[str]:
+    """Scheduled events falling on the issue date, as the email's strip shows them."""
+    try:
+        from render import _calendar_span
+    except Exception:                                           # noqa: BLE001
+        return []
+    raw = str(digest.get("digest_date", "")).strip()
+    today = None
+    for fmt, text in (("%Y-%m-%d", raw[:10]), ("%A, %B %d, %Y", raw), ("%B %d, %Y", raw)):
+        try:
+            today = datetime.strptime(text, fmt).date()
+            break
+        except ValueError:
+            continue
+    if today is None:
+        return []
+    out = []
+    for c in digest.get("calendar_watch") or []:
+        if isinstance(c, dict) and c.get("event"):
+            span = _calendar_span(c.get("date", ""), today.year)
+            if span and span[0] <= today <= span[1]:
+                out.append(str(c["event"]))
+    return out[:3]
+
+
 def build_script(digest: dict) -> str:
     """The whole brief as a spoken script, in the order it is printed.
 
@@ -323,6 +348,9 @@ def build_script(digest: dict) -> str:
         out.append("In today's brief: " + "; ".join(parts[:-1]) + "; and " + parts[-1] + ".")
     elif parts:
         out.append(f"In today's brief: {parts[0]}.")
+    today_events = happening_today(digest)
+    if today_events:
+        out.append("Happening today: " + "; ".join(speakable(e).rstrip(".") for e in today_events) + ".")
 
     top = _items(digest, "top_stories")
     for n, item in enumerate(top):
@@ -505,7 +533,7 @@ FACTS. This rule outranks every other:
 - If something in the brief is unclear, leave it out rather than interpret it.
 
 SHAPE. Five segments, in this order. Put a line containing only --- between segments (the producer puts a pause there).
-1. COLD OPEN (about 60 words). After the fixed opening line, go straight into the single most consequential development, told as a tension or a stakes question, not a summary. No throat-clearing. Then one menu line: "Three things today: ..." naming the three lead stories in a few words each.
+1. COLD OPEN (about 60 words). After the fixed opening line, go straight into the single most consequential development, told as a tension or a stakes question, not a summary. No throat-clearing. Then one menu line: "Three things today: ..." naming the three lead stories in a few words each. If calendar_watch has events dated today, add one short line after the menu saying what is happening today.
 2. THE THREE LEAD STORIES (about 250 words each), one after another, with --- between them. Usually the top stories. For each: what happened, why it matters to someone who works on Korea policy (from the brief), and what to watch next. Fold in related items from other sections (government reactions, the National Assembly, statements, analysis, imagery) so each lead is one connected story, not a list. Keep one strand per story: if several items are about the same military situation (a warning, missile launches, satellite imagery, a weapons analysis), they belong in one lead together.
 3. PYONGYANG. Name every one of the top KCNA articles in kcna_delta.top_articles, even one a lead story already told (then one sentence on how state media framed it is enough), then the bottom line.
 4. THE ROUND-UP. Everything else worth a listener's time, one or two sentences each, linked by quick spoken transitions: overnight items, government and appointments, the economy, the region, the poll (say when it was taken), what is coming up, the rest of the wire, analysis. Never tell a story the leads already told. Leave out US-Korea trade and investment entirely. Satellite imagery only if it is included.
