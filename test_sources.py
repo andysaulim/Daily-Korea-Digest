@@ -163,7 +163,7 @@ def check_mandatory_outlets_reach_the_prompt() -> list[str]:
 # search. Raise this number as feeds are converted; never lower it. The point
 # is a ratchet: the brief got into trouble by depending on one service for
 # almost every source, and that share should only ever improve.
-MIN_FEEDS_WITH_NATIVE_PATH = 26
+MIN_FEEDS_WITH_NATIVE_PATH = 31
 
 
 def check_google_news_dependence_not_regressing() -> list[str]:
@@ -1002,6 +1002,21 @@ CHECKS = [
     ("new sections render in place", check_new_sections_render),
     ("new sections are narrated", check_new_sections_audio),
 ]
+
+
+def check_link_quality() -> list[str]:
+    """Every link a reader can click: see test_links.py."""
+    import test_links
+    problems = []
+    for label, fn in test_links.CHECKS:
+        try:
+            problems += [f"{label}: {p}" for p in fn()]
+        except Exception as e:                                  # noqa: BLE001
+            problems.append(f"{label}: raised {type(e).__name__}: {e}")
+    return problems
+
+
+CHECKS.append(("link quality (publisher, decoding, repair, dedup, labels)", check_link_quality))
 
 
 def main() -> int:
