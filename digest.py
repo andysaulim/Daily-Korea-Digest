@@ -415,8 +415,13 @@ _PROMPT_CONGRESS = ("congress.gov", "govinfo", "crs ", "hfac", "hasc", "sfrc", "
 
 def _prompt_band(article: dict) -> int:
     """Lower is seen first. Bands, not scores: the ordering has to be
-    explicable to an editor, and a weighted score is not."""
-    source = str(article.get("source", "")).lower()
+    explicable to an editor, and a weighted score is not.
+
+    Bands key on the feed (which search or wire found it), falling back to
+    source; `source` is the publisher shown to the model, which for a Google
+    News item is the outlet's own name rather than a feed label."""
+    source = str(article.get("feed") or article.get("source", "")).lower()
+    publisher = str(article.get("publisher") or "").lower()
     # 0 — primary documents. A ministry release outranks reporting about it.
     if source.startswith("rok ") or source in {
             "usfk", "state dept", "pentagon", "white house", "ustr",
@@ -430,6 +435,9 @@ def _prompt_band(article: dict) -> int:
     if any(p in source for p in _PROMPT_PRESTIGE):
         return 1
     if any(p in source for p in _PROMPT_SPECIALIST):
+        return 1
+    if publisher and any(p in publisher for p in _PROMPT_PRESTIGE | _PROMPT_SPECIALIST
+                         if len(p) > 3):
         return 1
     # 2 — a flagged Korea correspondent's byline.
     if article.get("flagged_journalist"):
@@ -449,7 +457,7 @@ def rank_for_prompt(articles: list) -> list:
     seen: dict[str, int] = {}
     keyed = []
     for i, a in enumerate(articles):
-        source = str(a.get("source", ""))
+        source = str(a.get("feed") or a.get("source", ""))
         nth = seen.get(source, 0)
         seen[source] = nth + 1
         keyed.append(((_prompt_band(a), nth, i), a))

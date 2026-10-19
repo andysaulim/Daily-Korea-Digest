@@ -12,13 +12,21 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone, timedelta
 
+import links
+
 # ─────────────────────────────────────────────────────────────────────────────
 # FEED CONFIGURATION
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _gnews(query: str) -> str:
-    """Build a Google News RSS search URL."""
-    return f"https://news.google.com/rss/search?q={query}&hl=en-US&gl=US&ceid=US:en"
+    """Build a Google News RSS search URL.
+
+    The query is normalised so a site: limit binds to the whole search:
+    `Korea+OR+DPRK+site:x` becomes `(Korea OR DPRK) site:x`, properly encoded.
+    Written flat, results came back from anywhere ("CRS Korea" delivered PM
+    News Nigeria). See links.build_gnews_query.
+    """
+    return links.gnews_url(query)
 
 
 def _native(native_url: str, gnews_query: str) -> list:
@@ -44,21 +52,10 @@ def _resolve_gnews_url(url: str) -> str:
     """
     if not url or "news.google.com" not in url or "/articles/" not in url:
         return url
-    try:
-        import base64
-        from urllib.parse import urlparse
-        seg = urlparse(url).path.split("/articles/", 1)[1]
-        enc = seg.split("?", 1)[0].split("/", 1)[0]
-        enc += "=" * (-len(enc) % 4)
-        raw = base64.urlsafe_b64decode(enc)
-        s = raw.decode("latin-1", errors="ignore")
-        # Strict URL charset stops cleanly at the trailing protobuf bytes.
-        m = re.search(r"https?://[A-Za-z0-9._~:/?#\[\]@!$&'()*+,;=%\-]+", s)
-        if m and "news.google.com" not in m.group(0):
-            return m.group(0)
-    except Exception:
-        pass
-    return url
+    # Current IDs (AU_yqL…) are encrypted and need two network calls each, so
+    # they are decoded once the digest is final (links.decode_digest_links),
+    # for the dozen links a reader sees rather than the thousand collected.
+    return links.decode_legacy(links.gnews_article_id(url)) or url
 
 
 def load_gallup_baseline() -> dict:
@@ -521,6 +518,7 @@ MAX_WORKERS = 25  # Thread pool size for parallel fetching
 _source_health = {}  # {feed_name: {articles: int, success: bool, error_msg: str|None}}
 _feed_source_used = {}  # {url: "native"|"google-news"} — which candidate answered
 _unresolved_urls = []   # sources whose Google News link would not decode
+_offsite_dropped = {}   # {candidate url: items dropped for coming from another site}
 
 MAJOR_FEEDS = {"Yonhap English", "Korea Herald", "Reuters Korea", "AP Korea"}
 
@@ -579,11 +577,43 @@ def _parse_feed(url) -> list:
         # Only the last candidate is worth three attempts; earlier ones should
         # fail fast so a dead native URL does not add six seconds per feed.
         entries = _parse_one(candidate, retries=3 if i == len(candidates) - 1 else 1)
+        entries = _keep_site_matches(entries, candidate)
         if entries:
             _feed_source_used[candidate] = ("native" if "news.google.com" not in candidate
                                             else "google-news")
             return entries
     return []
+
+
+def _entry_publisher(entry) -> tuple[str, str]:
+    """(publisher name, publisher home URL) from the RSS <source url=…> element.
+
+    Google News items carry the real outlet there; the feed name says only
+    which search found the item. Native feeds usually carry none: ('', '').
+    """
+    try:
+        src = entry.get("source") or {}
+        return (str(src.get("title") or "").strip(), str(src.get("href") or "").strip())
+    except Exception:
+        return "", ""
+
+
+def _keep_site_matches(entries: list, candidate: str) -> list:
+    """Drop search results from outside the site: the search was limited to.
+
+    A `site:` search is not a guarantee: "KCNA (state media)" returned SCMP and
+    the Straits Times, "CRS Korea" a Nigerian tabloid. When the candidate that
+    answered is a Google News search with a required site: term, an item whose
+    publisher home is another domain is not this feed's item.
+    """
+    targets = links.site_targets(candidate)
+    if not targets or not entries:
+        return entries
+    kept = [e for e in entries if links.publisher_matches_site(_entry_publisher(e)[1], targets)]
+    dropped = len(entries) - len(kept)
+    if dropped:
+        _offsite_dropped[candidate] = dropped
+    return kept
 
 
 _BOILERPLATE_PATTERNS = [
@@ -634,7 +664,17 @@ def _clean_summary(summary: str, title: str) -> str:
 
 
 def _entry_to_article(entry, source: str, lang: str = "EN", extra: dict | None = None) -> dict:
+    """One collected article.
+
+    `source` is what the model and the reader see: the real publisher when the
+    item says who it is (Google News's <source> element), the feed name
+    otherwise. `feed` is always the feed name; ranking, feed health and the
+    KCNA summary key on that.
+    """
     title = entry.get("title", "").strip()
+    publisher, publisher_home = _entry_publisher(entry)
+    if publisher and title.endswith(f" - {publisher}"):
+        title = title[: -len(f" - {publisher}")].rstrip()
     _raw_link = entry.get("link", "").strip()
     link = _resolve_gnews_url(_raw_link)
     # Google's newer article IDs are fully opaque and cannot be decoded, so the
@@ -666,10 +706,15 @@ def _entry_to_article(entry, source: str, lang: str = "EN", extra: dict | None =
         "title": title,
         "url": link,
         "summary": summary[:800],
-        "source": source,
+        "source": publisher or source,
+        "feed": source,
         "lang": lang,
         "pub_date": pub_date,
     }
+    if publisher:
+        article["publisher"] = publisher
+    if publisher_home:
+        article["publisher_home"] = publisher_home
     if tags:
         article["tags"] = tags
     if extra:
@@ -1058,7 +1103,7 @@ def _build_kcna_summary(tier4_articles: list, scraped_articles: list) -> dict:
         title = art.get("title", "").strip()
         if title:
             all_titles.add(title.lower())
-        src = art.get("source", "Unknown")
+        src = art.get("feed") or art.get("source", "Unknown")
         sources[src] = sources.get(src, 0) + 1
         # Track direct vs indirect
         if src in _DIRECT_KCNA_SOURCES:
@@ -1096,12 +1141,14 @@ def _build_kcna_summary(tier4_articles: list, scraped_articles: list) -> dict:
     for art in tier4_articles:
         title = art.get("title", "")
         if title and title.lower() not in scraped_titles:
-            src = art.get("source", "")
+            src = art.get("feed") or art.get("source", "")
+            # Say who actually reported it, not which search found it.
+            _pub = art.get("publisher") or ""
             tags = art.get("tags", [])
             # For indirect sources, label with "via <outlet>" so the LLM
             # knows this is a secondary report citing KCNA
             if src not in _DIRECT_KCNA_SOURCES and src:
-                tag_str = f"via {src}"
+                tag_str = f"via {_pub or links.clean_feed_label(src)}"
             else:
                 tag_str = tags[0] if tags else src
             headlines.append(f"[{tag_str}] {title}")
@@ -2126,6 +2173,7 @@ def collect() -> dict:
     _source_health.clear()  # Reset health tracking for this run
     _feed_source_used.clear()
     _unresolved_urls.clear()
+    _offsite_dropped.clear()
     print("\n📡  Collecting Korea news from 100+ sources (parallel)...")
 
     # Run all collectors concurrently — each already uses internal thread pools
@@ -2199,6 +2247,9 @@ def collect() -> dict:
     feeds_with_data = sum(1 for h in _source_health.values() if h["success"])
     feeds_failed = total_feeds - feeds_with_data
     print(f"\n  Source health: {feeds_with_data}/{total_feeds} feeds returned data, {feeds_failed} blocked/failed")
+    if _offsite_dropped:
+        print(f"  Off-site results dropped from site: searches: {sum(_offsite_dropped.values())} "
+              f"across {len(_offsite_dropped)} feed(s)")
 
     # Warn if any major feed returned 0 articles
     for major in MAJOR_FEEDS:
@@ -2237,6 +2288,7 @@ def collect() -> dict:
         "x_signals": x_signals,
         "feed_source_used": dict(_feed_source_used),
         "unresolved_url_count": len(_unresolved_urls),
+        "offsite_dropped": sum(_offsite_dropped.values()),
         "source_health": {
             "total_feeds": total_feeds,
             "feeds_with_data": feeds_with_data,
