@@ -667,13 +667,8 @@ def hill_events(digest: dict) -> tuple[list, list]:
     return now, ahead
 
 
-def _happening_today(digest: dict) -> str:
-    """Up to three scheduled events that fall on the issue date, under Today at a Glance.
-
-    Built from calendar_watch, which already carries the week's schedule; the
-    strip shows only what happens today, so it is empty and absent on a day
-    with nothing scheduled rather than padded with the week ahead.
-    """
+def _happening_rows(digest: dict) -> list:
+    """The events that fall on the issue date, as plain text, at most three."""
     raw = str(digest.get("digest_date", "")).strip()
     today = None
     for fmt, text in (("%Y-%m-%d", raw[:10]), ("%A, %B %d, %Y", raw), ("%B %d, %Y", raw)):
@@ -683,18 +678,29 @@ def _happening_today(digest: dict) -> str:
         except ValueError:
             continue
     if today is None:
-        return ""
+        return []
     # Same normalized shape as Upcoming and the audio edition: the model has
     # returned both {date, event} and {month, day, headline}.
     import korea_calendar
     rows = [c["headline"] for c in korea_calendar.happening_on(digest.get("calendar_watch"), today)]
     for ev in hill_events(digest)[0]:
         rows.append(hill_event_text(ev) + (f" ({ev['time']})" if ev.get("time") else ""))
+    return [_str(r) for r in rows[:3]]
+
+
+def _happening_today(digest: dict) -> str:
+    """Up to three scheduled events that fall on the issue date, under Today at a Glance.
+
+    Built from calendar_watch, which already carries the week's schedule; the
+    strip shows only what happens today, so it is empty and absent on a day
+    with nothing scheduled rather than padded with the week ahead.
+    """
+    rows = _happening_rows(digest)
     if not rows:
         return ""
     items = "".join(
         f'<tr><td style="padding:5px 0;font-family:Georgia,serif;font-size:14px;line-height:1.5;color:{INK};">'
-        f'{_esc(_str(c))}</td></tr>' for c in rows[:3])
+        f'{_esc(c)}</td></tr>' for c in rows)
     return (f'<table width="100%" cellpadding="0" cellspacing="0" border="0" class="happening" '
             f'style="margin-top:12px;border-top:2px solid {INK};">'
             f'<tr><td style="padding:9px 0 2px;font-family:Arial,sans-serif;font-size:12px;font-weight:700;'
@@ -3036,6 +3042,12 @@ def _v2_numbers(digest: dict) -> str:
             pass
         when = _re.sub(r",?\s*\d{4}$", "", str(ap.get("last_updated") or "").strip())
         when = _re.sub(r"^([A-Z][a-z]{2})[a-z]*", r"\1", when)
+        _iso = _re.search(r"(\d{4})-(\d{2})-(\d{2})", when)
+        if _iso:            # "week of 2026-10-16" wrapped to three lines in a 96px cell
+            try:
+                when = datetime(*map(int, _iso.groups())).strftime("%b %-d")
+            except ValueError:
+                pass
         sub = " ".join(x for x in (sub, f'<span style="color:{MUTE};">{_esc(when)}</span>' if when else "") if x)
         cell("Lee approval", _esc(str(ap["value"])), sub)
     kc = digest.get("kcna_delta") or {}
@@ -3113,16 +3125,19 @@ def _v2_glance(digest: dict, memo_items: list) -> str:
                  f'font-size:14px;line-height:1.5;font-weight:700;color:{TAEGUK_BLUE};">{i + 1}</td>'
                  f'<td valign="top" class="v2-rule" style="padding:11px 0 11px 2px;{rule}font-family:{_V2_SANS};'
                  f'font-size:14px;line-height:1.5;color:{INK};">{_emphasis(_esc(text))}</td></tr>')
-    # Event lines are running text, so the sans; the restyle would keep them
-    # serif because they are set in ink.
-    happening = _happening_today(digest).replace(
-        "font-family:Georgia,serif;font-size:14px;line-height:1.5;", f"font-family:{_V2_SANS};font-size:14px;line-height:1.5;")
+    # Today's scheduled events are one more row of the panel, not a block of
+    # their own with a heading and a heavy rule under the glance.
+    today = _happening_rows(digest)
+    if today:
+        rows += (f'<tr><td colspan="2" class="v2-rule" style="padding:10px 0 12px;border-top:1px solid #D5DEEA;'
+                 f'font-family:{_V2_SANS};font-size:13px;line-height:1.5;color:{INK};">'
+                 f'<b>Happening today</b>&nbsp; ' + "; ".join(_esc(r).rstrip(".") for r in today) + '.</td></tr>')
     return (f'<!--v2--><div style="padding:20px 32px 20px;font-family:{_V2_SANS};" class="sec"><a name="memo" id="memo"></a>'
             f'<table width="100%" cellpadding="0" cellspacing="0" border="0" class="glance-panel" style="background:#EDF2FA;">'
             f'<tr><td style="padding:0;">{_v2_bar("Today at a Glance", numbered=False)}</td></tr>'
             f'<tr><td style="padding:0 18px 2px 16px;"><table width="100%" cellpadding="0" cellspacing="0" border="0">'
             f'{rows}{_v2_trackers(digest)}</table></td></tr>'
-            f'</table>{_v2_restyle(happening) if happening else ""}</div>')
+            f'</table></div>')
 
 
 def _v2_top_stories(stories: list) -> str:
