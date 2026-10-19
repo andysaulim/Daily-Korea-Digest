@@ -2840,9 +2840,9 @@ def _v2_item(cat, src, headline, body, url, bar_color, extra_html) -> str:
     """
     return (f'<div class="item-card" style="margin-bottom:8px;padding:13px 16px;background:{_V2_FILL};">'
             + _v2_kicker(cat, src, alert=bar_color == TAEGUK_RED)
-            + f'<div class="v2-h" style="font-family:{_V2_SERIF};font-size:17px;font-weight:700;'
+            + f'<div class="v2-h" style="font-family:{_V2_SERIF};font-size:16px;font-weight:700;'
               f'color:{INK};line-height:1.3;">{_link_or_text(headline, url, style=_V2_LINK)}</div>'
-            + (f'<div style="font-family:{_V2_SANS};font-size:15px;line-height:1.55;color:{BODY_INK};'
+            + (f'<div style="font-family:{_V2_SANS};font-size:13px;line-height:1.55;color:{BODY_INK};'
                f'margin-top:5px;">{body}</div>' if body else "")
             + extra_html + '</div>')
 
@@ -2996,7 +2996,7 @@ def _v2_trackers(digest: dict) -> str:
                  f'<b>No change:</b> {txt[:1].upper() + txt[1:]}.</td></tr>')
     return (f'<!--c--><table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:18px;">'
             f'<tr><td class="v2-rule" style="padding:0 0 6px;border-bottom:2px solid {INK};font-family:{_V2_SERIF};'
-            f'font-size:16px;font-weight:700;color:{INK};">What changed'
+            f'font-size:14px;font-weight:700;color:{INK};">What changed'
             f'<span style="font-family:{_V2_SANS};font-size:12px;font-weight:400;color:{MUTE};"> &nbsp;trackers since the last issue</span>'
             f'</td></tr>{body}</table><!--/c-->')
 
@@ -3007,13 +3007,13 @@ def _v2_glance(digest: dict, memo_items: list) -> str:
         text = mi if isinstance(mi, str) else (mi.get("text", "") if isinstance(mi, dict) else str(mi or ""))
         rule = "border-top:1px solid #D5DEEA;" if i else ""
         rows += (f'<tr><td width="30" valign="top" class="v2-rule" style="padding:11px 0;{rule}font-family:{_V2_SERIF};'
-                 f'font-size:21px;line-height:1.05;font-weight:700;color:{TAEGUK_BLUE};">{i + 1}</td>'
+                 f'font-size:16px;line-height:1.2;font-weight:700;color:{TAEGUK_BLUE};">{i + 1}</td>'
                  f'<td valign="top" class="v2-rule" style="padding:11px 0 11px 4px;{rule}">{_emphasis(_esc(text))}</td></tr>')
     return (f'<!--v2--><div style="padding:22px 32px 22px;" class="sec"><a name="memo" id="memo"></a>'
             f'<table width="100%" cellpadding="0" cellspacing="0" border="0" class="glance-panel" style="background:#EDF2FA;">'
             f'<tr><td style="padding:0;">{_v2_bar("Today at a Glance", numbered=False)}</td></tr>'
             f'<tr><td style="padding:0 20px 6px 18px;"><table width="100%" cellpadding="0" cellspacing="0" border="0" '
-            f'style="font-family:{_V2_SANS};font-size:16px;line-height:1.5;color:{INK};">{rows}</table></td></tr>'
+            f'style="font-family:{_V2_SANS};font-size:14px;line-height:1.5;color:{INK};">{rows}</table></td></tr>'
             f'</table>{_v2_trackers(digest)}{_happening_today(digest)}%%TOC%%</div>')
 
 
@@ -3028,17 +3028,17 @@ def _v2_top_stories(stories: list) -> str:
         url = st.get("url", "")
         if i == 0:
             out += (f'<div style="padding:2px 0 18px;">{_v2_kicker(cat, "")}'
-                    f'<h3 class="v2-lead" style="margin:0 0 9px;font-family:{_V2_SERIF};font-size:25px;line-height:1.22;'
+                    f'<h3 class="v2-lead" style="margin:0 0 9px;font-family:{_V2_SERIF};font-size:16px;line-height:1.35;'
                     f'font-weight:700;letter-spacing:-0.2px;color:{INK};">'
                     f'{_link_or_text(headline, url, style=_V2_LINK)}</h3>'
-                    f'<p style="margin:0;font-family:{_V2_SANS};font-size:16px;line-height:1.6;color:{BODY_INK};">{body}</p>'
+                    f'<p style="margin:0;font-family:{_V2_SANS};font-size:14px;line-height:1.6;color:{BODY_INK};">{body}</p>'
                     f'<div style="font-family:{_V2_SANS};font-size:12px;color:{MUTE};margin-top:8px;">{src}</div></div>')
         else:
             out += (f'<div class="item-card story-card" style="margin-bottom:8px;padding:14px 16px;background:{_V2_FILL};">'
                     f'{_v2_kicker(cat, "")}'
-                    f'<h3 class="v2-h" style="margin:0 0 6px;font-family:{_V2_SERIF};font-size:18px;line-height:1.3;'
+                    f'<h3 class="v2-h" style="margin:0 0 6px;font-family:{_V2_SERIF};font-size:16px;line-height:1.35;'
                     f'font-weight:700;color:{INK};">{_link_or_text(headline, url, style=_V2_LINK)}</h3>'
-                    f'<p style="margin:0;font-family:{_V2_SANS};font-size:15px;line-height:1.55;color:{BODY_INK};">{body}</p>'
+                    f'<p style="margin:0;font-family:{_V2_SANS};font-size:14px;line-height:1.55;color:{BODY_INK};">{body}</p>'
                     f'<div style="font-family:{_V2_SANS};font-size:12px;color:{MUTE};margin-top:7px;">{src}</div></div>')
     return (f'<!--v2--><div {_V2_SEC}><a name="top-stories" id="top-stories"></a>'
             f'{_sec_label("Top Stories")}{out}</div>')
@@ -3062,7 +3062,7 @@ def _v2_kcna(html: str) -> str:
 
 
 _V2_HEAD = {13: 16, 14: 17, 15: 17, 16: 18, 17: 19, 18: 20}   # serif headline sizes
-_V2_BODY = {12: 14, 13: 15, 14: 16}                            # running text, now in the sans
+_V2_BODY: dict = {}                                            # running text keeps the classic sizes
 _V2_SMALL = {10: 11, 12: 13, 13: 14}                           # sans labels and meta
 
 
@@ -3163,7 +3163,7 @@ def _v2_finish(body: str) -> str:
     if len(toc) >= 4:
         toc_html = (f'<!--c--><table width="100%" cellpadding="0" cellspacing="0" border="0" class="v2-toc-box" style="margin-top:18px;">'
                     f'<tr><td class="v2-rule" style="padding:0 0 6px;border-bottom:2px solid {INK};font-family:{_V2_SERIF};'
-                    f'font-size:16px;font-weight:700;color:{INK};">In this issue'
+                    f'font-size:14px;font-weight:700;color:{INK};">In this issue'
                     f'<span style="font-family:{_V2_SANS};font-size:12px;font-weight:400;color:{MUTE};"> &nbsp;section numbers match the bars below</span></td></tr>'
                     f'<tr><td style="padding:8px 0 0;font-family:{_V2_SANS};font-size:14px;">'
                     f'{links}</td></tr></table><!--/c-->')
@@ -3182,8 +3182,8 @@ _V2_CSS = """
       .v2-hn td { display:inline-block !important; width:33.3% !important; box-sizing:border-box !important;
         border-left:0 !important; padding:9px 2px !important; }
       .v2-toc { width:50% !important; }
-      h3.v2-lead { font-size:22px !important; }
-      .v2-h { font-size:17px !important; }
+      h3.v2-lead { font-size:16px !important; }
+      .v2-h { font-size:16px !important; }
       .wrapper .sec-bar td { padding:9px 12px !important; }
       .mast-band h1 { font-size:28px !important; }
       .kcna-dark table td { padding-left:0 !important; padding-right:0 !important; }
