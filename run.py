@@ -294,44 +294,6 @@ SECTION_CAPS = {
 
 
 
-def _check_url(url: str, timeout: float = 5.0) -> tuple[str, bool, str]:
-    """HEAD-check a URL; returns (url, ok, reason).
-    Only flags 404/410 (definitively dead). Treats 403/405/429 as OK
-    since paywalled sites and bot-protected servers commonly return these."""
-    import requests
-    try:
-        resp = requests.head(url, timeout=timeout, allow_redirects=True,
-                             headers={"User-Agent": "Mozilla/5.0 Korea-Digest-Validator/1.0"})
-        # Only flag definitively dead URLs — 403/405/429/451 are normal for
-        # paywalled sites (WSJ, FT, Bloomberg) and bot-protected servers
-        if resp.status_code in (404, 410):
-            return (url, False, f"HTTP {resp.status_code}")
-        return (url, True, "")
-    except requests.exceptions.Timeout:
-        return (url, False, "timeout")
-    except requests.exceptions.ConnectionError:
-        return (url, False, "connection error")
-    except Exception as e:
-        return (url, False, str(e)[:50])
-
-
-def _validate_urls(urls: list[str]) -> list[tuple[str, str]]:
-    """Check URLs in parallel; returns list of (url, reason) for broken ones."""
-    broken = []
-    try:
-        with ThreadPoolExecutor(max_workers=10) as pool:
-            futures = {pool.submit(_check_url, u): u for u in urls}
-            for f in as_completed(futures, timeout=30):
-                try:
-                    url, ok, reason = f.result()
-                    if not ok:
-                        broken.append((url, reason))
-                except Exception:
-                    broken.append((futures[f], "check failed"))
-    except TimeoutError:
-        pass  # some URLs still pending — report what we have so far
-    return broken
-
 _STOP_WORDS = frozenset({"the", "a", "an", "in", "on", "of", "to", "for", "and", "is", "at", "by", "as", "with", "from",
                          "its", "new", "over", "after", "says", "said", "amid", "that", "has", "will", "may", "could",
                          "been", "are", "was", "were", "this", "but", "not", "all", "more", "than", "also"})
@@ -752,13 +714,9 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
     if bad_urls:
         warnings.append(f"BAD URLS: {bad_urls} placeholder or invalid URLs found")
 
-    # Live URL accessibility check (HEAD requests in parallel)
-    all_urls = [u for u in seen_urls if u.startswith("http")]
-    if all_urls:
-        broken = _validate_urls(all_urls)
-        for url, reason in broken:
-            section = seen_urls.get(url, "unknown")
-            warnings.append(f"BROKEN LINK ({reason}): {url} in {section}")
+    # The live HEAD check moved to links.finalize, which runs once on the
+    # final digest, covers every URL field rather than these sections, and
+    # removes a dead link instead of warning about it and shipping it.
 
     if empty_body_count:
         warnings.append(f"EMPTY BODIES: {empty_body_count} items have no substantive body text")
@@ -1008,17 +966,19 @@ def _repair_digest_urls(digest: dict, payload: dict) -> list[str]:
     if not payload:
         return log
 
-    # Index every input article: (url, title, tokens)
+    # Index every input article: (url, title, tokens). Everything the model
+    # was shown counts, not only tiers 1-4: the satellite and Kim-tracker
+    # streams and the X signals are input too, and a link to one of them was
+    # being treated as fabricated.
+    import links as _links
+    _index = _links.corpus_index(payload)
     input_articles: list[tuple[str, str, set[str]]] = []
     input_urls: set[str] = set()
-    for tier_key in ("tier1", "tier2", "tier3", "tier4"):
-        for a in (payload.get(tier_key) or []):
-            u = (a.get("url") or "").strip()
-            if not u or not u.startswith("http"):
-                continue
-            input_urls.add(u)
-            title = (a.get("title") or a.get("headline") or "").strip()
-            input_articles.append((u, title, _headline_tokens(title)))
+    for a in _index.values():
+        u = (a.get("url") or "").strip()
+        input_urls.add(u)
+        title = (a.get("title") or a.get("headline") or "").strip()
+        input_articles.append((u, title, _headline_tokens(title)))
 
     if not input_urls:
         return log
@@ -1061,7 +1021,7 @@ def _repair_digest_urls(digest: dict, payload: dict) -> list[str]:
             if not url or not url.startswith("http"):
                 kept.append(item)
                 continue
-            if url in input_urls:
+            if url in input_urls or _links.lookup(url, _index):
                 kept.append(item)
                 continue
 
@@ -1099,8 +1059,11 @@ def _repair_digest_urls(digest: dict, payload: dict) -> list[str]:
             restored = restorable_drop[-need:]
             restorable_drop = restorable_drop[:-need]
             for item, _reason in restored:
+                # The text stays to hold the floor; the link we could not
+                # trace to any input does not ship.
+                item["url"] = ""
                 log.append(
-                    f"  ⚠ Kept fabricated item in {section_key} to protect "
+                    f"  ⚠ Kept unlinked item in {section_key} to protect "
                     f"floor (min {floor}): '{(item.get('headline') or '')[:60]}'")
                 kept.append(item)
 
@@ -1368,6 +1331,16 @@ def _postprocess_digest(digest_data: dict, payload: dict | None = None) -> tuple
         if repair_log:
             log.append(f"\n🔧  URL repair: fixed {len(repair_log)} mismatched URL(s) by headline match:")
             log.extend(repair_log)
+        # Every other URL in the digest (KCNA, imagery, ROK government, X
+        # posts, trade, deals...): repaired by headline or unlinked.
+        try:
+            import links as _links
+            link_log = _links.repair_all(digest_data, payload)
+        except Exception as _e:                                 # noqa: BLE001
+            link_log = [f"  link repair failed (non-fatal): {_e}"]
+        if link_log:
+            log.append(f"\n🔧  Link repair outside the item sections: {len(link_log)}")
+            log.extend(link_log)
 
     digest_data, dedup_log = _dedup_digest(digest_data)
     if dedup_log:
@@ -1791,6 +1764,9 @@ def main():
     web_base = os.environ.get("WEB_URL", "")
     if web_base:
         digest_data["web_url"] = web_base.rstrip("/") + "/latest.html"
+    # The issue's own date, so its self-links (Read online, Download PDF)
+    # point at that day's files rather than whatever is latest.
+    digest_data["date_slug"] = datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d")
 
     # Issue number, so a reader can cite the brief in a footnote. Derived from
     # the archive manifest rather than a counter, so it stays correct across
@@ -1880,6 +1856,18 @@ def main():
 
     for _msg in _ensure_pledge_projects(digest_data):
         print(f"  🏗  {_msg}")
+
+    # ── Final link pass ────────────────────────────────────────────────────
+    # The digest is final: fix anchor text, link each outlet a top story
+    # names, drop trade links to unrelated stories and repeated URLs, decode
+    # the Google News redirects left, HEAD-check the rest. Bounded and
+    # non-fatal; see links.py.
+    try:
+        import links as _links
+        for _line in _links.finalize(digest_data, payload):
+            print(f"  {_line}")
+    except Exception as _e:                                     # noqa: BLE001
+        print(f"  ⚠  Link pass skipped (non-fatal): {_e}")
 
     # ── Audio edition ──────────────────────────────────────────────────────
     # Built here, after every trim and cleanup, so the listener hears exactly
