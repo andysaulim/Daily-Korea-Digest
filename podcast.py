@@ -269,7 +269,8 @@ def _story(item: dict, body_key: str = "body") -> str:
 
 
 _SECTION_LEADS = ("Our top story", "Here's what else", "Now to Pyongyang", "The number of the day",
-                  "In Seoul,", "On the economy", "Elsewhere in the region", "How is the public",
+                  "In Seoul,", "On Capitol Hill", "On the economy", "Elsewhere in the region",
+                  "Beyond the region", "How is the public",
                   "In their own words", "What's coming up", "A few more things",
                   "And from the analysts", "From satellite imagery", "Finally, the markets",
                   "That's the Korea Daily Brief")
@@ -297,6 +298,12 @@ def happening_today(digest: dict) -> list[str]:
             span = _calendar_span(c.get("date", ""), today.year)
             if span and span[0] <= today <= span[1]:
                 out.append(str(c["event"]))
+    # Hearings from the committee schedules, the same ones the email's strip shows.
+    try:
+        from render import hill_events, hill_event_text
+        out += [hill_event_text(ev, spoken=True) for ev in hill_events(digest)[0]]
+    except Exception:                                           # noqa: BLE001
+        pass
     return out[:3]
 
 
@@ -408,8 +415,30 @@ def build_script(digest: dict) -> str:
                            "body": r.get("detail", "")}))
     section("In Seoul, the government side.", gov)
 
+    # Capitol Hill: the day's items, then the week's collected hearings (today's
+    # were already read in "Happening today"). Silent when there are neither.
+    hill = [_story(i, "body_text") for i in _items(digest, "capitol_hill")]
+    try:
+        from render import hill_events, hill_event_text, _issue_day
+        _day = _issue_day(digest)
+        ahead = [ev for ev in hill_events(digest)[1]
+                 if _day is None or str(ev.get("date", ""))[:10] != _day.isoformat()]
+        spoken = []
+        for ev in ahead[:3]:
+            try:
+                wd = datetime.strptime(str(ev["date"])[:10], "%Y-%m-%d").strftime("%A")
+            except (KeyError, ValueError):
+                continue
+            spoken.append(f"{wd}, {speakable(hill_event_text(ev, spoken=True)).rstrip('.')}")
+        if spoken:
+            hill.append("Coming up on the Hill: " + "; ".join(spoken) + ".")
+    except Exception:                                           # noqa: BLE001
+        pass
+    section("On Capitol Hill.", hill)
+
     section("On the economy.", [_story(i, "body_text") for i in _items(digest, "business_economy")])
     section("Elsewhere in the region.", [_story(i, "body_text") for i in _items(digest, "northeast_asia")])
+    section("Beyond the region.", [_story(i, "body_text") for i in _items(digest, "korea_world")])
 
     ps = digest.get("public_sentiment") or {}
     ap = ps.get("presidential_approval") or {}
@@ -533,10 +562,10 @@ FACTS. This rule outranks every other:
 - If something in the brief is unclear, leave it out rather than interpret it.
 
 SHAPE. Five segments, in this order. Put a line containing only --- between segments (the producer puts a pause there).
-1. COLD OPEN (about 60 words). After the fixed opening line, go straight into the single most consequential development, told as a tension or a stakes question, not a summary. No throat-clearing. Then one menu line: "Three things today: ..." naming the three lead stories in a few words each. If calendar_watch has events dated today, add one short line after the menu saying what is happening today.
+1. COLD OPEN (about 60 words). After the fixed opening line, go straight into the single most consequential development, told as a tension or a stakes question, not a summary. No throat-clearing. Then one menu line: "Three things today: ..." naming the three lead stories in a few words each. If calendar_watch or hill_calendar has events dated today, add one short line after the menu saying what is happening today.
 2. THE THREE LEAD STORIES (about 250 words each), one after another, with --- between them. Usually the top stories. For each: what happened, why it matters to someone who works on Korea policy (from the brief), and what to watch next. Fold in related items from other sections (government reactions, the National Assembly, statements, analysis, imagery) so each lead is one connected story, not a list. Keep one strand per story: if several items are about the same military situation (a warning, missile launches, satellite imagery, a weapons analysis), they belong in one lead together.
 3. PYONGYANG. Name every one of the top KCNA articles in kcna_delta.top_articles, even one a lead story already told (then one sentence on how state media framed it is enough), then the bottom line.
-4. THE ROUND-UP. Everything else worth a listener's time, one or two sentences each, linked by quick spoken transitions: overnight items, government and appointments, the economy, the region, the poll (say when it was taken), what is coming up, the rest of the wire, analysis. Never tell a story the leads already told. Leave out US-Korea trade and investment entirely. Satellite imagery only if it is included.
+4. THE ROUND-UP. Everything else worth a listener's time, one or two sentences each, linked by quick spoken transitions: overnight items, government and appointments, Capitol Hill (only when capitol_hill has items or hill_calendar has hearings; one short segment, hearings named only as hill_calendar lists them), the economy, the region, Korea and the wider world (only when korea_world has items; one short segment), the poll (say when it was taken), what is coming up, the rest of the wire, analysis. Never tell a story the leads already told. Leave out US-Korea trade and investment entirely. Satellite imagery only if it is included.
 5. CLOSE. The markets in two or three short sentences, then the fixed closing line.
 
 WRITE FOR THE EAR. These are broadcast writing rules:
@@ -555,8 +584,9 @@ WRITE FOR THE EAR. These are broadcast writing rules:
 FORMAT: plain spoken text only, paragraphs separated by a blank line, segments separated by a line containing only ---. No headings, no stage directions, no sound cues, no markdown, no bullet points. Begin exactly with: "This is the Korea Daily Brief from the CSIS Korea Chair. It's {when}." End exactly with: "That's the Korea Daily Brief for {when}. The full text, with a link to every source, is in today's email." Aim for 1,300 to 1,600 words."""
 
 _SCRIPT_KEYS = ("re_line", "top_stories", "overnight_items", "kcna_delta", "key_stat",
-                "rok_government", "rok_assembly", "rok_personnel", "business_economy",
-                "northeast_asia", "public_sentiment", "social_statements",
+                "rok_government", "rok_assembly", "rok_personnel", "capitol_hill",
+                "hill_calendar", "business_economy", "northeast_asia", "korea_world",
+                "public_sentiment", "social_statements",
                 "official_x_posts", "calendar_watch", "also_today", "opeds_today",
                 "academic_today", "imagery_report", "market_indicators")
 
@@ -575,6 +605,7 @@ President Minister Ministry Prime Defense Foreign Unification National Assembly
 Party Government Committee Chairman Secretary General Commander Command State
 U.S. US KCNA DPRK ROK Mr Ms Dr
 Washington Beijing Moscow Tokyo United States Bank Second Third
+Capitol Hill Congress Senate House
 """.split())
 _COUNTED_FACTS = {"soldier", "people", "troop", "missile", "satellite", "killed", "injured",
                   "dead", "wounded", "launche", "launch", "rocket", "ship", "vessel", "day",

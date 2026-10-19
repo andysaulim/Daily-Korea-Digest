@@ -524,6 +524,68 @@ def _calendar_span(text: str, year: int):
     return start, end
 
 
+def _issue_day(digest: dict):
+    """The issue date as a date, or None."""
+    raw = str(digest.get("digest_date", "")).strip()
+    for fmt, text in (("%Y-%m-%d", raw[:10]), ("%A, %B %d, %Y", raw), ("%B %d, %Y", raw)):
+        try:
+            return datetime.strptime(text, fmt).date()
+        except ValueError:
+            continue
+    return None
+
+
+def hill_event_text(ev: dict, spoken: bool = False) -> str:
+    """'Senate Foreign Relations hearing: The U.S.-ROK alliance', from a schedule entry.
+
+    Built only from the fields the committee schedule carried. The Senate
+    listing words every title "Hearings to examine ...", and a committee feed
+    puts the date in its title; both are trimmed, nothing is added.
+    """
+    raw = _re.sub(r"\s+", " ", str(ev.get("title") or "")).strip()
+    committee = str(ev.get("committee") or "").split(":")[0].strip()
+    chamber = str(ev.get("chamber") or "").strip()
+    if chamber and committee and not committee.lower().startswith(chamber.lower()):
+        committee = f"{chamber} {committee}"
+    kind = "markup" if _re.search(r"markup|mark-up|business meeting", raw, _re.I) else "hearing"
+    title = _re.sub(r"^(?:(?:full committee|subcommittee)\s+)?(?:hearings?|markup|mark-up|business meeting)"
+                    r"\s*(?:to examine|of|on|:|-|–)?\s*", "", raw, flags=_re.I)
+    title = _re.sub(r"\s*[-–|,]\s*(?:\w+day,?\s+)?[A-Z][a-z]{2,8}\.? \d{1,2}, 20\d\d\s*$", "", title)
+    title = title.rstrip(". ")
+    if spoken:
+        # "a Senate Foreign Relations hearing on the U.S.-ROK alliance": the
+        # printed colon form read aloud is two headlines in a row.
+        if title[1:2].islower():
+            title = title[:1].lower() + title[1:]
+        return f"a {committee} {kind} on {title}" if committee else title
+    title = title[:1].upper() + title[1:]
+    return f"{committee} {kind}: {title}" if committee else title
+
+
+def hill_events(digest: dict) -> tuple[list, list]:
+    """(today, coming up) from the collected congressional schedule.
+
+    digest["hill_calendar"] is attached by run.py from the committee
+    schedules, never written by the model, and is empty when they failed.
+    """
+    today = _issue_day(digest)
+    if today is None:
+        return [], []
+    now, ahead = [], []
+    for ev in digest.get("hill_calendar") or []:
+        if not isinstance(ev, dict) or not ev.get("title"):
+            continue
+        try:
+            d = datetime.strptime(str(ev.get("date", ""))[:10], "%Y-%m-%d").date()
+        except ValueError:
+            continue
+        if d == today:
+            now.append(ev)
+        if today <= d <= today.fromordinal(today.toordinal() + 7):
+            ahead.append(ev)
+    return now, ahead
+
+
 def _happening_today(digest: dict) -> str:
     """Up to three scheduled events that fall on the issue date, under Today at a Glance.
 
@@ -548,6 +610,8 @@ def _happening_today(digest: dict) -> str:
         span = _calendar_span(c.get("date", ""), today.year)
         if span and span[0] <= today <= span[1]:
             rows.append(c)
+    for ev in hill_events(digest)[0]:
+        rows.append({"event": hill_event_text(ev) + (f" ({ev['time']})" if ev.get("time") else "")})
     if not rows:
         return ""
     items = "".join(
@@ -1628,6 +1692,50 @@ def render(digest: dict) -> str:
         </div>
         """)
 
+    # ── 10b. Capitol Hill (US Congress on Korea) ─────────────────────────
+    # Directly after the US-Korea material it belongs with. Shown when there
+    # is either an item or a collected hearing in the week ahead; absent
+    # otherwise, which is most days.
+    hill_items = digest.get("capitol_hill") or []
+    _hill_ahead = hill_events(digest)[1]
+    if hill_items or _hill_ahead:
+        hill_html = ""
+        for item in hill_items:
+            if not isinstance(item, dict):
+                continue
+            kicker = " &middot; ".join(_esc(_str(x)) for x in (item.get("chamber"), item.get("category"),
+                                                               item.get("bill")) if _str(x))
+            hill_html += _item_block(
+                cat=kicker,
+                src=_esc(_clean_src(item.get("source", ""))),
+                headline=_emphasis(_esc(item.get("headline", ""))),
+                body=_emphasis(_esc(item.get("body_text", ""))),
+                url=item.get("url", ""),
+            )
+        if _hill_ahead:
+            _today = _issue_day(digest)
+            rows = ""
+            for ev in _hill_ahead[:4]:
+                try:
+                    d = datetime.strptime(str(ev["date"])[:10], "%Y-%m-%d").date()
+                    when = "Today" if d == _today else d.strftime("%a %b %-d")
+                except (KeyError, ValueError):
+                    when = ""
+                if ev.get("time"):
+                    when += f", {ev['time']}"
+                rows += (f'<div style="font-family:Georgia,serif;font-size:13px;line-height:1.5;'
+                         f'color:{BODY_INK};margin-bottom:5px;">'
+                         f'<span style="font-family:Arial,sans-serif;font-size:11px;font-weight:700;'
+                         f'color:{MUTE};white-space:nowrap;">{_esc(when)}</span> &nbsp;'
+                         f'{_link_or_text(_esc(hill_event_text(ev)), str(ev.get("url") or ""))}</div>')
+            hill_html += _subhead("Coming up on the Hill") + rows
+        sections.append(f"""
+        <div {_SEC}>
+          <a name="hill" id="hill"></a>{_sec_label("Capitol Hill")}
+          {hill_html}
+        </div>
+        """)
+
     # ── 11. Business & Economy ────────────────────────────────────────────
     biz_econ = digest.get("business_economy") or []
     if biz_econ:
@@ -1694,6 +1802,27 @@ def render(digest: dict) -> str:
         <div {_SEC}>
           <a name="nea" id="nea"></a>{_sec_label("Northeast Asia Watch")}
           {nea_html}
+        </div>
+        """)
+
+    # ── 12b. Korea and the World (beyond the US and Northeast Asia) ──────
+    world_items = [i for i in (digest.get("korea_world") or []) if isinstance(i, dict)]
+    if world_items:
+        world_html = ""
+        for item in world_items:
+            kicker = " &middot; ".join(_esc(_str(x)) for x in (item.get("region"), item.get("category"))
+                                       if _str(x))
+            world_html += _item_block(
+                cat=kicker,
+                src=_esc(_clean_src(item.get("source", ""))),
+                headline=_emphasis(_esc(item.get("headline", ""))),
+                body=_emphasis(_esc(item.get("body_text", ""))),
+                url=item.get("url", ""),
+            )
+        sections.append(f"""
+        <div {_SEC}>
+          <a name="world" id="world"></a>{_sec_label("Korea and the World")}
+          {world_html}
         </div>
         """)
 
