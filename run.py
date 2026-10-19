@@ -1326,6 +1326,9 @@ def bp_changes(digest: dict, previous: dict | None) -> list[str] | None:
     return out
 
 
+_SILENT_FEEDS: list[str] = []
+
+
 def tariff_changes(digest: dict, previous: dict | None) -> list[str] | None:
     """Sector names whose tariff rate is new or different from the previous issue."""
     if not previous:
@@ -1568,6 +1571,7 @@ def main():
                     _health.get("per_source") or {},
                     (payload or {}).get("feed_source_used") or {}):
                 print(f"    {_line}")
+                _SILENT_FEEDS.append(_line)
         except Exception as _e:
             print(f"    (feed health unavailable: {_e})")
 
@@ -2070,6 +2074,17 @@ def main():
     except Exception as e:
         print(f"  ⚠  Health checks failed to run: {e}")
 
+    # Widely covered stories the brief may have missed, and what each feed
+    # delivered. Published as coverage.json; a report, never a gate.
+    _coverage = {}
+    if validation_passed and not _is_test_send:
+        try:
+            import coverage_audit
+            _coverage = coverage_audit.run(payload or {}, digest_data, Path("public"), _date_slug,
+                                           silent_feeds=_SILENT_FEEDS)
+        except Exception as _e:                                 # noqa: BLE001
+            print(f"  ⚠  Coverage audit skipped (non-fatal): {_e}")
+
     # ── Step 6: Log quality metrics ────────────────────────────────────────
     try:
         metrics = {
@@ -2094,6 +2109,7 @@ def main():
             "sent": not args.no_send and validation_passed,
             "health_alerts": len(health_report.get("alerts", [])),
             "health_warnings": len(health_report.get("warnings", [])),
+            **_coverage,
             "recent_coverage_lines": len(recent_coverage.splitlines()) if recent_coverage else 0,
         }
         try:
