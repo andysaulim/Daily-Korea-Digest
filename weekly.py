@@ -125,7 +125,20 @@ def _summarize_digest(d: dict) -> dict:
             {"headline": s.get("headline", "")}
             for s in (d.get("business_economy") or [])[:3]
         ],
+        "capitol_hill": [
+            {"headline": s.get("headline", ""), "source": s.get("source", ""),
+             "category": s.get("category", "")}
+            for s in (d.get("capitol_hill") or [])[:4]
+        ],
+        "korea_world": [
+            {"headline": s.get("headline", ""), "source": s.get("source", ""),
+             "region": s.get("region", "")}
+            for s in (d.get("korea_world") or [])[:3]
+        ],
         "calendar_watch": d.get("calendar_watch") or [],
+        # Collected from the committee schedules, not written by a model.
+        "hill_calendar": [{"date": e.get("date"), "committee": e.get("committee"),
+                           "title": e.get("title")} for e in (d.get("hill_calendar") or [])[:5]],
         "story_count": d.get("story_count", 0),
     }
 

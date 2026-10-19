@@ -35,10 +35,16 @@ TRIM_ORDER: list[tuple[str, int]] = [
     ("rok_personnel", 2),
     ("rok_assembly", 2),
     ("academic_today", 1),
+    # The two newest sections give up items before the established ones, but
+    # keep their lead item: each is the only place its subject appears.
+    ("korea_world", 1),
+    ("capitol_hill", 2),
     ("opeds_today", 2),
     ("northeast_asia", 3),
     ("business_economy", 3),
-    ("rok_government", 3),
+    # Five, not three: the ministry round-up is the brief's primary-source
+    # layer, and at three it was the first substantive section to thin out.
+    ("rok_government", 5),
     ("overnight_items", 6),
 ]
 

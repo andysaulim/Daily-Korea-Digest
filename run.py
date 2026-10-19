@@ -27,7 +27,10 @@ from digest import _count_digest_words
 # sections it may never touch already come to roughly that. Rather than keep
 # losing reporting to an arbitrary number, the band moved to where the brief
 # actually sits when it is good. Quality first; the ceiling is the backstop.
-WORD_CEILING = 2750
+# 2,750 -> 2,800 (Oct 2026), with the user's approval, when Capitol Hill and
+# Korea and the World were added: at most seven items between them, and most
+# days fewer, since both are allowed to be empty.
+WORD_CEILING = 2800
 
 
 def _count_rendered_words_of(html: str) -> int:
@@ -275,6 +278,10 @@ SECTION_CAPS = {
     "calendar_watch":    (0, 5),
     "also_today":        (0, 6),
     "northeast_asia":    (0, 5),
+    # Both may be empty, and on most days should be: they carry only what the
+    # Hill and world feeds actually collected.
+    "capitol_hill":      (0, 4),
+    "korea_world":       (0, 3),
     "social_statements": (0, 3),
     "rok_government":    (0, 6),
     "rok_assembly":      (0, 3),
@@ -352,11 +359,13 @@ _COMPANY_ENTITIES = {
 # All sections that contain items with URLs/headlines
 _ALL_ITEM_SECTIONS = ("top_stories", "overnight_items", "also_today",
                        "business_economy", "opeds_today", "academic_today",
-                       "social_statements", "northeast_asia")
+                       "social_statements", "northeast_asia",
+                       "capitol_hill", "korea_world")
 
 # Sections where duplicates get auto-stripped (priority order — first wins)
 _DEDUP_SECTIONS = ("top_stories", "overnight_items", "business_economy",
-                    "northeast_asia", "also_today", "opeds_today",
+                    "northeast_asia", "capitol_hill", "korea_world",
+                    "also_today", "opeds_today",
                     "academic_today", "social_statements")
 
 
@@ -1772,6 +1781,10 @@ def main():
         print("\n  --no-push: skipping database updates")
 
     # ── Step 3: Render HTML ──────────────────────────────────────────────────
+    # Upcoming hearings come from the committee schedules, not from the model,
+    # so they are attached here as collected. Empty when every schedule failed,
+    # and then the brief simply has no Hill calendar line.
+    digest_data["hill_calendar"] = list((payload or {}).get("hill_calendar") or [])
     from render import render
 
     # Inject web URL for "Read Online" link (set via env or GitHub Pages)
@@ -2095,6 +2108,8 @@ def main():
             "overnight_items": len(digest_data.get("overnight_items") or []),
             "business_economy": len(digest_data.get("business_economy") or []),
             "northeast_asia": len(digest_data.get("northeast_asia") or []),
+            "capitol_hill": len(digest_data.get("capitol_hill") or []),
+            "korea_world": len(digest_data.get("korea_world") or []),
             "opeds": len(digest_data.get("opeds_today") or []),
             "academic": len(digest_data.get("academic_today") or []),
             "statements": len(digest_data.get("social_statements") or []),

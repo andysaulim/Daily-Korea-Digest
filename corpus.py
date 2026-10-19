@@ -38,6 +38,7 @@ import requests
 _DIGEST_ITEM_SECTIONS = (
     "top_stories", "overnight_items", "also_today", "business_economy",
     "opeds_today", "academic_today", "social_statements", "northeast_asia",
+    "capitol_hill", "korea_world",
 )
 
 # Summary cap — matches collect.py's _entry_to_article (summary[:800]).
