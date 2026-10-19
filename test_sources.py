@@ -190,7 +190,8 @@ def check_google_news_dependence_not_regressing() -> list[str]:
 def check_native_feeds_come_first() -> list[str]:
     """A candidate list must not put Google News ahead of a native feed."""
     problems = []
-    for name, value in collect.TIER1_FEEDS.items():
+    for name, value in {**collect.TIER1_FEEDS, **collect.CAPITOL_HILL_FEEDS,
+                        **collect.KOREA_WORLD_FEEDS}.items():
         if isinstance(value, str):
             continue
         seen_google = False
@@ -233,7 +234,8 @@ def check_length_has_a_ceiling() -> list[str]:
     per_item = {"top_stories": 55, "overnight_items": 24, "business_economy": 40,
                 "northeast_asia": 40, "also_today": 24, "rok_government": 36,
                 "rok_assembly": 30, "rok_personnel": 28, "opeds_today": 44,
-                "academic_today": 44, "social_statements": 40, "morning_memo": 26}
+                "academic_today": 44, "social_statements": 40, "morning_memo": 26,
+                "capitol_hill": 40, "korea_world": 40}
     permitted = sum(hi * per_item.get(name, 25)
                     for name, (_lo, hi) in run.SECTION_CAPS.items())
     permitted += 400          # kcna, trade, key stat, on this day
@@ -251,7 +253,8 @@ def check_length_has_a_ceiling() -> list[str]:
             "also_today": _mk(6, 40), "rok_government": _mk(6, 55),
             "rok_assembly": _mk(6, 45), "rok_personnel": _mk(6, 42),
             "opeds_today": _mk(6, 60), "academic_today": _mk(6, 70),
-            "social_statements": _mk(6, 55)}
+            "social_statements": _mk(6, 55), "capitol_hill": _mk(4, 50),
+            "korea_world": _mk(3, 50)}
     length_budget.apply(over, _count_digest_words, run.WORD_CEILING)
     if _count_digest_words(over) > run.WORD_CEILING:
         problems.append("length_budget did not bring an over-long digest under the ceiling")
@@ -588,6 +591,267 @@ def check_audio_script_is_the_brief():
     return problems
 
 
+# ── Capitol Hill and Korea and the World ─────────────────────────────────────
+
+def _hill_world_sample() -> dict:
+    """A digest with both new sections and a collected hearing schedule."""
+    return {
+        "digest_date": "2026-10-19",
+        "re_line": "Hill keeps USFK floor · Poland K2 deal",
+        "morning_memo": ["a", "b", "c"],
+        "top_stories": [{"headline": "DPRK fires ballistic missile", "source": "Yonhap",
+                         "body": "The Joint Chiefs said the missile flew 300 km.", "url": "https://x/1"}],
+        "capitol_hill": [
+            {"url": "https://thehill.com/x", "source": "The Hill", "chamber": "Both",
+             "category": "Legislation", "bill": "S. 2296",
+             "headline": "NDAA keeps 28,500-troop floor for US forces in South Korea",
+             "body_text": "The compromise bill bars funds to cut the force below 28,500."},
+            {"url": "https://rollcall.com/x", "source": "Roll Call", "chamber": "Senate",
+             "category": "Letter", "bill": None,
+             "headline": "Senators urge visa fix for Korean workers at Georgia plant",
+             "body_text": "Twelve senators asked the State Department to create a visa category."}],
+        "korea_world": [
+            {"url": "https://notesfrompoland.com/x", "source": "Notes from Poland", "region": "Europe",
+             "category": "Defense exports", "headline": "Poland signs second K2 tank contract",
+             "body_text": "Warsaw said the contract covers 180 tanks."}],
+        "hill_calendar": [
+            {"date": "2026-10-19", "time": "10:00 AM", "chamber": "Senate",
+             "committee": "Foreign Relations", "title": "Hearings to examine the U.S.-ROK alliance.",
+             "url": "https://www.senate.gov/committees/hearings_meetings.htm", "source": "Senate committee schedule"},
+            {"date": "2026-10-22", "time": "", "chamber": "House", "committee": "House Foreign Affairs",
+             "title": "Hearing: North Korea's Sanctions Evasion - October 22, 2026",
+             "url": "https://foreignaffairs.house.gov/x", "source": "HFAC schedule"}],
+    }
+
+
+def check_new_sections_are_wired() -> list[str]:
+    """Both sections reach every stage: caps, trim, validation, prompt, count, corpus.
+
+    A section added to the prompt but not to the validator's list is never
+    checked against the input feed, which is how an invented item ships.
+    """
+    import run
+    import length_budget
+    import corpus
+    import podcast
+    import weekly
+    from digest import _count_digest_words
+    problems = []
+    text = _prompt_text()
+    if run.SECTION_CAPS.get("capitol_hill") != (0, 4):
+        problems.append(f"capitol_hill cap is {run.SECTION_CAPS.get('capitol_hill')}, expected (0, 4)")
+    if run.SECTION_CAPS.get("korea_world") != (0, 3):
+        problems.append(f"korea_world cap is {run.SECTION_CAPS.get('korea_world')}, expected (0, 3)")
+    trimmed = {name for name, _floor in length_budget.TRIM_ORDER}
+    for sec in ("capitol_hill", "korea_world"):
+        if sec not in trimmed:
+            problems.append(f"{sec} is not in length_budget.TRIM_ORDER")
+        if sec not in run._ALL_ITEM_SECTIONS:
+            problems.append(f"{sec} is not validated against the input feed (run._ALL_ITEM_SECTIONS)")
+        if sec not in run._DEDUP_SECTIONS:
+            problems.append(f"{sec} is not deduplicated (run._DEDUP_SECTIONS)")
+        if sec not in corpus._DIGEST_ITEM_SECTIONS:
+            problems.append(f"{sec} is not recorded in the corpus")
+        if sec not in podcast._SCRIPT_KEYS:
+            problems.append(f"{sec} is not given to the written audio script or its check")
+        if f"- {sec}: array of 0-" not in text:
+            problems.append(f"the prompt has no {sec} schema entry")
+        if not weekly._summarize_digest({sec: [{"headline": "h"}]}).get(sec):
+            problems.append(f"the weekly review does not read {sec}")
+    if "hill_calendar" not in podcast._SCRIPT_KEYS:
+        problems.append("hill_calendar is not visible to the audio script check")
+    floor = dict(length_budget.TRIM_ORDER).get("rok_government")
+    if floor != 5:
+        problems.append(f"rok_government trim floor is {floor}, expected 5")
+    d = _hill_world_sample()
+    if _count_digest_words(d) <= _count_digest_words({k: v for k, v in d.items()
+                                                     if k not in ("capitol_hill", "korea_world")}):
+        problems.append("the word count does not see the new sections")
+    for sec in ("capitol_hill", "korea_world"):
+        block = text.split(f"- {sec}:", 1)[-1][:2500]
+        if "empty" not in block.lower() or "memory" not in block.lower():
+            problems.append(f"{sec}'s instructions do not say empty is fine and never to fill from memory")
+    if "FM Cho Tae-yul" in text:
+        problems.append("the rok_government example still names the previous foreign minister")
+    return problems
+
+
+def _prompt_text() -> str:
+    """The user prompt with a small payload, built without any network call."""
+    from digest import build_user_prompt
+    payload = {"tier1": [], "tier2": [], "tier3": [], "tier4": []}
+    return build_user_prompt(payload, "Monday, October 19, 2026")
+
+
+def check_new_streams_reach_the_model() -> list[str]:
+    """A Hill or world article must be in the prompt even on a 300-article day.
+
+    The tier-1 block is cut at 140 by rank; an item from a feed that is mostly
+    about something else would lose that cut every time. The streams have
+    their own blocks, and the tier-1 block leaves them out so nothing is
+    shown twice.
+    """
+    from digest import build_user_prompt
+    problems = []
+    filler = [{"source": "Yonhap English", "title": f"Seoul item {i}", "url": f"https://y/{i}",
+               "summary": "", "lang": "EN"} for i in range(300)]
+    hill = {"source": "Roll Call", "title": "House passes Korea visa bill", "lang": "EN",
+            "url": "https://rollcall.com/hill-korea-visa", "summary": "", "stream": "capitol_hill"}
+    world = {"source": "Korea-Poland", "title": "Poland signs K2 deal with Hyundai Rotem", "lang": "EN",
+             "url": "https://example.org/poland-k2", "summary": "", "stream": "korea_world"}
+    payload = {"tier1": filler + [hill, world], "tier2": [], "tier3": [], "tier4": [],
+               "capitol_hill_articles": [hill], "korea_world_articles": [world]}
+    text = build_user_prompt(payload, "Monday, October 19, 2026")
+    for a in (hill, world):
+        n = text.count(a["url"])
+        if n == 0:
+            problems.append(f"{a['source']} article never reaches the prompt")
+        elif n > 1:
+            problems.append(f"{a['source']} article is shown to the model {n} times")
+    if digest._prompt_band({"source": "CRS Reports"}) != 0 or \
+            digest._prompt_band({"source": "Congress.gov Bills"}) != 0:
+        problems.append("Congress's own documents are not ranked as primary sources")
+    return problems
+
+
+def check_new_streams_sourcing() -> list[str]:
+    """The Hill and world feeds follow the sourcing rules in CLAUDE.md.
+
+    Not exempt from the relevance filter (none is Korea-relevant by
+    construction), filtered so a National Assembly story or a Japan story does
+    not leak in, and every outlet the prompt names for them is collected.
+    """
+    class _E(dict):
+        def get(self, key, default=None):
+            return dict.get(self, key, default)
+
+    problems = []
+    for name in list(collect.CAPITOL_HILL_FEEDS) + list(collect.KOREA_WORLD_FEEDS):
+        if name in collect.KOREA_NATIVE_FEEDS:
+            problems.append(f"{name!r} is exempt from the Korea filter but is not Korea-only")
+    cases = [
+        (collect._is_hill_relevant(_E(title="NDAA keeps troop floor in South Korea", summary=""),
+                                   "The Hill Defense"), True, "an NDAA Korea item"),
+        (collect._is_hill_relevant(_E(title="Pentagon budget fight continues", summary=""),
+                                   "The Hill Defense"), False, "a non-Korea defense item"),
+        (collect._is_hill_relevant(_E(title="Korean lawmakers clash at National Assembly audit",
+                                      summary="lawmakers"), "US Congress Korea"), False,
+         "a National Assembly item from a search feed"),
+        (collect._is_hill_relevant(_E(title="Senators introduce bill on South Korea deterrence",
+                                      summary=""), "US Congress Korea"), True, "a Senate bill on Korea"),
+        (collect._is_world_relevant(_E(title="Poland signs K2 tank deal with South Korea", summary="")),
+         True, "a Poland arms deal"),
+        (collect._is_world_relevant(_E(title="South Korea and Japan extend currency swap", summary="")),
+         False, "a Japan-Korea item (northeast_asia's)"),
+    ]
+    for got, want, label in cases:
+        if got != want:
+            problems.append(f"filter {'drops' if want else 'admits'} {label}")
+    # Every outlet the Hill block names must be collected.
+    import inspect
+    src = inspect.getsource(digest.build_user_prompt)
+    m = re.search(r"Collected from ([^)]+)\)", src)
+    if not m:
+        problems.append("the CAPITOL HILL block no longer says what it is collected from")
+    else:
+        feeds = " ".join(_all_feed_names()).lower()
+        for outlet in (o.strip() for o in m.group(1).split(",")):
+            token = outlet.lower().replace("committee sites", "hfac")
+            if token not in feeds:
+                problems.append(f"the Hill block names {outlet!r} but no feed collects it")
+    # The calendar: dated by the schedule, filtered by title, empty on failure.
+    from datetime import date
+    xml = (b'<?xml version="1.0"?><css_meetings_scheduled><meetings>'
+           b'<meeting><committee>Foreign Relations</committee><date>21-OCT-2026 10:00 AM</date>'
+           b'<matter>Hearings to examine the U.S.-Republic of Korea alliance.</matter></meeting>'
+           b'<meeting><committee>Agriculture</committee><date>21-OCT-2026 10:00 AM</date>'
+           b'<matter>Hearings to examine the farm bill.</matter></meeting>'
+           b'<meeting><committee>Armed Services</committee><date>02-DEC-2026 09:30 AM</date>'
+           b'<matter>Hearings to examine USFK posture.</matter></meeting></meetings></css_meetings_scheduled>')
+    ev = collect.filter_hill_events(collect._parse_hill_schedule(xml, "Senate committee schedule"),
+                                    date(2026, 10, 19), date(2026, 10, 26))
+    if [e["date"] for e in ev] != ["2026-10-21"]:
+        problems.append(f"calendar filter kept {[e['title'] for e in ev]}, expected only the Korea hearing")
+    if collect._parse_hill_schedule(b"<html>not a schedule", "Senate committee schedule"):
+        problems.append("an unreadable schedule produced events")
+    return problems
+
+
+def check_new_sections_render() -> list[str]:
+    """Placed after US-Korea and Northeast Asia, hidden when empty, dark-mode safe."""
+    import copy
+    import preview
+    import render as r
+    problems = []
+    d = copy.deepcopy(preview.DIGEST)
+    d.update(copy.deepcopy(_hill_world_sample()))
+    html = r.render(copy.deepcopy(d))
+    pos = {a: html.find(f'name="{a}"') for a in ("trade", "hill", "business", "nea", "world")}
+    if pos["hill"] < 0 or pos["world"] < 0:
+        problems.append("a new section did not render with items present")
+    else:
+        if pos["trade"] >= 0 and not pos["trade"] < pos["hill"]:
+            problems.append("Capitol Hill renders before the US-Korea material")
+        if pos["business"] >= 0 and not pos["hill"] < pos["business"]:
+            problems.append("Capitol Hill is not directly after the US-Korea material")
+        if pos["nea"] >= 0 and not pos["nea"] < pos["world"]:
+            problems.append("Korea and the World renders before Northeast Asia")
+    if "Coming up on the Hill" not in html:
+        problems.append("no Coming up on the Hill line with a hearing in the week")
+    head = html[:html.find('name="top-stories"')]
+    if "Senate Foreign Relations hearing" not in head:
+        problems.append("today's hearing is missing from the Happening today strip")
+    missing = r._check_dark_coverage(html)
+    if missing:
+        problems.append("dark mode: " + "; ".join(missing))
+    # Empty: no bar, no anchor.
+    e = copy.deepcopy(d)
+    e["capitol_hill"], e["korea_world"], e["hill_calendar"] = [], [], []
+    h2 = r.render(e)
+    for a in ("hill", "world"):
+        if f'name="{a}"' in h2:
+            problems.append(f"#{a} renders with nothing in it")
+    # Calendar feeds failed: the items still render, with no calendar line.
+    f = copy.deepcopy(d)
+    f.pop("hill_calendar")
+    h3 = r.render(f)
+    if 'name="hill"' not in h3 or "Coming up on the Hill" in h3:
+        problems.append("Capitol Hill does not render cleanly without the calendar")
+    return problems
+
+
+def check_new_sections_audio() -> list[str]:
+    """Narrated when present, silent when empty, and no false alarms from the check."""
+    import copy
+    import podcast
+    problems = []
+    d = _hill_world_sample()
+    s = podcast.build_script(d)
+    for lead in ("On Capitol Hill.", "Beyond the region.", "Coming up on the Hill"):
+        if lead not in s:
+            problems.append(f"audio script has no {lead!r} segment")
+    if "Senate Foreign Relations hearing" not in s.split("Our top story")[0]:
+        problems.append("today's hearing is not in the audio's Happening today line")
+    e = copy.deepcopy(d)
+    e["capitol_hill"], e["korea_world"], e["hill_calendar"] = [], [], []
+    s2 = podcast.build_script(e)
+    if "Capitol Hill" in s2 or "Beyond the region" in s2:
+        problems.append("audio reads an empty new section")
+    # A written script that says only what the brief says must pass the check.
+    when = podcast._spoken_date(d)
+    written = (f"This is the Korea Daily Brief from the CSIS Korea Chair. It's {when}.\n\n"
+               "On Capitol Hill, the NDAA keeps a 28,500-troop floor for U.S. forces in South Korea. "
+               "Senate Foreign Relations holds a hearing today on the alliance. On Thursday, House "
+               "Foreign Affairs looks at North Korea's sanctions evasion.\n\n"
+               "Beyond the region, Poland signed a second K2 tank contract, covering 180 tanks.\n\n"
+               f"That's the Korea Daily Brief for {when}. The full text, with a link to every "
+               "source, is in today's email.")
+    alarms = podcast.check_script(written, d, when)
+    if alarms:
+        problems.append("check_script flags facts the brief carries: " + "; ".join(alarms[:4]))
+    return problems
+
+
 CHECKS = [
     ("API cost is recorded and kept", check_api_cost_is_recorded),
     ("no raw markdown reaches the reader", check_no_raw_markdown_reaches_the_reader),
@@ -608,6 +872,11 @@ CHECKS = [
     ("length has a ceiling", check_length_has_a_ceiling),
     ("audio narrates only the brief", check_audio_script_is_the_brief),
     ("coverage audit flags missed stories", check_coverage_audit),
+    ("Capitol Hill and Korea and the World are wired", check_new_sections_are_wired),
+    ("Hill and world streams reach the model", check_new_streams_reach_the_model),
+    ("Hill and world feeds follow the sourcing rules", check_new_streams_sourcing),
+    ("new sections render in place", check_new_sections_render),
+    ("new sections are narrated", check_new_sections_audio),
 ]
 
 
