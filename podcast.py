@@ -18,6 +18,10 @@ Configuration (all optional; with none set, the script is built and no audio
 is made):
     ELEVENLABS_API_KEY   enables synthesis (voice: DEFAULT_ELEVEN_VOICE, or ELEVENLABS_VOICE_ID)
     OPENAI_API_KEY       not used unless TTS_PROVIDER=openai is set deliberately
+    PODCAST_OP3          download counting via op3.dev on enclosures; on unless 0/false/off
+
+Around each MP3, listen.py publishes chapters (JSON and ID3), a VTT
+transcript, show notes and the player page the email's Listen bar opens.
     TTS_MODEL        default gpt-4o-mini-tts
     TTS_VOICE        default ash
     TTS_STYLE        how the voice reads; default is a conversational podcast host
@@ -79,6 +83,22 @@ ELEVEN_SPEED = 0.95              # the voice's own pace setting; 1.0 is its natu
 # The voice model's own pace is a suggestion it does not always take; this is
 # applied after, pitch unchanged. 1.0 leaves it alone; TTS_PACE overrides.
 DEFAULT_PACE = 0.92
+# The AI disclosure. Printed in the feed and on the player page; the spoken
+# form is a short phrase inside the fixed opening line, so a listener hears it
+# in the first five seconds without a disclaimer read at them.
+DISCLOSURE = ("This is an AI-narrated edition of today's Korea Daily Brief "
+              "from the CSIS Korea Chair.")
+SPOKEN_DISCLOSURE = "read by an AI voice"
+
+
+def opening_line(when: str) -> str:
+    """The fixed first line of every script: the show, the disclosure, the date."""
+    return f"This is the Korea Daily Brief from the CSIS Korea Chair, {SPOKEN_DISCLOSURE}. It's {when}."
+
+
+def _legacy_opening(when: str) -> str:
+    """The opening before the disclosure was added; a writer may still produce it."""
+    return f"This is the Korea Daily Brief from the CSIS Korea Chair. It's {when}."
 
 # ── Making text speakable ────────────────────────────────────────────────────
 
@@ -314,7 +334,7 @@ def build_script(digest: dict) -> str:
     reader, cannot skip the repeat.
     """
     when = _spoken_date(digest)
-    out: list[str] = [f"This is the Korea Daily Brief from the CSIS Korea Chair. It's {when}."]
+    out: list[str] = [opening_line(when)]
     told: list[set] = []
     told_names: list[tuple[set, set]] = []
 
@@ -533,11 +553,11 @@ FACTS. This rule outranks every other:
 - If something in the brief is unclear, leave it out rather than interpret it.
 
 SHAPE. Five segments, in this order. Put a line containing only --- between segments (the producer puts a pause there).
-1. COLD OPEN (about 60 words). After the fixed opening line, go straight into the single most consequential development, told as a tension or a stakes question, not a summary. No throat-clearing. Then one menu line: "Three things today: ..." naming the three lead stories in a few words each. If calendar_watch has events dated today, add one short line after the menu saying what is happening today.
-2. THE THREE LEAD STORIES (about 250 words each), one after another, with --- between them. Usually the top stories. For each: what happened, why it matters to someone who works on Korea policy (from the brief), and what to watch next. Fold in related items from other sections (government reactions, the National Assembly, statements, analysis, imagery) so each lead is one connected story, not a list. Keep one strand per story: if several items are about the same military situation (a warning, missile launches, satellite imagery, a weapons analysis), they belong in one lead together.
-3. PYONGYANG. Name every one of the top KCNA articles in kcna_delta.top_articles, even one a lead story already told (then one sentence on how state media framed it is enough), then the bottom line.
-4. THE ROUND-UP. Everything else worth a listener's time, one or two sentences each, linked by quick spoken transitions: overnight items, government and appointments, the economy, the region, the poll (say when it was taken), what is coming up, the rest of the wire, analysis. Never tell a story the leads already told. Leave out US-Korea trade and investment entirely. Satellite imagery only if it is included.
-5. CLOSE. The markets in two or three short sentences, then the fixed closing line.
+1. OPEN (about 50 words). The listener must have the date and all three headlines inside the first 20 seconds. The fixed opening line gives the date; follow it at once with one menu line, "Three things today: ...", naming the three lead stories in a few words each. Then one sentence on why the first story matters, told as a tension, not a summary. If calendar_watch has events dated today, add one short line saying what is happening today. No throat-clearing, nothing before the menu.
+2. THE THREE LEAD STORIES (about 250 words each), one after another, with --- between them. Start each with a plain numbered cue so a listener always knows where they are: "First, ...", "Second, ...", "Third, ...". Usually the top stories. For each: what happened, why it matters to someone who works on Korea policy (from the brief), and what to watch next. Fold in related items from other sections (government reactions, the National Assembly, statements, analysis, imagery) so each lead is one connected story, not a list. Keep one strand per story: if several items are about the same military situation (a warning, missile launches, satellite imagery, a weapons analysis), they belong in one lead together.
+3. PYONGYANG. Start with the cue "Now to Pyongyang." Name every one of the top KCNA articles in kcna_delta.top_articles, even one a lead story already told (then one sentence on how state media framed it is enough), then the bottom line.
+4. THE ROUND-UP. Start with a short cue that names it, such as "The rest of the news, quickly." Everything else worth a listener's time, one or two sentences each, linked by quick spoken transitions: overnight items, government and appointments, the economy, the region, the poll (say when it was taken), what is coming up, the rest of the wire, analysis. Never tell a story the leads already told. Leave out US-Korea trade and investment entirely. Satellite imagery only if it is included.
+5. CLOSE. Start with "Finally, the markets." Two or three short sentences, then the fixed closing line, which sends the listener to the email for the sources.
 
 WRITE FOR THE EAR. These are broadcast writing rules:
 - One idea per sentence. Most sentences under 20 words, none over 25. Vary the rhythm: a short sentence after a long one.
@@ -552,7 +572,7 @@ WRITE FOR THE EAR. These are broadcast writing rules:
 - No headline-ese, no strings of fragments, no lists read out, no parentheses.
 - Never use these phrases: "let's dive in", "dive into", "delve", "in today's rapidly evolving", "it's worth noting", "notably", "a stark reminder", "only time will tell", "remains to be seen", "buckle up", "game-changer", "in a world where", "at the end of the day". Don't end sentences on a list of three for effect. Don't open with a rhetorical question.
 
-FORMAT: plain spoken text only, paragraphs separated by a blank line, segments separated by a line containing only ---. No headings, no stage directions, no sound cues, no markdown, no bullet points. Begin exactly with: "This is the Korea Daily Brief from the CSIS Korea Chair. It's {when}." End exactly with: "That's the Korea Daily Brief for {when}. The full text, with a link to every source, is in today's email." Aim for 1,300 to 1,600 words."""
+FORMAT: plain spoken text only, paragraphs separated by a blank line, segments separated by a line containing only ---. No headings, no stage directions, no sound cues, no markdown, no bullet points. Begin exactly with: "{opening}" End exactly with: "That's the Korea Daily Brief for {when}. The full text, with a link to every source, is in today's email." The episode runs about ten minutes: aim for 1,350 to 1,550 words, and never more than 1,650."""
 
 _SCRIPT_KEYS = ("re_line", "top_stories", "overnight_items", "kcna_delta", "key_stat",
                 "rok_government", "rok_assembly", "rok_personnel", "business_economy",
@@ -696,7 +716,7 @@ def check_script(script: str, digest: dict, when: str = "") -> list[str]:
     # numbers everywhere: a global exemption for "7" let "seven soldiers"
     # through on 7 October against a brief that says three.
     body = re.sub(r"^\s*---\s*$", " ", script, flags=re.M)
-    for fixed in (f"This is the Korea Daily Brief from the CSIS Korea Chair. It's {when}.",
+    for fixed in (opening_line(when), _legacy_opening(when),
                   f"That's the Korea Daily Brief for {when}."):
         body = body.replace(fixed, " ")
     # "the last 24 hours" is the brief's own window, not a claim from it.
@@ -800,7 +820,8 @@ def write_script(digest: dict) -> tuple[str | None, list[str]]:
 
         def _ask() -> str:
             msg = client.messages.create(model=model, max_tokens=4000,
-                                         system=_SCRIPT_SYSTEM.replace("{when}", when),
+                                         system=_SCRIPT_SYSTEM.replace("{opening}", opening_line(when))
+                                                         .replace("{when}", when),
                                          messages=convo)
             return "".join(b.text for b in msg.content if getattr(b, "type", "") == "text").strip()
 
@@ -822,9 +843,13 @@ def write_script(digest: dict) -> tuple[str | None, list[str]]:
             text = _ask()
     except Exception as e:                                      # noqa: BLE001
         return None, [f"script call failed: {e}"]
-    opening = f"This is the Korea Daily Brief from the CSIS Korea Chair. It's {when}."
+    opening = opening_line(when)
     if not text.startswith(opening[:40]):
         return None, ["the script did not open with the show's opening line"]
+    # The disclosure is part of the fixed line. A writer that drops it gets it
+    # back here, before the check, so every written episode says it.
+    if text.startswith(_legacy_opening(when)):
+        text = opening + text[len(_legacy_opening(when)):]
     problems = check_script(text, digest, when)
     if problems:
         repaired, dropped = _repair_script(text, problems, digest, when)
@@ -857,7 +882,7 @@ def _repair_script(text: str, problems: list[str], digest: dict, when: str,
     """
     total = len(text.split()) or 1
     dropped: list[str] = []
-    opening = f"This is the Korea Daily Brief from the CSIS Korea Chair. It's {when}."
+    opening = opening_line(when)
     closing = f"That's the Korea Daily Brief for {when}."
     for _ in range(rounds):
         nums = {m.group(1) for p in problems
@@ -947,19 +972,39 @@ def _chunks(script: str, limit: int = CHUNK_CHARS) -> list[tuple[str, float]]:
     spans a segment break (a line holding only ---): the pause there is
     silence the producer inserts, longer than the one between paragraphs.
     """
-    out: list[tuple[str, float]] = []
+    return [(text, pause) for text, pause, _ in _chunks_indexed(script, limit)]
+
+
+def segments(script: str) -> list[str]:
+    """The script's non-empty segments, split exactly as _chunks splits them."""
+    out = []
     for segment in re.split(rf"\n\s*{re.escape(SEGMENT)}\s*\n", "\n" + script.strip() + "\n"):
+        paras = [x.strip() for x in segment.split("\n\n") if x.strip() and x.strip() != SEGMENT]
+        if paras:
+            out.append("\n\n".join(paras))
+    return out
+
+
+def _chunks_indexed(script: str, limit: int = CHUNK_CHARS) -> list[tuple[str, float, int]]:
+    """_chunks, with the index (into segments()) of the segment each request belongs to.
+
+    The index is what lets chapter times be measured rather than estimated:
+    each request's audio is decoded and its exact length known, so a
+    segment's start is the sum of everything voiced and paused before it.
+    """
+    out: list[tuple[str, float, int]] = []
+    for n, segment in enumerate(segments(script)):
         cur = ""
-        for para in [x.strip() for x in segment.split("\n\n") if x.strip() and x.strip() != SEGMENT]:
+        for para in segment.split("\n\n"):
             pieces = [para] if len(para) <= limit else re.split(r"(?<=[.!?])\s+", para)
             for piece in pieces:
                 if len(cur) + len(piece) + 2 > limit and cur:
-                    out.append((cur, PAUSE_PARAGRAPH))
+                    out.append((cur, PAUSE_PARAGRAPH, n))
                     cur = piece
                 else:
                     cur = f"{cur}\n\n{piece}" if cur else piece
         if cur:
-            out.append((cur, PAUSE_SEGMENT))
+            out.append((cur, PAUSE_SEGMENT, n))
     return out
 
 
@@ -1085,7 +1130,8 @@ def _pace_filter(pace: float = 1.0) -> str:
     return "" if abs(pace - 1.0) < 0.005 else f"atempo={pace:g},"
 
 
-def _master(parts: list[tuple[bytes, float]], out_path: Path, pace: float = 1.0) -> None:
+def _master(parts: list[tuple[bytes, float]], out_path: Path,
+            pace: float = 1.0) -> list[tuple[float, float]]:
     """The finished episode: sting, voice with real pauses, sting, at podcast loudness.
 
     Pauses are silence put in here, not asked of the voice: break tags are
@@ -1097,14 +1143,27 @@ def _master(parts: list[tuple[bytes, float]], out_path: Path, pace: float = 1.0)
 
     Without ffmpeg (a local run) the chunks are simply concatenated: MP3 is a
     stream of independent frames, so that plays everywhere.
+
+    Returns where each part's speech starts and ends in the finished file, in
+    seconds. Measured from the decoded samples, not estimated: the sting
+    before the voice, every pause, and the pace change are all accounted for.
+    These are the chapter and transcript times.
     """
     if not _ffmpeg():
         out_path.write_bytes(b"".join(p for p, _ in parts))
-        return
+        spans, t = [], 0.0
+        for p, _ in parts:
+            d = mp3_seconds(p)
+            spans.append((t, t + d))
+            t += d
+        return spans
     from array import array
     voice = array("h")
+    at: list[tuple[int, int]] = []
     for i, (part, pause) in enumerate(parts):
+        start = len(voice)
         voice.frombytes(_pcm(part))
+        at.append((start, len(voice)))
         if i < len(parts) - 1:
             voice.frombytes(bytes(2 * int(pause * PCM_RATE)))
     custom = Path(os.environ.get("STING_FILE") or Path(__file__).with_name("assets") / "sting.mp3")
@@ -1124,6 +1183,10 @@ def _master(parts: list[tuple[bytes, float]], out_path: Path, pace: float = 1.0)
         input=mix.tobytes(), capture_output=True)
     if r.returncode or not out_path.exists() or not out_path.stat().st_size:
         raise RuntimeError(f"ffmpeg could not master the episode: {r.stderr.decode()[:200]}")
+    # The voice starts where the sting's un-overlapped part ends; atempo then
+    # stretches the whole mix by 1/pace.
+    lead = len(sting) - overlap
+    return [((lead + a) / PCM_RATE / pace, (lead + b) / PCM_RATE / pace) for a, b in at]
 
 
 def _duration_seconds(path: Path, script: str) -> int:
@@ -1190,10 +1253,11 @@ def synthesize(script: str, out_path: Path) -> dict | None:
         return b"".join(_tts(x) for x in sentences)
 
     try:
-        parts = [(_voiced(c), pause) for c, pause in _chunks(script)]
+        chunks = _chunks_indexed(script)
+        parts = [(_voiced(c), pause) for c, pause, _ in chunks]
         return _finish(parts, script, out_path,
                        {"tts_provider": "openai", "tts_model": model, "tts_voice": voice},
-                       pace=_pace(default=DEFAULT_PACE))
+                       pace=_pace(default=DEFAULT_PACE), index=[(c, n) for c, _, n in chunks])
     except Exception as e:                                      # noqa: BLE001
         LAST_ERROR = str(e)
         # An annotation, not only a log line: GitHub serves job logs from a
@@ -1205,12 +1269,17 @@ def synthesize(script: str, out_path: Path) -> dict | None:
 
 
 def _finish(parts: list[tuple[bytes, float]], script: str, out_path: Path,
-            who: dict, pace: float) -> dict | None:
-    """Master the voiced parts and check nothing went missing. Shared by both voices."""
+            who: dict, pace: float, index: list[tuple[str, int]] | None = None) -> dict | None:
+    """Master the voiced parts and check nothing went missing. Shared by both voices.
+
+    index gives each part's text and segment number; with it the record
+    carries "_chunks", the measured timeline produce() turns into chapters and
+    a transcript. It is popped there, so it never reaches the metrics log.
+    """
     global LAST_ERROR
     voiced_seconds = sum(mp3_seconds(p) for p, _ in parts)
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    _master(parts, out_path, pace)
+    spans = _master(parts, out_path, pace)
     got = mp3_seconds(out_path.read_bytes())
     want = _expected_seconds(spoken_text(script))
     # Coverage is judged on the voice alone: the stings and pauses would
@@ -1225,8 +1294,12 @@ def _finish(parts: list[tuple[bytes, float]], script: str, out_path: Path,
         print(f"::warning title=Audio incomplete::{LAST_ERROR}")
         out_path.unlink(missing_ok=True)
         return None
-    return {**who, "tts_chars": len(script), "audio_bytes": out_path.stat().st_size,
-            "audio_seconds": int(got), "audio_expected_seconds": int(want)}
+    rec = {**who, "tts_chars": len(script), "audio_bytes": out_path.stat().st_size,
+           "audio_seconds": int(got), "audio_expected_seconds": int(want)}
+    if index and spans and len(index) == len(spans):
+        rec["_chunks"] = [{"start": round(a, 2), "end": round(b, 2), "segment": seg, "text": text}
+                          for (a, b), (text, seg) in zip(spans, index)]
+    return rec
 
 
 def _synthesize_eleven(script: str, out_path: Path, key: str, voice_id: str) -> dict | None:
@@ -1266,10 +1339,11 @@ def _synthesize_eleven(script: str, out_path: Path, key: str, voice_id: str) -> 
         return _tts(text)
 
     try:
-        parts = [(_voiced(c), pause) for c, pause in _chunks(script, ELEVEN_CHUNK_CHARS)]
+        chunks = _chunks_indexed(script, ELEVEN_CHUNK_CHARS)
+        parts = [(_voiced(c), pause) for c, pause, _ in chunks]
         return _finish(parts, script, out_path,
                        {"tts_provider": "elevenlabs", "tts_model": models[0], "tts_voice": voice_id},
-                       pace=_pace(default=1.0))
+                       pace=_pace(default=1.0), index=[(c, n) for c, _, n in chunks])
     except Exception as e:                                      # noqa: BLE001
         LAST_ERROR = str(e)
         print(f"::warning title=ElevenLabs audio failed::{e}")
@@ -1278,7 +1352,7 @@ def _synthesize_eleven(script: str, out_path: Path, key: str, voice_id: str) -> 
 
 # ── The feed ─────────────────────────────────────────────────────────────────
 
-def update_feed(public: Path, web_base: str, episode: dict) -> bool:
+def update_feed(public: Path, web_base: str, episode: dict) -> list[dict] | None:
     """Add today's episode to podcast.json and regenerate podcast.xml.
 
     The episode list accumulates across runs and public/ starts empty on every
@@ -1294,14 +1368,59 @@ def update_feed(public: Path, web_base: str, episode: dict) -> bool:
     episodes, ok = load_list(manifest, web_base)
     if not ok:
         print("  ⚠  Podcast feed not updated — published episode list unreadable")
-        return False
+        return None
     episodes = [e for e in episodes if e.get("date") != episode["date"]] + [episode]
     episodes.sort(key=lambda e: e.get("date", ""))
     episodes = episodes[-FEED_EPISODES:]
     if not write_if_safe(manifest, episodes, ok):
-        return False
+        return None
     (public / "podcast.xml").write_text(_feed_xml(episodes, web_base), encoding="utf-8")
-    return True
+    return episodes
+
+
+# OP3 (op3.dev) is an open podcast-download counter: the enclosure URL is
+# prefixed, OP3 logs the request and redirects to the file. On by default;
+# PODCAST_OP3=0 (or false/off/no) turns it off for the whole feed at the next
+# run, since every item's enclosure is rebuilt from its file name each time.
+OP3_PREFIX = "https://op3.dev/e/"
+
+
+def op3_enabled() -> bool:
+    return (os.environ.get("PODCAST_OP3") or "1").strip().lower() not in ("0", "false", "off", "no")
+
+
+def measured(url: str) -> str:
+    """An episode URL with the download-counting prefix, when it is on.
+
+    OP3 takes the target with its https:// scheme dropped; a plain http://
+    target is kept whole, as OP3 documents.
+    """
+    if not op3_enabled() or not url.startswith(("http://", "https://")) or url.startswith(OP3_PREFIX):
+        return url
+    return OP3_PREFIX + (url[len("https://"):] if url.startswith("https://") else url)
+
+
+def _item_description(e: dict, base: str) -> str:
+    """Show notes for one episode, as the HTML podcast apps render.
+
+    The day's summary, the lead stories linked to the articles the brief
+    cited, a link to the brief itself, and the AI disclosure. Episodes from
+    before show notes existed have no "notes" and get the rest.
+    """
+    from html import escape as h
+    parts = [f"<p>{h(e.get('summary', ''))}</p>"] if e.get("summary") else []
+    notes = [n for n in (e.get("notes") or []) if isinstance(n, dict) and n.get("headline")]
+    if notes:
+        lis = "".join(
+            "<li>" + (f'<a href="{h(n["url"])}">{h(n["headline"])}</a>' if n.get("url") else h(n["headline"]))
+            + (f" ({h(n['source'])})" if n.get("source") else "") + "</li>" for n in notes)
+        parts.append(f"<p>Lead stories:</p><ul>{lis}</ul>")
+    links = [f'<a href="{h(base + "/digest_" + e["date"] + ".html")}">Read the full brief, with every source</a>']
+    if e.get("page"):
+        links.append(f'<a href="{h(base + "/" + e["page"])}">Chapters and transcript</a>')
+    parts.append("<p>" + " · ".join(links) + "</p>")
+    parts.append(f"<p>{h(DISCLOSURE)}</p>")
+    return "".join(parts)
 
 
 def _feed_xml(episodes: list[dict], web_base: str) -> str:
@@ -1310,24 +1429,34 @@ def _feed_xml(episodes: list[dict], web_base: str) -> str:
     for e in reversed(episodes):
         when = datetime.strptime(e["date"], "%Y-%m-%d").replace(hour=11, tzinfo=timezone.utc)
         secs = int(e.get("seconds") or 0)
+        desc = _item_description(e, base)
+        extra = ""
+        if e.get("chapters"):
+            extra += f'\n      <podcast:chapters url="{_xml(base + "/" + e["chapters"])}" type="application/json+chapters"/>'
+        if e.get("transcript"):
+            extra += f'\n      <podcast:transcript url="{_xml(base + "/" + e["transcript"])}" type="text/vtt" language="en"/>'
+        if e.get("transcript_text"):
+            extra += f'\n      <podcast:transcript url="{_xml(base + "/" + e["transcript_text"])}" type="text/plain" language="en"/>'
         items.append(f"""    <item>
       <title>{_xml(e["title"])}</title>
-      <description>{_xml(e.get("summary", ""))}</description>
-      <enclosure url="{_xml(base + "/" + e["file"])}" length="{int(e.get("bytes") or 0)}" type="audio/mpeg"/>
+      <description>{_xml(desc)}</description>
+      <content:encoded><![CDATA[{desc.replace("]]>", "]]&gt;")}]]></content:encoded>
+      <enclosure url="{_xml(measured(base + "/" + e["file"]))}" length="{int(e.get("bytes") or 0)}" type="audio/mpeg"/>
       <guid isPermaLink="false">korea-daily-brief-{e["date"]}</guid>
       <pubDate>{format_datetime(when)}</pubDate>
       <itunes:duration>{secs // 60}:{secs % 60:02d}</itunes:duration>
-      <link>{_xml(base + "/digest_" + e["date"] + ".html")}</link>
+      <link>{_xml(base + "/" + (e.get("page") or "digest_" + e["date"] + ".html"))}</link>{extra}
     </item>""")
     # itunes:block keeps the feed out of podcast directories. The brief is
     # marked For Internal Use Only; the feed is for subscribing by URL, the same
     # audience that already reads the archive, and not for public discovery.
     return f"""<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd">
+<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" xmlns:podcast="https://podcastindex.org/namespace/1.0" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Korea Daily Brief</title>
-    <link>{_xml(base + "/archive.html")}</link>
-    <description>The CSIS Korea Chair's daily brief on the Korean Peninsula, read aloud. Every item is from the printed brief, which links its sources.</description>
+    <link>{_xml(base + "/listen/index.html")}</link>
+    <atom:link href="{_xml(base + "/podcast.xml")}" rel="self" type="application/rss+xml"/>
+    <description>The CSIS Korea Chair's daily brief on the Korean Peninsula, read aloud by an AI voice. Every item is from the printed brief, which links its sources.</description>
     <language>en-us</language>
     <itunes:author>CSIS Korea Chair</itunes:author>
     <itunes:explicit>false</itunes:explicit>
@@ -1415,9 +1544,12 @@ def produce(digest: dict, public: Path, web_base: str, date_slug: str) -> dict |
     if not rec:
         return None
     rec["script_source"] = source
+    chunks = rec.pop("_chunks", None)
+    extras = _episode_extras(digest, script, chunks, rec, public, date_slug, source)
     shutil.copyfile(mp3, public / "latest.mp3")
+    episodes = None
     if web_base:
-        update_feed(public, web_base, {
+        episodes = update_feed(public, web_base, {
             "date": date_slug,
             "title": f"Korea Daily Brief | {_spoken_date(digest)}",
             "summary": speakable(digest.get("re_line", "")),
@@ -1428,8 +1560,73 @@ def produce(digest: dict, public: Path, web_base: str, date_slug: str) -> dict |
             # rewrite can be diagnosed without the run log.
             **({"script_rejected": why[:40]} if source == "assembled" and why else {}),
             **({"script_repaired": LAST_REPAIR[:20]} if source == "written" and LAST_REPAIR else {}),
+            **{k: v for k, v in extras.items() if not k.startswith("_")},
         })
+    # The player page the email links to. Written last, from the feed's
+    # episode list when update_feed read it; a failure leaves the email's
+    # Listen bar on the MP3, as before.
+    try:
+        import listen
+        rec["listen_page"] = listen.write_pages(
+            public, date_slug=date_slug, digest=digest, web_base=web_base,
+            minutes=max(1, round(rec["audio_seconds"] / 60)),
+            chapters=extras.get("_chapter_list"), chunks=chunks, script=script,
+            notes=extras.get("notes") or [], episodes=episodes)
+        print(f"  🎧  Player page: {rec['listen_page']}")
+        # Only now is it safe for the feed to point at the page. The list
+        # is the one update_feed just read and wrote, so nothing is lost.
+        if episodes:
+            for e in episodes:
+                if e.get("date") == date_slug:
+                    e["page"] = rec["listen_page"]
+            from shared.published import write_if_safe
+            if write_if_safe(public / "podcast.json", episodes, True):
+                (public / "podcast.xml").write_text(_feed_xml(episodes, web_base), encoding="utf-8")
+    except Exception as e:                                      # noqa: BLE001
+        print(f"::warning title=Player page skipped::{e}")
     return rec
+
+
+def _episode_extras(digest: dict, script: str, chunks: list[dict] | None, rec: dict,
+                    public: Path, date_slug: str, source: str) -> dict:
+    """Chapters (JSON and ID3), transcript and show notes, each independently optional.
+
+    Returns the fields update_feed records for the episode. Each file is
+    written only when its step succeeds, and none of them can stop the
+    episode: a failure is a warning and that field is left out.
+    """
+    out: dict = {"transcript_text": f"digest_{date_slug}.txt"}
+    try:
+        import listen
+    except Exception as e:                                      # noqa: BLE001
+        print(f"::warning title=Episode extras skipped::{e}")
+        return out
+    try:
+        out["notes"] = listen.show_notes(digest)
+    except Exception as e:                                      # noqa: BLE001
+        print(f"  ⚠  Show notes skipped: {e}")
+    if not chunks:
+        print("  ⚠  No measured timeline (unmastered audio?); no chapters or VTT this episode")
+        return out
+    try:
+        (public / f"digest_{date_slug}.vtt").write_text(listen.vtt(chunks), encoding="utf-8")
+        out["transcript"] = f"digest_{date_slug}.vtt"
+    except Exception as e:                                      # noqa: BLE001
+        print(f"  ⚠  VTT transcript skipped: {e}")
+    try:
+        mp3 = public / f"digest_{date_slug}.mp3"
+        chapters = listen.build_chapters(chunks, script, digest, source,
+                                         mp3_seconds(mp3.read_bytes()) or rec["audio_seconds"])
+        (public / f"digest_{date_slug}.chapters.json").write_text(
+            listen.chapters_json(chapters), encoding="utf-8")
+        out["chapters"] = f"digest_{date_slug}.chapters.json"
+        out["_chapter_list"] = chapters
+        if listen.embed_chapters(mp3, chapters, f"Korea Daily Brief | {_spoken_date(digest)}"):
+            rec["audio_bytes"] = mp3.stat().st_size
+        print(f"  🎧  Chapters: {len(chapters)}")
+    except Exception as e:                                      # noqa: BLE001
+        print(f"  ⚠  Chapters skipped: {e}")
+    return out
 
 
 def produce_for_published_issue(date_slug: str, public: Path, web_base: str) -> int:

@@ -53,6 +53,8 @@ jobs:
           ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
           ELEVENLABS_VOICE_ID: ${{ vars.ELEVENLABS_VOICE_ID }}
           ELEVENLABS_MODEL: ${{ vars.ELEVENLABS_MODEL }}
+          # Download counting via OP3 on the feed's enclosures; on unless set to 0.
+          PODCAST_OP3: ${{ vars.PODCAST_OP3 }}
           WEB_URL: https://andysaulim.github.io/Daily-Korea-Digest
         run: python podcast.py --issue "${{ inputs.date }}" --out public
 
