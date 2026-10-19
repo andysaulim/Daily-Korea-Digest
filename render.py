@@ -468,6 +468,62 @@ def _pledge_is_new(deal: dict, digest: dict, days: int = 7) -> bool:
     return 0 <= (today - reported).days <= days
 
 
+_MON = {m: i for i, m in enumerate(["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug",
+                                      "sep", "oct", "nov", "dec"], 1)}
+
+
+def _calendar_span(text: str, year: int):
+    """'Oct 19-23, 2026' / 'October 20, 2026' / 'Oct 31-Nov 2' -> (start, end) dates, or None."""
+    from datetime import date
+    t = str(text or "").strip()
+    m = _re.match(r"([A-Za-z]{3})[a-z]*\.?\s+(\d{1,2})(?:\s*[-–]\s*(?:([A-Za-z]{3})[a-z]*\.?\s+)?(\d{1,2}))?(?:,\s*(\d{4}))?", t)
+    if not m or m.group(1).lower() not in _MON:
+        return None
+    y = int(m.group(5) or year)
+    try:
+        start = date(y, _MON[m.group(1).lower()], int(m.group(2)))
+        end_mon = _MON.get((m.group(3) or m.group(1)).lower(), start.month)
+        end = date(y, end_mon, int(m.group(4))) if m.group(4) else start
+    except ValueError:
+        return None
+    return start, end
+
+
+def _happening_today(digest: dict) -> str:
+    """Up to three scheduled events that fall on the issue date, under Today at a Glance.
+
+    Built from calendar_watch, which already carries the week's schedule; the
+    strip shows only what happens today, so it is empty and absent on a day
+    with nothing scheduled rather than padded with the week ahead.
+    """
+    raw = str(digest.get("digest_date", "")).strip()
+    today = None
+    for fmt, text in (("%Y-%m-%d", raw[:10]), ("%A, %B %d, %Y", raw), ("%B %d, %Y", raw)):
+        try:
+            today = datetime.strptime(text, fmt).date()
+            break
+        except ValueError:
+            continue
+    if today is None:
+        return ""
+    rows = []
+    for c in digest.get("calendar_watch") or []:
+        if not isinstance(c, dict) or not c.get("event"):
+            continue
+        span = _calendar_span(c.get("date", ""), today.year)
+        if span and span[0] <= today <= span[1]:
+            rows.append(c)
+    if not rows:
+        return ""
+    items = "".join(
+        f'<tr><td style="padding:5px 0;font-family:Georgia,serif;font-size:14px;line-height:1.5;color:{INK};">'
+        f'{_esc(_str(c.get("event", "")))}</td></tr>' for c in rows[:3])
+    return (f'<table width="100%" cellpadding="0" cellspacing="0" border="0" class="happening" '
+            f'style="margin-top:12px;border-top:2px solid {INK};">'
+            f'<tr><td style="padding:9px 0 2px;font-family:Arial,sans-serif;font-size:12px;font-weight:700;'
+            f'color:{INK};">Happening today</td></tr>{items}</table>')
+
+
 def render(digest: dict) -> str:
     from zoneinfo import ZoneInfo
     now = datetime.now(ZoneInfo("America/New_York"))
@@ -675,6 +731,7 @@ def render(digest: dict) -> str:
               {memo_html}
             </td></tr>
           </table>
+          {_happening_today(digest)}
         </div>
         """)
 
@@ -2004,8 +2061,18 @@ def render(digest: dict) -> str:
             except ValueError:
                 return None
 
+        _changes = digest.get("_bp_changes")
+        _all_sites = list(locations)
         _fresh, _quiet = [], []
-        for _loc in locations:
+        if isinstance(_changes, list):
+            # Only sites with a new report since the last issue. The full
+            # list moves to its own page: eleven cards of carried-forward
+            # notes were the longest section in the brief, around 800 words
+            # most days, and almost all of it unchanged from the day before.
+            _keys = set(_changes)
+            _fresh = [l for l in locations if l.get("name") in _keys]
+            _quiet = [l for l in locations if l.get("name") not in _keys]
+        for _loc in ([] if isinstance(_changes, list) else locations):
             _age = _age_days(_loc)
             if _age is not None and _age <= _FRESH_DAYS:
                 _fresh.append(_loc)
@@ -2013,7 +2080,7 @@ def render(digest: dict) -> str:
                 _quiet.append(_loc)
         # Never render an empty section: if nothing is fresh, show whatever is
         # newest so the reader still sees the watch list.
-        if not _fresh and locations:
+        if not _fresh and locations and not isinstance(_changes, list):
             _dated = [(l, _age_days(l)) for l in locations]
             _dated = [(l, a) for l, a in _dated if a is not None]
             if _dated:
@@ -2021,7 +2088,18 @@ def render(digest: dict) -> str:
                 _fresh = [_dated[0][0]]
                 _quiet = [l for l in locations if l is not _fresh[0]]
         quiet_html = ""
-        if _quiet:
+        if isinstance(_changes, list):
+            _b = (digest.get("web_url", "")[:-len("latest.html")]
+                  if digest.get("web_url", "").endswith("latest.html") else "")
+            _link = (f' <a href="{_esc(_b + "locations.html")}" style="color:{TAEGUK_BLUE};">'
+                     f'Full location watch &#8594;</a>' if _b else "")
+            quiet_html = (f'<div style="font-size:13px;color:#5A6472;margin-top:10px;'
+                          f'padding-top:9px;border-top:1px solid #EAEAEA;">'
+                          + (f'{len(_quiet)} other monitored site{"s" if len(_quiet) != 1 else ""}: '
+                             f'no new reporting since the last issue.' if _fresh else
+                             f'No new reporting on any of the {len(_all_sites)} monitored sites since the last issue.')
+                          + f'{_link}</div>')
+        elif _quiet:
             _oldest = ""
             _dates = sorted(str(l.get("last_source_date", ""))[:7]
                             for l in _quiet if l.get("last_source_date"))
@@ -2059,80 +2137,88 @@ def render(digest: dict) -> str:
         else:
             summary_html = f'<div style="font-size:11px;color:#6B7280;margin-top:6px;margin-bottom:12px;">{len(_all_locs)} monitored sites</div>'
 
-        loc_cards = ""
-        for i in range(0, len(locations), 2):
-            row_cards = ""
-            for j in range(i, min(i + 2, len(locations))):
-                loc = locations[j]
-                name = _esc(loc.get("name", ""))
-                status = loc.get("status", "normal")
-                note = _emphasis(_esc(loc.get("note", "")))
-                last_source_date = _esc(loc.get("last_source_date", ""))
-                direction = loc.get("direction", "")
-                b_color, b_bg, b_label = _badge_styles.get(status, ("#7F8C8D", "#F5F6F7", "MONITOR"))
-                if direction == "up":
-                    b_label += " &#9650;"
-                elif direction == "down":
-                    b_label += " &#9660;"
-                # The status sits above the name on its own line. Sharing a
-                # line, a long site name pushed the status onto a second row
-                # inside a half-width column, so it landed under the name and
-                # read as part of it.
-                status_badge = (f'<div style="font-family:Arial,sans-serif;font-size:10px;'
-                                f'font-weight:700;color:{b_color};letter-spacing:1.5px;'
-                                f'text-transform:uppercase;margin-bottom:5px;">{b_label}</div>')
-                # Note rendering — style differently for carried-forward vs active
-                note_html = ""
-                if note and "no new reporting" in note.lower():
-                    note_html = (f'<div style="font-family:Georgia,serif;font-size:13px;'
-                                 f'line-height:1.5;color:{MUTE};margin-top:5px;'
-                                 f'font-style:italic;">{note}</div>')
-                elif note:
-                    # 13px Georgia, like every other piece of body copy. At
-                    # 11px the substance of the panel was the smallest text in
-                    # the brief.
-                    note_html = (f'<div style="font-family:Georgia,serif;font-size:13px;'
-                                 f'line-height:1.5;color:{BODY_INK};margin-top:5px;">{note}</div>')
-                # Last report date — mono, machine-measured. Flag notes whose
-                # last source is stale (>90 days) so a months-old status isn't
-                # read as current (e.g. Yellow Sea PMZ carried from January).
-                stale_flag = ""
-                _dm = _re.match(r"(\d{4})-(\d{2})(?:-(\d{2}))?", str(loc.get("last_source_date", "")).strip())
-                if _dm:
-                    try:
-                        from datetime import date as _date
-                        _src = _date(int(_dm.group(1)), int(_dm.group(2)), int(_dm.group(3) or 1))
-                        _age = (datetime.now(timezone.utc).date() - _src).days
-                        if _age > 90:
-                            stale_flag = (f' <span style="color:#9A5B00;">&middot; no recent reporting '
-                                          f'(~{_age // 30} mo)</span>')
-                    except (ValueError, TypeError):
-                        pass
-                last_html = (f'<div style="font-family:Arial,sans-serif;font-size:11px;'
-                             f'color:{MUTE};margin-top:7px;">imagery as of '
-                             f'<span style="font-family:{MONO};">{last_source_date}</span>'
-                             f'{stale_flag}</div>'
-                             if last_source_date and last_source_date != "unknown" else "")
-                row_cards += f"""
-                <td style="width:50%;padding:4px;vertical-align:top;" height="100%">
-                  <!-- The card fills its cell. Two <td>s in a row are already
-                       the same height, but a <div> inside one only grows to fit
-                       its own text, so a short note left a stub card beside a
-                       tall one and the row looked broken. A nested table set to
-                       height:100% stretches, which is the one way to do this
-                       that Outlook honours. -->
-                  <table width="100%" cellpadding="0" cellspacing="0" border="0" height="100%" style="height:100%;">
-                    <tr><td style="background:#FFFFFF;border:1px solid #E4E7EB;border-top:2px solid {b_color};padding:13px 15px;vertical-align:top;">
-                      {status_badge}
-                      <div style="font-family:Georgia,serif;font-size:14px;font-weight:700;color:{INK};line-height:1.3;">{name}</div>
-                      {note_html}
-                      {last_html}
-                    </td></tr>
-                  </table>
-                </td>"""
-            if len(locations) - i == 1:
-                row_cards += '<td style="width:50%;padding:4px;"></td>'
-            loc_cards += f"<tr>{row_cards}</tr>"
+        def _loc_grid(locations):
+            loc_cards = ""
+            for i in range(0, len(locations), 2):
+                row_cards = ""
+                for j in range(i, min(i + 2, len(locations))):
+                    loc = locations[j]
+                    name = _esc(loc.get("name", ""))
+                    status = loc.get("status", "normal")
+                    note = _emphasis(_esc(loc.get("note", "")))
+                    last_source_date = _esc(loc.get("last_source_date", ""))
+                    direction = loc.get("direction", "")
+                    b_color, b_bg, b_label = _badge_styles.get(status, ("#7F8C8D", "#F5F6F7", "MONITOR"))
+                    if direction == "up":
+                        b_label += " &#9650;"
+                    elif direction == "down":
+                        b_label += " &#9660;"
+                    # The status sits above the name on its own line. Sharing a
+                    # line, a long site name pushed the status onto a second row
+                    # inside a half-width column, so it landed under the name and
+                    # read as part of it.
+                    status_badge = (f'<div style="font-family:Arial,sans-serif;font-size:10px;'
+                                    f'font-weight:700;color:{b_color};letter-spacing:1.5px;'
+                                    f'text-transform:uppercase;margin-bottom:5px;">{b_label}</div>')
+                    # Note rendering — style differently for carried-forward vs active
+                    note_html = ""
+                    if note and "no new reporting" in note.lower():
+                        note_html = (f'<div style="font-family:Georgia,serif;font-size:13px;'
+                                     f'line-height:1.5;color:{MUTE};margin-top:5px;'
+                                     f'font-style:italic;">{note}</div>')
+                    elif note:
+                        # 13px Georgia, like every other piece of body copy. At
+                        # 11px the substance of the panel was the smallest text in
+                        # the brief.
+                        note_html = (f'<div style="font-family:Georgia,serif;font-size:13px;'
+                                     f'line-height:1.5;color:{BODY_INK};margin-top:5px;">{note}</div>')
+                    # Last report date — mono, machine-measured. Flag notes whose
+                    # last source is stale (>90 days) so a months-old status isn't
+                    # read as current (e.g. Yellow Sea PMZ carried from January).
+                    stale_flag = ""
+                    _dm = _re.match(r"(\d{4})-(\d{2})(?:-(\d{2}))?", str(loc.get("last_source_date", "")).strip())
+                    if _dm:
+                        try:
+                            from datetime import date as _date
+                            _src = _date(int(_dm.group(1)), int(_dm.group(2)), int(_dm.group(3) or 1))
+                            _age = (datetime.now(timezone.utc).date() - _src).days
+                            if _age > 90:
+                                stale_flag = (f' <span style="color:#9A5B00;">&middot; no recent reporting '
+                                              f'(~{_age // 30} mo)</span>')
+                        except (ValueError, TypeError):
+                            pass
+                    last_html = (f'<div style="font-family:Arial,sans-serif;font-size:11px;'
+                                 f'color:{MUTE};margin-top:7px;">imagery as of '
+                                 f'<span style="font-family:{MONO};">{last_source_date}</span>'
+                                 f'{stale_flag}</div>'
+                                 if last_source_date and last_source_date != "unknown" else "")
+                    row_cards += f"""
+                    <td style="width:50%;padding:4px;vertical-align:top;" height="100%">
+                      <!-- The card fills its cell. Two <td>s in a row are already
+                           the same height, but a <div> inside one only grows to fit
+                           its own text, so a short note left a stub card beside a
+                           tall one and the row looked broken. A nested table set to
+                           height:100% stretches, which is the one way to do this
+                           that Outlook honours. -->
+                      <table width="100%" cellpadding="0" cellspacing="0" border="0" height="100%" style="height:100%;">
+                        <tr><td style="background:#FFFFFF;border:1px solid #E4E7EB;border-top:2px solid {b_color};padding:13px 15px;vertical-align:top;">
+                          {status_badge}
+                          <div style="font-family:Georgia,serif;font-size:14px;font-weight:700;color:{INK};line-height:1.3;">{name}</div>
+                          {note_html}
+                          {last_html}
+                        </td></tr>
+                      </table>
+                    </td>"""
+                if len(locations) - i == 1:
+                    row_cards += '<td style="width:50%;padding:4px;"></td>'
+                loc_cards += f"<tr>{row_cards}</tr>"
+            return loc_cards
+
+        loc_cards = _loc_grid(locations)
+        if isinstance(_changes, list):
+            digest["_locations_standing_html"] = (
+                f'{summary_html}<table width="100%" cellpadding="0" cellspacing="0" border="0" '
+                f'class="loc-grid">{_loc_grid(_all_sites)}</table>')
 
         sections.append(f"""
         <div {_SEC}>

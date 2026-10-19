@@ -1310,6 +1310,22 @@ def _ensure_pledge_projects(digest: dict) -> list[str]:
     return log
 
 
+def bp_changes(digest: dict, previous: dict | None) -> list[str] | None:
+    """Monitored sites whose status or latest report date differs from the previous issue."""
+    if not previous or not previous.get("bp_locations"):
+        return None
+    before = {l.get("name"): (l.get("status"), str(l.get("last_source_date", "")))
+              for l in previous.get("bp_locations") or [] if isinstance(l, dict)}
+    out = []
+    for l in digest.get("bp_locations") or []:
+        if not isinstance(l, dict):
+            continue
+        now = (l.get("status"), str(l.get("last_source_date", "")))
+        if l.get("name") not in before or before[l.get("name")] != now:
+            out.append(l.get("name"))
+    return out
+
+
 def tariff_changes(digest: dict, previous: dict | None) -> list[str] | None:
     """Sector names whose tariff rate is new or different from the previous issue."""
     if not previous:
@@ -1813,6 +1829,14 @@ def main():
     # measure the real ratio between the two counts, and trim against a
     # digest-word ceiling scaled by it. One extra render, and the number the
     # reader sees is the number that was enforced.
+    # Which monitored sites have new reporting since the last issue; the brief
+    # shows only those and links to the full list.
+    try:
+        from podcast import _previous_issue as _prev_issue
+        digest_data["_bp_changes"] = bp_changes(digest_data, _prev_issue(_date_slug))
+    except Exception as _e:                                     # noqa: BLE001
+        digest_data["_bp_changes"] = None
+        print(f"  ⚠  Location change check skipped: {_e}")
     # Which sector tariff rates changed since the last issue. The brief shows
     # only those; the full table lives on the trade page. None means the
     # previous issue could not be read, and then nothing is shown inline.
@@ -1896,6 +1920,9 @@ def main():
             _wb = digest_data["web_url"][:-len("latest.html")]
         trade_page.write(digest_data.get("_trade_standing_html", ""),
                          Path("public"), web_base=_wb)
+        if digest_data.get("_locations_standing_html"):
+            trade_page.write_locations(digest_data["_locations_standing_html"],
+                                       Path("public"), web_base=_wb)
     except Exception as _e:
         print(f"  ⚠  Trade reference page skipped (non-fatal): {_e}")
 
