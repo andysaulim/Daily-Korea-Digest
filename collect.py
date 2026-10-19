@@ -323,6 +323,117 @@ KIM_TRACKER_FEEDS = {
     "KCNA KJU":           _gnews("%22Kim+Jong+Un%22+site:kcnawatch.org"),
 }
 
+# ── Capitol Hill: US Congress on Korea ──────────────────────────────────────
+# Its own stream rather than more tier-1 entries. These outlets publish about
+# everything Congress does, so almost none of it is about Korea, and inside
+# tier 1 the few items that are would compete for the 140 prompt slots with
+# the Korea desks and lose. The stream is filtered by HILL_KOREA_KEYWORDS
+# (not KOREA_NATIVE_FEEDS: none of these is Korea-relevant by construction),
+# given its own block in the prompt, and merged into tier 1 afterwards only
+# so validation and URL repair see the same input the model saw.
+#
+# Native feed first, Google News search last, as everywhere else. The three
+# committee searches already in TIER1_FEEDS stay where they are; the entries
+# here add the committees' own feeds and the hearing calendars.
+CAPITOL_HILL_FEEDS = {
+    "Congress.gov House Floor": _native("https://www.congress.gov/rss/house-floor-today.xml",
+                                        "Korea+site:congress.gov"),
+    "Congress.gov Senate Floor": _native("https://www.congress.gov/rss/senate-floor-today.xml",
+                                         "%22North+Korea%22+OR+%22South+Korea%22+site:congress.gov"),
+    "Congress.gov Bills":  _native("https://www.congress.gov/rss/most-viewed-bills.xml",
+                                   "Korea+bill+site:congress.gov"),
+    "GovInfo Bills":       _native("https://www.govinfo.gov/rss/bills.xml",
+                                   "Korea+site:govinfo.gov"),
+    "GovInfo Hearings":    _native("https://www.govinfo.gov/rss/chrg.xml",
+                                   "Korea+hearing+site:govinfo.gov"),
+    "CRS Reports":         ["https://crsreports.congress.gov/rss",
+                            "https://www.everycrsreport.com/rss.xml",
+                            _gnews("Korea+OR+DPRK+OR+%22North+Korea%22+site:crsreports.congress.gov")],
+    "The Hill Defense":    _native("https://thehill.com/policy/defense/feed/",
+                                   "Korea+site:thehill.com"),
+    "The Hill International": _native("https://thehill.com/policy/international/feed/",
+                                      "%22North+Korea%22+OR+%22South+Korea%22+site:thehill.com"),
+    "Roll Call":           _native("https://rollcall.com/feed/", "Korea+site:rollcall.com"),
+    "Politico Congress":   _native("https://rss.politico.com/congress.xml",
+                                   "Korea+Congress+OR+Senate+OR+House+site:politico.com"),
+    "Punchbowl":           _gnews("Korea+site:punchbowl.news"),
+    "HFAC Hearings":       _native("https://foreignaffairs.house.gov/feed/",
+                                   "Korea+hearing+site:foreignaffairs.house.gov"),
+    "HASC":                _native("https://armedservices.house.gov/rss.xml",
+                                   "Korea+site:armedservices.house.gov"),
+    "SFRC Hearings":       _native("https://www.foreign.senate.gov/rss/feeds/?type=hearings",
+                                   "Korea+hearing+site:foreign.senate.gov"),
+    "SASC Hearings":       _native("https://www.armed-services.senate.gov/rss/feeds/?type=hearings",
+                                   "Korea+hearing+site:armed-services.senate.gov"),
+    "House Appropriations": _native("https://appropriations.house.gov/rss.xml",
+                                    "Korea+site:appropriations.house.gov"),
+    "Senate Appropriations": _gnews("Korea+site:appropriations.senate.gov"),
+    # Searches across outlets. No publisher feed exists for a topic, so these
+    # are search-only, and they must also show a US-Congress signal: "Korea"
+    # plus "lawmaker" is far more often the National Assembly.
+    "Korea Caucus":        _gnews("%22Korea+Caucus%22+Congress"),
+    "US Congress Korea":   _gnews("%22South+Korea%22+OR+%22North+Korea%22+Congress+OR+senator+OR+congressman+OR+NDAA"),
+    "Congress Shipbuilding Korea": _gnews("MASGA+OR+shipbuilding+Korea+Congress+OR+senator+OR+bill"),
+}
+
+# Search feeds that must show a US-Congress signal as well as a Korea one.
+HILL_SEARCH_FEEDS = {"Korea Caucus", "US Congress Korea", "Congress Shipbuilding Korea", "Punchbowl"}
+
+# Congressional hearing and markup schedules. Parsed for events, not articles:
+# see _collect_hill_calendar. Each is tried on its own, and every failure is
+# survivable — the section simply has no "Coming up" line.
+HILL_CALENDAR_FEEDS = {
+    "Senate committee schedule": "https://www.senate.gov/general/committee_schedules/hearings.xml",
+    "House committee schedule":  "https://docs.house.gov/Committee/RSS.ashx",
+    "HFAC schedule":             "https://foreignaffairs.house.gov/feed/?post_type=hearing",
+    "HASC schedule":             "https://armedservices.house.gov/rss.xml",
+    "SFRC schedule":             "https://www.foreign.senate.gov/rss/feeds/?type=hearings",
+    "SASC schedule":             "https://www.armed-services.senate.gov/rss/feeds/?type=hearings",
+}
+# Where a reader can see the schedule when a listing carries no link of its own.
+HILL_SCHEDULE_PAGES = {
+    "Senate committee schedule": "https://www.senate.gov/committees/hearings_meetings.htm",
+    "House committee schedule": "https://docs.house.gov/Committee/Calendar/ByWeek.aspx",
+}
+HILL_CALENDAR_COMMITTEES = {
+    "HFAC schedule": "House Foreign Affairs", "HASC schedule": "House Armed Services",
+    "SFRC schedule": "Senate Foreign Relations", "SASC schedule": "Senate Armed Services",
+}
+
+# ── Korea and the World: beyond the US and Northeast Asia ───────────────────
+# Measured against the published corpus for 15-18 October 2026: tier 1 carried
+# 4-20 such items a day, almost all from the Korea Times and Yonhap, and none
+# on Poland, defence exports or the Gulf. These targeted feeds fill that gap.
+# Outlets with a native feed are listed native-first; topic searches have no
+# publisher feed to put first. Filtered for Korea and for a non-Northeast-Asia
+# place or body (WORLD_KEYWORDS), so a USFK or Japan story does not leak in.
+KOREA_WORLD_FEEDS = {
+    "Defense News Korea":    _native("https://www.defensenews.com/arc/outboundfeeds/rss/?outputType=xml",
+                                     "Korea+site:defensenews.com"),
+    "Breaking Defense Korea": _native("https://breakingdefense.com/feed/",
+                                      "Korea+site:breakingdefense.com"),
+    "Euractiv Korea":        _native("https://www.euractiv.com/feed/", "Korea+site:euractiv.com"),
+    "Notes from Poland Korea": _native("https://notesfrompoland.com/feed/",
+                                       "Korea+site:notesfrompoland.com"),
+    "Arab News Korea":       _native("https://www.arabnews.com/rss.xml", "Korea+site:arabnews.com"),
+    "VnExpress Korea":       _native("https://e.vnexpress.net/rss/news.rss", "Korea+site:e.vnexpress.net"),
+    "Kyiv Independent Korea": _native("https://kyivindependent.com/rss/", "Korea+site:kyivindependent.com"),
+    "UN News Korea":         _native("https://news.un.org/feed/subscribe/en/news/all/rss.xml",
+                                     "Korea+OR+DPRK+site:news.un.org"),
+    "Korea defense exports": _gnews("%22South+Korea%22+arms+OR+defense+export+K2+OR+K9+OR+Chunmoo+OR+FA-50+OR+KF-21"),
+    "Korea-Poland":          _gnews("Poland+Korea+K2+OR+K9+OR+Chunmoo+OR+Hanwha+OR+%22Hyundai+Rotem%22"),
+    "Korea-Europe":          _gnews("%22South+Korea%22+EU+OR+NATO+OR+European+OR+Europe"),
+    "Korea-Middle East":     _gnews("%22South+Korea%22+Saudi+OR+UAE+OR+Qatar+OR+Iraq+OR+Israel+OR+Iran+OR+%22Middle+East%22"),
+    "Korea-Southeast Asia":  _gnews("%22South+Korea%22+ASEAN+OR+Vietnam+OR+Indonesia+OR+Philippines+OR+Malaysia+OR+Thailand"),
+    "Korea-India":           _gnews("%22South+Korea%22+India+OR+Pakistan+OR+Bangladesh"),
+    "Korea-Global South":    _gnews("%22South+Korea%22+Africa+OR+Brazil+OR+Mexico+OR+Peru+OR+Kazakhstan+OR+Uzbekistan+OR+%22Latin+America%22+OR+%22Central+Asia%22"),
+    "Korea-Ukraine":         _gnews("%22South+Korea%22+OR+Seoul+Ukraine"),
+    "Korea multilateral":    _gnews("%22South+Korea%22+OR+DPRK+%22United+Nations%22+OR+G20+OR+WTO+OR+IAEA"),
+    "Korea nuclear exports": _gnews("KHNP+OR+%22Korea+Hydro%22+OR+%22Doosan+Enerbility%22+nuclear+plant+export+OR+Czech+OR+Dukovany"),
+    "Korea overseas construction": _gnews("Korean+builders+OR+%22Samsung+C%26T%22+OR+%22Hyundai+E%26C%22+overseas+contract+OR+order"),
+    "Korea aid":             _gnews("KOICA+OR+%22South+Korea%22+humanitarian+aid+OR+ODA"),
+}
+
 KOREA_KEYWORDS = re.compile(
     r"korea|dprk|pyongyang|seoul|rok\b|kim jong|yoon suk|korean peninsula"
     r"|denucleariz|kaesong|yongbyon|hwasong|punggye|38th parallel"
@@ -1050,6 +1161,239 @@ def _collect_kim_tracker() -> list:
             article = _entry_to_article(entry, source, lang="EN")
             articles.append(article)
     return _dedup(articles)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CAPITOL HILL AND KOREA AND THE WORLD
+# ─────────────────────────────────────────────────────────────────────────────
+# Korea relevance for congressional feeds. KOREA_KEYWORDS plus what a bill or
+# hearing about Korea says without naming the country: the shipbuilding deal,
+# the Korean firms building in the US, the worker visa.
+HILL_KOREA_KEYWORDS = re.compile(
+    r"masga|make american shipbuilding great|hanwha|hyundai|samsung|sk hynix|sk on\b"
+    r"|lg energy|e-4 visa|partner with korea|lazarus|korean",
+    re.IGNORECASE,
+)
+# A US-Congress signal, required of the search feeds only.
+HILL_US_SIGNAL = re.compile(
+    r"congress|senat|capitol|ndaa|appropriation|caucus|\bcrs\b|\brep\.|\bsen\."
+    r"|house of representatives|house (?:armed|foreign|committee|panel|vote|pass|bill"
+    r"|republican|democrat|speaker|lawmaker)|u\.s\. lawmaker|american lawmaker|us lawmaker",
+    re.IGNORECASE,
+)
+_ROK_ASSEMBLY = re.compile(r"national assembly|국회|assemblyman|assemblywoman|blue house", re.IGNORECASE)
+
+# A place or body outside the US and Northeast Asia. northeast_asia owns Japan,
+# China, Russia, Taiwan and Mongolia; us_korea the United States.
+WORLD_KEYWORDS = re.compile(
+    r"\beu\b|european|europe|nato|poland|polish|czech|romania|norway|sweden|finland|germany"
+    r"|german|france|french|britain|british|\buk\b|italy|spain|netherlands|estonia|lithuania"
+    r"|turkey|t[uü]rkiye|ukrain|kyiv|middle east|gulf|saudi|riyadh|\buae\b|emirat|abu dhabi"
+    r"|qatar|iraq|israel|iran|egypt|jordan|oman|kuwait|houthi|red sea|hormuz|asean|vietnam"
+    r"|indonesia|philippin|malaysia|thailand|singapore|cambodia|laos|myanmar|india|pakistan"
+    r"|bangladesh|sri lanka|africa|nigeria|kenya|ethiopia|tanzania|ghana|morocco|brazil"
+    r"|mexico|peru|chile|colombia|argentina|latin america|kazakh|uzbek|central asia"
+    r"|australia|canada|new zealand|united nations|\bun\b|security council|iaea|\bg20\b"
+    r"|\bg7\b|\bwto\b|koica|\boda\b",
+    re.IGNORECASE,
+)
+
+
+def _entry_text(entry) -> str:
+    return f"{entry.get('title', '')} {entry.get('summary', entry.get('description', ''))}"
+
+
+def _is_hill_relevant(entry, source: str) -> bool:
+    """Korea-related, and for a search feed, about the US Congress."""
+    text = _entry_text(entry)
+    if not (KOREA_KEYWORDS.search(text) or HILL_KOREA_KEYWORDS.search(text)):
+        return False
+    if source in HILL_SEARCH_FEEDS:
+        return bool(HILL_US_SIGNAL.search(text)) and not _ROK_ASSEMBLY.search(entry.get("title", ""))
+    return True
+
+
+def _is_world_relevant(entry) -> bool:
+    """Korea-related and placed outside the US and Northeast Asia."""
+    text = _entry_text(entry)
+    return bool(KOREA_KEYWORDS.search(text) and WORLD_KEYWORDS.search(text))
+
+
+def _collect_capitol_hill() -> list:
+    """US Congress items about Korea. 48h window; CRS and GovInfo 72h, as they
+    publish in batches rather than through the day."""
+    articles = []
+    results = _fetch_feeds_parallel(CAPITOL_HILL_FEEDS)
+    for source, (entries, _) in results.items():
+        hours = 72 if source.startswith(("CRS", "GovInfo")) else 48
+        for entry in entries:
+            if not _is_recent(entry, hours=hours):
+                continue
+            if not _is_hill_relevant(entry, source):
+                continue
+            articles.append(_entry_to_article(entry, source, extra={"stream": "capitol_hill"}))
+    return _dedup(articles)
+
+
+def _collect_korea_world() -> list:
+    """Korea's relations beyond the US and Northeast Asia. 36h window: these
+    are lower-volume topics than the daily news."""
+    articles = []
+    results = _fetch_feeds_parallel(KOREA_WORLD_FEEDS)
+    for source, (entries, _) in results.items():
+        for entry in entries:
+            if not _is_recent(entry, hours=36):
+                continue
+            if not _is_world_relevant(entry) or _is_entertainment(entry):
+                continue
+            articles.append(_entry_to_article(entry, source, extra={"stream": "korea_world"}))
+    return _dedup(articles)
+
+
+# Titles a hearing or markup must carry to be listed.
+HILL_CALENDAR_KEYWORDS = re.compile(
+    r"korea|dprk|pyongyang|indo-?pacific|usfk|shipbuild|shipyard|maritime industrial"
+    r"|\btrade\b|tariff",
+    re.IGNORECASE,
+)
+HILL_CALENDAR_DAYS = 7
+
+_EVENT_DATE_FORMATS = ("%d-%b-%Y %I:%M %p", "%d-%b-%Y", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S",
+                       "%Y-%m-%d", "%m/%d/%Y %I:%M %p", "%m/%d/%Y", "%A, %B %d, %Y",
+                       "%B %d, %Y", "%b %d, %Y", "%b. %d, %Y")
+_EVENT_DATE_IN_TEXT = re.compile(
+    r"\b(?:(?:Mon|Tues|Wednes|Thurs|Fri|Satur|Sun)day,?\s+)?"
+    r"((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*\.?\s+\d{1,2},\s+20\d\d)"
+    r"|\b(\d{1,2}/\d{1,2}/20\d\d)\b")
+
+
+def _parse_event_date(text: str):
+    """A date from a schedule field or a hearing title, or None. Never guessed."""
+    t = re.sub(r"\s+", " ", str(text or "")).strip().replace("Sept", "Sep")
+    if not t:
+        return None
+    # Whole field first, then the ISO prefixes a timestamp with an offset has.
+    for cand in (t, t[:19], t[:10]):
+        for fmt in _EVENT_DATE_FORMATS:
+            try:
+                return datetime.strptime(cand, fmt).date()
+            except ValueError:
+                continue
+    m = _EVENT_DATE_IN_TEXT.search(t)
+    if m:
+        raw = (m.group(1) or m.group(2)).replace(".", "")
+        for fmt in ("%B %d, %Y", "%b %d, %Y", "%m/%d/%Y"):
+            try:
+                return datetime.strptime(raw, fmt).date()
+            except ValueError:
+                continue
+    return None
+
+
+def _local_tag(el) -> str:
+    return el.tag.rsplit("}", 1)[-1].lower() if isinstance(el.tag, str) else ""
+
+
+def _parse_hill_schedule(content: bytes, source: str) -> list:
+    """Hearings and markups from a committee schedule, as event dicts.
+
+    Two shapes are read. A schedule XML (senate.gov's hearings.xml: one
+    element per meeting with committee, date, room and matter children) and an
+    RSS feed of hearing notices, whose event date is taken from the title or
+    summary because an item's own date is when it was posted. An event whose
+    date cannot be read is dropped rather than dated by guesswork.
+    """
+    import xml.etree.ElementTree as ET
+    events = []
+    chamber = "Senate" if "senate" in source.lower() or source.startswith(("SFRC", "SASC")) else "House"
+    head = content[:400].lower()
+    label = HILL_CALENDAR_COMMITTEES.get(source, source.replace(" schedule", ""))
+    if b"<rss" in head or b"<feed" in head or b"<rdf" in head:
+        for entry in feedparser.parse(content).entries:
+            title = (entry.get("title") or "").strip()
+            # A committee feed also carries press releases that mention a date.
+            if not re.search(r"hearing|markup|mark-up|briefing|roundtable", title, re.I):
+                continue
+            when = _parse_event_date(title) or _parse_event_date(entry.get("summary", ""))
+            if title and when:
+                events.append({"date": when.isoformat(), "time": "", "chamber": chamber,
+                               "committee": label, "title": title,
+                               "url": entry.get("link", ""), "source": source})
+        return events
+    try:
+        root = ET.fromstring(content)
+    except ET.ParseError:
+        return events
+    for el in root.iter():
+        kids = {_local_tag(k): (k.text or "").strip() for k in el}
+        title = kids.get("matter") or kids.get("title") or kids.get("hearing_title") or ""
+        when_raw = kids.get("date") or kids.get("meeting_date") or kids.get("eventdate") or ""
+        if not title or not when_raw:
+            continue
+        when = _parse_event_date(when_raw)
+        if not when:
+            continue
+        tm = re.search(r"\d{1,2}:\d{2}\s*[AP]M", when_raw + " " + kids.get("time", ""), re.I)
+        committee = kids.get("committee") or kids.get("cmte_name") or ""
+        sub = kids.get("sub_cmte") or kids.get("subcommittee") or ""
+        events.append({"date": when.isoformat(), "time": tm.group(0).upper() if tm else "",
+                       "chamber": chamber,
+                       "committee": (f"{committee}: {sub}" if sub and sub != committee else committee)
+                                    or label,
+                       "title": re.sub(r"\s+", " ", title),
+                       "url": (kids.get("hearing_url") or kids.get("url") or kids.get("link")
+                               or HILL_SCHEDULE_PAGES.get(source, "")),
+                       "source": source})
+    return events
+
+
+def _collect_hill_calendar() -> list:
+    """Upcoming Korea-relevant hearings and markups, today through a week out.
+
+    Only what the schedules list. If every schedule fails the result is an
+    empty list, and the brief carries no calendar line — never a recalled one.
+    """
+    from zoneinfo import ZoneInfo
+    today = datetime.now(ZoneInfo("America/New_York")).date()
+    horizon = today + timedelta(days=HILL_CALENDAR_DAYS)
+
+    def _one(source, url):
+        try:
+            resp = requests.get(url, timeout=REQUEST_TIMEOUT, headers=HEADERS)
+            resp.raise_for_status()
+            return source, _parse_hill_schedule(resp.content, source)
+        except Exception as e:                                  # noqa: BLE001
+            print(f"    ⚠  Hill calendar {source}: {str(e)[:80]}")
+            return source, []
+
+    events = []
+    with ThreadPoolExecutor(max_workers=6) as pool:
+        for source, found in pool.map(lambda kv: _one(*kv), HILL_CALENDAR_FEEDS.items()):
+            _source_health[source] = {"articles": len(found), "success": bool(found), "error_msg": None}
+            events.extend(found)
+    return filter_hill_events(events, today, horizon)
+
+
+def filter_hill_events(events: list, today, horizon) -> list:
+    """Keep Korea-relevant events inside the window, one per date and title."""
+    seen, out = set(), []
+    for ev in events:
+        text = f"{ev.get('title', '')} {ev.get('committee', '')}"
+        if not HILL_CALENDAR_KEYWORDS.search(text):
+            continue
+        try:
+            d = datetime.strptime(ev.get("date", ""), "%Y-%m-%d").date()
+        except ValueError:
+            continue
+        if not (today <= d <= horizon):
+            continue
+        key = (ev["date"], re.sub(r"[^a-z0-9]+", " ", ev.get("title", "").lower()).strip()[:80])
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(ev)
+    out.sort(key=lambda e: (e["date"], e.get("time") or ""))
+    return out[:10]
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1794,12 +2138,15 @@ def collect() -> dict:
         "kcna_scrape":  ("KCNA Watch scrape",             _scrape_kcna_watch),
         "kim_tracker":  ("Kim Jong Un appearance tracker", _collect_kim_tracker),
         "satellite":    ("Satellite imagery analysis",     _collect_satellite_imagery),
+        "capitol_hill": ("Capitol Hill (US Congress)",     _collect_capitol_hill),
+        "korea_world":  ("Korea and the World",            _collect_korea_world),
+        "hill_calendar": ("Congressional calendar",        _collect_hill_calendar),
         "markets":      ("Market data",                    _collect_markets),
         "sentiment":    ("Public sentiment polls",         _collect_sentiment),
     }
 
     results = {}
-    with ThreadPoolExecutor(max_workers=9) as pool:
+    with ThreadPoolExecutor(max_workers=len(collectors)) as pool:
         futures = {pool.submit(fn): key for key, (_label, fn) in collectors.items()}
         for future in as_completed(futures):
             key = futures[future]
@@ -1814,6 +2161,8 @@ def collect() -> dict:
                     print(f"  ── {label}: {found} metric(s) found" if found else f"  ── {label}: no recent polls found")
                 elif key in ("kim_tracker", "satellite"):
                     print(f"  ── {label}: {len(data)} articles (72h window)")
+                elif key == "hill_calendar":
+                    print(f"  ── {label}: {len(data)} Korea-relevant event(s), next {HILL_CALENDAR_DAYS} days")
                 else:
                     print(f"  ── {label}: {len(data)} items")
             except Exception as e:
@@ -1821,6 +2170,18 @@ def collect() -> dict:
                 results[key] = [] if key not in ("markets", "sentiment") else {}
 
     tier1 = results["tier1"]
+    # The Capitol Hill and Korea-and-the-World streams have their own prompt
+    # blocks (they carry a "stream" key, which keeps them out of the tier-1
+    # block). They are appended to tier 1 as well so that URL validation,
+    # repair and the coverage audit check the digest against everything the
+    # model was shown. An article tier 1 already carries is not added twice.
+    capitol_hill = results.get("capitol_hill") or []
+    korea_world = results.get("korea_world") or []
+    _have = {a["url"] for a in tier1}
+    for _a in capitol_hill + korea_world:
+        if _a["url"] not in _have:
+            _have.add(_a["url"])
+            tier1.append(_a)
     tier2 = results["tier2"]
     tier3 = results["tier3"]
     tier4 = results["tier4"]
@@ -1868,6 +2229,9 @@ def collect() -> dict:
         "kcna_summary": kcna_summary,
         "kim_tracker_articles": results["kim_tracker"],
         "satellite_imagery_articles": satellite,
+        "capitol_hill_articles": capitol_hill,
+        "korea_world_articles": korea_world,
+        "hill_calendar": results.get("hill_calendar") or [],
         "market_indicators": results["markets"],
         "sentiment_baseline": results["sentiment"],
         "x_signals": x_signals,
