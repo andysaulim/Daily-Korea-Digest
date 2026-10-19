@@ -1295,7 +1295,49 @@ def check_audio_formatting() -> list[str]:
     return problems
 
 
+def check_design_preview_goes_only_to_preview_list():
+    """The candidate design reaches DESIGN_PREVIEW_TO alone, with the same issue."""
+    import json, os, run, render
+    problems, sent = [], []
+    d = {"digest_date": "2026-10-19", "re_line": "Test line for the subject",
+         "top_stories": [{"headline": "Lead story", "body": "Body text.", "category_tag": "DPRK"}],
+         "morning_memo": ["One.", "Two.", "Three."]}
+    before = json.dumps(d, sort_keys=True)
+    saved_env, saved_design = os.environ.get("DESIGN_PREVIEW_TO"), render.DESIGN
+    try:
+        os.environ.pop("DESIGN_PREVIEW_TO", None)
+        if run.send_design_preview(d, lambda *a, **k: sent.append(k)):
+            problems.append("a preview went out with DESIGN_PREVIEW_TO unset")
+        os.environ["DESIGN_PREVIEW_TO"] = "preview@example.org"
+        to = run.send_design_preview(d, lambda html, **k: sent.append((html, k)), "Lead story")
+        if to != ["preview@example.org"] or len(sent) != 1:
+            problems.append(f"preview recipients wrong: {to}")
+        else:
+            html, k = sent[0]
+            if k.get("recipients") != ["preview@example.org"]:
+                problems.append("preview not limited to the preview list")
+            if not str(k.get("subject", "")).startswith("[Design preview]"):
+                problems.append("preview subject not marked")
+            if "%%V2N" in html or "Lead story" not in html:
+                problems.append("preview did not render the candidate design")
+        if render.DESIGN != saved_design:
+            problems.append("preview left render.DESIGN changed for the live send")
+        if json.dumps(d, sort_keys=True) != before:
+            problems.append("preview mutated the digest")
+        render.DESIGN = run.PREVIEW_DESIGN
+        if run.send_design_preview(d, lambda *a, **k: sent.append(k)):
+            problems.append("preview sent although the candidate is already live")
+    finally:
+        render.DESIGN = saved_design
+        if saved_env is None:
+            os.environ.pop("DESIGN_PREVIEW_TO", None)
+        else:
+            os.environ["DESIGN_PREVIEW_TO"] = saved_env
+    return problems
+
+
 CHECKS = [
+    ("design preview goes only to the preview list", check_design_preview_goes_only_to_preview_list),
     ("audio is formatted for the ear", check_audio_formatting),
     ("no Korean script on the page", check_english_only),
     ("API cost is recorded and kept", check_api_cost_is_recorded),
