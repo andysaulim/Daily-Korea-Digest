@@ -82,6 +82,18 @@ def dashes(text: str) -> str:
     return re.sub(r"^\s*,\s*|\s*,\s*$", "", s)
 
 
+_GLOSS = re.compile(r"\s*\(([^()]*[\u3131-\u318E\uAC00-\uD7A3][^()]*)\)")
+
+
+def glosses(text: str) -> str:
+    """Drop Korean glosses in brackets: '(중대범죄수사청 / SCIA)' -> '(SCIA)', '(소추)' -> ''."""
+    def one(m):
+        rest = HANGUL.sub("", m.group(1))
+        rest = re.sub(r"^[\s/,;:·-]+|[\s/,;:·-]+$", "", re.sub(r"[\u3131-\u318E\uAC00-\uD7A3\s]*[/,;]\s*(?=[/,;]|$)", "", rest))
+        return f" ({rest})" if re.search(r"[A-Za-z0-9]", rest) else ""
+    return _GLOSS.sub(one, str(text or ""))
+
+
 def _translated_quote(text: str, start: int) -> bool:
     """Korean at `start` sits inside quotes followed (or preceded) by English in brackets/quotes."""
     window = text[max(0, start - 160): start + 220]
@@ -130,7 +142,7 @@ def apply(digest: dict) -> list[str]:
             elif isinstance(v, str) and parent is not None and re.search(r"[\u2014\u2015]|\s[\u2013]\s|\s--\s", v):
                 parent[key] = v = dashes(v)
             if isinstance(v, str) and HANGUL.search(v) and parent is not None:
-                s = v
+                s = glosses(v)
                 for ko in _BY_LENGTH:
                     s = s.replace(ko, OUTLETS[ko])
                 parent[key] = s
