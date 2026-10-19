@@ -82,6 +82,29 @@ def _clean_src(raw: str) -> str:
     return cleaned if cleaned else raw
 
 
+_HANGUL = _re.compile(r"[\u3131-\u318E\uAC00-\uD7A3]")
+
+
+def _en_label(raw) -> str:
+    """A label (committee, ministry, office) with its Korean name taken out.
+
+    Korean belongs on the page only in a quote beside its translation. The
+    model often adds the Korean name in brackets after the English one,
+    "Education Committee (교육위원회)", and english.apply cleans only the
+    source fields. Prose is not touched here.
+    """
+    s = str(raw or "")
+    if not _HANGUL.search(s):
+        return s
+
+    def inner(m):
+        keep = [p.strip() for p in m.group(1).split("/") if p.strip() and not _HANGUL.search(p)]
+        return f" ({' / '.join(keep)})" if keep else ""
+    s = _re.sub(r"\s*\(([^)]*)\)", lambda m: inner(m) if _HANGUL.search(m.group(1)) else m.group(0), s)
+    s = _re.sub(r"[\u3131-\u318E\uAC00-\uD7A3][\u3131-\u318E\uAC00-\uD7A3\s]*", " ", s)
+    return _re.sub(r"\s{2,}", " ", s).strip(" ,;/")
+
+
 def _str(val) -> str:
     """Coerce a value to str — handles lists returned by Claude API."""
     if isinstance(val, list):
@@ -1186,14 +1209,14 @@ def render(digest: dict) -> str:
             row_cards = ""
             for j in range(i, min(i + _cols, len(rok_gov))):
                 item = rok_gov[j]
-                ministry = _esc(item.get("ministry", ""))
+                ministry = _esc(_en_label(item.get("ministry", "")))
                 action = _esc(item.get("action", ""))
                 detail = _emphasis(_esc(item.get("detail", "")))
                 source_url = item.get("url", "")
                 source_label = _esc(item.get("source_label", ""))
                 # Who acted. The prompt has always extracted this; the card
                 # showed only the ministry, so the name was thrown away.
-                official = _esc(item.get("official", ""))
+                official = _esc(_en_label(item.get("official", "")))
                 official_line = (
                     f'<div style="font-size:13px;font-family:Georgia,serif;color:#353C48;margin-bottom:4px;">{official}</div>'
                     if official and official.lower() not in ("none", "null", "n/a") else "")
@@ -1271,7 +1294,7 @@ def render(digest: dict) -> str:
             action_colors = {"appointed": UP_GREEN, "nominated": TAEGUK_BLUE, "resigned": TAEGUK_RED, "dismissed": TAEGUK_RED, "confirmed": UP_GREEN}
             pers_items = ""
             for item in rok_personnel:
-                position = _esc(item.get("position", ""))
+                position = _esc(_en_label(item.get("position", "")))
                 name = _esc(item.get("name", ""))
                 action = item.get("action", "appointed")
                 detail = _emphasis(_esc(item.get("detail", "")))
@@ -1298,7 +1321,7 @@ def render(digest: dict) -> str:
             asm_items = ""
             for item in rok_assembly:
                 _c = str(item.get("committee", "") or "")
-                committee = _esc(_c.title() if _c.isupper() else _c)
+                committee = _esc(_en_label(_c.title() if _c.isupper() else _c))
                 action = _esc(item.get("action", "") or item.get("activity", ""))
                 detail = _emphasis(_esc(item.get("detail", "")))
                 asm_items += f"""
