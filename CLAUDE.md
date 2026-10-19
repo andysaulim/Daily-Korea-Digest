@@ -77,9 +77,15 @@ Run `python test_sources.py` after any change here.
 
 ## Length
 
-Target band **2,500-2,750 words**, hard ceiling **2,800** (`run.WORD_CEILING`).
-The ceiling rose from 2,750 when Capitol Hill and Korea and the World were
-added; both may be empty and usually are.
+The prompt asks the model for **1,700-2,000 words** of its own text (hard
+ceiling 2,100). `run.WORD_CEILING` (**3,300**) counts *rendered* words, and the
+page adds about 1,000 words of labels and panels on top of what the model
+writes (rendered ≈ 1,000 + 1.17 × model words). Below 1,300 the brief is
+regenerated (`MIN_DIGEST_WORDS`).
+
+The binding limit is bytes, not words: Gmail clips a message over ~102KB and
+hides the rest behind "View entire message". `run.fit_email_bytes` drops items
+in `length_budget.TRIM_ORDER` until the minified email is under 98,000 bytes.
 
 Length is decided by `run.SECTION_CAPS`, not by the prompt's target. An issue
 shipped at 3,518 words because the caps permitted about 3,680 between them and
