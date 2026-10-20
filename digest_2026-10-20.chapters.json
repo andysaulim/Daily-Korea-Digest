@@ -1,0 +1,53 @@
+{
+ "version": "1.2.0",
+ "chapters": [
+  {
+   "startTime": 0.0,
+   "title": "Today's headlines",
+   "endTime": 46.82
+  },
+  {
+   "startTime": 46.82,
+   "title": "Seoul vows decisive retaliation as North Korea threatens…",
+   "url": "https://en.yna.co.kr/view/AEN20261020003852315",
+   "endTime": 150.48
+  },
+  {
+   "startTime": 150.48,
+   "title": "Trump casts doubt on Kim meeting at China APEC summit next month",
+   "url": "https://www.nknews.org/2026/10/trump-appears-to-cast-doubt-on-prospects-for-meeting-kim-jong-un-next-month/",
+   "endTime": 201.52
+  },
+  {
+   "startTime": 201.52,
+   "title": "KOSPI drops 3.73% as Elice AI data center IPO plunges 32% on debut",
+   "url": "https://www.bloomberg.com/news/articles/2026-10-20/south-korea-pulls-embassy-staff-from-ukraine-after-envoy-recall",
+   "endTime": 265.28
+  },
+  {
+   "startTime": 265.28,
+   "title": "Pyongyang",
+   "endTime": 320.16
+  },
+  {
+   "startTime": 320.16,
+   "title": "The round-up",
+   "endTime": 497.77
+  },
+  {
+   "startTime": 497.77,
+   "title": "Capitol Hill",
+   "endTime": 518.49
+  },
+  {
+   "startTime": 518.49,
+   "title": "Korea and the World",
+   "endTime": 540.26
+  },
+  {
+   "startTime": 540.26,
+   "title": "Markets",
+   "endTime": 569.91
+  }
+ ]
+}

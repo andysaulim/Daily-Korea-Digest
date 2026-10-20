@@ -178,5 +178,35 @@
     "transcript": "digest_2026-10-19.vtt",
     "chapters": "digest_2026-10-19.chapters.json",
     "page": "listen/2026-10-19.html"
+  },
+  {
+    "date": "2026-10-20",
+    "title": "Korea Daily Brief | Tuesday, October 20",
+    "summary": "North Korean loudspeaker threat, Trump cold on Kim summit, Seoul withdraws Ukraine staff, KOSPI down 3.73 percent on AI selloff, Elice IPO plunges 32 percent.",
+    "file": "digest_2026-10-20.mp3",
+    "bytes": 4560230,
+    "seconds": 569,
+    "script": "written",
+    "transcript_text": "digest_2026-10-20.txt",
+    "notes": [
+      {
+        "headline": "Seoul vows decisive retaliation as North Korea threatens loudspeakers, additional strike assets at border",
+        "source": "Yonhap English / NK News",
+        "url": "https://en.yna.co.kr/view/AEN20261020003852315"
+      },
+      {
+        "headline": "Trump casts doubt on Kim meeting at China APEC summit next month",
+        "source": "NK News",
+        "url": "https://www.nknews.org/2026/10/trump-appears-to-cast-doubt-on-prospects-for-meeting-kim-jong-un-next-month/"
+      },
+      {
+        "headline": "KOSPI drops 3.73% as Elice AI data center IPO plunges 32% on debut",
+        "source": "Bloomberg / Reuters / Financial Times / CNBC / Yonhap English",
+        "url": "https://www.bloomberg.com/news/articles/2026-10-20/south-korea-pulls-embassy-staff-from-ukraine-after-envoy-recall"
+      }
+    ],
+    "transcript": "digest_2026-10-20.vtt",
+    "chapters": "digest_2026-10-20.chapters.json",
+    "page": "listen/2026-10-20.html"
   }
 ]
