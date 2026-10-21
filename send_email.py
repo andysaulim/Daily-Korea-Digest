@@ -203,6 +203,19 @@ def build_subject(re_line: Optional[str] = None, lead: Optional[str] = None,
     date_str = now.strftime("%A, %B %-d, %Y")
     return f"Korea Daily Brief | {date_str}"
 
+DEFAULT_REPLY_TO = "alim@csis.org"
+
+
+def reply_address() -> str:
+    """Where a reader's reply goes: DIGEST_REPLY_TO, else the desk address.
+
+    Unset and empty mean the same thing (an unset Actions secret arrives as
+    ""). The renderer reads this too, so the sign-off names the address a
+    reply actually reaches.
+    """
+    return (os.environ.get("DIGEST_REPLY_TO") or "").strip() or DEFAULT_REPLY_TO
+
+
 def send(html: str, re_line: Optional[str] = None, subject: Optional[str] = None,
          lead: Optional[str] = None,
          recipients: Optional[list] = None):
@@ -248,7 +261,7 @@ def send(html: str, re_line: Optional[str] = None, subject: Optional[str] = None
     # will only put an unverified alias in From, so the personal address stays
     # there while Reply-To and the visible To carry the work address — a reader
     # hitting reply reaches alim@csis.org without anyone having to notice.
-    reply_to = _env("DIGEST_REPLY_TO", "alim@csis.org")
+    reply_to = reply_address()
     display_to = _env("DIGEST_VISIBLE_TO", reply_to)
     to_str = _env("DIGEST_TO", gmail_user)
 

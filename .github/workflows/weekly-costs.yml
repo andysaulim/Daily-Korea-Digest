@@ -39,8 +39,15 @@ jobs:
           GH_PAT: ${{ secrets.GH_PAT }}
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASS: ${{ secrets.GMAIL_APP_PASS }}
-          # An operator's report. NOT the reader distribution list — the script
-          # refuses to send if this overlaps DIGEST_TO.
-          COST_REPORT_TO: ${{ vars.COST_REPORT_TO || vars.TEST_SEND_TO }}
+          # An operator's report. NOT the reader distribution list. This must be
+          # set: with neither name defined the sheet is built and the step fails
+          # with an annotation naming COST_REPORT_TO, which is what every Monday
+          # from 21 September to 19 October was (exit 1, no recipient). A
+          # variable or a secret of that name both work.
+          COST_REPORT_TO: ${{ vars.COST_REPORT_TO || secrets.COST_REPORT_TO || vars.TEST_SEND_TO }}
+          # Only for the guard: the script refuses a recipient list that shares
+          # two or more addresses with the reader list. Without this the guard
+          # had nothing to compare against.
+          DIGEST_TO: ${{ secrets.DIGEST_TO }}
         run: |
           python cost_weekly.py --days "${{ inputs.days || '7' }}" --send

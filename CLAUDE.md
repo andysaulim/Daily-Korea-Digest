@@ -73,6 +73,13 @@ exists to prevent. `test_sources.py` enforces this.
 consecutive runs is reported in the run log with the date it last delivered.
 Check that before assuming a source is covered.
 
+**ROK government feeds** fall back to press searches by ministry name and
+spokesperson (`"외교부 대변인"`, `국방부 브리핑`) in the Korean Google News
+edition, never to `site:*.go.kr`: Google indexes almost no .go.kr pages, and
+the old site searches delivered 15 items a week across twenty feeds. korea.kr
+ended its RSS service on 2026-07-01. Only a government-domain URL ranks as a
+primary document; a press report of a briefing ranks in band 2.
+
 Run `python test_sources.py` after any change here.
 
 ## Length

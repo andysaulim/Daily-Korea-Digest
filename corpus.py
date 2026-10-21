@@ -79,9 +79,15 @@ def _published(path: Path, fallback):
             data = resp.json()
             if isinstance(data, type(fallback)):
                 return data, True
-        # A 404 is normal the first time a month's shard is created.
+        # A 404 is normal the first time a month's shard is created, but it is
+        # also what a site that is not serving returns for everything. Only
+        # trust it when the site answers for a file every run publishes.
         if resp.status_code == 404:
-            return fallback, True
+            from shared.published import _site_is_serving
+            if _site_is_serving(base.rsplit("/corpus", 1)[0], 12):
+                return fallback, True
+            print(f"    ⚠  {path.name} 404 and the site is not serving; not rewriting it this run")
+            return fallback, False
     except Exception as exc:
         print(f"    ⚠  {path.name} unreachable ({exc}); not rewriting it this run")
         return fallback, False
@@ -128,12 +134,27 @@ def collect_digest_urls(digest_data: dict) -> dict:
 
 def slim_article(article: dict, tier: int, used_in_digest: bool,
                  section, dup_of_recent: bool) -> dict:
-    """Flatten a collect.py article into the compact audit-record shape."""
+    """Flatten a collect.py article into the compact audit-record shape.
+
+    `source` is the publisher the reader sees; `feed` is the collect.py feed
+    that found the item, which is what feed health is judged by. Since
+    19 October 2026 the two differ for every Google News item, and without
+    `feed` the published corpus could no longer say which feed delivered
+    what. It is written only when it differs from `source` (a native feed's
+    items carry the feed name as their source), so read it as
+    `record.get("feed") or record["source"]`.
+    """
     summary = (article.get("summary") or "").strip()
-    return {
+    source = (article.get("source") or "").strip()
+    record = {
         "url": _norm_url(article.get("url")),
         "title": (article.get("title") or article.get("headline") or "").strip(),
-        "source": (article.get("source") or "").strip(),
+        "source": source,
+    }
+    feed = (article.get("feed") or "").strip()
+    if feed and feed != source:
+        record["feed"] = feed
+    record.update({
         "tier": tier,
         "lang": article.get("lang", "EN"),
         "pub_date": article.get("pub_date"),
@@ -142,7 +163,8 @@ def slim_article(article: dict, tier: int, used_in_digest: bool,
         "used_in_digest": used_in_digest,
         "section": section,
         "dup_of_recent": dup_of_recent,
-    }
+    })
+    return record
 
 
 def _tier_num(bucket_key: str) -> int:

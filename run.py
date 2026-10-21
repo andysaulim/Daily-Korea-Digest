@@ -8,6 +8,7 @@ Usage:
   python run.py --from-cache # Skip collection, use existing collected.json
   python run.py --no-push    # Skip pushing new entries to databases
 """
+import copy
 import json
 import argparse
 import os
@@ -301,6 +302,65 @@ def backfill_archive_entries(entries: list, web_base: str = "") -> list:
         print(f"  📚  Archive backfill: {len(entries)} -> {len(merged)} issues "
               f"recovered from pages still published")
     return merged
+
+
+def warn(title: str, message) -> None:
+    """A GitHub Actions warning annotation, shown on the run page.
+
+    Most of the pipeline's best-effort steps used to report a failure as an
+    ordinary log line ("skipped (non-fatal)") and carry on, which is right for
+    the send and wrong for the operator: the run went green, the brief went
+    out degraded, and nothing on the run page said so. Anything that changes
+    what the reader gets goes through here. Newlines are escaped so a
+    multi-line exception stays one annotation; title punctuation is escaped
+    because ':' and ',' end the title.
+    """
+    def _esc(v) -> str:
+        return str(v).replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+    t = _esc(title).replace(":", "%3A").replace(",", "%2C")
+    print(f"::warning title={t}::{_esc(message)}", flush=True)
+
+
+def build_web_html(digest: dict, email_html: str, date_slug: str,
+                   archive_entries: list | None = None) -> str:
+    """The published page for digest_{date}.html and latest.html. Never raises.
+
+    The web edition (web_page.py) is the full reference: every item whole,
+    sections that fold, a section menu, prev/next. The email stays as it is.
+    If the web edition cannot be built, the page is the email HTML, as it
+    was before, and the run page says so. archive_entries is None when the
+    manifest could not be read; the page then leaves prev/next to its own
+    fetch of the published archive.json.
+    """
+    try:
+        import web_page
+        page = web_page.build(digest, email_html, date_slug, archive_entries=archive_entries)
+        if not isinstance(page, str) or "</html>" not in page:
+            raise ValueError("web_page.build returned no page")
+        return page
+    except Exception as e:                                      # noqa: BLE001
+        warn("Web page fell back to the email",
+             f"digest_{date_slug}.html is the email HTML today: {type(e).__name__}: {e}")
+        return email_html
+
+
+def gallup_baseline_age_days(today=None) -> int | None:
+    """Days since the stored Gallup baseline's survey began, or None.
+
+    When the day's scrape finds no poll, collect() falls back to this baseline
+    and the brief shows it, correctly labelled with its own survey dates. That
+    is fine for a week. Past two the brief is carrying a stale poll and the
+    weekly update has stopped working, which only a person can fix.
+    """
+    try:
+        import gallup_update as gu
+        key = gu._current_sort_key(gu._load_baseline())
+        if not key:
+            return None
+        today = today or datetime.now(ZoneInfo("America/New_York")).date()
+        return (today - datetime.strptime(key, "%Y-%m-%d").date()).days
+    except Exception:                                           # noqa: BLE001
+        return None
 
 
 # How short a manifest has to be before it is treated as the stub the old bug
@@ -715,6 +775,24 @@ def _enforce_source_diversity(digest: dict) -> list[str]:
     return log
 
 
+def hill_calendar_log_line(payload: dict | None) -> str:
+    """One line on whether the committee schedules answered.
+
+    An empty calendar is ambiguous: no Korea hearing this week (normal in an
+    October recess) or every schedule failing. The counts tell them apart.
+    """
+    stats = (payload or {}).get("hill_calendar_stats") or {}
+    kept = len((payload or {}).get("hill_calendar") or [])
+    if not stats:
+        return f"Hill calendar: {kept} event(s) kept (no fetch counts in this payload)"
+    line = (f"Hill calendar: {stats.get('fetched', 0)} event(s) fetched from "
+            f"{stats.get('answered', 0)}/{stats.get('feeds', 0)} schedule(s), {kept} kept")
+    failed = [k for k, v in (stats.get("per_source") or {}).items() if v == "error"]
+    if failed:
+        line += f"; no answer from {', '.join(sorted(failed))}"
+    return line
+
+
 def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
     """Pre-send quality gate. Returns list of warnings (empty = all clear)."""
     warnings = []
@@ -743,6 +821,11 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
 
     # ── Morning memo uniqueness check ───────────────────────────────────
     memo_items = digest.get("morning_memo") or []
+    for _i, _m in enumerate(memo_items):
+        _n = len(str(_m).split())
+        if _n > 30:
+            warnings.append(f"MORNING MEMO: item {_i + 1} is {_n} words (limit 25); "
+                            f"the glance is meant to be read in one look")
     if len(memo_items) >= 2:
         memo_texts = [str(m).strip() for m in memo_items]
         if len(set(memo_texts)) < len(memo_texts):
@@ -1659,6 +1742,59 @@ def _ensure_pledge_projects(digest: dict) -> list[str]:
     return log
 
 
+# The provocations database (databases.fetch_nk_provocations) gained entries
+# from the brief itself only once the push read category_tag, on Oct 19 2026;
+# between Jul 3 and Oct 19 it recorded nothing, though North Korea tested
+# weapons in that span. A count over a window that reaches back before this
+# date would understate, so provocation_window reports none for it.
+PROVOCATIONS_COMPLETE_SINCE = "2026-10-19"
+
+
+def kcna_trend(digest: dict, previous: dict | None, history: list | None) -> dict | None:
+    """Today's KCNA watch flag against yesterday's issue and the last week.
+
+    `previous` is the prior issue's digest; `history` the kcna_tracker day
+    records, newest first. Returns None when today has no KCNA data, so the
+    status line says nothing rather than something invented.
+    """
+    kc = digest.get("kcna_delta") if isinstance(digest.get("kcna_delta"), dict) else {}
+    if not kc or kc.get("data_unavailable") or not isinstance(kc.get("watch_flag"), bool):
+        return None
+    out = {"watch_flag": kc["watch_flag"]}
+    pk = (previous or {}).get("kcna_delta")
+    if isinstance(pk, dict) and isinstance(pk.get("watch_flag"), bool) and not pk.get("data_unavailable"):
+        out["prev_watch_flag"] = pk["watch_flag"]
+    today = str(digest.get("date_slug") or "")[:10]
+    days = [d for d in (history or []) if isinstance(d, dict) and d.get("date") and d.get("date") != today]
+    if len(days) >= 6:
+        week = days[:6]
+        out["watch_days_week"] = sum(1 for d in week if d.get("watch_flag")) + int(kc["watch_flag"])
+        out["week_days"] = len(week) + 1
+    return out
+
+
+def provocation_window(records: list, date_slug: str, days: int = 7) -> dict | None:
+    """Provocations recorded in the `days` days ending on `date_slug`, and the latest one.
+
+    None when the window reaches back before PROVOCATIONS_COMPLETE_SINCE or
+    the database could not be read: a count from a database with a gap is
+    worse than no count.
+    """
+    if not records or not date_slug:
+        return None
+    try:
+        end = datetime.strptime(date_slug[:10], "%Y-%m-%d").date()
+    except ValueError:
+        return None
+    start = end - timedelta(days=days - 1)
+    if start.isoformat() < PROVOCATIONS_COMPLETE_SINCE:
+        return None
+    inside = [r for r in records if isinstance(r, dict)
+              and start.isoformat() <= str(r.get("date", ""))[:10] <= end.isoformat()]
+    return {"count": len(inside), "days": days,
+            "latest": max((str(r.get("date"))[:10] for r in inside), default=None)}
+
+
 def bp_changes(digest: dict, previous: dict | None) -> list[str] | None:
     """Monitored sites whose status or latest report date differs from the previous issue."""
     if not previous or not previous.get("bp_locations"):
@@ -1921,6 +2057,7 @@ def send_design_preview(digest_data: dict, send_fn, lead: str = "") -> list:
         return to
     except Exception as e:                                      # noqa: BLE001
         print(f"  ⚠  Design preview skipped (non-fatal): {e}")
+        warn("Design preview not sent", str(e))
         return []
 
 def main():
@@ -1970,6 +2107,8 @@ def main():
         if _total and _ok / _total < 0.5:
             print(f"    ⚠  Under half the feed list returned anything — "
                   f"check for a Google News block before trusting this issue.")
+            warn("Thin collection", f"only {_ok}/{_total} feeds returned articles; "
+                 f"check for a Google News block before trusting this issue")
 
         _unres = (payload or {}).get("unresolved_url_count") or 0
         if _unres:
@@ -1977,7 +2116,11 @@ def main():
                   f"(publisher URL could not be decoded)")
 
         # Silence across runs is what separates a dead feed from a quiet one.
+        # Not on --from-cache: the same collection recorded twice would count
+        # every silent feed as silent for one more run than it was.
         try:
+            if args.from_cache:
+                raise RuntimeError("--from-cache: this collection is not a new run")
             import feed_health
             for _line in feed_health.update_and_report(
                     _health.get("per_source") or {},
@@ -1987,6 +2130,19 @@ def main():
         except Exception as _e:
             print(f"    (feed health unavailable: {_e})")
 
+    # Nothing to write from. The model would be asked for a brief with no
+    # articles, which is exactly when it is tempted to answer from memory.
+    _tier1_n = len((payload or {}).get("tier1") or [])
+    if _tier1_n < 20:
+        warn("Very thin collection", f"only {_tier1_n} tier-1 articles collected; "
+             f"the brief will be short or fail validation")
+
+    _gallup_age = gallup_baseline_age_days()
+    if _gallup_age is not None and _gallup_age > 14:
+        warn("Gallup baseline stale", f"the stored Gallup Korea baseline is {_gallup_age} days "
+             f"old; if today's scrape found no poll the brief shows that one. Check the "
+             f"weekly Gallup update.")
+
     if args.dry_run:
         print("\n  --dry-run: stopping after collection. See collected.json")
         return
@@ -1994,8 +2150,22 @@ def main():
     # ── Step 1b: Fetch CSIS databases for context ─────────────────────────────
     from databases import fetch_all, build_context_block, process_digest_entries
     print("\n📚  Loading CSIS databases...")
-    databases = fetch_all()
-    db_context = build_context_block(databases)
+    # Context only. A failure here costs the model its NK-Russia and
+    # provocations background, not the morning's brief.
+    try:
+        databases = fetch_all()
+        db_context = build_context_block(databases)
+        # fetch_all returns an empty list for a source it could not read and
+        # says so only in the log, so a database could drop out of the prompt
+        # for weeks. Both are expected to hold hundreds of records.
+        _empty_db = [k for k in ("nk_russia_timeline", "nk_provocations")
+                     if not (databases or {}).get(k)]
+        if _empty_db:
+            warn("CSIS database empty", f"{', '.join(_empty_db)} returned nothing; the brief "
+                 f"is written without that background (check the source repository URL)")
+    except Exception as _e:                                     # noqa: BLE001
+        databases, db_context = {}, ""
+        warn("CSIS databases unavailable", f"brief written without database context: {_e}")
 
     # ── Step 1c: Recent-coverage context from the article corpus ───────────────
     # Best-effort: feed the last week of already-published stories back to the
@@ -2019,6 +2189,7 @@ def main():
                   f"in context, {len(recent_urls)} URLs for cross-day dedup")
     except Exception as e:
         print(f"  ⚠  Recent-coverage context skipped (non-fatal): {e}")
+        warn("Recent coverage skipped", f"no cross-day dedup this run: {e}")
 
     # ── Step 2: Generate digest via Claude (with validation retry) ──────────
     from digest import generate_digest, regenerate_digest
@@ -2154,6 +2325,9 @@ def main():
         else:
             print("\n🚫  CRITICAL validation failures after all retries — newsletter will NOT be sent.")
             print("    Fix the issues above or re-run. HTML still rendered for review.")
+            _crit = "; ".join(critical_warnings)[:600].replace("\n", " ")
+            print(f"::error title=Brief not sent::critical validation failures after "
+                  f"{1 + MAX_VALIDATION_RETRIES} attempts: {_crit}")
 
     # A test send proves a mail path; it is not an edition. It must leave the
     # published record untouched — otherwise proving that CSIS SMTP works
@@ -2165,9 +2339,16 @@ def main():
 
     # Only update trackers if digest passed validation (avoid corrupting state)
     if validation_passed and not _is_test_send:
-        update_from_digest(digest_data)
-        kcna_update_from_digest(digest_data)
-        bp_update_from_digest(digest_data)
+        # Each tracker is state for tomorrow's prompt, not part of today's
+        # brief. One that raises (a corrupt file, a schema change) used to end
+        # the run here, before the send.
+        for _name, _update in (("Kim tracker", update_from_digest),
+                               ("KCNA tracker", kcna_update_from_digest),
+                               ("Facility tracker", bp_update_from_digest)):
+            try:
+                _update(digest_data)
+            except Exception as _e:                             # noqa: BLE001
+                warn(f"{_name} not updated", str(_e))
         _sent_log = _maybe_persist_sentiment_baseline(digest_data)
         if _sent_log:
             print(f"  📊  Gallup baseline auto-updated from today's digest -> {_sent_log}")
@@ -2176,7 +2357,11 @@ def main():
 
     # ── Step 2b: Push flagged entries to databases ────────────────────────────
     if not args.no_push and validation_passed and not _is_test_send:
-        push_summary = process_digest_entries(digest_data)
+        try:
+            push_summary = process_digest_entries(digest_data)
+        except Exception as _e:                                 # noqa: BLE001
+            push_summary = {}
+            warn("Database push failed", str(_e))
         if push_summary.get("nk_russia_added") or push_summary.get("provocations_added"):
             print(f"    NK-Russia: {push_summary.get('nk_russia_added', 0)} added, "
                   f"Provocations: {push_summary.get('provocations_added', 0)} added")
@@ -2188,6 +2373,7 @@ def main():
     # so they are attached here as collected. Empty when every schedule failed,
     # and then the brief simply has no Hill calendar line.
     digest_data["hill_calendar"] = list((payload or {}).get("hill_calendar") or [])
+    print("  " + hill_calendar_log_line(payload))
     from render import render
 
     # Inject web URL for "Read Online" link (set via env or GitHub Pages)
@@ -2260,6 +2446,23 @@ def main():
     except Exception as _e:                                     # noqa: BLE001
         digest_data["_bp_changes"] = None
         print(f"  ⚠  Location change check skipped: {_e}")
+    # The Peninsula status line's KCNA trend and provocation count, from the
+    # previous issue, the KCNA tracker and the provocations database: data the
+    # pipeline holds, never the model's reading.
+    try:
+        from podcast import _previous_issue as _prev_issue
+        from kcna_tracker import get_recent_days
+        digest_data["_kcna_trend"] = kcna_trend(
+            {**digest_data, "date_slug": _date_slug}, _prev_issue(_date_slug), get_recent_days(8))
+    except Exception as _e:                                     # noqa: BLE001
+        digest_data["_kcna_trend"] = None
+        print(f"  ⚠  KCNA trend skipped: {_e}")
+    try:
+        digest_data["_provocations"] = provocation_window(
+            (databases or {}).get("nk_provocations") or [], _date_slug)
+    except Exception as _e:                                     # noqa: BLE001
+        digest_data["_provocations"] = None
+        print(f"  ⚠  Provocation count skipped: {_e}")
     # Which sector tariff rates changed since the last issue. The brief shows
     # only those; the full table lives on the trade page. None means the
     # previous issue could not be read, and then nothing is shown inline.
@@ -2283,6 +2486,7 @@ def main():
             print(f"  {_line}")
     except Exception as _e:
         print(f"  (length budget unavailable: {_e})")
+        warn("Length budget unavailable", f"the brief was not trimmed to its ceiling: {_e}")
 
     for _msg in _ensure_pledge_projects(digest_data):
         print(f"  🏗  {_msg}")
@@ -2298,6 +2502,8 @@ def main():
             print(f"  {_line}")
     except Exception as _e:                                     # noqa: BLE001
         print(f"  ⚠  Link pass skipped (non-fatal): {_e}")
+        warn("Link pass skipped", f"links ship unchecked and Google News redirects "
+             f"undecoded: {_e}")
 
     # English only on the page: Korean outlet names and labels to English,
     # Korean headlines out of source fields. Prose is reported, not rewritten.
@@ -2307,6 +2513,16 @@ def main():
             print(f"::warning title=Korean text in brief::{_w}")
     except Exception as _e:                                     # noqa: BLE001
         print(f"  ⚠  English pass skipped (non-fatal): {_e}")
+        warn("English pass skipped", f"Korean outlet names and labels may reach the reader: {_e}")
+
+    # The web page is not bound by Gmail's clip, so it keeps the items the
+    # byte guard below drops for the email alone. Copied here, after every
+    # editorial pass (length ceiling, links, English) and before the email-only
+    # one; the word ceiling still applies to both.
+    try:
+        _web_digest = copy.deepcopy(digest_data)
+    except Exception:                                           # noqa: BLE001
+        _web_digest = None
 
     # The byte guard, before the audio is built so the listener still hears
     # the issue the reader gets. Gmail clips past 102,400 bytes; the word
@@ -2317,6 +2533,7 @@ def main():
             print(f"  📦  {_line}")
     except Exception as _e:                                     # noqa: BLE001
         print(f"  (email size guard unavailable: {_e})")
+        warn("Email size guard unavailable", f"the brief may be clipped by Gmail: {_e}")
 
     # ── Audio edition ──────────────────────────────────────────────────────
     # Built here, after every trim and cleanup, so the listener hears exactly
@@ -2353,6 +2570,7 @@ def main():
                       "(set ELEVENLABS_API_KEY to enable)")
         except Exception as _e:                                 # noqa: BLE001
             print(f"  ⚠  Audio skipped (non-fatal): {_e}")
+            warn("Audio skipped", str(_e))
             _audio = None
 
     html = render(digest_data)
@@ -2369,16 +2587,24 @@ def main():
     # Backstop: the Listen bar is added after the guard ran. If that tipped
     # the email over, trim again; the audio may then carry an item the email
     # does not, which is better than a clipped email.
-    if len(html.encode("utf-8")) > EMAIL_BYTE_BUDGET:
-        html, _fit_log = fit_email_bytes(digest_data, render)
-        for _line in _fit_log:
-            print(f"  📦  {_line}")
-    _final = _count_rendered_words_of(html)
-    if _final > WORD_CEILING:
-        print(f"  ⚠  still {_final} rendered words after trimming; the sections "
-              f"that may not be trimmed are carrying the excess")
+    # Guarded: this is measurement and trimming on an html that already
+    # exists. If it raises, the untrimmed render still goes out, flagged.
+    try:
+        if len(html.encode("utf-8")) > EMAIL_BYTE_BUDGET:
+            _html, _fit_log = fit_email_bytes(digest_data, render)
+            for _line in _fit_log:
+                print(f"  📦  {_line}")
+            html = _html
+        _final = _count_rendered_words_of(html)
+        if _final > WORD_CEILING:
+            print(f"  ⚠  still {_final} rendered words after trimming; the sections "
+                  f"that may not be trimmed are carrying the excess")
+    except Exception as _e:                                     # noqa: BLE001
+        warn("Email size backstop failed", f"sending the brief as rendered: {_e}")
     for _line in check_email_size(html):
         print(f"   {'⚠' if 'CRITICAL' not in _line else '✖'}  {_line}")
+        if "CRITICAL" in _line:
+            warn("Email will be clipped", _line)
 
     # Standing trade reference page. render() stashes the blocks it moved out
     # of the daily brief; this publishes them alongside the archive so the
@@ -2395,6 +2621,7 @@ def main():
                                        Path("public"), web_base=_wb)
     except Exception as _e:
         print(f"  ⚠  Trade reference page skipped (non-fatal): {_e}")
+        warn("Trade reference page skipped", f"the brief's link to it shows the previous copy: {_e}")
 
 
     date_slug = _date_slug
@@ -2405,11 +2632,25 @@ def main():
     # Also write latest.html for convenience
     Path("latest.html").write_text(html, encoding="utf-8")
 
-    # Archive copy for GitHub Pages
+    # Archive copy for GitHub Pages. The published page is the web edition,
+    # the full reference "Read online" opens; the email above is unchanged,
+    # and digest_*.html / latest.html in the working directory stay the email
+    # for review. latest.html on the site is the web edition as well, so the
+    # Read online link lands on the same page whichever file it names.
     archive_dir = Path("public")
     archive_dir.mkdir(exist_ok=True)
-    (archive_dir / "latest.html").write_text(html, encoding="utf-8")
-    (archive_dir / f"digest_{date_slug}.html").write_text(html, encoding="utf-8")
+    _web_src = _web_digest if _web_digest is not None else digest_data
+    if _web_src is not digest_data:
+        # Set after the copy was taken: the Listen links and the issue facts.
+        for _k in ("audio_url", "audio_minutes", "listen_url", "issue_no", "web_url", "date_slug"):
+            if _k in digest_data:
+                _web_src[_k] = digest_data[_k]
+    web_html = build_web_html(_web_src, html, date_slug,
+                              _archive_entries if _archive_ok else None)
+    if web_html is not html:
+        print(f"  🌐  Web edition: {len(web_html):,} bytes")
+    (archive_dir / "latest.html").write_text(web_html, encoding="utf-8")
+    (archive_dir / f"digest_{date_slug}.html").write_text(web_html, encoding="utf-8")
 
     # ── Save digest JSON for weekly summaries ──────────────────────────────
     (archive_dir / f"digest_{date_slug}.json").write_text(
@@ -2417,15 +2658,18 @@ def main():
     )
 
     # ── Full-color PDF for print/download (best-effort; needs Playwright) ────
+    # From the email HTML (the working-directory latest.html), not the web
+    # edition: the PDF is the issue as sent.
     try:
         import shutil
         from make_pdf import html_from_input, html_to_pdf
-        pdf_html = html_from_input(archive_dir / "latest.html")
+        pdf_html = html_from_input(Path("latest.html"))
         html_to_pdf(pdf_html, archive_dir / "latest.pdf")
         shutil.copy(archive_dir / "latest.pdf", archive_dir / f"digest_{date_slug}.pdf")
         print(f"  🖨  PDF written: public/latest.pdf + public/digest_{date_slug}.pdf")
     except Exception as e:
         print(f"  ⚠  PDF generation skipped (non-fatal): {e}")
+        warn("PDF skipped", f"the brief's Download PDF link will not resolve today: {e}")
 
     # ── Maintain archive manifest (archive.json) ────────────────────────────
     archive_json_path = archive_dir / "archive.json"
@@ -2468,12 +2712,16 @@ def main():
         # rebuilds it.
         print("  ⚠  Archive manifest NOT written — prior issues could not be "
               "read, and overwriting would drop them from the archive page")
+        warn("Archive manifest not written", "the published archive.json could not be read; "
+             "today's issue is published but not listed until the next healthy run")
 
     # ── Persistent article corpus ──────────────────────────────────────────
     # Record every collected article (not just the ~15-30 that shipped) as a
     # permanent audit/analytics/grounding record. Non-fatal: a corpus failure
     # must never block a digest that already sent.
     try:
+        if _is_test_send:
+            raise RuntimeError("test send: the corpus records editions only")
         from corpus import save_corpus
         corpus_counts = save_corpus(payload, digest_data, date_slug, archive_dir,
                                     recent_urls=recent_urls)
@@ -2482,6 +2730,8 @@ def main():
               f"{corpus_counts['dup_of_recent']} seen in last 7 days)")
     except Exception as e:
         print(f"  ⚠  Corpus write failed (non-fatal): {e}")
+        if not _is_test_send:
+            warn("Corpus write failed", str(e))
 
     # ── Landing page and archive page for GitHub Pages ─────────────────────
     (archive_dir / "index.html").write_text(_build_index_html(), encoding="utf-8")
@@ -2493,18 +2743,26 @@ def main():
         _src = Path(__file__).parent / "templates" / _tpl
         if _src.exists():
             shutil.copy2(_src, archive_dir / _tpl)
-    try:
-        import archive_page
-        (archive_dir / "archive.html").write_text(
-            archive_page.build(archive_entries, title="Korea Daily Brief",
-                               chair="CSIS Korea Chair", accent="#167EFF",
-                               latest_href="latest.html", prefix="digest_"),
-            encoding="utf-8")
-    except Exception as _e:                                     # noqa: BLE001
-        print(f"  ⚠  Archive page skipped (non-fatal): {_e}")
-        _src = Path(__file__).parent / "templates" / "archive.html"
-        if _src.exists():
-            shutil.copy2(_src, archive_dir / "archive.html")
+    # archive.html lists every issue, so it is an accumulating file under the
+    # same rule as archive.json: built only from a manifest whose history was
+    # read. It used to be built from whatever archive_entries held, which on a
+    # failed read was today alone, and the deploy then replaced the published
+    # page with a one-issue list. A test send is not an edition and is not
+    # listed either. Skipping it leaves yesterday's page in place.
+    if _archive_ok and not _is_test_send:
+        try:
+            import archive_page
+            (archive_dir / "archive.html").write_text(
+                archive_page.build(archive_entries, title="Korea Daily Brief",
+                                   chair="CSIS Korea Chair", accent="#167EFF",
+                                   latest_href="latest.html", prefix="digest_"),
+                encoding="utf-8")
+        except Exception as _e:                                 # noqa: BLE001
+            print(f"  ⚠  Archive page skipped (non-fatal): {_e}")
+            warn("Archive page skipped", str(_e))
+            _src = Path(__file__).parent / "templates" / "archive.html"
+            if _src.exists():
+                shutil.copy2(_src, archive_dir / "archive.html")
 
     # ── Step 4: Send email ───────────────────────────────────────────────────
     if not validation_passed:
@@ -2540,6 +2798,7 @@ def main():
         health_report = run_health_checks(digest_data, payload)
     except Exception as e:
         print(f"  ⚠  Health checks failed to run: {e}")
+        warn("Health checks failed to run", str(e))
 
     # Widely covered stories the brief may have missed, and what each feed
     # delivered. Published as coverage.json; a report, never a gate.
@@ -2596,9 +2855,11 @@ def main():
             print("  🧪  Test send: no metrics row written.")
         else:
             with open(metrics_path, "a") as f:
-                f.write(json.dumps(metrics) + "\n")
-    except Exception:
-        pass
+                f.write(json.dumps(metrics, default=str) + "\n")
+    except Exception as _e:                                     # noqa: BLE001
+        # Was a bare pass. This row is the only record of the day's API spend
+        # and the weekly cost sheet reads nothing else.
+        warn("Run metrics not recorded", f"today's API cost is missing from metrics.jsonl: {_e}")
 
     print("\n✅  Done.\n")
 

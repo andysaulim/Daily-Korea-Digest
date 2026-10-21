@@ -174,7 +174,7 @@ _LABEL_STOP = {"the", "news", "korea", "korean", "daily", "ilbo", "online", "eng
 # Domains a ROK Government card may call a primary document.
 _PRIMARY_SUFFIXES = (".go.kr", ".mil.kr", ".assembly.go.kr")
 _PRIMARY_DOMAINS = {"korea.kr", "bok.or.kr", "assembly.go.kr", "president.go.kr",
-                    "korea.net", "na.go.kr"}
+                    "korea.net", "na.go.kr", "fss.or.kr"}
 
 
 def is_primary_url(url: str) -> bool:
@@ -277,10 +277,18 @@ def build_gnews_query(query: str) -> str:
     return " ".join([p for p in (head, *site_terms) if p])
 
 
-def gnews_url(query: str) -> str:
+_GNEWS_LOCALES = {
+    "en": "&hl=en-US&gl=US&ceid=US:en",
+    # Korean edition. A Korean-language query against the US edition returns
+    # a thin slice of the Korean press; the Korean edition indexes it fully.
+    "ko": "&hl=ko&gl=KR&ceid=KR:ko",
+}
+
+
+def gnews_url(query: str, locale: str = "en") -> str:
     q = build_gnews_query(query)
     return ("https://news.google.com/rss/search?q=" + quote(q, safe="")
-            + "&hl=en-US&gl=US&ceid=US:en")
+            + _GNEWS_LOCALES.get(locale, _GNEWS_LOCALES["en"]))
 
 
 def site_targets(feed_url: str) -> list[str]:

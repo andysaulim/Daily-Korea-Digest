@@ -80,7 +80,7 @@ JOURNALIST FLAGGING: The following reporters have special Korea expertise. When 
 - Jean Lee (AP), Chad O'Carroll (NK News), Victoria Kim (NYT/LAT)
 - Jeong-ho Lee (Bloomberg Seoul), Kim Tong-hyung (AP Seoul)
 - Sotaro Suzuki (Nikkei — Japan-Korea), Takashi Umekawa (Reuters Tokyo-Seoul)
-PRIMARY ROK SOURCES: The feed includes the Presidential Office (대통령실), MOFA, MND, the Unification Ministry, MOEF, MOTIE, DAPA, the Joint Chiefs, the National Assembly, the Prosecution Service, the courts, the Bank of Korea, Statistics Korea, Korea Customs, DART corporate disclosures, and korea.kr (정책브리핑), which carries every ministry's press releases. These are primary documents, not reporting. When a primary source and a news article cover the same event, cite the primary source and use the article only for context. A DART filing, an indictment, or an Assembly bill is a fact on the record; a story about one is a secondhand account of it.
+PRIMARY ROK SOURCES: The feed includes the Presidential Office (청와대/대통령실), MOFA, MND, the Unification Ministry, MOEF, MOTIE, DAPA, the Joint Chiefs, the National Assembly, the Prosecution Service, the courts, the Bank of Korea, Statistics Korea, Korea Customs, DART corporate disclosures, and korea.kr (정책브리핑). An item is a primary document only when it is the government's own page: its URL is on a government domain (.go.kr, .mil.kr, korea.kr, korea.net, bok.or.kr, assembly.go.kr) or its source is the ministry itself. Many items about these bodies are newspaper reports of their briefings, and their source names the outlet (연합뉴스, 뉴시스, 조선일보 and so on): those are reporting, not documents. When a primary document and a news article cover the same event, cite the primary document and use the article only for context. A DART filing, an indictment, or an Assembly bill is a fact on the record; a story about one is a secondhand account of it.
 SOURCE TIERS: This digest draws from 148+ sources including Korean-language newspapers and broadcast (translate titles and key content to English), Korean business dailies (매일경제, 한국경제), official ROK/US/Japan government feeds (USFK, ROK MOFA, Japan MOFA), Korean think tanks (ASAN, EAI, Sejong, KEIA), US think tanks (CSIS, Brookings, Carnegie, RAND, CFR, AEI, Hudson, Heritage, Atlantic Council, NBR, PIIE, USIP), European think tanks with Korea programs (IISS, SIPRI), Chinese and Russian reaction layer sources (Global Times, Xinhua, TASS, Caixin, China Daily, People's Daily), Japanese sources (Nikkei, Japan Times, Kyodo, Mainichi, Asahi), and academic journals.
 KOREAN-LANGUAGE FULL TEXT: Articles marked fulltext=true carry the article body, not just a headline and snippet. Use them — they are the richest material in the feed and usually the earliest. Quote and cite them as you would any other source.
 KOREAN-LANGUAGE CONTENT: Some articles are in Korean (lang="KO") — including broadcast sources (JTBC, KBS, MBC, SBS, YTN, Channel A) and business dailies (매일경제, 한국경제). Translate titles to English and incorporate their content into your analysis. Korean-language sources often break stories before English outlets. Broadcast sources frequently carry breaking security/military news first. ACTIVELY PREFER Korean-language sources when they break a story first or provide richer detail than the English wire version.
@@ -461,6 +461,29 @@ _PROMPT_CONGRESS = ("congress.gov", "govinfo", "crs ", "hfac", "hasc", "sfrc", "
                     "senate armed services", "house foreign affairs")
 
 
+_ROK_PRESS_PER_FEED = 3
+
+_ROK_BODIES = {"bank of korea", "statistics korea", "korea customs", "korea.net",
+               "dart disclosures"}
+
+
+def _is_press_report(article: dict) -> bool:
+    """A ROK government feed's item that a news outlet published.
+
+    Decided from where it lives: the article URL, or for a Google News item
+    (whose URL is an opaque redirect) the publisher home Google reports. An
+    item with neither is given the benefit of the doubt, as before.
+    """
+    import links
+    url = str(article.get("url") or "")
+    home = str(article.get("publisher_home") or "")
+    if home:
+        return not links.is_primary_url(home)
+    if url and not links.is_google_news(url):
+        return not links.is_primary_url(url)
+    return False
+
+
 def _prompt_band(article: dict) -> int:
     """Lower is seen first. Bands, not scores: the ordering has to be
     explicable to an editor, and a weighted score is not.
@@ -471,10 +494,15 @@ def _prompt_band(article: dict) -> int:
     source = str(article.get("feed") or article.get("source", "")).lower()
     publisher = str(article.get("publisher") or "").lower()
     # 0 — primary documents. A ministry release outranks reporting about it.
-    if source.startswith("rok ") or source in {
-            "usfk", "state dept", "pentagon", "white house", "ustr",
-            "bank of korea", "statistics korea", "korea customs", "korea.net",
-            "federal register kr", "dart disclosures", "dept of treasury"}:
+    if source.startswith("rok ") or source in _ROK_BODIES:
+        # A ROK government feed falls back to a press search when the body
+        # publishes no RSS (collect._press), so it carries two kinds of item.
+        # The body's own document stays first; a newspaper's account of its
+        # briefing is ministry-specific reporting and ranks just above the
+        # general press, but is not a primary source.
+        return 2 if _is_press_report(article) else 0
+    if source in {"usfk", "state dept", "pentagon", "white house", "ustr",
+                  "federal register kr", "dept of treasury"}:
         return 0
     if source.startswith(_PROMPT_CONGRESS):
         return 0
@@ -508,7 +536,13 @@ def rank_for_prompt(articles: list) -> list:
         source = str(a.get("feed") or a.get("source", ""))
         nth = seen.get(source, 0)
         seen[source] = nth + 1
-        keyed.append(((_prompt_band(a), nth, i), a))
+        band = _prompt_band(a)
+        # Ministry-specific press reports rank above the general press, but
+        # only the first few per ministry: fifteen ROK feeds' press searches
+        # would otherwise fill the whole tier-1 cut on their own.
+        if band == 2 and nth >= _ROK_PRESS_PER_FEED and not a.get("flagged_journalist"):
+            band = 5
+        keyed.append(((band, nth, i), a))
     keyed.sort(key=lambda kv: kv[0])
     return [a for _, a in keyed]
 
@@ -793,7 +827,7 @@ Return a digest object with:
 - digest_date: "{date_str}"
 - re_line: one-line RE: summary (max 120 chars, key themes separated by ·)
 - market_indicators: pass through the pre-collected market data object exactly as provided above. If no market data was provided, use null.
-- morning_memo: THE TOP 3 STORIES AT A GLANCE. Array of exactly 3 strings. Each string is one sentence summarizing one of today's top Korea stories — based on reporting, social media traction, and policy impact. Think: what would a Korea desk officer tell their boss in the elevator? Lead with the verb, state the fact. Example: ["Seoul recalled its ambassador from Tokyo after Dokdo flyover", "BOK held rates at 2.75%, surprising markets expecting a cut", "Samsung announced $4B expansion of Austin fab, part of $350B pledge"]. These must be sourced from today's actual articles — no speculation, no interpretation.
+- morning_memo: THE TOP 3 STORIES AT A GLANCE. Array of exactly 3 strings. Each string is one sentence summarizing one of today's top Korea stories — based on reporting, social media traction, and policy impact. Think: what would a Korea desk officer tell their boss in the elevator? Lead with the verb, state the fact. HARD LIMIT: 25 words per string, one clause; no second clause after a semicolon or 'while', no attribution chains, no background. Detail belongs in top_stories. Example: ["Seoul recalled its ambassador from Tokyo after Dokdo flyover", "BOK held rates at 2.75%, surprising markets expecting a cut", "Samsung announced $4B expansion of Austin fab, part of $350B pledge"]. These must be sourced from today's actual articles — no speculation, no interpretation.
 - on_this_day: 1 historical Korea event that happened on TODAY's EXACT calendar date (same month and day). Array with exactly 1 item: date (e.g. "March 26, 2010" — month, day and the year exactly as the list gives it), event (1 sentence), relevance (1 sentence connecting to current situation). ONLY use events from the VERIFIED KOREA DATES reference below — do NOT cite historical events from memory, as dates may be wrong. The event MUST match today's EXACT month and day — no lookahead, no nearby dates. If no verified event falls on today's exact date, return an empty array. Do NOT reuse an event from a previous day's digest.
   VERIFIED KOREA DATES (use ONLY these):
   {_verified_dates_line()}
@@ -801,7 +835,7 @@ Return a digest object with:
 - imagery_report: Only satellite-imagery analysis published within 48 hours in today's input; a finding already in RECENT COVERAGE, a bridge opening or a policy essay is not an imagery report; for those, return null. Otherwise (AEI, 38North, CSIS Beyond Parallel, Planet Labs) return an object with: source (e.g. "AEI / 38North"), date (e.g. "Mar 18-19"), label (e.g. "New imagery reports"), headline (main finding), body (2-3 sentences), source_links (array of {{label, url}} for each source cited), bp_location_ids (array of strings identifying which BP locations are affected, e.g. ["YBGN-ENR (Active/Expanding)", "THAAD-SNGJ (Active/Drawdown)"]). Return null if no imagery analysis today.
   SATELLITE IMAGERY AS STANDALONE NEWS: When a satellite imagery article about North Korea is published (from ANY source — 38North, AEI, Beyond Parallel, Planet Labs, news wires citing commercial imagery), it MUST ALSO appear as a standalone story in top_stories or overnight_items — not only in imagery_report/bp_locations. Satellite imagery revealing DPRK facility changes (construction, testing prep, reactor activity, launch pad modifications, troop movements) is inherently newsworthy. Place it in imagery_report AND in top_stories (if it's one of the day's biggest developments) or overnight_items (otherwise). The top_stories/overnight entry should summarize the imagery findings as news; the imagery_report provides the technical detail and source links. This is an exception to the normal no-duplication rule — satellite imagery gets DUAL placement.
 - bp_locations: array of 11 monitored location status objects. GROUNDING RULE: If today's articles contain a specific report about a facility (satellite imagery analysis, think tank report, news article), update that facility's status and note from the article. If NO article mentions a facility today, CARRY FORWARD the last known status, note, direction, and last_source_date from the BP LOCATIONS HISTORY tracker data provided in this prompt VERBATIM — copy the tracker's note word-for-word. NEVER replace a substantive tracker note with "No new reporting" — that erases valuable context for readers. The tracker's existing note IS the most recent known status. Each: name, status (normal/activity/elevated/alert — from today's report OR carried forward from tracker), note (1-2 sentences — from today's report if available, otherwise COPY the tracker's note verbatim — do NOT summarize or replace it), last_source_date (date of the source report — from today's article if updating, or carried forward from tracker history), direction (string: "up"/"down"/"" — from today's report or carried forward from tracker). Locations: Yongbyon Nuclear Complex, Sinpo South Shipyard, THAAD Site — Seongju County, Sohae Satellite Launch Station, Punggye-ri Nuclear Test Site, Tumangang–Khasan (NK-Russia border), Sinuiju–Dandong (NK-China border), Rason SEZ, Yellow Sea NLL (Northern Limit Line — inter-Korean maritime boundary in northern Yellow Sea; monitor for naval clashes, patrol incursions, fishing boat incidents near the five West Sea islands), Yellow Sea PMZ (Provisional Measures Zone — Korea-China joint fisheries zone in central-southern Yellow Sea, established under 2001 Korea-China Fisheries Agreement; monitor for illegal Chinese fishing, quota violations, coast guard enforcement incidents), Vostochny/Dunai (Russian Far East — Vostochny Cosmodrome in Amur Oblast is site of Sep 2023 Kim-Putin summit and NK-Russia space cooperation; Dunai/Fokino in Primorsky Krai is Pacific Fleet area near maritime logistics routes for NK-Russia transfers; monitor for labor deployments, military cargo staging, ship transfers).
-- rok_government: array of ROK ministry/agency actions from today's news (Presidential Office, MOFA, MND, MOU, MOTIE, NIS, FSC, MOJ — see system prompt for full list). Each: ministry (English name, e.g. "Blue House / President's Office", "Ministry of Foreign Affairs", "Ministry of National Defense"), official (name of the official who acted/spoke, e.g. "FM Cho Hyun"), action (1-line headline), detail (1-2 sentences), url (link to the source article — MUST be a real URL from the input data), source_label (short source label for link, e.g. "president.go.kr", "MoFA EN", "MND", "MOTIE EN", "DAPA EN"). Include only substantive policy actions — meetings, statements, personnel changes, policy announcements. This section renders as a 2-column card grid showing the full ROK government posture.
+- rok_government: array of ROK ministry/agency actions from today's news (Presidential Office, MOFA, MND, MOU, MOTIE, NIS, FSC, MOJ — see system prompt for full list). Each: ministry (English name, e.g. "Blue House / President's Office", "Ministry of Foreign Affairs", "Ministry of National Defense"), official (name of the official who acted/spoke, e.g. "FM Cho Hyun"), action (1-line headline), detail (1-2 sentences), url (MUST be a real URL from the input data: the ministry's own document when one is in the input, otherwise the best news report), source_label (short label for that link: the ministry, e.g. "MOFA", "MND", "Unification Ministry", when url is the government's own page; otherwise the outlet in English, e.g. "Yonhap", "Newsis"), secondary_url (optional: when url is the ministry's own document and a news report in the input covers the same action, that report's exact URL; never the same URL as url, and omit it when url is already a news report), secondary_label (the outlet of secondary_url, in English). Include only substantive policy actions — meetings, statements, personnel changes, policy announcements. This section renders as a 2-column card grid showing the full ROK government posture.
 - calendar_watch: upcoming events relevant to Korea policy in the next 14-30 days, 0-5 items, drawn from TODAY'S REPORTING. Each item: month ("Oct"), day (integer; first day of a range), headline (under 12 words), detail (one sentence), source. Only events a US Korea-policy official would act on; never sports fixtures, entertainment, stamps or local events, and never an anniversary from the CSIS databases. An event with no stated day ("November", "after the midterms") does not go here. Fixed observances (holidays, founding days, treaty anniversaries) are added automatically after you return and you should NOT spend slots on them: your job here is the dated thing a reader would not know to look up. Scan today's articles for a date attached to an event — a summit or bilateral meeting, an Assembly vote or hearing, a court date, a policy or tariff deadline, a scheduled launch, exercise or deployment, a BOK rate decision, a data release, a nomination hearing, a trial verdict. If today's articles name a date, it belongs here. NEVER invent or recall a date: every item must trace to a date stated in today's articles or the verified reference data in this prompt. An empty array is correct only when today's reporting genuinely names no upcoming date, which is rare on a normal news day.
   DATE DISCIPLINE (this section has produced past-dated entries before):
   (1) Compare every candidate date against TODAY'S DATE at the top of this prompt. If the date has already passed, it is not upcoming — drop it. Never carry a past event forward by assuming next year's date.
@@ -1237,6 +1271,15 @@ def generate_digest(payload: dict, db_context: str = "",
                 time.sleep(wait)
             else:
                 print(f"  ✗  API error (giving up): {e}")
+                # An earlier attempt may already have produced a usable, if
+                # thin, digest; an expansion retry that then hits an API error
+                # used to throw it away and cost the day's brief. Validation
+                # still decides whether it is fit to send.
+                if best_digest:
+                    print(f"::warning title=Digest from an earlier attempt::the final "
+                          f"API call failed ({type(e).__name__}); using the best earlier "
+                          f"draft (~{best_word_count} words)")
+                    return best_digest
                 raise
         except json.JSONDecodeError as e:
             if attempt < MAX_ATTEMPTS - 1:
@@ -1244,6 +1287,11 @@ def generate_digest(payload: dict, db_context: str = "",
                 time.sleep(2)
             else:
                 print(f"  ✗  JSON parse error: {e}")
+                if best_digest:
+                    print(f"::warning title=Digest from an earlier attempt::the final "
+                          f"response was not valid JSON; using the best earlier draft "
+                          f"(~{best_word_count} words)")
+                    return best_digest
                 raise
 
     # All attempts exhausted via exceptions — return best if available

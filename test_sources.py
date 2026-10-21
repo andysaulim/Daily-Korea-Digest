@@ -58,8 +58,7 @@ def check_primary_sources_reach_the_model() -> list[str]:
     """A ROK government feed must be exempt from the relevance filter."""
     problems = []
     for name in _all_feed_names():
-        is_primary = name.startswith("ROK ") or name in {
-            "Bank of Korea", "Statistics Korea", "Korea Customs", "Korea.net"}
+        is_primary = name.startswith("ROK ") or name in collect.ROK_GOVERNMENT_FEEDS
         if is_primary and name not in collect.KOREA_NATIVE_FEEDS:
             problems.append(f"{name!r} is a primary ROK source but is filtered "
                             f"by KOREA_KEYWORDS; most of its items will be dropped")
@@ -164,7 +163,7 @@ def check_mandatory_outlets_reach_the_prompt() -> list[str]:
 # search. Raise this number as feeds are converted; never lower it. The point
 # is a ratchet: the brief got into trouble by depending on one service for
 # almost every source, and that share should only ever improve.
-MIN_FEEDS_WITH_NATIVE_PATH = 31
+MIN_FEEDS_WITH_NATIVE_PATH = 39
 
 
 def check_google_news_dependence_not_regressing() -> list[str]:
@@ -959,15 +958,24 @@ def check_audio_extras():
         path.write_bytes(b"\x00" * 100)
         return {"tts_model": "m", "tts_voice": "v", "audio_bytes": 100, "audio_seconds": 600,
                 "_chunks": chunks}
+    import contextlib
+    import io
+    # produce() reports these injected failures as GitHub annotations, which is
+    # right in a real run and wrong here: printed straight through, every daily
+    # run showed "Player page skipped: injected" beside the real warnings.
+    # Captured instead, and checked, so the warning path is still proven.
+    captured = io.StringIO()
     try:
         podcast.synthesize, podcast._previous_issue = fake_synth, (lambda s: None)
         listen.build_chapters = listen.write_pages = listen.show_notes = listen.vtt = boom
-        with tempfile.TemporaryDirectory() as tmp:
+        with tempfile.TemporaryDirectory() as tmp, contextlib.redirect_stdout(captured):
             rec = podcast.produce(digest, Path(tmp), "", "2026-10-18")
             if not rec or "listen_page" in rec or "_chunks" in rec:
                 problems.append("a failing chapter/page step changed or blocked the episode")
             if not (Path(tmp) / "latest.mp3").exists():
                 problems.append("a failing chapter/page step stopped latest.mp3")
+        if "::warning title=Player page skipped::injected" not in captured.getvalue():
+            problems.append("a failing player page no longer raises an annotation for the operator")
     except Exception as e:                                      # noqa: BLE001
         problems.append(f"a failing new audio step raised out of produce(): {e}")
     finally:
@@ -1335,9 +1343,691 @@ def check_design_preview_goes_only_to_preview_list():
             os.environ["DESIGN_PREVIEW_TO"] = saved_env
     return problems
 
+def check_v2_status_line():
+    """The Peninsula status line states only what the trackers hold; a missing fact drops out."""
+    import render
+    problems = []
+    full = {"kcna_delta": {"kim_appearance_today": False, "days_since_last_appearance": 2,
+                           "watch_flag": True, "silence_today": False},
+            "bp_locations": [{"name": "A", "status": "alert"}, {"name": "B", "status": "elevated"},
+                             {"name": "C", "status": "normal"}],
+            "_bp_changes": ["A", "C"]}
+    want = ["Kim last seen 2 days ago.", "KCNA watch flag up.",
+            "New reporting at 2 of 3 monitored sites.", "Elevated or alert at 2 sites."]
+    if render._v2_status_facts(full) != want:
+        problems.append(f"full data gave {render._v2_status_facts(full)}")
+    cases = [
+        ("no kcna_delta", {k: v for k, v in full.items() if k != "kcna_delta"},
+         lambda f: not any("Kim" in x or "KCNA" in x for x in f)),
+        ("Kim days unknown", {**full, "kcna_delta": {"days_since_last_appearance": None, "watch_flag": False}},
+         lambda f: not any("Kim" in x for x in f) and "No KCNA watch flag." in f),
+        ("KCNA data unavailable", {**full, "kcna_delta": {"data_unavailable": True, "watch_flag": False}},
+         lambda f: not any("KCNA" in x for x in f)),
+        ("previous issue unread", {**full, "_bp_changes": None},
+         lambda f: not any("reporting" in x for x in f)),
+        ("a site without status", {**full, "bp_locations": full["bp_locations"] + [{"name": "D"}]},
+         lambda f: not any("alert" in x for x in f)),
+        ("seen today", {**full, "kcna_delta": {"kim_appearance_today": True, "days_since_last_appearance": 0}},
+         lambda f: f[0] == "Kim seen in public today."),
+    ]
+    for label, d, ok in cases:
+        if not ok(render._v2_status_facts(d)):
+            problems.append(f"{label}: {render._v2_status_facts(d)}")
+    if render._v2_status({}) != "":
+        problems.append("an empty digest still drew a status line")
+    line = render._v2_status(full)
+    if any(x in line for x in ("·", "&middot;", "→", "&rarr;", "—", "&mdash;")):
+        problems.append("status line uses a dot, arrow or em dash as a separator")
+    return problems
+
+
+def check_v2_first_sentence():
+    """Shortening cuts at a real sentence end only: not after U.S. or Gen., never inside a quotation."""
+    import render
+    f = render._v2_first_sentence
+    problems = []
+    tail = " The second sentence carries on for long enough to be worth a link."
+    cases = [
+        ("U.S. officials met Gen. Kim Myung-soo in Seoul on Monday." + tail,
+         "U.S. officials met Gen. Kim Myung-soo in Seoul on Monday."),
+        ("The ministry said it was 'gravely concerned.' Officials added nothing on the record today." + tail,
+         "The ministry said it was 'gravely concerned.'"),
+        ('He said "We will respond. Firmly and soon." before the meeting ended in Seoul.' + tail,
+         'He said "We will respond. Firmly and soon." before the meeting ended in Seoul.'),
+        ("Talks resumed at 9 a.m. Seoul time with both delegations present in full." + tail,
+         "Talks resumed at 9 a.m. Seoul time with both delegations present in full."),
+        ("KOSPI fell 3.7% on Monday as chip stocks slid across the board." + tail,
+         "KOSPI fell 3.7% on Monday as chip stocks slid across the board."),
+        ("One sentence only, with nothing after it to cut.", "One sentence only, with nothing after it to cut."),
+        ("A first sentence that is long enough. Short tail here.", "A first sentence that is long enough. Short tail here."),
+    ]
+    for text, want in cases:
+        got = f(text)
+        if got != want:
+            problems.append(f"{text[:40]!r} -> {got!r}")
+        if not text.startswith(got):
+            problems.append(f"shortening reworded {text[:40]!r}")
+    return problems
+
+
+def check_v2_shortened_email():
+    """In v2 only top stories run in full; other items keep their first sentence and link to the web page."""
+    import copy, render
+    problems = []
+    long_body = ("Seoul announced a new measure on Monday. The second sentence is detail that the web "
+                 "page carries in full for anyone who wants it.")
+    d = {"digest_date": "Monday, October 19, 2026", "date_slug": "2026-10-19", "issue_no": 12,
+         "web_url": "https://example.org/brief/latest.html",
+         "top_stories": [{"headline": "Lead story", "body": long_body, "category_tag": "DPRK"}],
+         "business_economy": [{"headline": "Chip exports rise", "body_text": long_body, "source": "Yonhap"}],
+         "calendar_watch": [{"month": "Oct", "day": 20, "headline": "Assembly votes on the budget"}],
+         "morning_memo": ["One.", "Two.", "Three."]}
+    before = copy.deepcopy(d)
+    saved = render.DESIGN
+    try:
+        render.DESIGN = "v2"
+        html = render.render(d)
+        render.DESIGN = "classic"
+        classic = render.render(copy.deepcopy(before))
+    finally:
+        render.DESIGN = saved
+    if html.count("The second sentence is detail") != 1:
+        problems.append("v2: expected the long body in full exactly once (the top story)")
+    if 'digest_2026-10-19.html#business' not in html:
+        problems.append("v2: no Read online link to the business section of the issue page")
+    if "That&#8217;s today&#8217;s brief." not in html or "Assembly votes on the budget" not in html:
+        problems.append("v2: sign-off missing, or without tomorrow's calendar item")
+    if f"border-left:5px solid {render.TAEGUK_BLUE};" not in html:
+        problems.append("v2: Business bar lacks the South Korea edge")
+    if classic.count("The second sentence is detail") != 2:
+        problems.append("classic was shortened")
+    if d != {**before, "_word_count": d.get("_word_count")}:
+        problems.append("v2 shortening changed the caller's digest")
+    saved_full = render.FULL_TEXT
+    try:
+        render.DESIGN, render.FULL_TEXT = "v2", True
+        web = render.render(copy.deepcopy(before))
+    finally:
+        render.DESIGN, render.FULL_TEXT = saved, saved_full
+    if web.count("The second sentence is detail") != 2 or "Shortened for email" in web:
+        problems.append("v2 with FULL_TEXT set still shortened the bodies")
+    return problems
+
+
+# ── ROK government feeds ────────────────────────────────────────────────────
+
+def _candidates(value) -> list[str]:
+    return [value] if isinstance(value, str) else list(value)
+
+
+def _gov_site_search(url: str) -> bool:
+    """A Google News search limited to a .go.kr or .mil.kr site."""
+    return any(t.endswith((".go.kr", ".mil.kr")) or t in ("go.kr", "mil.kr")
+               for t in __import__("links").site_targets(url))
+
+
+def check_rok_feeds_do_not_rest_on_site_search() -> list[str]:
+    """No ROK government feed may lead with, or consist of, a site:*.go.kr search.
+
+    Google News indexes very few .go.kr pages. Across 12-18 October 2026 the
+    twenty ROK government feeds, nearly all `site:xxx.go.kr` searches,
+    delivered 15 items between them, and six delivered none. Each feed must
+    try something that answers first: the body's own RSS, or a search for how
+    the press reports it.
+    """
+    problems = []
+    gov = collect.ROK_GOVERNMENT_FEEDS
+    for name in sorted(gov):
+        value = collect.TIER1_FEEDS.get(name)
+        if value is None:
+            problems.append(f"ROK_GOVERNMENT_FEEDS names {name!r} but TIER1_FEEDS has no such feed")
+            continue
+        urls = _candidates(value)
+        if _gov_site_search(urls[0]):
+            problems.append(f"{name!r} leads with a bare site:*.go.kr search")
+        if all(links_site(u) for u in urls):
+            problems.append(f"{name!r} has only site: searches; it needs a native feed or a press search")
+        if name not in collect.KOREA_NATIVE_FEEDS:
+            problems.append(f"{name!r} is not in KOREA_NATIVE_FEEDS")
+        for u in urls:
+            # A Korean-language query belongs in the Korean edition.
+            if "news.google.com" in u and re.search(r"%E[A-D]", u) and "ceid=KR:ko" not in u \
+                    and name in collect.KOREAN_LANGUAGE_FEEDS and not links_site(u):
+                problems.append(f"{name!r} runs a Korean press search in the US edition")
+    # Every feed that looks like a ROK government body is in the set.
+    for name in collect.TIER1_FEEDS:
+        if name.startswith("ROK ") and name not in gov:
+            problems.append(f"{name!r} looks like a ROK government feed but is not in ROK_GOVERNMENT_FEEDS")
+    # And nothing anywhere in tier 1 leads with a site:*.go.kr search.
+    for name, value in collect.TIER1_FEEDS.items():
+        if _gov_site_search(_candidates(value)[0]):
+            problems.append(f"{name!r} leads with a site:*.go.kr search")
+    return problems
+
+
+def links_site(url: str) -> bool:
+    import links
+    return bool(links.site_targets(url))
+
+
+def check_rok_primary_documents_rank_first() -> list[str]:
+    """A ministry's own document is in the first band; a press account of it is not.
+
+    The ROK feeds now fall back to press searches, so one feed carries both.
+    Ranking by feed name alone would put a newspaper's report in the band the
+    prompt calls primary documents.
+    """
+    doc = {"feed": "ROK MND", "source": "ROK MND", "title": "국방부 정례브리핑",
+           "url": "https://www.mnd.go.kr/bbs/mnd/13000005/DPIM_1/artclView.do", "lang": "KO"}
+    gn_doc = {"feed": "ROK MOFA", "source": "외교부", "title": "외교부 보도자료",
+              "url": "https://news.google.com/rss/articles/CBMiAAA", "lang": "KO",
+              "publisher": "외교부", "publisher_home": "https://www.mofa.go.kr"}
+    press = {"feed": "ROK MND", "source": "연합뉴스", "title": "국방부 대변인 \"북 미사일\"",
+             "url": "https://news.google.com/rss/articles/CBMiBBB", "lang": "KO",
+             "publisher": "연합뉴스", "publisher_home": "https://www.yna.co.kr"}
+    native_press = {"feed": "ROK Joint Chiefs", "source": "뉴시스", "title": "합참은",
+                    "url": "https://www.newsis.com/view/NISX1", "lang": "KO"}
+    daily = {"feed": "매일경제", "source": "매일경제", "title": "x",
+             "url": "https://www.mk.co.kr/news/1", "lang": "KO"}
+    problems = []
+    for art, want in ((doc, 0), (gn_doc, 0), (press, 2), (native_press, 2), (daily, 4)):
+        got = digest._prompt_band(art)
+        if got != want:
+            problems.append(f"{art['source']} via {art['feed']} is in band {got}, expected {want}")
+    order = [a["title"] for a in digest.rank_for_prompt([daily, press, native_press, gn_doc, doc])]
+    if order[:2] != [gn_doc["title"], doc["title"]] and order[:2] != [doc["title"], gn_doc["title"]]:
+        problems.append(f"primary documents are not first: {order}")
+    # Press searches must not fill the tier-1 cut on their own.
+    flood = [{"feed": f, "source": "연합뉴스", "title": f"{f} {i}", "lang": "KO",
+              "url": f"https://www.yna.co.kr/view/{abs(hash(f))}{i}",
+              "publisher_home": "https://www.yna.co.kr"}
+             for f in sorted(collect.ROK_GOVERNMENT_FEEDS) for i in range(collect.ROK_FEED_MAX_ITEMS)]
+    wires = [{"feed": "Korea Herald", "source": "Korea Herald", "title": f"KH {i}", "lang": "EN",
+              "url": f"https://www.koreaherald.com/{i}"} for i in range(5)]
+    cut = digest.rank_for_prompt(flood + wires)[:140]
+    if not any(a["feed"] == "Korea Herald" for a in cut):
+        problems.append("ROK press searches crowd the general press out of the tier-1 cut")
+    # The prompt: primary URL first, the press report as secondary_url.
+    import inspect
+    src = inspect.getsource(digest)
+    m = re.search(r"- rok_government:(.*?)\n", src)
+    if not m:
+        problems.append("rok_government spec not found in the prompt")
+    else:
+        spec = m.group(1)
+        if "secondary_url" not in spec or "own document" not in spec:
+            problems.append("rok_government spec does not ask for the primary document with "
+                            "the press report as secondary_url")
+    if "newspaper reports of their briefings" not in digest.SYSTEM_PROMPT:
+        problems.append("PRIMARY ROK SOURCES no longer tells documents from press reports")
+    return problems
+
+
+def check_stale_native_candidate_falls_through() -> list[str]:
+    """A native feed whose items are all old must not block the search behind it.
+
+    korea.kr ended its RSS service in July 2026; a board that still serves
+    its last file would otherwise win, be emptied by the recency filter, and
+    keep the press search from ever running.
+    """
+    import time as _time
+    import feedparser
+
+    def entry(days_old: int, title: str):
+        e = feedparser.FeedParserDict()
+        e["title"] = title
+        e["link"] = f"https://example.invalid/{title}"
+        e["published_parsed"] = _time.gmtime(_time.time() - days_old * 86400)
+        return e
+
+    pages = {"https://native.invalid/rss": [entry(40, "old1"), entry(30, "old2")],
+             "https://native.invalid/fresh": [entry(1, "fresh")],
+             "https://news.google.com/rss/search?q=x": [entry(0, "press")]}
+    saved = collect._parse_one
+    collect._parse_one = lambda url, retries=3: list(pages.get(url, []))
+    problems = []
+    try:
+        got = collect._parse_feed(["https://native.invalid/rss", "https://news.google.com/rss/search?q=x"])
+        if [e["title"] for e in got] != ["press"]:
+            problems.append(f"a stale native feed blocked the fallback: {[e['title'] for e in got]}")
+        got = collect._parse_feed(["https://native.invalid/fresh", "https://news.google.com/rss/search?q=x"])
+        if [e["title"] for e in got] != ["fresh"]:
+            problems.append("a live native feed did not win")
+        got = collect._parse_feed(["https://native.invalid/rss"])
+        if len(got) != 2:
+            problems.append("the last candidate's items were discarded for being old")
+    finally:
+        collect._parse_one = saved
+    return problems
+
+
+# ── Congressional calendar parsers ──────────────────────────────────────────
+
+# senate.gov/general/committee_schedules/hearings.xml, in its documented shape:
+# one <meeting> per scheduled meeting, with committee, sub_cmte, date (DD-MON-
+# YYYY HH:MM AM), room and matter children.
+_SENATE_FIXTURE = b"""<?xml version="1.0" encoding="UTF-8"?>
+<css_meetings_scheduled>
+ <last_updated>20-OCT-2026 05:12 PM</last_updated>
+ <meetings>
+  <meeting>
+   <cmte_code>SSAS00</cmte_code>
+   <committee>Armed Services</committee>
+   <sub_cmte></sub_cmte>
+   <date>21-OCT-2026 09:30 AM</date>
+   <room>SD-G50</room>
+   <matter>Hearings to examine the posture of United States Indo-Pacific Command and United States Forces Korea.</matter>
+   <identifier>339201</identifier>
+  </meeting>
+  <meeting>
+   <cmte_code>SSFR09</cmte_code>
+   <committee>Foreign Relations</committee>
+   <sub_cmte>East Asia, the Pacific, and International Cybersecurity Policy</sub_cmte>
+   <date>22-OCT-2026 02:30 PM</date>
+   <room>SD-419</room>
+   <matter>Hearings to examine Chinese coercion of United States partners.</matter>
+  </meeting>
+  <meeting>
+   <committee>Agriculture, Nutrition, and Forestry</committee>
+   <date>21-OCT-2026 10:00 AM</date>
+   <matter>Hearings to examine the farm economy and trade.</matter>
+  </meeting>
+  <meeting>
+   <committee>Finance</committee>
+   <date>23-OCT-2026 10:00 AM</date>
+   <matter>Hearings to examine trade with Asian allies, including autos and steel.</matter>
+  </meeting>
+  <meeting>
+   <committee>Commerce, Science, and Transportation</committee>
+   <date>23-OCT-2026 10:00 AM</date>
+   <matter>*** POSTPONED *** Hearings to examine shipbuilding and the maritime industrial base.</matter>
+  </meeting>
+  <meeting>
+   <committee>Armed Services</committee>
+   <date>04-NOV-2026 09:30 AM</date>
+   <matter>Hearings to examine the nomination of a Commander, United States Forces Korea.</matter>
+  </meeting>
+ </meetings>
+</css_meetings_scheduled>"""
+
+# docs.house.gov/Committee/RSS.ashx?Code=FA00: one item per meeting, the
+# meeting date and status in the description, pubDate the posting time.
+_HOUSE_FIXTURE = b"""<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0"><channel>
+ <title>U.S. House of Representatives - Committee on Foreign Affairs Meeting Feed</title>
+ <item>
+  <title>Hearing: Shipbuilding Cooperation with the Republic of Korea</title>
+  <link>https://docs.house.gov/Committee/Calendar/ByEvent.aspx?EventID=118901</link>
+  <description>Meeting Date: Wednesday, October 21, 2026 10:00 AM (Scheduled) Location: 2172 RHOB. Posted October 14, 2026.</description>
+  <pubDate>Wed, 14 Oct 2026 15:00:00 GMT</pubDate>
+ </item>
+ <item>
+  <title>Countering North Korea's Cyber Theft</title>
+  <link>https://docs.house.gov/Committee/Calendar/ByEvent.aspx?EventID=118902</link>
+  <description>Subcommittee on East Asia and the Pacific. Date: 10/22/2026 2:00 PM</description>
+  <pubDate>Thu, 15 Oct 2026 15:00:00 GMT</pubDate>
+ </item>
+ <item>
+  <title>Markup of H.R. 9001, the Indo-Pacific Partners Act</title>
+  <link>https://docs.house.gov/Committee/Calendar/ByEvent.aspx?EventID=118903</link>
+  <description>Meeting Date: Thursday, October 22, 2026 (Postponed)</description>
+ </item>
+ <item>
+  <title>Hearing on the Korea alliance</title>
+  <link>https://docs.house.gov/Committee/Calendar/ByEvent.aspx?EventID=118904</link>
+  <description>Announced October 15, 2026 for October 23, 2026.</description>
+ </item>
+</channel></rss>"""
+
+
+def check_hill_calendar_parsers() -> list[str]:
+    """The schedule parsers read the documented formats and never guess a date."""
+    from datetime import date
+    problems = []
+    today, horizon = date(2026, 10, 20), date(2026, 10, 27)
+
+    senate = collect._parse_hill_schedule(_SENATE_FIXTURE, "Senate committee schedule")
+    kept = collect.filter_hill_events(senate, today, horizon)
+    titles = [e["title"][:40] for e in kept]
+    want = ["Hearings to examine the posture of Unite",
+            "Hearings to examine Chinese coercion of ",
+            "Hearings to examine trade with Asian all"]
+    if titles != want:
+        problems.append(f"Senate fixture kept {titles}, expected {want}")
+    if kept and (kept[0]["date"], kept[0]["time"]) != ("2026-10-21", "09:30 AM"):
+        problems.append(f"Senate date/time read as {kept[0]['date']} {kept[0]['time']}")
+    if kept and len(kept) > 1 and "East Asia" not in kept[1]["committee"]:
+        problems.append("the subcommittee is missing from the committee label")
+    if any("POSTPONED" in e["title"] for e in senate):
+        problems.append("a postponed meeting was listed")
+
+    # One stray HTML entity must not cost the whole Senate schedule.
+    broken = _SENATE_FIXTURE.replace(b"SD-G50", b"SD&nbsp;G50")
+    if len(collect._parse_hill_schedule(broken, "Senate committee schedule")) != len(senate):
+        problems.append("an unparseable entity dropped the Senate schedule")
+
+    house = collect._parse_hill_schedule(_HOUSE_FIXTURE, "House Foreign Affairs schedule")
+    got = [(e["date"], e["title"][:30]) for e in house]
+    want_h = [("2026-10-21", "Hearing: Shipbuilding Cooperat"),
+              ("2026-10-22", "Countering North Korea's Cyber")]
+    if got != want_h:
+        problems.append(f"House fixture read {got}, expected {want_h} "
+                        f"(meeting-only feed, labelled dates, no postponed, no two-date guess)")
+    if house and house[0]["time"] != "10:00 AM":
+        problems.append(f"House time read as {house[0]['time']!r}")
+    if house and house[0]["committee"] != "House Foreign Affairs":
+        problems.append(f"House committee read as {house[0]['committee']!r}")
+
+    # Date reading.
+    cases = [("September 30, 2026", date(2026, 9, 30)), ("Sept. 30, 2026", date(2026, 9, 30)),
+             ("30-SEP-2026 10:00 AM", date(2026, 9, 30)), ("2026-10-21T10:00:00-04:00", date(2026, 10, 21)),
+             ("Tuesday, October 21, 2026 10:00 AM", date(2026, 10, 21)), ("next Tuesday", None)]
+    for text, want_d in cases:
+        if collect._parse_event_date(text) != want_d:
+            problems.append(f"{text!r} read as {collect._parse_event_date(text)}, expected {want_d}")
+    if collect._event_date_in_notice("Posted October 15, 2026. Hearing October 23, 2026.") is not None:
+        problems.append("a notice with two dates and no label was given one of them")
+
+    # Relevance.
+    for text, want_r in (("Hearings to examine the farm bill and trade", False),
+                         ("Hearings to examine NATO alliance burden-sharing", False),
+                         ("Hearings to examine U.S. alliances in the Indo-Pacific", True),
+                         ("Business meeting on KORUS implementation", True)):
+        if collect.hill_event_relevant(text) != want_r:
+            problems.append(f"relevance of {text!r} is {not want_r}")
+
+    # The run log line.
+    import run
+    line = run.hill_calendar_log_line({"hill_calendar": [{}], "hill_calendar_stats": {
+        "fetched": 9, "kept": 1, "answered": 9, "feeds": 10,
+        "per_source": {"Senate committee schedule": "error", "HFAC schedule": 3}}})
+    if "9 event(s) fetched" not in line or "1 kept" not in line or "Senate committee schedule" not in line:
+        problems.append(f"run log line does not report fetched and kept: {line!r}")
+    if not collect.HILL_CALENDAR_FEEDS.get("House Foreign Affairs schedule", "").endswith("Code=FA00"):
+        problems.append("the House meeting feed has no committee code")
+    return problems
+
+
+def check_corpus_records_feed() -> list[str]:
+    """The published corpus says which feed found each item, compactly."""
+    import corpus
+    gn = corpus.slim_article({"url": "https://x.example/a", "title": "t", "source": "연합뉴스",
+                              "feed": "ROK MND"}, 1, False, None, False)
+    native = corpus.slim_article({"url": "https://x.example/b", "title": "t", "source": "조선일보",
+                                  "feed": "조선일보"}, 1, False, None, False)
+    problems = []
+    if gn.get("feed") != "ROK MND":
+        problems.append("a Google News record does not carry its feed")
+    if "feed" in native:
+        problems.append("a record repeats the feed when it equals the source")
+    return problems
+
+
+def check_tracker_state_survives_a_cache_miss() -> list[str]:
+    """A cache miss or an older cached copy must not reset a tracker.
+
+    The trackers used to live only in the Actions cache, and each one treats a
+    missing file as "start empty" and saves. restore_state.py picks the newer
+    of cache and repository; the workflow commits the trackers so there is a
+    repository copy to pick.
+    """
+    import json
+    import tempfile
+    from pathlib import Path
+    import restore_state
+    problems = []
+    with tempfile.TemporaryDirectory() as td:
+        root = Path(td)
+        repo_kim = {"appearances": [{"date": "2026-10-19"}], "last_updated": "2026-10-20T11:05:00"}
+        (root / "kim_tracker.json").write_text(json.dumps(repo_kim))
+        (root / "feed_health.json").write_text(json.dumps({"total_runs": 40, "feeds": {"A": {}}}))
+        (root / "kcna_tracker.json").write_text(json.dumps({"days": [1], "last_updated": "2026-10-20"}))
+        (root / "metrics.jsonl").write_text('{"date": "2026-10-19"}\n{"date": "2026-10-20"}\n')
+        restore_state.stash(root)
+        # The cache restore: Kim missing (a miss), feed health older, KCNA
+        # corrupt, metrics a day short.
+        (root / "kim_tracker.json").unlink()
+        (root / "feed_health.json").write_text(json.dumps({"total_runs": 12, "feeds": {}}))
+        (root / "kcna_tracker.json").write_text("{not json")
+        (root / "metrics.jsonl").write_text('{"date": "2026-10-19"}\n')
+        notes = restore_state.reconcile(root)
+        if json.loads((root / "kim_tracker.json").read_text()) != repo_kim:
+            problems.append("a tracker missing from the cache was not restored from the repository")
+        if json.loads((root / "feed_health.json").read_text()).get("total_runs") != 40:
+            problems.append("an older cached feed_health.json beat the newer committed one")
+        if json.loads((root / "kcna_tracker.json").read_text()).get("days") != [1]:
+            problems.append("a corrupt cached tracker was kept over a readable committed one")
+        if (root / "metrics.jsonl").read_text().count("\n") != 2:
+            problems.append("metrics.jsonl rows in the repository were lost to the cache copy")
+        if not any("bp_tracker.json" in n and "starts empty" in n for n in notes):
+            problems.append("a tracker in neither copy is not annotated as a cold start")
+    gi = Path(__file__).parent / ".gitignore"
+    ignored = {l.strip() for l in gi.read_text().splitlines()} if gi.exists() else set()
+    for name in restore_state.TRACKERS:
+        if name in ignored:
+            problems.append(f"{name} is gitignored, so the commit step can never add it")
+    wf = Path(__file__).parent / ".github/workflows/daily-digest.yml"
+    if wf.exists():
+        text = wf.read_text(encoding="utf-8")
+        for name in restore_state.TRACKERS:
+            if name not in text.split("Commit updated README", 1)[-1].split("Save tracker data", 1)[0]:
+                problems.append(f"the workflow does not commit {name}")
+        if "restore_state.py stash" not in text or "restore_state.py reconcile" not in text:
+            problems.append("the workflow does not reconcile cached and committed trackers")
+    return problems
+
+
+def check_send_guard_counts_sends_not_runs() -> list[str]:
+    """The fallback crons skip only when a send step succeeded today.
+
+    Counting successful runs counted the guard's own skips (a run that skips
+    concludes success), so after DST an hour-floor skip of the 7:30 fallback
+    stopped the 9:00 one. A test send must not count either.
+    """
+    import re
+    from pathlib import Path
+    problems = []
+    wf = Path(__file__).parent / ".github/workflows/daily-digest.yml"
+    if not wf.exists():
+        return problems
+    text = wf.read_text(encoding="utf-8")
+    # Step blocks by name; PyYAML is not a dependency of the pipeline.
+    blocks = {m.group(1).strip(): m.group(2) for m in re.finditer(
+        r"^      - name: ([^\n]+)\n(.*?)(?=^      - |\Z)", text, re.M | re.S)}
+    guard = blocks.get("Check if already sent today", "")
+    if '.name == "Generate and send digest"' not in guard:
+        problems.append("the send guard no longer keys on the send step")
+    if "--status success" in guard:
+        problems.append("the send guard counts successful runs again, which includes skipped ones")
+    send = blocks.get("Generate and send digest", "")
+    if "inputs.send_to == ''" not in send or "--send-to" in send:
+        problems.append("a test send can run under the step name the guard counts as a real send")
+    for name in ("Deploy to GitHub Pages", "Commit updated README + Gallup baseline"):
+        if "inputs.send_to == ''" not in blocks.get(name, ""):
+            problems.append(f"{name} runs on a test send, publishing the test as the issue")
+    if not re.search(r"^concurrency:", text, re.M):
+        problems.append("runs are not serialised, so two guards can decide at once")
+    return problems
+
+
+def _web_sample() -> dict:
+    """A small digest with one long top story, for the web edition checks."""
+    long_body = " ".join(f"Sentence {i} carries word{i} for the record." for i in range(70))
+    return {
+        "re_line": "DPRK test · Seoul responds",
+        "web_url": "https://example.org/kdb/latest.html", "date_slug": "2026-10-20",
+        "issue_no": 12, "listen_url": "https://example.org/kdb/listen/2026-10-20.html?utm_source=email",
+        "audio_url": "https://example.org/kdb/digest_2026-10-20.mp3",
+        "morning_memo": ["North Korea tested a missile.", "Seoul convened the NSC.", "KOSPI fell."],
+        "top_stories": [{"headline": "North Korea fires a missile", "body": long_body,
+                         "source": "Yonhap", "url": "https://example.org/a"},
+                        {"headline": "Seoul convenes NSC", "body": "Short body.", "source": "Korea Herald",
+                         "url": "https://example.org/b"}],
+        "overnight_items": [{"headline": f"Overnight {i}", "body": "One line.", "source": "Reuters",
+                             "url": f"https://example.org/o{i}"} for i in range(3)],
+        "business_economy": [{"headline": "KOSPI falls", "body": "Chips led.", "source": "Bloomberg",
+                              "url": "https://example.org/c"}],
+    }
+
+
+def check_web_edition() -> list[str]:
+    """The published page is the web edition: folding sections, a menu, every word, a fallback."""
+    import re
+    import render
+    import web_page
+    problems = []
+    d = _web_sample()
+    saved = (render.DESIGN, render.FULL_TEXT)
+    archive = [{"date": "2026-10-19"}, {"date": "2026-10-20"}, {"date": "2026-10-21"}]
+    page = web_page.build(d, "<html>EMAIL</html>", "2026-10-20", archive_entries=archive)
+    if (render.DESIGN, render.FULL_TEXT) != saved:
+        problems.append("web_page.build left render.DESIGN or render.FULL_TEXT changed")
+    if page == "<html>EMAIL</html>":
+        return problems + ["web_page.build fell back to the email on a valid digest"]
+    n_details = page.count('<details open class="wsec"')
+    if n_details < 3 or page.count("<summary") != n_details:
+        problems.append(f"sections are not <details open> with a <summary> bar ({n_details} found)")
+    menu = re.search(r'<nav class="wmenu[^"]*" id="wmenu".*?</nav>', page, re.S)
+    if not menu:
+        problems.append("no section menu")
+    else:
+        for anchor in ("top-stories", "overnight", "business"):
+            if f'href="#{anchor}"' not in menu.group(0):
+                problems.append(f"the menu does not link #{anchor}")
+            if f'id="{anchor}"' not in page:
+                problems.append(f"the menu links #{anchor}, which the page does not have")
+    if "position:sticky" not in page:
+        problems.append("the menu is not sticky")
+    text = re.sub(r"<[^>]+>", " ", page)
+    if not all(f"word{i}" in text for i in range(70)):
+        problems.append("a long body is not shown in full")
+    if 'href="digest_2026-10-19.html"' not in page or 'href="digest_2026-10-21.html"' not in page:
+        problems.append("previous/next issue links missing")
+    if 'href="listen/2026-10-20.html"' not in page or 'href="archive.html#search"' not in page:
+        problems.append("Listen or archive search link missing")
+    if 'href="#top"' not in page or '<meta name="robots" content="noindex">' not in page:
+        problems.append("Back to top or noindex missing")
+    if "@media print" not in page or "prefers-color-scheme: dark" not in page:
+        problems.append("print or dark-mode stylesheet missing")
+    if not re.search(r'<meta name="description" content="[^"]+">', page):
+        problems.append("no meta description")
+    if re.search(r"<(?:script|link)[^>]+(?:src|href)=\"https?://", page):
+        problems.append("the web edition loads an external script or stylesheet")
+    chrome = page.split("</head>", 1)[0] + "".join(re.findall(r'<nav class="wmenu.*?</nav>|<div class="wnav-in">.*?</div>', page, re.S))
+    if re.search("[·—▲▼←-⇿]|&middot;|&rarr;|&larr;", chrome.split("<style", 1)[0] + chrome.split("</style>")[-1]):
+        problems.append("middle dot, em dash, arrow or triangle in the web chrome")
+    sizes = [int(s) for s in re.findall(r"font-size:(\d+)px", web_page._CSS)]
+    if max(sizes) > 16:
+        problems.append(f"the web stylesheet sets a {max(sizes)}px font")
+    # Without the manifest, prev/next are left to the page and start hidden.
+    bare = web_page.build(d, "<html>EMAIL</html>", "2026-10-20", archive_entries=None)
+    if re.search(r'<a data-wprev="" href="digest_', bare):
+        problems.append("a previous-issue link was baked in without an archive")
+    # Anything failing inside returns the email HTML.
+    import contextlib
+    import io
+    real = web_page._render_v2
+    try:
+        web_page._render_v2 = lambda _d: (_ for _ in ()).throw(RuntimeError("boom"))
+        with contextlib.redirect_stdout(io.StringIO()):
+            fell_back = web_page.build(d, "<html>EMAIL</html>", "2026-10-20")
+        if fell_back != "<html>EMAIL</html>":
+            problems.append("web_page.build does not fall back to the email HTML when it fails")
+    finally:
+        web_page._render_v2 = real
+    return problems
+
+
+def check_run_falls_back_to_the_email_page() -> list[str]:
+    """run.build_web_html never raises: if web_page raises, the page is the email, with a warning."""
+    import contextlib
+    import io
+    from pathlib import Path
+    import run
+    import web_page
+    problems = []
+    real = web_page.build
+    out = io.StringIO()
+    try:
+        def boom(*a, **k):
+            raise RuntimeError("web edition broke")
+        web_page.build = boom
+        with contextlib.redirect_stdout(out):
+            got = run.build_web_html({}, "<html>EMAIL</html>", "2026-10-20", None)
+        if got != "<html>EMAIL</html>":
+            problems.append("run.build_web_html did not fall back to the email HTML")
+        if "::warning" not in out.getvalue():
+            problems.append("the fallback printed no ::warning annotation")
+    finally:
+        web_page.build = real
+    src = (Path(__file__).parent / "run.py").read_text(encoding="utf-8")
+    if 'write_text(web_html' not in src or 'html_from_input(Path("latest.html"))' not in src:
+        problems.append("run.py does not publish the web edition, or the PDF is not from the email")
+    return problems
+
+
+def check_archive_search() -> list[str]:
+    """The archive page searches past headlines from the published corpus shards, and writes nothing."""
+    from pathlib import Path
+    import archive_page
+    problems = []
+    page = archive_page.build([{"date": "2026-10-20", "headline_re": "x", "url": "digest_2026-10-20.html"}],
+                              title="Korea Daily Brief", chair="CSIS Korea Chair", accent="#167EFF",
+                              latest_href="latest.html", prefix="digest_")
+    for needle in ('id="q"', 'id="hits"', 'id="hit-list"', '"corpus/"', "manifest.json", "index_",
+                   'data-date="2026-10-20"', "used"):
+        if needle not in page:
+            problems.append(f"archive search markup missing {needle!r}")
+    off = archive_page.build([], title="t", chair="c", accent="#167EFF", corpus_dir=None)
+    if "manifest.json" in off:
+        problems.append("corpus_dir=None still loads the corpus")
+    src = (Path(__file__).parent / "archive_page.py").read_text(encoding="utf-8")
+    if "write_text" in src or "open(" in src:
+        problems.append("archive_page writes a file; the search must only read published indexes")
+    return problems
+
+
+def check_status_line_kcna_trend_and_provocations():
+    """The status line's KCNA trend and provocation count come from data, and drop out without it."""
+    import run, render
+    problems = []
+    today = {"date_slug": "2026-10-28", "kcna_delta": {"watch_flag": True}}
+    prev = {"kcna_delta": {"watch_flag": False}}
+    hist = [{"date": "2026-10-28", "watch_flag": True}] + [
+        {"date": f"2026-10-{d}", "watch_flag": d in (25, 26)} for d in range(27, 21, -1)]
+    t = run.kcna_trend(today, prev, hist)
+    if not t or t.get("prev_watch_flag") is not False or t.get("watch_days_week") != 3 or t.get("week_days") != 7:
+        problems.append(f"kcna_trend wrong: {t}")
+    if run.kcna_trend({"kcna_delta": {"data_unavailable": True}}, prev, hist) is not None:
+        problems.append("kcna_trend invented a trend without KCNA data")
+    recs = [{"date": "2026-10-27"}, {"date": "2026-10-20"}, {"date": "2026-10-28"}]
+    w = run.provocation_window(recs, "2026-10-28")
+    if not w or w["count"] != 2 or w["latest"] != "2026-10-28":
+        problems.append(f"provocation_window wrong: {w}")
+    if run.provocation_window(recs, "2026-10-21") is not None:
+        problems.append("provocation_window counted across the database's gap")
+    facts = render._v2_status_facts({**today, "_kcna_trend": t, "_provocations": w})
+    joined = " ".join(facts)
+    if "from none yesterday" not in joined or "3 of the last 7 days" not in joined:
+        problems.append(f"status line lacks the KCNA trend: {facts}")
+    if "2 provocations logged in the last 7 days" not in joined:
+        problems.append(f"status line lacks the provocation count: {facts}")
+    if "provocation" in " ".join(render._v2_status_facts({**today, "_provocations": {"count": 0, "days": 7}})):
+        problems.append("status line claimed a quiet week from a zero count")
+    return problems
+
 
 CHECKS = [
+    ("status line: KCNA trend and provocations", check_status_line_kcna_trend_and_provocations),
+    ("web edition: folding sections, menu, full text, fallback", check_web_edition),
+    ("run.py falls back to the email page", check_run_falls_back_to_the_email_page),
+    ("archive page searches past headlines", check_archive_search),
+    ("tracker state survives a cache miss", check_tracker_state_survives_a_cache_miss),
+    ("send guard counts sends, not runs", check_send_guard_counts_sends_not_runs),
     ("design preview goes only to the preview list", check_design_preview_goes_only_to_preview_list),
+    ("v2 status line drops missing facts", check_v2_status_line),
+    ("v2 shortening cuts at real sentence ends", check_v2_first_sentence),
+    ("v2 email runs top stories in full, the rest shortened", check_v2_shortened_email),
     ("audio is formatted for the ear", check_audio_formatting),
     ("no Korean script on the page", check_english_only),
     ("API cost is recorded and kept", check_api_cost_is_recorded),
@@ -1370,6 +2060,11 @@ CHECKS = [
     ("non-US deals are filtered on headline and parties", check_non_us_deals_are_filtered),
     ("calendar items render in every reader", check_calendar_items_render),
     ("the email fits under Gmail's clip", check_email_fits_gmail),
+    ("ROK feeds do not rest on site:*.go.kr searches", check_rok_feeds_do_not_rest_on_site_search),
+    ("ROK primary documents rank first", check_rok_primary_documents_rank_first),
+    ("a stale native feed falls through to its fallback", check_stale_native_candidate_falls_through),
+    ("Hill calendar parsers read the documented formats", check_hill_calendar_parsers),
+    ("corpus records carry their feed", check_corpus_records_feed),
 ]
 
 
