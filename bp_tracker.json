@@ -4,79 +4,79 @@
       "name": "Yongbyon Nuclear Complex",
       "status": "elevated",
       "note": "Apr 2026: Enrichment building expansion complete, new centrifuge hall operational. 5 MWe reactor and IRT-2000 both running. Thermal signatures consistent with increased plutonium/HEU production.",
-      "last_source_date": "2026-04",
+      "last_source_date": "2026-10-20",
       "direction": "up"
     },
     "Sinpo South Shipyard": {
       "name": "Sinpo South Shipyard",
       "status": "activity",
-      "note": "Feb 2025: Hero Kim Kun Ok SLBM submarine exited drydock after 2+ years of fitting-out but still not operational as of May 2025. New submarine construction begun in separate bay.",
-      "last_source_date": "2025-05",
+      "note": "As of May 2025: Hero Kim Kun Ok SLBM submarine exited drydock after 2+ years of fitting-out but was still not operational. New submarine construction begun in separate bay. NK Pro satellite analysis (Oct 20 2026) separately reports North Korea's Nampho Shipyard missed a deadline earlier in Oct 2026 to launch a 5,000-ton naval destroyer, with hull sections visible at two potential outdoor assembly areas.",
+      "last_source_date": "2026-10-20",
       "direction": "up"
     },
-    "THAAD Site \u2014 Seongju County": {
-      "name": "THAAD Site \u2014 Seongju County",
+    "THAAD Site — Seongju County": {
+      "name": "THAAD Site — Seongju County",
       "status": "activity",
-      "note": "Mar 2026: All 6 THAAD launchers redeployed to Middle East amid Iran tensions. At least 2 launchers may have returned to Seongju by late Mar 2026. Battery operational status uncertain.",
+      "note": "As of March 2026: All 6 THAAD launchers were redeployed to the Middle East amid Iran tensions. At least 2 launchers may have returned to Seongju by late March 2026. Battery operational status remains uncertain.",
       "last_source_date": "2026-03",
       "direction": "down"
     },
     "Sohae Satellite Launch Station": {
       "name": "Sohae Satellite Launch Station",
       "status": "elevated",
-      "note": "Mar 2026: 2,500 kN engine test stand firing observed. Two villages razed for facility expansion. New seaport and large assembly building nearing completion.",
+      "note": "As of March 2026: 2,500 kN engine test stand firing observed. Two villages razed for facility expansion. New seaport and large assembly building nearing completion.",
       "last_source_date": "2026-03",
       "direction": "up"
     },
     "Punggye-ri Nuclear Test Site": {
       "name": "Punggye-ri Nuclear Test Site",
       "status": "activity",
-      "note": "Nov 2025: ROK DIA assessed Tunnel No. 3 is test-ready and a nuclear test can be conducted at any time upon political decision. Site maintained at high readiness since mid-2024.",
+      "note": "As of November 2025: ROK Defense Intelligence Agency assessed Tunnel No. 3 is test-ready and a nuclear test can be conducted at any time upon political decision. Site maintained at high readiness since mid-2024.",
       "last_source_date": "2025-11",
       "direction": "up"
     },
-    "Tumangang\u2013Khasan (NK-Russia border)": {
-      "name": "Tumangang\u2013Khasan (NK-Russia border)",
+    "Tumangang–Khasan (NK-Russia border)": {
+      "name": "Tumangang–Khasan (NK-Russia border)",
       "status": "activity",
-      "note": "Mar 2026: Road bridge construction accelerated, completion target moved to Summer 2026. Passenger rail service resumed mid-2025. Ore and tank car traffic at highest levels since project began.",
+      "note": "As of March 2026: Road bridge construction accelerated, completion target moved to Summer 2026. Passenger rail service resumed mid-2025. Ore and tank car traffic at highest levels since project began.",
       "last_source_date": "2026-03",
       "direction": "up"
     },
-    "Sinuiju\u2013Dandong (NK-China border)": {
-      "name": "Sinuiju\u2013Dandong (NK-China border)",
+    "Sinuiju–Dandong (NK-China border)": {
+      "name": "Sinuiju–Dandong (NK-China border)",
       "status": "activity",
-      "note": "Mar 12, 2026: Cross-border passenger train service resumed between Sinuiju and Dandong after COVID-era suspension. New Yalu River Bridge may open in 2026.",
-      "last_source_date": "2026-03-12",
+      "note": "38 North satellite imagery from October 16 confirms trucks traversing the New Yalu River (DPRK-Friendship) Bridge one day after the October 15 official opening, marking the start of commercial vehicle traffic. North Korea-China trade reached $299M in September 2026, the second-highest monthly total in 2026.",
+      "last_source_date": "2026-10-21",
       "direction": "up"
     },
     "Rason SEZ": {
       "name": "Rason SEZ",
       "status": "activity",
-      "note": "Nov 2025: Chinese businesspeople re-entry to Rason SEZ expanded. Coal exports through Rason at highest levels in years throughout 2025. Arms export berth also active (see Vostochny entry).",
+      "note": "As of November 2025: Chinese businesspeople re-entry to Rason SEZ expanded. Coal exports through Rason at highest levels in years throughout 2025. Arms export berth also active.",
       "last_source_date": "2025-11",
       "direction": "up"
     },
     "Yellow Sea NLL": {
       "name": "Yellow Sea NLL",
       "status": "normal",
-      "note": "Sep 26, 2025: 140m DPRK merchant vessel Toksong crossed NLL near Baengnyeong Island, advanced 5km south. ROK Navy fired ~60 warning shots; vessel retreated after 1 hour. Ship switched AIS nationality to China and flew Chinese flag. First NLL intrusion in three years.",
-      "last_source_date": "2025-09-26",
+      "note": "As of September 26, 2025: 140m DPRK merchant vessel Toksong crossed the Northern Limit Line near Baengnyeong Island, advanced 5km south. ROK Navy fired approximately 60 warning shots; vessel retreated after 1 hour. ROK Marine Corps Commandant Gen. Ju Il-suk stated October 20 2026 that North Korea has made 'various changes' to forces facing South Korea's border islands, with Seoul stepping up surveillance along the maritime border.",
+      "last_source_date": "2026-10-20",
       "direction": ""
     },
     "Yellow Sea PMZ": {
       "name": "Yellow Sea PMZ",
       "status": "activity",
-      "note": "Atlantic Amsterdam (converted oil rig, Chinese aquaculture platform) relocated out of PMZ Jan 27-28, 2026 to Weihai shipyard following Lee Jae-myung Beijing state visit. Two giant aquaculture cages (Shen Lan 1, Shen Lan 2) and 13 buoys remain in the PMZ.",
+      "note": "As of January 27-28, 2026: Atlantic Amsterdam (converted oil rig, Chinese aquaculture platform) relocated out of the Provisional Measures Zone to Weihai shipyard following President Lee Jae-myung's Beijing state visit. Two giant aquaculture cages (Shen Lan 1, Shen Lan 2) and 13 buoys remain in the PMZ.",
       "last_source_date": "2026-01-28",
       "direction": "down"
     },
     "Vostochny/Dunai (Russian Far East)": {
       "name": "Vostochny/Dunai (Russian Far East)",
       "status": "activity",
-      "note": "Jan 2026: Arms shipments slowed due to ice \u2014 one Russian vessel (likely Angara or Lady R) visited Rason, docked Jan 14 at arms export berth. Cargo routed to Vostochny. Since Sep 2023: 64 voyages by 4 vessels (Angara, Maria, Maya-1, Lady R) delivered ~15,800 containers (~4.2-5.8M munitions) from Rajin to Vostochny/Dunai.",
+      "note": "As of January 2026: Arms shipments slowed due to ice — one Russian vessel (likely Angara or Lady R) visited Rason, docked January 14 at arms export berth. Cargo routed to Vostochny. Since September 2023: 64 voyages by 4 vessels (Angara, Maria, Maya-1, Lady R) delivered approximately 15,800 containers (approximately 4.2-5.8 million munitions) from Rajin to Vostochny/Dunai.",
       "last_source_date": "2026-01",
       "direction": "up"
     }
   },
-  "last_updated": "2026-05-20T12:00:00.000000+00:00"
+  "last_updated": "2026-10-21T11:08:22.009082+00:00"
 }

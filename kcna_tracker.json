@@ -1,0 +1,23 @@
+{
+  "days": [
+    {
+      "date": "2026-10-21",
+      "silence_today": false,
+      "watch_flag": false,
+      "bottom_line": "KCNA led with Kim Yo Jong and Pak Jong Chon's border fortification inspection and troop orders, while North Korean state websites remained offline for a second day in an unexplained simultaneous outage."
+    },
+    {
+      "date": "2026-10-20",
+      "silence_today": false,
+      "watch_flag": false,
+      "bottom_line": "KCNA led with Kim Jong Un's expo appearance — rebutting death rumors — and Kim Yo Jong's border threat statement; North Korea-Russia education cooperation talks were also reported."
+    },
+    {
+      "date": "2026-10-19",
+      "silence_today": false,
+      "watch_flag": false,
+      "bottom_line": "DPRK state media led with Kim Yo Jong's loudspeaker threat and a reaffirmation of Russia ties; no Kim Jong Un appearance or direct statement today."
+    }
+  ],
+  "last_updated": "2026-10-21T11:08:22.008475+00:00"
+}
