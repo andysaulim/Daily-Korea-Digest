@@ -715,6 +715,24 @@ def _enforce_source_diversity(digest: dict) -> list[str]:
     return log
 
 
+def hill_calendar_log_line(payload: dict | None) -> str:
+    """One line on whether the committee schedules answered.
+
+    An empty calendar is ambiguous: no Korea hearing this week (normal in an
+    October recess) or every schedule failing. The counts tell them apart.
+    """
+    stats = (payload or {}).get("hill_calendar_stats") or {}
+    kept = len((payload or {}).get("hill_calendar") or [])
+    if not stats:
+        return f"Hill calendar: {kept} event(s) kept (no fetch counts in this payload)"
+    line = (f"Hill calendar: {stats.get('fetched', 0)} event(s) fetched from "
+            f"{stats.get('answered', 0)}/{stats.get('feeds', 0)} schedule(s), {kept} kept")
+    failed = [k for k, v in (stats.get("per_source") or {}).items() if v == "error"]
+    if failed:
+        line += f"; no answer from {', '.join(sorted(failed))}"
+    return line
+
+
 def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
     """Pre-send quality gate. Returns list of warnings (empty = all clear)."""
     warnings = []
@@ -2188,6 +2206,7 @@ def main():
     # so they are attached here as collected. Empty when every schedule failed,
     # and then the brief simply has no Hill calendar line.
     digest_data["hill_calendar"] = list((payload or {}).get("hill_calendar") or [])
+    print("  " + hill_calendar_log_line(payload))
     from render import render
 
     # Inject web URL for "Read Online" link (set via env or GitHub Pages)

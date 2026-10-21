@@ -5,6 +5,7 @@ Uses threaded fetching for performance (~15s vs ~60s sequential).
 """
 import feedparser
 import requests
+import html as html_lib
 import json
 import os
 import re
@@ -394,22 +395,46 @@ HILL_SEARCH_FEEDS = {"Korea Caucus", "US Congress Korea", "Congress Shipbuilding
 # Congressional hearing and markup schedules. Parsed for events, not articles:
 # see _collect_hill_calendar. Each is tried on its own, and every failure is
 # survivable — the section simply has no "Coming up" line.
+#
+# docs.house.gov's meeting feed is per committee: RSS.ashx?Code=FA00. The bare
+# RSS.ashx this used to request names no committee, so the House side of the
+# calendar could not return an event. Codes are the House's own committee
+# codes (FA Foreign Affairs, AS Armed Services, WM Ways and Means, AP
+# Appropriations, IG Intelligence; 00 is the full committee).
+_HOUSE_MEETING_FEED = "https://docs.house.gov/Committee/RSS.ashx?Code="
 HILL_CALENDAR_FEEDS = {
     "Senate committee schedule": "https://www.senate.gov/general/committee_schedules/hearings.xml",
-    "House committee schedule":  "https://docs.house.gov/Committee/RSS.ashx",
+    "House Foreign Affairs schedule": _HOUSE_MEETING_FEED + "FA00",
+    "House Armed Services schedule": _HOUSE_MEETING_FEED + "AS00",
+    "House Ways and Means schedule": _HOUSE_MEETING_FEED + "WM00",
+    "House Appropriations schedule": _HOUSE_MEETING_FEED + "AP00",
+    "House Intelligence schedule": _HOUSE_MEETING_FEED + "IG00",
     "HFAC schedule":             "https://foreignaffairs.house.gov/feed/?post_type=hearing",
     "HASC schedule":             "https://armedservices.house.gov/rss.xml",
     "SFRC schedule":             "https://www.foreign.senate.gov/rss/feeds/?type=hearings",
     "SASC schedule":             "https://www.armed-services.senate.gov/rss/feeds/?type=hearings",
 }
+_HOUSE_DOCS_FEEDS = [k for k, v in HILL_CALENDAR_FEEDS.items() if v.startswith(_HOUSE_MEETING_FEED)]
 # Where a reader can see the schedule when a listing carries no link of its own.
-HILL_SCHEDULE_PAGES = {
-    "Senate committee schedule": "https://www.senate.gov/committees/hearings_meetings.htm",
-    "House committee schedule": "https://docs.house.gov/Committee/Calendar/ByWeek.aspx",
-}
+HILL_SCHEDULE_PAGES = {"Senate committee schedule": "https://www.senate.gov/committees/hearings_meetings.htm"}
+HILL_SCHEDULE_PAGES.update({k: "https://docs.house.gov/Committee/Calendar/ByWeek.aspx"
+                            for k in _HOUSE_DOCS_FEEDS})
 HILL_CALENDAR_COMMITTEES = {
     "HFAC schedule": "House Foreign Affairs", "HASC schedule": "House Armed Services",
     "SFRC schedule": "Senate Foreign Relations", "SASC schedule": "Senate Armed Services",
+}
+HILL_CALENDAR_COMMITTEES.update({k: k.replace(" schedule", "") for k in _HOUSE_DOCS_FEEDS})
+# Feeds that list only meetings. Their titles are the hearing's subject
+# ("Countering the CCP's Maritime Coercion"), rarely the word "hearing", so
+# the title test that keeps press releases out of a committee's news feed
+# dropped every item they carried.
+HILL_MEETING_ONLY_FEEDS = set(_HOUSE_DOCS_FEEDS) | {"HFAC schedule", "SFRC schedule", "SASC schedule"}
+# senate.gov and house.gov sit behind a CDN that refuses unfamiliar agents
+# from cloud addresses; the schedules are public pages, fetched as a browser.
+HILL_CALENDAR_HEADERS = {
+    "User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                   "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"),
+    "Accept": "application/xml,application/rss+xml,text/xml;q=0.9,*/*;q=0.8",
 }
 
 # ── Korea and the World: beyond the US and Northeast Asia ───────────────────
@@ -1312,48 +1337,172 @@ def _collect_korea_world() -> list:
     return _dedup(articles)
 
 
-# Titles a hearing or markup must carry to be listed.
+# What makes a hearing or markup worth listing. Matched against the title and
+# the committee name together, so every meeting of an East Asia subcommittee
+# qualifies on its name alone.
 HILL_CALENDAR_KEYWORDS = re.compile(
-    r"korea|dprk|pyongyang|indo-?pacific|usfk|shipbuild|shipyard|maritime industrial"
-    r"|\btrade\b|tariff",
+    r"korea|dprk|pyongyang|kim jong"
+    r"|indo-?pacific|indopacom|pacific command|pacific fleet|pacific air forces|u\.?s\.? army pacific"
+    r"|marine forces,? pacific|usfk|forces,? korea|east asia|northeast asia"
+    r"|shipbuild|shipyard|maritime industrial|ships for america|korus",
     re.IGNORECASE,
 )
+# Terms that count only beside an Asia or ally term: a trade hearing is about
+# Korea when it is about Asian partners, autos, steel or chips, not when it is
+# about a farm bill; an alliance or posture hearing when it is about the Pacific.
+_HILL_CONDITIONAL = re.compile(r"\btrade\b|tariff|reciprocal|section 232|alliances?|posture",
+                               re.IGNORECASE)
+_HILL_CONTEXT = re.compile(r"asia|pacific|japan|allies|ally\b|partners|semiconductor|chips?\b"
+                           r"|\bsteel\b|\bautos?\b|automobile", re.IGNORECASE)
 HILL_CALENDAR_DAYS = 7
 
-_EVENT_DATE_FORMATS = ("%d-%b-%Y %I:%M %p", "%d-%b-%Y", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S",
-                       "%Y-%m-%d", "%m/%d/%Y %I:%M %p", "%m/%d/%Y", "%A, %B %d, %Y",
-                       "%B %d, %Y", "%b %d, %Y", "%b. %d, %Y")
+# A meeting that will not happen is not on the calendar.
+_HILL_CALLED_OFF = re.compile(r"\b(cancell?ed|postponed)\b", re.IGNORECASE)
+
+_EVENT_DATE_FORMATS = ("%d-%b-%Y %I:%M %p", "%d-%b-%Y %H:%M", "%d-%b-%Y",
+                       "%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M:%S",
+                       "%Y-%m-%d %H:%M", "%Y-%m-%d",
+                       "%m/%d/%Y %I:%M %p", "%m/%d/%Y %I:%M:%S %p", "%m/%d/%Y",
+                       "%A, %B %d, %Y %I:%M %p", "%A, %B %d, %Y", "%a, %B %d, %Y",
+                       "%B %d, %Y %I:%M %p", "%B %d, %Y", "%b %d, %Y", "%b. %d, %Y")
+_MONTHS = r"(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?"
+# Dates as committees write them inside text. Each alternative is a whole
+# date with its year: a "Tuesday" or "next week" is never turned into a day.
 _EVENT_DATE_IN_TEXT = re.compile(
-    r"\b(?:(?:Mon|Tues|Wednes|Thurs|Fri|Satur|Sun)day,?\s+)?"
-    r"((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*\.?\s+\d{1,2},\s+20\d\d)"
-    r"|\b(\d{1,2}/\d{1,2}/20\d\d)\b")
+    rf"\b({_MONTHS}\s+\d{{1,2}},?\s+20\d\d)"          # October 21, 2026 / Oct. 21 2026
+    rf"|\b(\d{{1,2}}\s+{_MONTHS}\s+20\d\d)"           # 21 October 2026
+    rf"|\b(\d{{1,2}}-{_MONTHS}-20\d\d)"               # 21-Oct-2026 (senate.gov)
+    r"|\b(\d{1,2}/\d{1,2}/20\d\d)\b"                  # 10/21/2026
+    r"|\b(20\d\d-\d{2}-\d{2})\b",                     # 2026-10-21
+    re.IGNORECASE)
+# "Date: ...", "Meeting Date: ...", "When: ..." — the event's own date in a
+# notice that may also carry the date it was posted.
+_EVENT_DATE_LABEL = re.compile(r"\b(?:meeting\s+date|hearing\s+date|event\s+date|date|when)\s*:\s*",
+                               re.IGNORECASE)
+
+
+def _norm_date_text(text: str) -> str:
+    t = re.sub(r"\s+", " ", str(text or "")).strip()
+    # "Sept" is not a %b abbreviation; "September" must stay whole (replacing
+    # every "Sept" turned it into "Sepember" and lost every September date).
+    t = re.sub(r"\bSept\b\.?", "Sep", t, flags=re.IGNORECASE)
+    return re.sub(r"(\d)(st|nd|rd|th)\b", r"\1", t)
+
+
+def _date_from_match(m):
+    raw = next(g for g in m.groups() if g).replace(".", "")
+    raw = re.sub(r"\s+", " ", raw)
+    for fmt in ("%B %d, %Y", "%b %d, %Y", "%B %d %Y", "%b %d %Y", "%d %B %Y", "%d %b %Y",
+                "%d-%b-%Y", "%d-%B-%Y", "%m/%d/%Y", "%Y-%m-%d"):
+        try:
+            return datetime.strptime(raw, fmt).date()
+        except ValueError:
+            continue
+    return None
 
 
 def _parse_event_date(text: str):
     """A date from a schedule field or a hearing title, or None. Never guessed."""
-    t = re.sub(r"\s+", " ", str(text or "")).strip().replace("Sept", "Sep")
+    t = _norm_date_text(text)
     if not t:
         return None
     # Whole field first, then the ISO prefixes a timestamp with an offset has.
-    for cand in (t, t[:19], t[:10]):
+    for cand in (t, t[:19], t[:16], t[:10]):
         for fmt in _EVENT_DATE_FORMATS:
             try:
                 return datetime.strptime(cand, fmt).date()
             except ValueError:
                 continue
     m = _EVENT_DATE_IN_TEXT.search(t)
-    if m:
-        raw = (m.group(1) or m.group(2)).replace(".", "")
-        for fmt in ("%B %d, %Y", "%b %d, %Y", "%m/%d/%Y"):
-            try:
-                return datetime.strptime(raw, fmt).date()
-            except ValueError:
-                continue
-    return None
+    return _date_from_match(m) if m else None
+
+
+def _event_date_in_notice(text: str):
+    """The meeting's date in a notice's free text, or None.
+
+    A notice often carries two dates, the day it was posted and the day of
+    the meeting ("October 15, 2026 — Chairman X announced a hearing on
+    October 22, 2026"), so the first date in the text is not safe. Taken, in
+    order: a date right after a "Date:" label; otherwise the only date the
+    text contains. Two different dates and no label is None, not a guess.
+    """
+    t = _norm_date_text(text)
+    if not t:
+        return None
+    for lab in _EVENT_DATE_LABEL.finditer(t):
+        m = _EVENT_DATE_IN_TEXT.match(t, lab.end()) or _EVENT_DATE_IN_TEXT.search(t[lab.end():lab.end() + 40])
+        if m:
+            d = _date_from_match(m)
+            if d:
+                return d
+    dates = {d for d in (_date_from_match(m) for m in _EVENT_DATE_IN_TEXT.finditer(t)) if d}
+    return dates.pop() if len(dates) == 1 else None
+
+
+_EVENT_TIME = re.compile(r"\b(\d{1,2}:\d{2})\s*([AP])\.?M\.?", re.IGNORECASE)
+
+
+def _event_time(text: str) -> str:
+    m = _EVENT_TIME.search(str(text or ""))
+    return f"{m.group(1)} {m.group(2).upper()}M" if m else ""
 
 
 def _local_tag(el) -> str:
     return el.tag.rsplit("}", 1)[-1].lower() if isinstance(el.tag, str) else ""
+
+
+def _strip_html(text: str) -> str:
+    return re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", html_lib.unescape(str(text or "")))).strip()
+
+
+# Child elements a schedule record may use for each field. senate.gov's
+# hearings.xml uses committee / sub_cmte / date / time / room / matter; the
+# others are the names other congressional XML uses for the same things.
+_SCHED_TITLE = ("matter", "title", "hearing_title", "meeting_title", "subject", "description")
+_SCHED_DATE = ("date", "meeting_date", "meetingdate", "eventdate", "event_date", "hearing_date",
+               "start_date", "startdate", "datetime", "date_time")
+_SCHED_TIME = ("time", "meeting_time", "start_time")
+_SCHED_CMTE = ("committee", "cmte_name", "committee_name", "full_committee")
+_SCHED_SUB = ("sub_cmte", "subcommittee", "sub_committee", "subcommittee_name")
+_SCHED_URL = ("hearing_url", "url", "link", "event_url", "meeting_url")
+
+
+def _first(fields: dict, names: tuple) -> str:
+    for n in names:
+        if fields.get(n):
+            return fields[n]
+    return ""
+
+
+def _schedule_records(content: bytes) -> list[dict]:
+    """{field: text} for each record in a schedule XML.
+
+    A record is any element with a title-like and a date-like child. When the
+    file will not parse (a stray entity, an HTML error page served as XML),
+    records are read by pattern from <meeting> blocks instead, so one bad
+    character does not cost the whole Senate calendar.
+    """
+    import xml.etree.ElementTree as ET
+    out = []
+    try:
+        root = ET.fromstring(content)
+        for el in root.iter():
+            fields = {}
+            for k in el:
+                fields.setdefault(_local_tag(k), " ".join("".join(k.itertext()).split()))
+            if _first(fields, _SCHED_TITLE) and _first(fields, _SCHED_DATE):
+                out.append(fields)
+        return out
+    except ET.ParseError:
+        pass
+    text = content.decode("utf-8", "replace")
+    for block in re.findall(r"<meeting\b[^>]*>(.*?)</meeting>", text, re.S | re.I):
+        fields = {}
+        for tag, val in re.findall(r"<([A-Za-z_][\w.-]*)[^>]*>(.*?)</\1>", block, re.S):
+            fields.setdefault(tag.lower(), _strip_html(val))
+        if _first(fields, _SCHED_TITLE) and _first(fields, _SCHED_DATE):
+            out.append(fields)
+    return out
 
 
 def _parse_hill_schedule(content: bytes, source: str) -> list:
@@ -1361,52 +1510,58 @@ def _parse_hill_schedule(content: bytes, source: str) -> list:
 
     Two shapes are read. A schedule XML (senate.gov's hearings.xml: one
     element per meeting with committee, date, room and matter children) and an
-    RSS feed of hearing notices, whose event date is taken from the title or
-    summary because an item's own date is when it was posted. An event whose
-    date cannot be read is dropped rather than dated by guesswork.
+    RSS feed of meeting notices (docs.house.gov's per-committee meeting feed,
+    the committees' own hearing feeds), whose event date is taken from the
+    notice text because an item's own date is when it was posted. An event
+    whose date cannot be read is dropped rather than dated by guesswork, and a
+    cancelled or postponed meeting is dropped.
     """
-    import xml.etree.ElementTree as ET
     events = []
     chamber = "Senate" if "senate" in source.lower() or source.startswith(("SFRC", "SASC")) else "House"
-    head = content[:400].lower()
+    head = content[:2000].lower()
     label = HILL_CALENDAR_COMMITTEES.get(source, source.replace(" schedule", ""))
     if b"<rss" in head or b"<feed" in head or b"<rdf" in head:
+        meeting_only = source in HILL_MEETING_ONLY_FEEDS
         for entry in feedparser.parse(content).entries:
-            title = (entry.get("title") or "").strip()
-            # A committee feed also carries press releases that mention a date.
-            if not re.search(r"hearing|markup|mark-up|briefing|roundtable", title, re.I):
+            title = _strip_html(entry.get("title") or "")
+            # A committee's news feed also carries press releases that mention
+            # a date; a meeting-only feed needs no such test.
+            if not title or (not meeting_only and
+                             not re.search(r"hearing|markup|mark-up|briefing|roundtable", title, re.I)):
                 continue
-            when = _parse_event_date(title) or _parse_event_date(entry.get("summary", ""))
-            if title and when:
-                events.append({"date": when.isoformat(), "time": "", "chamber": chamber,
+            body = " ".join(_strip_html(c.get("value", "")) for c in (entry.get("content") or []))
+            body = f"{_strip_html(entry.get('summary', ''))} {body}"
+            if _HILL_CALLED_OFF.search(f"{title} {body}"):
+                continue
+            when = _parse_event_date(title) or _event_date_in_notice(body)
+            if when:
+                events.append({"date": when.isoformat(), "time": _event_time(body), "chamber": chamber,
                                "committee": label, "title": title,
-                               "url": entry.get("link", ""), "source": source})
+                               "url": entry.get("link", "") or HILL_SCHEDULE_PAGES.get(source, ""),
+                               "source": source})
         return events
-    try:
-        root = ET.fromstring(content)
-    except ET.ParseError:
-        return events
-    for el in root.iter():
-        kids = {_local_tag(k): (k.text or "").strip() for k in el}
-        title = kids.get("matter") or kids.get("title") or kids.get("hearing_title") or ""
-        when_raw = kids.get("date") or kids.get("meeting_date") or kids.get("eventdate") or ""
-        if not title or not when_raw:
-            continue
+    for f in _schedule_records(content):
+        title = _first(f, _SCHED_TITLE)
+        when_raw = _first(f, _SCHED_DATE)
         when = _parse_event_date(when_raw)
-        if not when:
+        if not when or _HILL_CALLED_OFF.search(f"{title} {f.get('status', '')}"):
             continue
-        tm = re.search(r"\d{1,2}:\d{2}\s*[AP]M", when_raw + " " + kids.get("time", ""), re.I)
-        committee = kids.get("committee") or kids.get("cmte_name") or ""
-        sub = kids.get("sub_cmte") or kids.get("subcommittee") or ""
-        events.append({"date": when.isoformat(), "time": tm.group(0).upper() if tm else "",
+        committee = _first(f, _SCHED_CMTE)
+        sub = _first(f, _SCHED_SUB)
+        events.append({"date": when.isoformat(),
+                       "time": _event_time(f"{when_raw} {_first(f, _SCHED_TIME)}"),
                        "chamber": chamber,
                        "committee": (f"{committee}: {sub}" if sub and sub != committee else committee)
                                     or label,
                        "title": re.sub(r"\s+", " ", title),
-                       "url": (kids.get("hearing_url") or kids.get("url") or kids.get("link")
-                               or HILL_SCHEDULE_PAGES.get(source, "")),
+                       "url": _first(f, _SCHED_URL) or HILL_SCHEDULE_PAGES.get(source, ""),
                        "source": source})
     return events
+
+
+# Counts from the last calendar collection, for the run log: whether the
+# schedules answered at all is the question an empty calendar raises.
+_hill_calendar_stats: dict = {}
 
 
 def _collect_hill_calendar() -> list:
@@ -1414,6 +1569,11 @@ def _collect_hill_calendar() -> list:
 
     Only what the schedules list. If every schedule fails the result is an
     empty list, and the brief carries no calendar line — never a recalled one.
+
+    There is no Google News fallback, deliberately. A news item about a
+    hearing dates it as "Tuesday" or "next week", or carries its own posting
+    date beside the hearing's; turning that into a calendar date is a guess,
+    and a wrong date on a hearing is worse than no line.
     """
     from zoneinfo import ZoneInfo
     today = datetime.now(ZoneInfo("America/New_York")).date()
@@ -1421,19 +1581,35 @@ def _collect_hill_calendar() -> list:
 
     def _one(source, url):
         try:
-            resp = requests.get(url, timeout=REQUEST_TIMEOUT, headers=HEADERS)
+            resp = requests.get(url, timeout=REQUEST_TIMEOUT + 4, headers=HILL_CALENDAR_HEADERS)
             resp.raise_for_status()
-            return source, _parse_hill_schedule(resp.content, source)
+            return source, _parse_hill_schedule(resp.content, source), None
         except Exception as e:                                  # noqa: BLE001
             print(f"    ⚠  Hill calendar {source}: {str(e)[:80]}")
-            return source, []
+            return source, [], str(e)[:80]
 
-    events = []
+    events, per_source = [], {}
     with ThreadPoolExecutor(max_workers=6) as pool:
-        for source, found in pool.map(lambda kv: _one(*kv), HILL_CALENDAR_FEEDS.items()):
-            _source_health[source] = {"articles": len(found), "success": bool(found), "error_msg": None}
+        for source, found, err in pool.map(lambda kv: _one(*kv), HILL_CALENDAR_FEEDS.items()):
+            _source_health[source] = {"articles": len(found), "success": err is None,
+                                      "error_msg": err}
+            per_source[source] = "error" if err else len(found)
             events.extend(found)
-    return filter_hill_events(events, today, horizon)
+    kept = filter_hill_events(events, today, horizon)
+    _hill_calendar_stats.clear()
+    _hill_calendar_stats.update({
+        "fetched": len(events), "kept": len(kept),
+        "answered": sum(1 for v in per_source.values() if v != "error"),
+        "feeds": len(per_source), "per_source": per_source,
+    })
+    return kept
+
+
+def hill_event_relevant(text: str) -> bool:
+    """Korea-relevant by the calendar's rule (see HILL_CALENDAR_KEYWORDS)."""
+    if HILL_CALENDAR_KEYWORDS.search(text):
+        return True
+    return bool(_HILL_CONDITIONAL.search(text) and _HILL_CONTEXT.search(text))
 
 
 def filter_hill_events(events: list, today, horizon) -> list:
@@ -1441,7 +1617,7 @@ def filter_hill_events(events: list, today, horizon) -> list:
     seen, out = set(), []
     for ev in events:
         text = f"{ev.get('title', '')} {ev.get('committee', '')}"
-        if not HILL_CALENDAR_KEYWORDS.search(text):
+        if not hill_event_relevant(text):
             continue
         try:
             d = datetime.strptime(ev.get("date", ""), "%Y-%m-%d").date()
@@ -1454,8 +1630,16 @@ def filter_hill_events(events: list, today, horizon) -> list:
             continue
         seen.add(key)
         out.append(ev)
-    out.sort(key=lambda e: (e["date"], e.get("time") or ""))
+    out.sort(key=lambda e: (e["date"], _time_key(e.get("time") or "")))
     return out[:10]
+
+
+def _time_key(t: str) -> str:
+    """'2:30 PM' -> '14:30' so a day's events sort by clock, not by string."""
+    try:
+        return datetime.strptime(t.strip().upper(), "%I:%M %p").strftime("%H:%M")
+    except ValueError:
+        return t or "99:99"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -2298,6 +2482,7 @@ def collect() -> dict:
         "capitol_hill_articles": capitol_hill,
         "korea_world_articles": korea_world,
         "hill_calendar": results.get("hill_calendar") or [],
+        "hill_calendar_stats": dict(_hill_calendar_stats),
         "market_indicators": results["markets"],
         "sentiment_baseline": results["sentiment"],
         "x_signals": x_signals,
