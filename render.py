@@ -4130,7 +4130,8 @@ def _v2_logo(digest: dict, width: int) -> str:
 
 
 # The official CSIS wordmark, cropped from the Korea Chair logo and set in
-# white: 259 by 97, shown at 134 by 50 (2x for a crisp 1x), 2KB.
+# white: 259 by 97, shown at 80 by 30 (over 3x for a crisp 1x), 2KB. Sized
+# to sit level with the name beside it: at 50px tall it outweighed it.
 _V2_WORDMARK = "csis_wordmark_white.png"
 
 
@@ -4139,9 +4140,9 @@ def _v2_wordmark(digest: dict) -> str:
     src = _v2_asset(digest, _V2_WORDMARK)
     if not src:
         return ""
-    return (f'<img src="{_esc(src)}" width="134" height="50" alt="CSIS" class="v2-wm" '
-            'style="display:block;width:100%;min-width:64px;max-width:134px;height:auto;border:0;outline:none;text-decoration:none;'
-            f'font-family:{_V2_SERIF};font-size:34px;line-height:50px;color:#FFFFFF;text-align:center;">')
+    return (f'<img src="{_esc(src)}" width="80" height="30" alt="CSIS" class="v2-wm" '
+            'style="display:block;width:100%;min-width:48px;max-width:80px;height:auto;border:0;outline:none;text-decoration:none;'
+            f'font-family:{_V2_SERIF};font-size:24px;line-height:30px;color:#FFFFFF;text-align:center;">')
 
 
 def _v2_masthead(digest: dict, now, listen_bar: str) -> str:
@@ -4185,7 +4186,7 @@ def _v2_masthead(digest: dict, now, listen_bar: str) -> str:
     # With no web URL to load it from it is Georgia text. The full lockup,
     # with the Korea Chair line, is in the footer.
     mark = _v2_wordmark(digest) or (
-        f'<span class="v2-csis" style="font-family:{_V2_SERIF};font-size:54px;line-height:50px;color:#FFFFFF;">CSIS</span>')
+        f'<span class="v2-csis" style="font-family:{_V2_SERIF};font-size:32px;line-height:30px;color:#FFFFFF;">CSIS</span>')
     band = (f'<div bgcolor="{_V2_NAVY}" class="mast-band" style="background-color:{_V2_NAVY};padding:30px 16px 22px;'
             'text-align:center;">'
             '<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" class="v2-mrow" '
@@ -5032,7 +5033,7 @@ _V2_CSS = """
       .wrapper .v2-name { font-size:17px !important; letter-spacing:1px !important; }
       .wrapper .v2-nbt { padding:7px 12px !important; }
       .wrapper .v2-mk { padding-right:14px !important; }
-      .wrapper .v2-csis { font-size:37px !important; line-height:34px !important; }
+      .wrapper .v2-csis { font-size:24px !important; line-height:22px !important; }
       .wrapper .mast-meta { padding-top:2px !important; }
       .v2-cell div[style*="font-size:16px"] { font-size:15px !important; }
       .wrapper .v2-tint { padding-left:11px !important; }
@@ -5045,7 +5046,7 @@ _V2_CSS = """
          nothing removed. With these and the wrapping contents line, the first
          top story's headline at 375px moved from 1,278/1,327/1,408px to
          1,176/1,178/1,261px (Oct 18/19/20). The rest is the glance itself. */
-      .wrapper .v2-wm { max-width:91px !important; }
+      .wrapper .v2-wm { max-width:56px !important; }
       .wrapper .listen-bar td { padding-top:9px !important; padding-bottom:9px !important; }
       .wrapper .listen-bar .listen-sub { display:none !important; }
       .v2-cell { padding:7px 0 6px !important; }
