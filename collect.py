@@ -196,9 +196,8 @@ TIER1_FEEDS = {
     # The outlets below publish section RSS; each is filtered for Korea, and a
     # feed with no Korea item that day gives way to the search behind it
     # (_parse_feed's accept), so a general world feed cannot cost the outlet.
-    "WSJ Korea":          _native("https://feeds.a.dj.com/rss/RSSWorldNews.xml", "Korea+site:wsj.com"),
-    "NYT Korea":          _native("https://rss.nytimes.com/services/xml/rss/nyt/AsiaPacific.xml",
-                                  "Korea+site:nytimes.com"),
+    "WSJ Korea":          _gnews("Korea+site:wsj.com"),
+    "NYT Korea":          _gnews("Korea+site:nytimes.com"),
     "WaPo Korea":         _gnews("Korea+site:washingtonpost.com"),
     # FT section pages serve RSS with ?format=rss.
     "FT Korea":           _native("https://www.ft.com/south-korea?format=rss", "Korea+site:ft.com",
@@ -209,13 +208,13 @@ TIER1_FEEDS = {
     # apnews.com/index.rss answers a browser but 403s an unfamiliar agent;
     # _parse_one retries a 403 once as a browser.
     "AP Korea":           _native("https://apnews.com/index.rss", "Korea+site:apnews.com"),
-    "Bloomberg Korea":    _native("https://feeds.bloomberg.com/politics/news.rss", "Korea+site:bloomberg.com"),
+    "Bloomberg Korea":    _gnews("Korea+site:bloomberg.com"),
     "BBC Korea":          _native("https://feeds.bbci.co.uk/news/world/asia/rss.xml", "Korea+site:bbc.com"),
-    "CNN Korea":          _native("http://rss.cnn.com/rss/edition_asia.rss", "Korea+site:cnn.com"),
-    "CNBC Korea":         _native("https://www.cnbc.com/id/100727362/device/rss/rss.html", "Korea+site:cnbc.com"),
+    "CNN Korea":          _gnews("Korea+site:cnn.com"),
+    "CNBC Korea":         _gnews("Korea+site:cnbc.com"),
     "Economist Korea":    _native("https://www.economist.com/asia/rss.xml", "Korea+site:economist.com"),
     "Guardian Korea":     _native("https://www.theguardian.com/world/south-korea/rss", "Korea+site:theguardian.com"),
-    "Al Jazeera Korea":   _native("https://www.aljazeera.com/xml/rss/all.xml", "Korea+site:aljazeera.com"),
+    "Al Jazeera Korea":   _gnews("Korea+site:aljazeera.com"),
     # ── Regional Asia ─────────────────────────────────────────────────────
     "Nikkei Korea":       _native("https://asia.nikkei.com/rss/feed/nar", "Korea+site:asia.nikkei.com"),
     "Japan Times Korea":  _native("https://www.japantimes.co.jp/feed/", "Korea+site:japantimes.co.jp"),
@@ -228,7 +227,7 @@ TIER1_FEEDS = {
                                   "Korea+site:channelnewsasia.com"),
     # ── ROK/US Government ─────────────────────────────────────────────────
     # whitehouse.gov is WordPress, which serves /feed/ for every site.
-    "White House":        _native("https://www.whitehouse.gov/feed/", "Korea+site:whitehouse.gov"),
+    "White House":        _gnews("Korea+site:whitehouse.gov"),
     # 403 to the collector's agent; _parse_one retries a 403 once as a browser.
     "State Dept":         _native("https://www.state.gov/rss-feed/press-releases/feed/", "Korea+site:state.gov"),
     "Pentagon":           _native("https://www.defense.gov/DesktopModules/ArticleCS/RSS.ashx?ContentType=1&Site=945&max=40", "Korea+site:defense.gov"),
@@ -350,9 +349,9 @@ TIER1_FEEDS = {
     # ── Cyber/enforcement ───────────────────────────────────────────────
     "CISA":               _gnews("Korea+OR+DPRK+OR+Lazarus+site:cisa.gov"),
     # ── Reaction layer (China/Russia) ─────────────────────────────────────
-    "Global Times Korea": _native("https://www.globaltimes.cn/rss/outbrain.xml", "Korea+site:globaltimes.cn"),
+    "Global Times Korea": _gnews("Korea+site:globaltimes.cn"),
     "Xinhua Korea":       _gnews("Korea+site:xinhuanet.com"),
-    "TASS Korea":         _native("https://tass.com/rss/v2.xml", "Korea+site:tass.com"),
+    "TASS Korea":         _gnews("Korea+site:tass.com"),
     "Caixin Korea":       _gnews("Korea+site:caixinglobal.com"),
     "China Daily Korea":  _gnews("Korea+site:chinadaily.com.cn"),
     "People's Daily Korea": _gnews("Korea+site:en.people.cn"),

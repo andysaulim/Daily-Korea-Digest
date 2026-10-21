@@ -163,7 +163,13 @@ def check_mandatory_outlets_reach_the_prompt() -> list[str]:
 # search. Raise this number as feeds are converted; never lower it. The point
 # is a ratchet: the brief got into trouble by depending on one service for
 # almost every source, and that share should only ever improve.
-MIN_FEEDS_WITH_NATIVE_PATH = 39
+#
+# Lowered once, 39 -> 37, on 21 Oct 2026, for two deliberate reasons: native
+# URLs that 404 every run were removed (Reuters, Stars and Stripes, Hankook,
+# KCNA via Yonhap), and general world feeds (WSJ world, NYT Asia, Bloomberg
+# politics, CNN Asia...) stay search-first, because one Korea item in a world
+# feed wins the chain and stops the Korea search behind it from running.
+MIN_FEEDS_WITH_NATIVE_PATH = 37
 
 
 def check_google_news_dependence_not_regressing() -> list[str]:
