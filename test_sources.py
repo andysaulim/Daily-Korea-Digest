@@ -2532,7 +2532,82 @@ def check_status_line_kcna_trend_and_provocations():
     return problems
 
 
+def check_banned_prose_and_single_headline_link():
+    """Banned words are named, not rewritten; a top story's headline outlet is not linked twice."""
+    import run, render
+    problems = []
+    d = {"top_stories": [{"headline": "Seoul acts amid strain", "body": "It signals a shift.",
+                          "url": "https://a.example/1", "src_line": "Reuters / AP",
+                          "source_links": [{"label": "Reuters", "url": "https://a.example/1"},
+                                           {"label": "AP", "url": "https://b.example/2"}]}],
+         "bp_locations": [{"note": "redeployed amid tensions"}]}
+    got = run.banned_prose(d)
+    if got != ["amid (top_stories)", "signals (top_stories)"]:
+        problems.append(f"banned_prose found {got}")
+    line = render._top_story_sources(d["top_stories"][0])
+    if line.count("https://a.example/1") or "Reuters" not in line or line.count("https://b.example/2") != 1:
+        problems.append(f"headline outlet linked twice or other outlet lost: {line}")
+    return problems
+
+
+def check_preview_pdf_link():
+    """The design preview's PDF link opens the preview's PDF; no preview, no preview PDF."""
+    import os, run, render
+    from pathlib import Path
+    problems, sent = [], []
+    d = {"digest_date": "Wednesday, October 21, 2026", "date_slug": "2026-10-21",
+         "web_url": "https://example.org/b/latest.html", "re_line": "A line for the subject",
+         "top_stories": [{"headline": "Lead", "body": "Body.", "category_tag": "DPRK"}],
+         "morning_memo": ["One.", "Two.", "Three."]}
+    saved = os.environ.get("DESIGN_PREVIEW_TO")
+    try:
+        os.environ.pop("DESIGN_PREVIEW_TO", None)
+        if run.write_preview_pdf(d, Path("."), "2026-10-21") != "":
+            problems.append("a preview PDF was made with no preview configured")
+        os.environ["DESIGN_PREVIEW_TO"] = "p@example.org"
+        run.send_design_preview(d, lambda html, **k: sent.append(html), "Lead",
+                                pdf_url="https://example.org/b/digest_2026-10-21-preview.pdf")
+        if not sent or "digest_2026-10-21-preview.pdf" not in sent[0]:
+            problems.append("the preview does not link its own PDF")
+        render.DESIGN = "classic"
+        if "-preview.pdf" in render.render(dict(d)):
+            problems.append("the list's email links the preview PDF")
+    finally:
+        if saved is None:
+            os.environ.pop("DESIGN_PREVIEW_TO", None)
+        else:
+            os.environ["DESIGN_PREVIEW_TO"] = saved
+    return problems
+
+
+def check_validation_does_not_hold_a_real_brief():
+    """X posts are input, not fabrications; on the last attempt an unsourced item costs itself, not the brief."""
+    import run
+    problems = []
+    payload = {"tier1": [{"url": "https://news.example/a", "title": "Seoul acts"}],
+               "x_signals": [{"url": "https://x.com/Jaemyung_Lee/status/1", "text": "post"}]}
+    d = {"social_statements": [{"who": "Lee Jae-myung", "quote_text": "q", "url": "https://x.com/Jaemyung_Lee/status/1"}],
+         "overnight_items": [{"headline": "Real", "url": "https://news.example/a"},
+                             {"headline": "Invented", "url": "https://made.up/zzz"}],
+         "top_stories": [{"headline": "Lead", "url": "https://made.up/lead"}]}
+    w = run.validate_digest(d, payload=payload)
+    fab = [x for x in w if x.startswith("FABRICATED ARTICLE CRITICAL")]
+    if any("x.com" in x for x in fab):
+        problems.append("an X post in the input was flagged as fabricated")
+    if not any("made.up/zzz" in x for x in fab):
+        problems.append("an invented URL was not flagged")
+    lines = run.drop_unsourced_items(d, payload)
+    if [i["headline"] for i in d["overnight_items"]] != ["Real"] or d["top_stories"][0]["url"]:
+        problems.append(f"drop_unsourced_items wrong: {lines}")
+    if len(d["social_statements"]) != 1:
+        problems.append("drop_unsourced_items dropped a sourced X quote")
+    return problems
+
+
 CHECKS = [
+    ("validation does not hold a real brief", check_validation_does_not_hold_a_real_brief),
+    ("design preview links its own PDF", check_preview_pdf_link),
+    ("banned words named; headline outlet linked once", check_banned_prose_and_single_headline_link),
     ("status line: KCNA trend and provocations", check_status_line_kcna_trend_and_provocations),
     ("web edition: folding sections, menu, full text, fallback", check_web_edition),
     ("run.py falls back to the email page", check_run_falls_back_to_the_email_page),

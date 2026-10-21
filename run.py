@@ -17,7 +17,7 @@ from pathlib import Path
 from datetime import datetime, timezone, timedelta
 from zoneinfo import ZoneInfo
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from digest import _count_digest_words
+from digest import _count_digest_words, MIN_DIGEST_WORDS
 
 
 # An eight-minute read. An issue once shipped at 3,518 words because the
@@ -1045,17 +1045,17 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
 
     # ── Cross-reference: every digest URL must exist in input feed ────────
     if payload:
-        input_urls: set[str] = set()
-        for tier_key in ("tier1", "tier2", "tier3", "tier4"):
-            for a in (payload.get(tier_key) or []):
-                u = (a.get("url") or "").strip()
-                if u and u.startswith("http"):
-                    input_urls.add(u)
+        # The same input the URL repair reads (links.corpus_index): the tiers,
+        # the Hill and world streams, satellite reports and the X signals. The
+        # tiers alone flagged every quoted X post as fabricated, and on 21 Oct
+        # that cost two regenerations and the day's brief.
+        import links as _links
+        _index = _links.corpus_index(payload)
         fabricated_count = 0
         for section_key in _ALL_ITEM_SECTIONS:
             for item in (digest.get(section_key) or []):
                 url = (item.get("url") or "").strip()
-                if url and url.startswith("http") and url not in input_urls:
+                if url and url.startswith("http") and not _links.lookup(url, _index):
                     headline = (item.get("headline") or item.get("translated_title")
                                 or item.get("title") or "")[:80]
                     fabricated_count += 1
@@ -1096,6 +1096,71 @@ _BALANCE_RE = re.compile(r"\b(surplus|surpluses|deficit|deficits)\b", re.I)
 # tens of billions of dollars a year. A Korean surplus or deficit stated in
 # the hundreds of billions is a dropped decimal, not news.
 KOREA_BALANCE_CEILING_B = 300
+
+
+
+# Words and constructions the prompt bans (digest.py, writing rules). The
+# model still uses some; this names them on the run page so whether the rules
+# hold can be tracked. It reports and rewrites nothing.
+_BANNED_PROSE = re.compile(
+    r"\b(amid|signal(?:s|ed|ing)?|underscor\w*|highlight(?:s|ed|ing)|framing|posture|deepening|"
+    r"sweeping|sharpest|landscape|robust|pivotal|notably|coincid\w*|first-ever)\b|\bthe same day\b",
+    re.I)
+
+
+def banned_prose(digest: dict) -> list[str]:
+    """Each banned word or phrase in the brief's prose, as 'word (section)', in order found."""
+    found: list[str] = []
+
+    def walk(v, path: str):
+        if isinstance(v, dict):
+            for k, x in v.items():
+                if not str(k).startswith("_") and k not in ("url", "secondary_url", "source_url",
+                                                             "gnews_url", "source", "src_line", "note"):
+                    walk(x, path or k)
+        elif isinstance(v, list):
+            for x in v:
+                walk(x, path)
+        elif isinstance(v, str):
+            for m in _BANNED_PROSE.finditer(v):
+                found.append(f"{m.group(0).lower()} ({path})")
+
+    walk({k: v for k, v in digest.items() if k != "bp_locations"}, "")
+    return found
+
+# On the last attempt a brief this long is sent with a warning rather than
+# held: the minimum exists to catch truncated output, and a short brief is
+# worth more to the reader than none.
+FINAL_ATTEMPT_MIN_WORDS = 900
+
+
+def drop_unsourced_items(digest: dict, payload: dict) -> list[str]:
+    """Remove items whose URL is in no collected input; a top story loses only its link.
+
+    Used on the final attempt, so a link the model invented costs that item,
+    not the day's brief. Returns one line per change.
+    """
+    import links as _links
+    index = _links.corpus_index(payload or {})
+    out: list[str] = []
+    for key in _ALL_ITEM_SECTIONS:
+        items = digest.get(key)
+        if not isinstance(items, list):
+            continue
+        kept = []
+        for item in items:
+            url = str((item or {}).get("url") or "").strip() if isinstance(item, dict) else ""
+            if url.startswith("http") and not _links.lookup(url, index):
+                head = str(item.get("headline") or item.get("title") or item.get("who") or "")[:60]
+                if key == "top_stories":
+                    item["url"] = ""
+                    out.append(f"unlinked {key}: {head!r}")
+                else:
+                    out.append(f"dropped {key}: {head!r}")
+                    continue
+            kept.append(item)
+        digest[key] = kept
+    return out
 
 
 def magnitude_warnings(digest: dict, payload: dict | None = None) -> list[str]:
@@ -2139,7 +2204,36 @@ def _build_index_html() -> str:
 
 
 
-def send_design_preview(digest_data: dict, send_fn, lead: str = "") -> list:
+def write_preview_pdf(digest_data: dict, out_dir: Path, date_slug: str) -> str:
+    """The issue in the candidate design, full text, as digest_{date}-preview.pdf.
+
+    Written only when a design preview goes out (DESIGN_PREVIEW_TO), so the
+    preview's PDF link opens the design it was sent in. Returns the file name,
+    or '' when there is no preview or the PDF could not be made. Never raises.
+    """
+    if not os.environ.get("DESIGN_PREVIEW_TO", "").strip():
+        return ""
+    try:
+        import copy
+        import render as _render_mod
+        from make_pdf import html_from_input, html_to_pdf
+        saved = (_render_mod.DESIGN, _render_mod.FULL_TEXT)
+        try:
+            _render_mod.DESIGN, _render_mod.FULL_TEXT = PREVIEW_DESIGN, True
+            html = _render_mod.render(copy.deepcopy(digest_data))
+        finally:
+            _render_mod.DESIGN, _render_mod.FULL_TEXT = saved
+        src = Path("preview_print.html")
+        src.write_text(html, encoding="utf-8")
+        name = f"digest_{date_slug}-preview.pdf"
+        html_to_pdf(html_from_input(src), out_dir / name)
+        return name
+    except Exception as e:                                      # noqa: BLE001
+        warn("Preview PDF skipped", f"the design preview's PDF link will open the list's PDF: {e}")
+        return ""
+
+
+def send_design_preview(digest_data: dict, send_fn, lead: str = "", pdf_url: str = "") -> list:
     """Send the same issue in the candidate design to DESIGN_PREVIEW_TO only.
 
     A trial of a new layout against real issues, read side by side with the
@@ -2159,7 +2253,11 @@ def send_design_preview(digest_data: dict, send_fn, lead: str = "") -> list:
         saved = _render_mod.DESIGN
         try:
             _render_mod.DESIGN = PREVIEW_DESIGN
-            preview = minify_email_html(_render_mod.render(copy.deepcopy(digest_data)))
+            _d = copy.deepcopy(digest_data)
+            if pdf_url:
+                # The preview's PDF link opens the preview's own PDF, not the list's.
+                _d["_pdf_url"] = pdf_url
+            preview = minify_email_html(_render_mod.render(_d))
         finally:
             _render_mod.DESIGN = saved
         subject = "[Design preview] " + build_subject(digest_data.get("re_line"), lead)
@@ -2385,6 +2483,15 @@ def main():
         # not stop the brief: a heuristic should never cost a day's issue.
         if validation_attempt >= MAX_VALIDATION_RETRIES:
             critical_warnings = [w for w in critical_warnings if not w.startswith("MAGNITUDE")]
+            if any(w.startswith("FABRICATED") for w in critical_warnings):
+                for _line in drop_unsourced_items(digest_data, payload):
+                    print(f"  🧹  {_line}")
+                critical_warnings = [w for w in critical_warnings if not w.startswith("FABRICATED")]
+            _wc = _count_digest_words(digest_data)
+            if _wc >= FINAL_ATTEMPT_MIN_WORDS and any(w.startswith("WORD COUNT CRITICAL") for w in critical_warnings):
+                critical_warnings = [w for w in critical_warnings if not w.startswith("WORD COUNT CRITICAL")]
+                warn("Brief sent short", f"{_wc} words after the last attempt, under the "
+                     f"{MIN_DIGEST_WORDS} target; sent rather than held")
 
         # Don't retry for DUPLICATE TOPIC issues — dedup already handled them,
         # and retrying just causes dedup to fight the retry loop.
@@ -2398,7 +2505,11 @@ def main():
         # text, duplicated the same Yonhap articles across sections again,
         # and lost more each round: 26%, then 32%, then 21% of the draft.
         # The retry gate stays on the CRITICAL subset; only the feedback widens.
-        retryable_warnings = [w for w in validation_warnings if "DUPLICATE TOPIC" not in w]
+        # "Over the ceiling" is handled by length_budget after validation. Sent
+        # as feedback it made the model cut hard: on 21 Oct the retry fell
+        # from 2,676 words to 1,194 and the brief was held for being short.
+        retryable_warnings = [w for w in validation_warnings
+                              if "DUPLICATE TOPIC" not in w and "over the prompt's" not in w]
 
         if not critical_warnings:
             # Passed — print any non-critical warnings and move on
@@ -2634,6 +2745,9 @@ def main():
         import english
         for _w in english.apply(digest_data):
             print(f"::warning title=Korean text in brief::{_w}")
+        _banned = banned_prose(digest_data)
+        if _banned:
+            warn("Banned words in brief", f"{len(_banned)}: " + "; ".join(_banned[:8]))
     except Exception as _e:                                     # noqa: BLE001
         print(f"  ⚠  English pass skipped (non-fatal): {_e}")
         warn("English pass skipped", f"Korean outlet names and labels may reach the reader: {_e}")
@@ -2780,6 +2894,7 @@ def main():
         json.dumps(digest_data, ensure_ascii=False), encoding="utf-8"
     )
 
+    _preview_pdf = ""
     # ── Full-color PDF for print/download (best-effort; needs Playwright) ────
     # From the email HTML (the working-directory latest.html), not the web
     # edition: the PDF is the issue as sent.
@@ -2790,6 +2905,9 @@ def main():
         html_to_pdf(pdf_html, archive_dir / "latest.pdf")
         shutil.copy(archive_dir / "latest.pdf", archive_dir / f"digest_{date_slug}.pdf")
         print(f"  🖨  PDF written: public/latest.pdf + public/digest_{date_slug}.pdf")
+        _preview_pdf = write_preview_pdf(digest_data, archive_dir, date_slug)
+        if _preview_pdf:
+            print(f"  🖨  Preview PDF written: public/{_preview_pdf}")
     except Exception as e:
         print(f"  ⚠  PDF generation skipped (non-fatal): {e}")
         warn("PDF skipped", f"the brief's Download PDF link will not resolve today: {e}")
@@ -2912,7 +3030,9 @@ def main():
             send(html, re_line=re_line, lead=_lead, recipients=_test_to)
         else:
             send(html, re_line=re_line, lead=_lead)
-            send_design_preview(digest_data, send, _lead)
+            _wb = os.environ.get("WEB_URL", "").rstrip("/")
+            send_design_preview(digest_data, send, _lead,
+                                pdf_url=f"{_wb}/{_preview_pdf}" if _wb and _preview_pdf else "")
 
     # ── Step 5: Pipeline health checks ─────────────────────────────────────
     health_report = {}

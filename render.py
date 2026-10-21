@@ -49,7 +49,10 @@ def _top_story_sources(story: dict) -> str:
     if len(sl) < 2:
         return _esc(_clean_src(raw))
     _, tail = _linkq.split_outlets(raw)
-    parts = [f'<a href="{_esc(l["url"])}" style="color:#6B7280;text-decoration:underline;'
+    # The outlet the headline already opens is named, not linked a second time.
+    head = str(story.get("url") or "")
+    parts = [_esc(str(l["label"])) if l["url"] == head else
+             f'<a href="{_esc(l["url"])}" style="color:#6B7280;text-decoration:underline;'
              f'text-decoration-color:#C9D1DC;">{_esc(str(l["label"]))}</a>' for l in sl]
     return " / ".join(parts) + (f", {_esc(tail)}" if tail else "")
 
@@ -3902,7 +3905,8 @@ def _v2_masthead(digest: dict, now, listen_bar: str) -> str:
     if web_url:
         links.append(link(_issue_file(digest, base, "html") or web_url, "Read online"))
         if base:
-            links += [link(_issue_file(digest, base, "pdf"), "PDF"), link(base + "archive.html", "Past issues")]
+            links += [link(digest.get("_pdf_url") or _issue_file(digest, base, "pdf"), "PDF"),
+                      link(base + "archive.html", "Past issues")]
     links = "&emsp; ".join(links)
     strip = ('<table width="100%" cellpadding="0" cellspacing="0" border="0" class="no-print"><tr>'
              f'<td style="padding:9px 16px;font-family:{_V2_SANS};font-size:11px;font-weight:700;color:#3D4149;">'
