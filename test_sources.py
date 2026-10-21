@@ -1905,6 +1905,89 @@ def check_leaders_words() -> list[str]:
     if len(d["kcna_delta"]["key_quotes"]) != 1:
         problems.append("more than one Kim quote kept")
     return problems
+def check_nk_russia_timeline_sheet() -> list[str]:
+    """The NK-Russia timeline is read from its Google Sheet (TimelineJS layout).
+
+    The GitHub page the brief used to read returned 404 and the brief ran
+    without the timeline. The fixture covers the title slide, HTML in cells,
+    and rows with no day or no month.
+    """
+    import databases as db
+    from datetime import datetime as _dt, timezone as _tz
+    from pathlib import Path as _P
+    problems = []
+    text = (_P(__file__).parent / "fixtures" / "nk_russia" / "timeline_sheet.csv").read_text(encoding="utf-8")
+    ev = db.parse_timeline_csv(text)
+    heads = [e["headline"] for e in ev]
+    if any("Timeline of North Korea-Russia" in h for h in heads):
+        problems.append("the title slide was read as an event")
+    if len(ev) != 4:
+        problems.append(f"expected 4 events, got {len(ev)}: {heads}")
+    by = {e["headline"][:12]: e for e in ev}
+    treaty = by.get("Putin and Ki")
+    if not treaty or treaty["date"] != "2024-06-19" or "<" in treaty["headline"] + treaty["text"] \
+            or "&amp;" in treaty["text"] or treaty["tag"] != "diplomatic":
+        problems.append(f"HTML row parsed wrongly: {treaty}")
+    month_only = next((e for e in ev if e["headline"].startswith("Russian tourists")), None)
+    if not month_only or month_only["day"] is not None or month_only["date"] != "2025-11":
+        problems.append(f"month-only row parsed wrongly: {month_only}")
+    year_only = next((e for e in ev if e["headline"] == "Year-only entry"), None)
+    if not year_only or year_only["month"] is not None or year_only["date"] != "2023":
+        problems.append(f"year-only row parsed wrongly: {year_only}")
+    # The rest of databases.py reads these events without choking, and an
+    # event with no day never becomes an "on this day".
+    otd = db.get_on_this_day([], ev, today=_dt(2027, 6, 19, tzinfo=_tz.utc))
+    if [o["event"][:12] for o in otd] != ["Putin and Ki"]:
+        problems.append(f"on-this-day from the sheet: {otd}")
+    if db.get_on_this_day([], ev, today=_dt(2026, 11, 1, tzinfo=_tz.utc)):
+        problems.append("a month-only event was matched to the 1st of the month")
+    db.get_recent_timeline_entries(ev, days=100000)
+    if "docs.google.com/spreadsheets/d/" + db.NKR_SHEET_ID not in db.NKR_SHEET_CSV_URL \
+            or "format=csv" not in db.NKR_SHEET_CSV_URL:
+        problems.append("NKR_SHEET_CSV_URL is not the sheet's CSV export")
+    # The fetcher tries the sheet first, and a sign-in page is not CSV.
+    calls = []
+
+    class _R:
+        def __init__(self, body, ctype):
+            self.text, self.content, self.headers = body, body.encode(), {"Content-Type": ctype}
+        def raise_for_status(self):
+            return None
+    saved = db.requests.get
+    db.requests.get = lambda url, **k: (calls.append(url), _R(text, "text/csv"))[1]
+    try:
+        got = db.fetch_nk_russia_timeline()
+        if calls[:1] != [db.NKR_SHEET_CSV_URL] or len(got) != 4:
+            problems.append(f"the sheet is not the first candidate: {calls}")
+        calls.clear()
+        db.requests.get = lambda url, **k: (calls.append(url),
+                                            _R("<html>Sign in</html>", "text/html"))[1]
+        db.fetch_nk_russia_timeline()
+        if len(calls) != 2:
+            problems.append("a sign-in page from the sheet did not fall back to the old page")
+    finally:
+        db.requests.get = saved
+    # The push cannot write to a Sheet: it is skipped, not attempted.
+    import os
+    saved_tok = os.environ.get("GITHUB_TOKEN")
+    os.environ["GITHUB_TOKEN"] = "test-token-not-used"
+    saved_push = db.push_nk_russia_entry
+    pushed = []
+    db.push_nk_russia_entry = lambda e: pushed.append(e) or True
+    try:
+        out = db.process_digest_entries({"timeline_candidates": ["https://x/1"],
+                                         "top_stories": [{"url": "https://x/1", "headline": "h"}]})
+    finally:
+        db.push_nk_russia_entry = saved_push
+        if saved_tok is None:
+            os.environ.pop("GITHUB_TOKEN", None)
+        else:
+            os.environ["GITHUB_TOKEN"] = saved_tok
+    if pushed or out.get("nk_russia_added"):
+        problems.append("the NK-Russia push was attempted against the Sheet")
+    return problems
+
+
 # ── Congressional calendar parsers ──────────────────────────────────────────
 
 # senate.gov/general/committee_schedules/hearings.xml, in its documented shape:
@@ -2376,6 +2459,7 @@ CHECKS = [
     ("widely covered stories reach the model; noise does not", check_widely_covered_stories_reach_the_model),
     ("Analysis section: reports first, 3-5 pieces, no news", check_analysis_section),
     ("leaders' words: one verbatim quote each", check_leaders_words),
+    ("NK-Russia timeline reads its Google Sheet", check_nk_russia_timeline_sheet),
 ]
 
 

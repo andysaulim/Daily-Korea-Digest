@@ -2274,7 +2274,8 @@ def main():
                      if not (databases or {}).get(k)]
         if _empty_db:
             warn("CSIS database empty", f"{', '.join(_empty_db)} returned nothing; the brief "
-                 f"is written without that background (check the source repository URL)")
+                 f"is written without that background (check the source: the NK-Russia Google "
+                 f"Sheet's link sharing, or the provocations repository URL)")
     except Exception as _e:                                     # noqa: BLE001
         databases, db_context = {}, ""
         warn("CSIS databases unavailable", f"brief written without database context: {_e}")
