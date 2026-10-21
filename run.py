@@ -2216,17 +2216,27 @@ def write_preview_pdf(digest_data: dict, out_dir: Path, date_slug: str) -> str:
     try:
         import copy
         import render as _render_mod
-        from make_pdf import html_from_input, html_to_pdf
-        saved = (_render_mod.DESIGN, _render_mod.FULL_TEXT)
+        from make_pdf import html_to_pdf
+        saved = (_render_mod.DESIGN, _render_mod.FULL_TEXT, _render_mod.PRINT)
         try:
-            _render_mod.DESIGN, _render_mod.FULL_TEXT = PREVIEW_DESIGN, True
+            # PRINT: the paper layout, with web fonts (render's "Paper" block).
+            _render_mod.DESIGN, _render_mod.FULL_TEXT, _render_mod.PRINT = PREVIEW_DESIGN, True, True
             html = _render_mod.render(copy.deepcopy(digest_data))
         finally:
-            _render_mod.DESIGN, _render_mod.FULL_TEXT = saved
-        src = Path("preview_print.html")
-        src.write_text(html, encoding="utf-8")
+            _render_mod.DESIGN, _render_mod.FULL_TEXT, _render_mod.PRINT = saved
+        Path("preview_print.html").write_text(html, encoding="utf-8")
+        try:
+            day = datetime.strptime(date_slug, "%Y-%m-%d")
+            when = f"{day:%A, %B} {day.day}, {day.year}"
+        except ValueError:
+            when = date_slug
         name = f"digest_{date_slug}-preview.pdf"
-        html_to_pdf(html_from_input(src), out_dir / name)
+        # Not make_pdf.html_from_input: its print CSS lets everything break
+        # anywhere, which would undo the paper layout's rule that an item
+        # never splits across pages.
+        html_to_pdf(html, out_dir / name, footer=f"Korea Daily Brief, {when}",
+                    margin={"top": "12mm", "bottom": "15mm", "left": "13mm", "right": "13mm"},
+                    wait_for_fonts=True, scale=0.9)
         return name
     except Exception as e:                                      # noqa: BLE001
         warn("Preview PDF skipped", f"the design preview's PDF link will open the list's PDF: {e}")

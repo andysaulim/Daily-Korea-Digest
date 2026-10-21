@@ -1433,8 +1433,12 @@ def check_v2_shortened_email():
         render.DESIGN = saved
     if html.count("The second sentence is detail") != 1:
         problems.append("v2: expected the long body in full exactly once (the top story)")
-    if 'digest_2026-10-19.html#business' not in html:
-        problems.append("v2: no Read online link to the business section of the issue page")
+    if html.count("Some sections are shortened here.") != 1 or 'href="https://example.org/brief/digest_2026-10-19.html"' not in html:
+        problems.append("v2: not exactly one shortened-note under the contents, linking the issue page")
+    if "Shortened for email" in html:
+        problems.append("v2: a per-section 'Shortened for email' line is back")
+    if 'name="business"' not in html:
+        problems.append("v2: the business section lost its anchor, which the web page links to")
     if "That&#8217;s today&#8217;s brief." not in html or "Assembly votes on the budget" not in html:
         problems.append("v2: sign-off missing, or without tomorrow's calendar item")
     if f"border-left:5px solid {render.TAEGUK_BLUE};" not in html:
@@ -1449,8 +1453,84 @@ def check_v2_shortened_email():
         web = render.render(copy.deepcopy(before))
     finally:
         render.DESIGN, render.FULL_TEXT = saved, saved_full
-    if web.count("The second sentence is detail") != 2 or "Shortened for email" in web:
+    if (web.count("The second sentence is detail") != 2 or "Shortened for email" in web
+            or "Some sections are shortened" in web):
         problems.append("v2 with FULL_TEXT set still shortened the bodies")
+    return problems
+
+
+def check_v2_kicker_outlets():
+    """v2 kickers name publishers, not feeds: no variant suffixes, glued dates or repeats."""
+    import render
+    problems = []
+    for raw, want in (("Yonhap English", "Yonhap"), ("Yonhap North Korea KO", "Yonhap"),
+                      ("NK News Oct 21", "NK News"), ("ROK MOFA English", "Foreign Ministry"),
+                      ("NKPro", "NK Pro"), ("Bloomberg.com", "Bloomberg"), ("Korea Times Opinion", "Korea Times"),
+                      ("Yonhap EN", "Yonhap"), ("Yonhap English (KCNA)", "Yonhap (KCNA)"),
+                      ("via NK News/NewsCord", "via NK News"),
+                      # Names that only look like a feed variant stay as they are.
+                      ("Daily NK", "Daily NK"), ("Asia Economy", "Asia Economy"), ("Korea", "Korea"),
+                      ("Korea JoongAng Daily", "Korea JoongAng Daily")):
+        got = render._v2_outlet(raw)
+        if got != want:
+            problems.append(f"_v2_outlet({raw!r}) gave {got!r}, want {want!r}")
+    line = render._v2_outlets('<a href="https://en.yna.co.kr/x">Yonhap English</a> / Yonhap North Korea KO / NK News Oct 21')
+    if line != '<a href="https://en.yna.co.kr/x">Yonhap</a> / NK News':
+        problems.append(f"outlet list not cleaned and deduplicated: {line!r}")
+    k = render._v2_kicker("ROK MOFA English", "Japan-Korea")
+    text = __import__("re").sub(r"<[^>]+>", "", k)
+    if text != "Foreign Ministry, Japan-Korea, Primary":
+        problems.append(f"MOFA kicker reads {text!r}")
+    k = render._v2_kicker("Seoul Embassy English (@x)", "", "", outlet=False)
+    if "English" not in k:
+        problems.append("a person's name on an X post was cleaned as an outlet")
+    html = _v2_render({"top_stories": [{"headline": "Lead", "body": "Body.", "category_tag": "DPRK",
+                                        "src_line": "Yonhap English / Yonhap North Korea KO / NK News Oct 21"}],
+                       "overnight_items": [{"headline": "Wire item", "source": "NKPro", "category": "DPRK"}]})
+    for bad in ("Yonhap English", "North Korea KO", "Oct 21", "NKPro"):
+        if bad in html:
+            problems.append(f"rendered v2 still shows {bad!r}")
+    import copy
+    saved = render.DESIGN
+    try:
+        render.DESIGN = "classic"
+        classic = render.render({"top_stories": [{"headline": "Lead", "body": "Body.",
+                                                  "src_line": "Yonhap English / NK News Oct 21"}]})
+    finally:
+        render.DESIGN = saved
+    if "Yonhap English / NK News Oct 21" not in classic:
+        problems.append("classic's source line changed")
+    return problems
+
+
+def check_v2_print_layout():
+    """The preview PDF's v2 render (PRINT) carries web fonts and none of the inbox furniture; the email is unchanged."""
+    import copy, render
+    problems = []
+    d = {"digest_date": "Wednesday, October 21, 2026", "date_slug": "2026-10-21", "issue_no": 210,
+         "web_url": "https://example.org/b/latest.html", "audio_url": "https://example.org/b/a.mp3",
+         "top_stories": [{"headline": "Lead", "body": "Body.", "category_tag": "DPRK"}],
+         "overnight_items": [{"headline": "One", "source": "Yonhap"}, {"headline": "Two", "source": "NK News"}],
+         "calendar_watch": [{"month": "Oct", "day": 22, "headline": "Audit"}],
+         "business_economy": [{"headline": "Chips", "body_text": "A. B.", "source": "Yonhap"}],
+         "morning_memo": ["One.", "Two.", "Three."]}
+    saved = (render.DESIGN, render.FULL_TEXT, render.PRINT)
+    try:
+        render.DESIGN, render.FULL_TEXT, render.PRINT = "v2", True, True
+        paper = render.render(copy.deepcopy(d))
+        render.PRINT = False
+        email = render.render(copy.deepcopy(d))
+    finally:
+        render.DESIGN, render.FULL_TEXT, render.PRINT = saved
+    if "fonts.googleapis.com/css2?family=Source+Sans+3" not in paper or "Liberation Sans" not in paper:
+        problems.append("paper render lacks the web fonts or their Liberation fallback")
+    if "break-inside:avoid" not in paper or "break-after:avoid" not in paper:
+        problems.append("paper render lacks its page-break rules")
+    for t in ("listen-bar", "In this issue", "Past issues", "Back to top", "For internal use only"):
+        if t in paper:
+            problems.append(f"paper render still shows {t!r}")
+    if "fonts.googleapis.com" in email or "listen-bar" not in email:
+        problems.append("PRINT leaked into the email render")
     return problems
 
 
@@ -2621,6 +2701,8 @@ CHECKS = [
     ("v2 Leaders' words: Lee, Trump, Kim only, one each", check_v2_leaders_words),
     ("v2 ROK government card grid", check_v2_rok_cards),
     ("v2 hidden inbox preview line", check_v2_preheader),
+    ("v2 kickers name publishers, not feeds", check_v2_kicker_outlets),
+    ("v2 paper layout for the preview PDF", check_v2_print_layout),
     ("audio is formatted for the ear", check_audio_formatting),
     ("no Korean script on the page", check_english_only),
     ("API cost is recorded and kept", check_api_cost_is_recorded),

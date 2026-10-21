@@ -526,6 +526,11 @@ LISTEN_STYLE = "card"
 # kickers, one sans), as the China Room brief. Styling only; see the "Design
 # v2" block below.
 DESIGN = "classic"
+# True when v2 renders for paper (run.write_preview_pdf): the print stylesheet
+# and web fonts, and none of what does nothing on paper (the Listen card, the
+# contents links, the links strip, buttons to web pages). v2 only; classic
+# ignores it. Set together with FULL_TEXT.
+PRINT = False
 # True when rendering the web page (web_page.py), which is the full reference:
 # anything that shortens an item's text for the email must leave it whole when
 # this is set. Read it as one line, `if not FULL_TEXT: ...`.
@@ -2654,7 +2659,7 @@ def render(digest: dict) -> str:
         sections = _v2_order([_v2_restyle(s, _v2_more) for s in sections])
     body = "\n".join(sections)
     if DESIGN == "v2":
-        body = _v2_finish(body)
+        body = _v2_finish(body, next(iter(_v2_more.values()), "").split("#")[0])
     _links =[f'<a href="#{_a}" style="color:{TAEGUK_BLUE};text-decoration:underline;'
               f'text-underline-offset:2px;white-space:nowrap;">{_l}</a>'
               for _l, _a in _NAV if f'a name="{_a}"' in body]
@@ -2872,8 +2877,8 @@ def render(digest: dict) -> str:
 # marked points.
 #
 #   * A grey ground with each section a card; the gaps are the dividers.
-#     Each card opens with a full-width navy bar: a red Georgia section
-#     number, a hairline, then the name in white capitals (_v2_card turns a
+#     Each card opens with a full-width navy bar: a muted blue Georgia
+#     section number, a hairline, then the name in white capitals (_v2_card turns a
 #     classic section into one). Family cards are faintly tinted to match
 #     their bar edge (_V2_FAM_TINT); general sections stay white.
 #   * The top is an internal-use strip with the issue links, a navy band
@@ -2921,18 +2926,25 @@ def render(digest: dict) -> str:
 # Classic sections are restyled in one pass (_v2_restyle) rather than edited,
 # so a section added later in the house card style comes out in v2 as well.
 
-# The platform's own UI face reads best at 13-14px on a screen: San Francisco
-# on Apple devices, Segoe UI on Windows, Roboto on Android. system-ui reaches
-# all three in Gmail's web and app views; Segoe UI is named for Outlook on
-# Windows, which does not know system-ui; Arial is the floor. The China Room
-# brief this follows leads with 'Source Sans 3', which no mail client has
-# unless a web font loads, and Gmail never loads one; its quotes would also
-# break the single-quoted style attributes in restyled classic markup. Short,
-# because it repeats on many text nodes and every byte counts against
-# Gmail's clipping limit.
-_V2_SANS = "system-ui,Segoe UI,Arial,sans-serif"
-_V2_SERIF = "Georgia,Times,serif"      # headlines and the CSIS letters
-_V2_KO = _V2_SANS + ",Apple SD Gothic Neo,Malgun Gothic,Noto Sans KR"
+# Two families, everywhere in v2: one sans stack and Georgia.
+#
+# The sans is the platform's own UI face, which reads best at 13-14px on a
+# screen: San Francisco on Apple devices (-apple-system, BlinkMacSystemFont),
+# Segoe UI on Windows and in Outlook, Roboto on Android, then Helvetica Neue
+# and Arial. The names are unquoted, which CSS allows, because a quote would
+# break the double- and single-quoted style attributes it is written into.
+# v2 used to carry three sans stacks (classic's body stack, its own, and one
+# with Korean faces on the wrapper); the brief has no Korean text outside a
+# translated quote, so one stack serves the page.
+#
+# Georgia sets the headlines, the figures and the CSIS letters. "Times" is not
+# in the stack: where Georgia is missing (Linux, ChromeOS, the PDF runner) it
+# resolved to Times New Roman's clone. The space after the comma is
+# deliberate: it keeps v2's own serif distinct from classic's
+# "Georgia,serif", which _v2_style turns into the sans.
+_V2_SANS = "-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica Neue,Arial,sans-serif"
+_V2_SERIF = "Georgia, serif"      # headlines, figures and the CSIS letters
+_V2_KO = _V2_SANS                 # kept for callers; the Korean faces are gone
 
 # The CSIS newsletter palette, as in the China Room Engagement Brief.
 _V2_NAVY = "#001F59"      # masthead, section bars, figures, buttons, footer
@@ -3014,14 +3026,17 @@ _V2_DARK_EXEMPT |= {_V2_FAM_NK, _V2_FAM_ROK, _V2_FAM_WORLD}
 # The tints in dark mode: the dark card's grey (#262A30) leaning the same way.
 _V2_DARK_BG.update({_V2_TINT_NK: "#2C2427", _V2_TINT_ROK: "#212A36", _V2_TINT_WORLD: "#252B33",
                     "#D6DFEA": "#3A4048"})      # the pledge bar's unfilled part
-# The red section numerals on the navy bar (5.0:1), and the stat card's blue
-# ground, which keep their colours in dark mode as the bar does.
-_V2_NUM = RED_ON_NAVY
+# The section numerals on the navy bar: a muted light blue (7.3:1), quiet
+# beside the white name. They were red, which read as an alert on every bar;
+# red is kept for alerts. The stat card's numeral is the same idea on its blue
+# ground (5.7:1). Both keep their colours in dark mode, as the bars do.
+_V2_NUM = "#9FB3CC"
+_V2_NUM_ON_BLUE = "#C3D2E6"
 _V2_STAT_BG = TAEGUK_BLUE
 # The sign-off card: black in both schemes, with light type.
 _V2_BLACK = "#14181F"
 _V2_ON_BLACK = "#B8C4D6"      # 9.7:1 on the black card
-_V2_DARK_EXEMPT |= {_V2_NUM, _V2_STAT_BG, _V2_BLACK, _V2_ON_BLACK}
+_V2_DARK_EXEMPT |= {_V2_NUM, _V2_NUM_ON_BLUE, _V2_STAT_BG, _V2_BLACK, _V2_ON_BLACK}
 
 # Reading order. A policymaker at 6 a.m. wants what happened, then the two
 # Koreas, then Washington, then the region; the forward look and the analysis
@@ -3064,7 +3079,7 @@ def _v2_label(label: str) -> str:
 
 
 def _v2_bar(label: str, numbered: bool = True) -> str:
-    """Navy bar: a red Georgia section number, a thin rule, the name in white capitals.
+    """Navy bar: a muted blue Georgia section number, a thin rule, the name in white capitals.
 
     The number is a marker until _v2_finish has seen which sections rendered
     (it also names the section for the contents line). It sits inside chrome
@@ -3083,7 +3098,7 @@ def _v2_bar(label: str, numbered: bool = True) -> str:
 
 
 def _v2_num_mark(label: str, color: str = _V2_NUM, rule: str = "#5B6F99") -> str:
-    """The section number's placeholder: Georgia, red on navy, a hairline after it."""
+    """The section number's placeholder: Georgia, muted blue on navy, a hairline after it."""
     return (f'<!--c--><span style="font-family:{_V2_SERIF};font-size:15px;letter-spacing:0;color:{color};'
             f'padding-right:9px;margin-right:9px;border-right:1px solid {rule};">%%V2N:{label}%%</span><!--/c-->')
 
@@ -3095,7 +3110,7 @@ def _v2_srctype(src: str) -> str:
         return "DPRK state media"
     if _re.search(r"korea\.kr|\bmofa\b|\bmnd\b|ministry of|presidential office|대통령실|국방부|외교부|"
                   r"통일부|bank of korea|kostat|joint chiefs|합참", s):
-        return "ROK primary source"
+        return "Primary"
     return ""
 
 
@@ -3135,12 +3150,92 @@ def _v2_when(text: str) -> str:
     return ""
 
 
-def _v2_kicker(src: str, cat: str = "", date: str = "", color: str = _V2_TEAL) -> str:
-    """The teal line above a headline: "Source, Category, Month Day". Red for an alert item."""
-    src = _re.sub(r"\s*\u00b7\s*", ", ", src or "")
+# Publisher names as a reader knows them, for a feed's own name. Keys are
+# lower case, after _v2_outlet has taken off a feed-variant suffix and a date.
+_V2_OUTLET_NAMES = {
+    "rok mofa": "Foreign Ministry", "mofa": "Foreign Ministry", "ministry of foreign affairs": "Foreign Ministry",
+    "rok mnd": "Defense Ministry", "mnd": "Defense Ministry", "ministry of national defense": "Defense Ministry",
+    "rok mou": "Unification Ministry", "mou": "Unification Ministry", "ministry of unification": "Unification Ministry",
+    "rok jcs": "Joint Chiefs", "jcs": "Joint Chiefs",
+    "nkpro": "NK Pro", "nk pro": "NK Pro", "nk news/newscord": "NK News", "nknews": "NK News",
+    "ap news": "AP", "associated press": "AP", "bloomberg": "Bloomberg",
+}
+# What a feed adds to a publisher's name to tell its feeds apart: the
+# language, the desk, the section. "Yonhap North Korea KO" is Yonhap.
+_V2_FEED_SUFFIX = _re.compile(r"(?:\s+(?:English(?:\s+Edition)?|ENG|EN|KO|KR|Korean|Opinion|Op-?Eds?|Editorials?|Politics|"
+                              r"North\s+Korea))+$", _re.I)
+_V2_GLUED_DATE = _re.compile(r"\s+(?:(?:%s)[a-z]*\.?\s+\d{1,2}(?:,?\s+\d{4})?|\d{4}-\d{2}-\d{2})$"
+                             % "|".join(x.title() for x in _MON))
+
+
+def _v2_outlet(name: str) -> str:
+    """One feed name as its publisher: "Yonhap North Korea KO" as "Yonhap", "NKPro" as "NK Pro".
+
+    Takes off a date glued to the name, then feed-variant words (English, KO,
+    Opinion, North Korea, Politics), then a ".com", and maps what is left
+    through _V2_OUTLET_NAMES. A parenthesis ("(KCNA)") is kept. A name that
+    would be left empty, or as the bare word Korea, is returned as it came.
+    """
+    raw = str(name or "").strip()
+    via = _re.match(r"via\s+", raw, _re.I)
+    if via:
+        return raw[:via.end()] + _v2_outlet(raw[via.end():])
+    m = _re.match(r"(.*?)(\s*\([^()]*\))?$", raw, _re.S)
+    head, paren = m.group(1).strip(), (m.group(2) or "")
+    t = _re.sub(r"\s*\|\s*", " ", head)
+    t = _V2_GLUED_DATE.sub("", t)
+    t = _V2_FEED_SUFFIX.sub("", t)
+    t = _re.sub(r"\.com$", "", t, flags=_re.I).strip()
+    t = _V2_OUTLET_NAMES.get(t.lower(), t)
+    if not t or t.lower() == "korea":
+        return raw
+    return t + paren
+
+
+def _v2_outlets(src: str) -> str:
+    """A source line of one or more outlets ("A / B / C", links allowed), each named once.
+
+    Each outlet is cleaned by _v2_outlet; an outlet named twice keeps its first
+    place. A link keeps its target and gets the clean name as its text.
+    """
+    links = []
+
+    def hold(m):
+        links.append(m.group(0))
+        return f"\x00{len(links) - 1}\x00"
+    held = _re.sub(r"<a\b[^>]*>.*?</a>", hold, src or "", flags=_re.S)
+    out, seen = [], set()
+    for part in _re.split(r"\s+/\s+|,\s+", held):
+        part = part.strip()
+        if not part:
+            continue
+        lm = _re.fullmatch(r"\x00(\d+)\x00", part)
+        if lm:
+            am = _re.match(r"(<a\b[^>]*>)(.*?)(</a>)$", links[int(lm.group(1))], _re.S)
+            name = _v2_outlet(_re.sub(r"<[^>]+>", "", am.group(2)))
+            piece = am.group(1) + name + am.group(3)
+        else:
+            name = piece = _v2_outlet(_re.sub(r"\x00(\d+)\x00", lambda x: links[int(x.group(1))], part))
+        key = _re.sub(r"<[^>]+>", "", name).strip().lower()
+        if key and key not in seen:
+            seen.add(key)
+            out.append(piece)
+    return " / ".join(out)
+
+
+def _v2_kicker(src: str, cat: str = "", date: str = "", color: str = _V2_TEAL, outlet: bool = True) -> str:
+    """The teal line above a headline: "Source, Category, Month Day". Red for an alert item.
+
+    `src` is cleaned to publisher names (_v2_outlets) unless `outlet` is
+    False, as for a person and their handle on an X post.
+    """
+    raw_src = src or ""
+    src = _re.sub(r"\s*\u00b7\s*", ", ", raw_src)
+    if outlet:
+        src = _v2_outlets(src)
     parts = [src.strip()] if src and src.strip() else []
     parts += [c for c in _v2_cats(cat) if c.lower() not in _re.sub(r"<[^>]+>", "", src or "").lower()]
-    kind = _v2_srctype(_re.sub(r"<[^>]+>", "", src or ""))
+    kind = _v2_srctype(_re.sub(r"<[^>]+>", "", raw_src))
     if kind and kind not in parts:
         parts.append(kind)
     if date:
@@ -3185,9 +3280,11 @@ def _v2_subhead(text: str) -> str:
 
 
 def _v2_button(href: str, text: str) -> str:
-    """An outlined navy link to a standing page."""
+    """An outlined navy link to a standing page. None on paper (PRINT)."""
+    if PRINT:
+        return ""
     return ('<table cellpadding="0" cellspacing="0" border="0" style="margin:14px 0 4px;"><tr>'
-            f'<td class="v2-btn" style="border:1px solid {_V2_NAVY};padding:7px 14px;">'
+            f'<td class="v2-btn" style="border:1px solid {_V2_NAVY};padding:7px 14px;font-family:{_V2_SANS};">'
             f'<a href="{_esc(href)}" style="font-size:13px;font-weight:700;color:{_V2_NAVY};'
             f'text-decoration:none;">{text}</a></td></tr></table>')
 
@@ -3254,12 +3351,15 @@ def _v2_analysis(social: list, opeds: list, academic: list, x_posts: list) -> st
         note = _esc(str(xp.get("analyst_note") or "").strip())
         url = str(xp.get("url") or "")
         when = _v2_when(xp.get("platform_date"))
-        who = name + (f" (@{_esc(handle.lstrip('@'))})" if handle else "")
+        if handle:
+            # "Gen. Xavier Brunson / CDRUNCCFCUSFK" before "(@CDRUNCCFCUSFK)" names the account twice.
+            name = _re.sub(r"\s*/\s*@?%s$" % _re.escape(handle.lstrip("@")), "", name, flags=_re.I) or name
+        who = name +(f" (@{_esc(handle.lstrip('@'))})" if handle else "")
         link = (f' <a href="{_esc(url)}" style="color:{_V2_TEAL};text-decoration:none;font-weight:700;">View on X</a>'
                 if url.startswith("http") else "")
         posts += (f'<div class="v2-it" style="padding:10px 0;border-top:1px solid {_V2_HAIR};font-size:14px;'
                   f'line-height:1.5;color:{_V2_BODY};">'
-                  + _v2_kicker(who, "", when)
+                  + _v2_kicker(who, "", when, outlet=False)
                   + f'<div style="color:{_V2_INK};">&ldquo;{post}&rdquo;</div>'
                   + (f'<div style="font-size:13px;color:{_V2_META};margin-top:3px;">{note}{link}</div>' if note or link else "")
                   + '</div>')
@@ -3281,7 +3381,7 @@ def _v2_analysis(social: list, opeds: list, academic: list, x_posts: list) -> st
         out += (f'<div class="v2-it" style="padding:10px 0;border-top:1px solid {_V2_HAIR};font-size:14px;'
                 f'line-height:1.5;color:{_V2_BODY};">'
                 + _v2_kicker(_esc(s.get("who", "")) + (f" (@{_esc(h.group(1))})" if h else ""),
-                             "", _v2_when(s.get("handle_context")))
+                             "", _v2_when(s.get("handle_context")), outlet=False)
                 + f'<div style="color:{_V2_INK};">&ldquo;{quote}&rdquo;</div>'
                 + (f'<div style="font-size:13px;color:{_V2_META};margin-top:3px;">{note}{link}</div>' if note or link else "")
                 + '</div>')
@@ -3302,7 +3402,7 @@ def _v2_analysis(social: list, opeds: list, academic: list, x_posts: list) -> st
         title = _esc(op.get("headline", op.get("title", op.get("central_argument", "")))).rstrip(".")
         authors = op.get("authors")
         authors = ", ".join(map(str, authors)) if isinstance(authors, list) else str(authors or "")
-        source = _re.sub(r"\s*\(\s*\)", "", _clean_src(str(op.get("source", "")))).strip()
+        source = _v2_outlet(_re.sub(r"\s*\(\s*\)", "", _clean_src(str(op.get("source", "")))).strip())
         byline = ", ".join(_esc(x) for x in (authors.strip(), source) if x)
         out += research(title, op.get("url", ""), _emphasis(_esc(op.get("summary", ""))), byline)
     if academic:
@@ -3420,9 +3520,11 @@ def _v2_card(section: str, more: dict | None = None) -> str:
     content. The box goes; the bar becomes the card's first row and the
     content its second. A section in any other shape is left as it is.
 
-    `more` maps a
-    section anchor to the web page's copy of that section; a section in it
-    was shortened for the email (_v2_shorten) and ends with a link there.
+    `more` maps a section anchor to the web page's copy of that section (a
+    section in it was shortened for the email, _v2_shorten). The card no
+    longer says so itself: one line under the contents does, for every
+    section (_v2_finish). The section's anchor stays, so the web page's links
+    to it still land.
     """
     m = _V2_BAR.search(section)
     if not m:
@@ -3446,12 +3548,6 @@ def _v2_card(section: str, more: dict | None = None) -> str:
              if 'class="v2-glance"' in rest[:200] else
              f'class="v2-in" style="padding:4px 20px 12px;{f"background:{tint};" if tint else ""}font-family:{_V2_SANS};"')
     bar = m.group(0)
-    anchors = _re.findall(r'<a name="([\w-]+)"', p.group(1) + p.group(2))
-    href = next((more[a] for a in anchors if more and a in more), "")
-    if href:
-        rest += (f'<!--c--><div class="v2-more v2-rule" style="margin-top:10px;padding-top:8px;border-top:1px solid {_V2_HAIR};'
-                 f'font-size:12px;color:{_V2_META};">Shortened for email.&ensp;'
-                 f'<a href="{_esc(href)}" style="color:{_V2_NAVY};font-weight:700;">Read online</a></div><!--/c-->')
     return (f'{head}<div class="v2-gap" style="padding:0 16px 12px;">{p.group(1)}{p.group(2)}'
             '<table width="100%" cellpadding="0" cellspacing="0" border="0" class="v2-card" style="background:#FFFFFF;">'
             f'<tr><td style="padding:0;">{bar}</td></tr>'
@@ -3566,7 +3662,7 @@ def _v2_leaders(quotes: list) -> str:
         return ""
     rows = ""
     for q in quotes[:3]:
-        src = _esc(q["source"])
+        src = _esc(_v2_outlet(q["source"]))
         if q["url"].startswith("http"):
             src = (f'<a href="{_esc(q["url"])}" style="color:{_V2_TEAL};font-weight:700;text-decoration:none;">'
                    f'{src or "Source"}</a>')
@@ -3592,25 +3688,39 @@ def _v2_agency(raw) -> str:
 
 
 def _v2_rok_source(item: dict, agency: str) -> str:
-    """The card's source line: "Primary" and the document for a government URL, else the outlet."""
+    """The card's source line: "Primary" and the document for a government URL, else the outlet.
+
+    Outlets by their publisher names (_v2_outlet). A "Reported" line naming
+    the outlet the line above already names is left out ("Yonhap" over
+    "Reported Yonhap"), and a bare "X" reads "Post on X".
+    """
     url = str(item.get("url") or "")
     label = str(item.get("source_label") or "").strip()
-    rows = []
+    rows, first = [], ""
     a = f"color:{_V2_INK};font-weight:700;text-decoration:none;"
+
+    def named(n):
+        n = _v2_outlet(n)
+        return "Post on X" if n.strip().lower() == "x" else n
     if url.startswith("http"):
         if _linkq.is_primary_url(url):
             rows.append(f'<b style="color:{_V2_TEAL};">Primary</b> '
-                        f'<a href="{_esc(url)}" style="{a}">{_esc(label or agency)}</a>')
+                        f'<a href="{_esc(url)}" style="{a}">{_esc(named(label) if label else agency)}</a>')
         else:
             name = label if label and _linkq.label_matches_url(label, url) else _linkq.publisher_name(url)
-            rows.append(f'<a href="{_esc(url)}" style="{a}">{_esc(name)}</a>')
+            first = named(name)
+            rows.append(f'<a href="{_esc(url)}" style="{a}">{_esc(first)}</a>')
     elif label:
-        rows.append(f'<b>Source</b> {_esc(label)}')
+        first = named(label)
+        rows.append(f'<b>Source</b> {_esc(first)}')
     sec_url, sec_label = str(item.get("secondary_url") or ""), _esc(str(item.get("secondary_label") or ""))
-    if sec_url.startswith("http"):
-        rows.append(f'<b>Reported</b> <a href="{_esc(sec_url)}" style="{a}">{sec_label or "coverage"}</a>')
-    elif sec_label:
-        rows.append(f'<b>Reported</b> {sec_label}')
+    sec = named(sec_label) if sec_label else ""
+    if sec and first and _re.sub(r"<[^>]+>", "", sec).strip().lower() == first.strip().lower():
+        pass
+    elif sec_url.startswith("http"):
+        rows.append(f'<b>Reported</b> <a href="{_esc(sec_url)}" style="{a}">{sec or "coverage"}</a>')
+    elif sec:
+        rows.append(f'<b>Reported</b> {sec}')
     return "<br>".join(rows)
 
 
@@ -3639,9 +3749,9 @@ def _v2_rok_cards(items: list) -> str:
             'box-sizing:border-box;padding:0 8px 10px 0;">'
             '<table width="100%" cellpadding="0" cellspacing="0" border="0" class="v2-rct" '
             'style="background:#FFFFFF;border:1px solid #D6DFEA;"><tr>'
-            f'<td style="padding:8px 12px 7px;border-bottom:2px solid {_V2_FAM_ROK};font-size:11px;font-weight:700;'
+            f'<td style="padding:8px 12px 7px;border-bottom:2px solid {_V2_FAM_ROK};font-family:{_V2_SANS};font-size:11px;font-weight:700;'
             f'letter-spacing:0.5px;text-transform:uppercase;line-height:1.35;color:{_V2_NAVY};">{_esc(agency)}</td></tr>'
-            '<tr><td style="padding:8px 12px 10px;vertical-align:top;">'
+            f'<tr><td style="padding:8px 12px 10px;vertical-align:top;font-family:{_V2_SANS};">'
             + (f'<div style="font-size:12px;line-height:1.4;color:{_V2_META};">{_esc(official)}</div>' if official else "")
             + f'<div style="{_V2_HEAD.replace("15px", "14px")}margin-top:3px;">{action}</div>'
             + (f'<div style="font-size:13px;line-height:1.5;color:{_V2_BODY};margin-top:4px;">{detail}</div>' if detail else "")
@@ -3727,7 +3837,11 @@ def _v2_sentiment_card(sentiment: dict, delta, spark: str, stale: str) -> str:
 # ── Stat of the day ─────────────────────────────────────────────────────────
 
 def _v2_stat(key_stat: dict, href: str = "") -> str:
-    """The stat as a blue card with white type: the one panel in the brief set in colour."""
+    """The stat as a blue card with white type: the one panel in the brief set in colour.
+
+    `href` is unused: a shortened stat is covered by the one line under the
+    contents, like every other section. Kept so callers need not change.
+    """
     num = _esc(str(key_stat.get("number", "")))
     if not num:
         return ""
@@ -3735,14 +3849,12 @@ def _v2_stat(key_stat: dict, href: str = "") -> str:
     ctx = _emphasis(_esc(key_stat.get("context", "")))
     src = _esc(key_stat.get("source", ""))
     inner = (f'<div style="font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;line-height:1.35;'
-             f'color:#FFFFFF;">{_v2_num_mark("Stat of the day", "#FFFFFF", "#6F93C6")}Stat of the day</div>'
+             f'color:#FFFFFF;">{_v2_num_mark("Stat of the day", _V2_NUM_ON_BLUE, "#6F93C6")}Stat of the day</div>'
              f'<div style="font-family:{_V2_SERIF};font-size:26px;font-weight:700;line-height:1.1;color:#FFFFFF;'
              f'margin-top:10px;">{num}</div>'
              + (f'<div style="font-size:14px;font-weight:700;line-height:1.4;color:#FFFFFF;margin-top:4px;">{label}</div>' if label else "")
              + (f'<div style="font-size:13px;line-height:1.5;color:{_V2_FOOT};margin-top:4px;">{ctx}</div>' if ctx else "")
-             + (f'<div style="font-size:12px;line-height:1.4;color:{_V2_FOOT};margin-top:6px;">{src}</div>' if src else "")
-             + (f'<!--c--><div style="font-size:12px;color:{_V2_FOOT};margin-top:8px;">Shortened for email.&ensp;'
-                f'<a href="{_esc(href)}" style="color:#FFFFFF;font-weight:700;">Read online</a></div><!--/c-->' if href else ""))
+             + (f'<div style="font-size:12px;line-height:1.4;color:{_V2_FOOT};margin-top:6px;">{src}</div>' if src else ""))
     return ('<!--v2--><a name="key-stat" id="key-stat"></a><div class="v2-gap" style="padding:0 16px 12px;">'
             '<table width="100%" cellpadding="0" cellspacing="0" border="0" class="v2-card" '
             f'style="background:{_V2_STAT_BG};"><tr><td class="v2-in" style="padding:13px 20px 16px;font-family:{_V2_SANS};">'
@@ -3810,10 +3922,10 @@ def _v2_trade(us_korea: dict, digest: dict, base: str) -> str:
         trs = ""
         for n, (name, note, value, word, colour) in enumerate(rows):
             line = "" if n == 0 else f"border-top:1px solid {_V2_HAIR};"
-            trs += (f'<tr><td class="v2-rule" style="padding:8px 8px 8px 12px;{line}vertical-align:top;">'
+            trs += (f'<tr><td class="v2-rule" style="padding:8px 8px 8px 12px;{line}vertical-align:top;font-family:{_V2_SANS};">'
                     f'<div style="font-size:13px;font-weight:700;line-height:1.35;color:{_V2_INK};">{name}</div>'
                     + (f'<div style="font-size:12px;line-height:1.4;color:{_V2_META};margin-top:1px;">{note}</div>' if note else "")
-                    + f'</td><td class="v2-rule" align="right" style="padding:8px 12px 8px 4px;{line}vertical-align:top;text-align:right;">'
+                    + f'</td><td class="v2-rule" align="right" style="padding:8px 12px 8px 4px;{line}vertical-align:top;text-align:right;font-family:{_V2_SANS};">'
                     f'<div style="font-family:{_V2_SERIF};font-size:15px;font-weight:700;line-height:1.3;color:{colour};'
                     f'white-space:nowrap;">{value}</div>'
                     + (f'<div style="font-size:12px;color:{_V2_META};">{word}</div>' if word else "")
@@ -3928,8 +4040,10 @@ def _v2_masthead(digest: dict, now, listen_bar: str) -> str:
         '<td style="border-left:1px solid #FFFFFF;padding:2px 0 2px 14px;'
         f'font-family:{_V2_SANS};font-size:12px;line-height:1.4;letter-spacing:1px;color:#FFFFFF;text-align:left;">'
         'CENTER FOR STRATEGIC &amp;<br>INTERNATIONAL STUDIES</td>'))
+    if PRINT:
+        strip = ""          # links and a notice for the inbox; nothing to click on paper
     listen = ""
-    if digest.get("audio_url"):
+    if digest.get("audio_url") and not PRINT:
         mins = digest.get("audio_minutes")
         title = f"Listen, {int(mins)} min" if isinstance(mins, (int, float)) and mins > 0 else "Listen to today&#8217;s brief"
         href = digest.get("listen_url") or digest["audio_url"]
@@ -3943,7 +4057,7 @@ def _v2_masthead(digest: dict, now, listen_bar: str) -> str:
             f'<span class="listen-btn" style="display:inline-block;border:1px solid {_V2_NAVY};padding:6px 12px;'
             f'font-size:13px;font-weight:700;color:{_V2_NAVY};white-space:nowrap;">Play</span></td>'
             '</tr></table></a>', top=12, bottom=0)
-    elif digest.get("re_line"):
+    elif digest.get("re_line") and not PRINT:
         listen = _v2_gap(_v2_cardbox(f'<div style="font-size:13px;line-height:1.5;color:{_V2_BODY};">'
                                      f'<b style="color:{_V2_INK};">RE:</b> {_esc(digest["re_line"])}</div>', "10px 20px"),
                          top=12, bottom=0)
@@ -4383,9 +4497,10 @@ def _v2_signoff(digest: dict) -> str:
                             f'{_emphasis(_esc(r))}</div>' for r in ahead))
     addr = _v2_reply_address()
     if addr:
+        ask = "Write to" if PRINT else "Reply to this email or write to"
         inner += (f'<div class="v2-rule" style="margin-top:12px;padding-top:9px;border-top:1px solid #3A4048;'
-                  f'font-size:13px;line-height:1.5;color:{_V2_ON_BLACK};">Feedback and tips are welcome. Reply to this '
-                  f'email or write to <a href="mailto:{_esc(addr)}" style="color:#FFFFFF;font-weight:700;">'
+                  f'font-size:13px;line-height:1.5;color:{_V2_ON_BLACK};">Feedback and tips are welcome. {ask} '
+                  f'<a href="mailto:{_esc(addr)}" style="color:#FFFFFF;font-weight:700;">'
                   f'{_esc(addr)}</a>.</div>')
     # Black in both schemes, so the brief visibly ends before the footer.
     return ('<!--v2--><!--c-->' + _v2_gap(
@@ -4530,7 +4645,7 @@ def _v2_footer(digest: dict, now) -> str:
     # cells are two blocks that sit side by side where they fit and stack,
     # centred, where they do not.
     rule = "border-left:1px solid #7F8FB0;"
-    cell = (f"font-size:11px;letter-spacing:1px;text-transform:uppercase;line-height:1.4;color:{_V2_FOOT};"
+    cell = (f"font-family:{_V2_SANS};font-size:11px;letter-spacing:1px;text-transform:uppercase;line-height:1.4;color:{_V2_FOOT};"
             "text-align:left;")
     lockup = ('<div class="v2-lockup" style="text-align:center;padding-bottom:16px;margin-bottom:16px;'
               'border-bottom:1px solid #33497A;">'
@@ -4548,8 +4663,8 @@ def _v2_footer(digest: dict, now) -> str:
             'To report errors or other issues, please contact Andy Lim at '
             '<a href="mailto:alim@csis.org" style="color:#FFFFFF;">alim@csis.org</a>.</div>'
             f'<div style="font-size:12px;line-height:1.9;color:{_V2_FOOT};margin-top:12px;">You are receiving the '
-            'Korea Daily Brief as a member of the CSIS Korea Chair distribution list.<br>'
-            + "&emsp; ".join(x for x in links if x) + '</div>'
+            'Korea Daily Brief as a member of the CSIS Korea Chair distribution list.'
+            + ("" if PRINT else "<br>" + "&emsp; ".join(x for x in links if x)) + '</div>'
             f'<div style="font-size:11px;color:{_V2_FOOT};margin-top:12px;">&copy; {now.year} Center for Strategic '
             f'and International Studies&emsp;{no}generated {now:%-I:%M %p} ET</div></div>')
 
@@ -4636,8 +4751,13 @@ def _v2_order(sections: list) -> list:
     return out
 
 
-def _v2_finish(body: str) -> str:
-    """Name the sections in the order they rendered, then build the contents grid from them."""
+def _v2_finish(body: str, more_url: str = "") -> str:
+    """Name the sections in the order they rendered, then build the contents grid from them.
+
+    `more_url` is the issue's web page when the email shortened anything: one
+    line under the contents then says so, once, for every section. It used to
+    be a "Shortened for email. Read online" line under nearly every card.
+    """
     anchors = [(m.start(), m.group(1)) for m in _re.finditer(r'<a name="([\w-]+)"', body)]
     toc, names, prev = [], {}, -1
     for m in _re.finditer(r"%%V2N:(.*?)%%", body):
@@ -4662,8 +4782,9 @@ def _v2_finish(body: str) -> str:
     # eight rows on a 375px phone and pushed the first story past 1,250px.
     # Each link is nowrap, but none is wider than a phone; the space after
     # each is where the line breaks.
-    # Each entry carries its bar's number, in the same red Georgia figures.
-    links = [f'<b style="font-family:{_V2_SERIF};color:{TAEGUK_RED};">{i:02d}</b>&nbsp;'
+    # Each entry carries its bar's number in Georgia, in the meta grey: a
+    # finding aid, not an alert, so not red.
+    links = [f'<b style="font-family:{_V2_SERIF};color:{_V2_META};">{i:02d}</b>&nbsp;'
              + (f'<a href="#{name}" style="color:{_V2_NAVY};text-decoration:underline;text-decoration-color:#B8C4D6;'
                 f'text-underline-offset:3px;white-space:nowrap;">{text}</a>' if name else text)
              for i, (text, name) in enumerate(toc, 1)]
@@ -4675,6 +4796,12 @@ def _v2_finish(body: str) -> str:
                     'In this issue</span>&emsp; ' + "&emsp; ".join(links) + '</div><!--/c-->')
         if 'class="v2-status"' not in body:
             toc_html = toc_html.replace("margin-top:10px;padding-top:7px;border-top:1px solid", "border-top:0 solid", 1)
+    if more_url and not PRINT:
+        toc_html += (f'<!--c--><div class="v2-more no-print" style="margin-top:4px;font-size:12px;line-height:1.5;'
+                     f'color:{_V2_META};">Some sections are shortened here. Full text:&ensp;'
+                     f'<a href="{_esc(more_url)}" style="color:{_V2_NAVY};font-weight:700;">Read online</a></div><!--/c-->')
+    if PRINT:
+        toc_html = ""       # links do nothing on paper
     body = body.replace("%%NAV%%", "")
     return body.replace("%%TOC%%", toc_html)
 
@@ -4901,6 +5028,69 @@ def _v2_preheader(digest: dict, low: int = 90, high: int = 110) -> str:
     return out
 
 
+# ── Paper ───────────────────────────────────────────────────────────────────
+# The preview PDF (run.write_preview_pdf) is v2 printed, with PRINT set. It is
+# made on a GitHub runner, which has neither Georgia nor the platform sans, so
+# Chromium fell back to Liberation Serif and DejaVu Sans. On paper the brief
+# loads web fonts, which an email never could: Source Sans 3 for the sans and
+# Source Serif 4 for Georgia's part, with Liberation behind each should Google
+# Fonts not answer. make_pdf waits for document.fonts.ready before printing.
+#
+# The layout is for a page, not an inbox: white, no grey ground or tints but
+# the glance's, the column the page's full width, each card a navy bar over
+# its items. A long section breaks across pages; an item never does, and a
+# bar or group label never ends a page without the item under it. Margins
+# and the running footer are make_pdf's, so they are not set here.
+_V2_PRINT_SANS = "'Source Sans 3','Liberation Sans',Arial,sans-serif"
+_V2_PRINT_SERIF = "'Source Serif 4','Liberation Serif',Georgia,serif"
+_V2_PRINT_HEAD = (
+    '<link rel="preconnect" href="https://fonts.googleapis.com">'
+    '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
+    '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,700;'
+    '1,400;1,700&amp;family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,700;1,8..60,400&amp;display=swap">'
+    """<style type="text/css">
+  @page { size: Letter; }
+  html, body { background:#FFFFFF !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  body, body * { font-family:%(sans)s !important; }
+  [style*="font-family:Georgia"], [style*="font-family:Georgia"] * { font-family:%(serif)s !important; }
+  body > table, body > table > tbody > tr > td, .wrapper { background:#FFFFFF !important; }
+  .wrapper { width:100%% !important; max-width:none !important; }
+  .no-print, .v2-pre { display:none !important; }
+  .v2-gap { padding:0 0 10px !important; }
+  div.v2-it { padding-top:8px !important; padding-bottom:9px !important; }
+  .mast-band { padding:16px 16px 15px !important; }
+  /* Blocks, not tables, from the body down to each card's rows: Chromium
+     honours break-inside:avoid on an item only when no table cell holds it. */
+  body > table, body > table > tbody, body > table > tbody > tr, body > table > tbody > tr > td,
+  .wrapper, .wrapper > tbody, .wrapper > tbody > tr, .wrapper > tbody > tr > td,
+  .v2-card, .v2-card > tbody, .v2-card > tbody > tr, .v2-card > tbody > tr > td { display:block !important; }
+  .v2-card[style*="background:#FFFFFF"] > tbody > tr > td.v2-in { padding:2px 2px 4px !important; }
+  .v2-card[style*="background:#FFFFFF"] > tbody > tr > td.v2-in.v2-tint { padding:4px 14px 8px 12px !important; }
+  .v2-in:not(.v2-tint) { background:transparent !important; }
+  .sec-bar, .v2-card > tbody > tr:first-child, .v2-sub { break-after:avoid !important; page-break-after:avoid !important; }
+  .v2-it, .v2-rc, .v2-bl, .v2-ps, .v2-glance tr, .v2-trk tr, .v2-status, .v2-foot, .v2-hn {
+    break-inside:avoid !important; page-break-inside:avoid !important; }
+  /* The stat and sign-off cards, whole. Its own rule: a selector Chromium
+     cannot parse would take the rest of the list down with it. */
+  .v2-gap:has(> .v2-card:not([style*="background:#FFFFFF"])) { break-inside:avoid !important; page-break-inside:avoid !important; }
+  /* The ROK agency cards one to a row, each whole. Two to a row, a pair
+     that did not fit left a third of a page empty; a flex row split a card
+     from its own heading. */
+  .v2-rg { display:block !important; }
+  .v2-rg > .v2-rc { display:block !important; width:auto !important; max-width:none !important; padding:0 0 8px !important; }
+  /* What opens a card (a dateline, a group label) stays with what follows. */
+  .v2-card > tbody > tr > td.v2-in > :first-child { break-after:avoid !important; page-break-after:avoid !important; }
+  /* Restyled classic sections hold their items in one-column tables, where
+     break-inside:avoid is ignored; as blocks they behave like v2's own. A
+     table with cells side by side (the tariff tracker, a calendar row)
+     stays a table. */
+  .v2-in table:not(:has(> tbody > tr > td + td)), .v2-in table:not(:has(> tbody > tr > td + td)) > tbody,
+  .v2-in table:not(:has(> tbody > tr > td + td)) > tbody > tr,
+  .v2-in table:not(:has(> tbody > tr > td + td)) > tbody > tr > td { display:block !important; }
+  a {text-decoration:none !important; }
+</style>""" % {"sans": _V2_PRINT_SANS, "serif": _V2_PRINT_SERIF})
+
+
 def _v2_page(html: str, preheader: str = "") -> str:
     """Page-level v2: its stylesheet, the narrower column, and a leaner file.
 
@@ -4910,6 +5100,9 @@ def _v2_page(html: str, preheader: str = "") -> str:
     for v2's additions.
     """
     html = html.replace("</style>", _V2_CSS + "  </style>", 1)
+    if PRINT:
+        html = html.replace("</head>", _V2_PRINT_HEAD + "</head>", 1)
+        preheader = ""
     if preheader:
         # Hidden, first in the body: the line Gmail shows after the subject.
         # The run of joiners after it keeps the client from padding the
@@ -4920,6 +5113,9 @@ def _v2_page(html: str, preheader: str = "") -> str:
                 f'font-family:{_V2_SANS};color:{_V2_INK};">{_esc(preheader)}' + "&zwnj;&nbsp;" * 24 + '</div>' + html[b:])
     # The grey ground the cards sit on.
     html = html.replace('<body style="margin:0;padding:0;background:#F2F3F5;', f'<body style="margin:0;padding:0;background:{_V2_GROUND};', 1)
+    # The body's stack is classic's; v2 has one sans, its own.
+    html = html.replace("font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;",
+                        f"font-family:{_V2_SANS};", 1)
     html = html.replace('border="0" style="margin:0;padding:0;background:#F2F3F5;">', f'border="0" style="margin:0;padding:0;background:{_V2_GROUND};">', 1)
     # The column, fluid to 640px; Outlook's ghost table is fixed at 640.
     html = html.replace('class="wrapper" width="680"', 'class="wrapper" width="640"', 1)

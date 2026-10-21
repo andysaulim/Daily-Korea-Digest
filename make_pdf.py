@@ -49,7 +49,29 @@ def html_from_input(path: Path) -> str:
     return html
 
 
-def html_to_pdf(html: str, out_path: Path):
+def footer_template(text: str) -> str:
+    """Chromium's running footer: `text`, then "page N of M", small and grey.
+
+    The footer is drawn outside the page's own document, so it sees none of
+    its stylesheet or web fonts; it names its own face and size.
+    """
+    from html import escape
+    return ('<div style="width:100%;padding:0 12mm;font-family:\'Source Sans 3\',\'Liberation Sans\',Arial,'
+            'sans-serif;font-size:8px;color:#5F6670;text-align:center;">'
+            f'{escape(text)}, page <span class="pageNumber"></span> of <span class="totalPages"></span></div>')
+
+
+def html_to_pdf(html: str, out_path: Path, *, footer: str = "", margin: dict | None = None,
+                wait_for_fonts: bool = False, scale: float = 1.0):
+    """Print `html` to a Letter PDF with backgrounds.
+
+    With no keyword arguments this is the list's PDF as it always was.
+    `footer` is a running footer's text (footer_template adds the page
+    numbers); `margin` replaces the default margins; `wait_for_fonts` waits
+    for the page's web fonts, at most 15 seconds, before printing, so a
+    font that is still loading does not print in its fallback. `scale`
+    prints smaller (0.9 sets 14px type at about ten points).
+    """
     from playwright.sync_api import sync_playwright
     chromium_path = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome"
     with sync_playwright() as p:
@@ -59,12 +81,20 @@ def html_to_pdf(html: str, out_path: Path):
         browser = p.chromium.launch(**launch)
         page = browser.new_page()
         page.set_content(html, wait_until="networkidle")
-        page.pdf(
-            path=str(out_path),
-            format="Letter",
-            print_background=True,
-            margin={"top": "9mm", "bottom": "9mm", "left": "10mm", "right": "10mm"},
-        )
+        if wait_for_fonts:
+            try:
+                page.evaluate("() => Promise.race([document.fonts.ready.then(() => true),"
+                              " new Promise(r => setTimeout(() => r(false), 15000))])")
+            except Exception:                                   # noqa: BLE001
+                pass
+        opts = {"path": str(out_path), "format": "Letter", "print_background": True,
+                "margin": margin or {"top": "9mm", "bottom": "9mm", "left": "10mm", "right": "10mm"}}
+        if scale != 1.0:
+            opts["scale"] = scale
+        if footer:
+            opts.update(display_header_footer=True, header_template="<span></span>",
+                        footer_template=footer_template(footer))
+        page.pdf(**opts)
         browser.close()
 
 
