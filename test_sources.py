@@ -1731,6 +1731,51 @@ def check_v2_brand_assets():
     return problems
 
 
+def check_v2_round6_layout():
+    """One width for band, cards and footer; charcoal Pyongyang Watch; blue date boxes; grey ROK cards; tinted approval."""
+    import copy, render
+    problems = []
+    d = {"digest_date": "Wednesday, October 21, 2026", "date_slug": "2026-10-21",
+         "web_url": "https://example.org/brief/latest.html",
+         "top_stories": [{"headline": "Lead", "body": "Body."}],
+         "kcna_delta": {"days_since_last_appearance": 2, "bottom_line": "Quiet.",
+                        "senior_officials": [{"name": "Kim Yo Jong", "role": "Deputy Director", "activity": "Spoke."}]},
+         "rok_government": [{"ministry": "Ministry of Unification", "official": "Minister", "action": "Met",
+                             "detail": "Met the WHO chief.", "source": "Yonhap", "url": "https://en.yna.co.kr/x"}],
+         "calendar_watch": [{"month": "Oct", "day": 22, "headline": "Audit continues"}],
+         "public_sentiment": {"presidential_approval": {"value": "39%", "source": "Gallup Korea",
+                                                        "last_updated": "October 13-15, 2026"},
+                              "party_ruling": {"value": "36%"}}}
+    html = _v2_render(d)
+    band = html.find('class="mast-band"')
+    foot = html.find('class="v2-foot"')
+    for name, pos in (("masthead band", band), ("footer", foot)):
+        gap = html.rfind('<div class="v2-gap" style="padding:0 16px', 0, pos)
+        if pos == -1 or gap == -1 or pos - gap > 80:
+            problems.append(f"the {name} is not in the cards' gap, so its edges differ from the cards'")
+    pw = html[html.find('name="kcna"'):]
+    pw = pw[:pw.find('class="v2-gap"', 50)]
+    if f"background:{render._V2_PW_BG}" not in pw or f"color:{render._V2_INK}" in pw:
+        problems.append("Pyongyang Watch is not on its charcoal ground with light type")
+    if render._V2_PW_BG not in render._V2_DARK_BG or render._check_dark_coverage(html):
+        problems.append(f"dark coverage: {render._check_dark_coverage(html)}")
+    if f'class="v2-date" style="background:{render.TAEGUK_BLUE};"' not in html:
+        problems.append("Upcoming lacks classic's blue date box")
+    if f"background:{render._V2_ROK_FILL}" not in html or 'class="v2-rcb"' not in html:
+        problems.append("ROK cards lack classic's grey fill or the pinned source row")
+    if f'class="v2-pst" style="padding:10px 12px 11px;background:{render._V2_TINT};' not in html:
+        problems.append("the approval block is not tinted")
+    saved = (render.DESIGN, render.FULL_TEXT, render.PRINT)
+    try:
+        render.DESIGN, render.FULL_TEXT, render.PRINT = "v2", True, True
+        paper = render.render(copy.deepcopy(d))
+    finally:
+        render.DESIGN, render.FULL_TEXT, render.PRINT = saved
+    if f"background:{render._V2_PW_PRINT_BG}" not in paper:
+        problems.append("the PDF's Pyongyang Watch is not the light grey")
+    return problems
+
+
 def check_v2_shortened_email():
     """In v2 only top stories run in full; other items keep their lead and link to the web page."""
     import copy, render
@@ -2983,6 +3028,7 @@ CHECKS = [
     ("v2 shortening cuts at real sentence ends", check_v2_first_sentence),
     ("v2 email keeps two sentences or about fifty words", check_v2_lead),
     ("The Wire's headings keep their acronyms", check_wire_labels),
+    ("v2 one width, charcoal Pyongyang Watch, date boxes, grey ROK cards", check_v2_round6_layout),
     ("v2 brand: lockup image with alt text, Synthese, assets published", check_v2_brand_assets),
     ("v2 contents line plain; Public Sentiment approval, party boxes, trend", check_v2_contents_and_sentiment),
     ("v2 email runs top stories in full, the rest shortened", check_v2_shortened_email),

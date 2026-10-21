@@ -3311,12 +3311,22 @@ def _v2_button(href: str, text: str) -> str:
 
 
 def _v2_cal_row(month: str, day: str, label: str, title: str, why: str = "", where: str = "") -> str:
-    """One calendar entry: month over a navy day numeral, then label, title, why, where."""
+    """One calendar entry: classic's blue date box (month over the day, white on the flag blue), then
+    label, title, why, where. Upcoming and the Hill schedule share it.
+
+    The box is the original design's, which the owner asked back: a filled
+    square, 46px wide, the month at 11px (classic's 10px, at the owner's
+    floor) over the day numeral at 16px. Both stay white on blue in dark
+    mode, as the flag blue is exempt from the dark map.
+    """
     return ('<table width="100%" cellpadding="0" cellspacing="0" border="0" class="v2-it" '
             f'style="border-top:1px solid {_V2_HAIR};"><tr>'
-            f'<td width="48" valign="top" style="padding:10px 8px 10px 0;vertical-align:top;font-family:{_V2_SANS};">'
-            f'<div style="font-size:12px;font-weight:700;letter-spacing:1px;color:{_V2_META};">{month}</div>'
-            f'<div style="font-size:16px;font-weight:700;line-height:1.15;color:{_V2_NAVY};">{day}</div></td>'
+            f'<td width="58" valign="top" style="padding:10px 12px 10px 0;vertical-align:top;font-family:{_V2_SANS};">'
+            f'<table cellpadding="0" cellspacing="0" border="0" class="v2-date" style="background:{TAEGUK_BLUE};"><tr>'
+            f'<td align="center" style="width:46px;padding:4px 0 5px;text-align:center;font-family:{_V2_SANS};">'
+            f'<div style="font-size:11px;font-weight:700;letter-spacing:1px;line-height:1.3;color:{_V2_FOOT};">{month}</div>'
+            f'<div style="font-family:{_V2_SERIF};font-size:16px;font-weight:700;line-height:1.1;color:#FFFFFF;">{day}</div>'
+            '</td></tr></table></td>'
             f'<td valign="top" style="padding:10px 0;vertical-align:top;font-family:{_V2_SANS};">'
             + (f'<div style="font-size:12px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;'
                f'color:{_V2_TEAL};margin-bottom:2px;">{label}</div>' if label else "")
@@ -3687,6 +3697,14 @@ def _v2_rok_source(item: dict, agency: str) -> str:
     return "<br>".join(rows)
 
 
+# Classic's ROK card fill (its gov-grid cells), with a hairline a shade
+# darker so the card holds its shape on the white section card. Dark mode:
+# classic's own map takes #F5F7FA to #22262C; the edge gets the dark border.
+_V2_ROK_FILL = "#F5F7FA"
+_V2_ROK_EDGE = "#E1E6ED"
+_V2_DARK_BG.setdefault(_V2_ROK_FILL, "#22262C")
+
+
 def _v2_rok_cards(items: list) -> str:
     """ROK Government as a grid of cards, each headed by the agency that spoke.
 
@@ -3711,15 +3729,20 @@ def _v2_rok_cards(items: list) -> str:
             '<div class="v2-rc" style="display:inline-block;vertical-align:top;width:100%;max-width:280px;'
             'box-sizing:border-box;padding:0 8px 10px 0;">'
             '<table width="100%" cellpadding="0" cellspacing="0" border="0" class="v2-rct" '
-            'style="background:#FFFFFF;border:1px solid #D6DFEA;"><tr>'
-            f'<td style="padding:8px 12px 7px;border-bottom:2px solid {TAEGUK_BLUE};font-family:{_V2_SANS};font-size:11px;font-weight:700;'
+            f'style="background:{_V2_ROK_FILL};border:1px solid {_V2_ROK_EDGE};"><tr>'
+            f'<td style="padding:10px 14px 7px;border-bottom:2px solid {TAEGUK_BLUE};font-family:{_V2_SANS};font-size:11px;font-weight:700;'
             f'letter-spacing:0.5px;text-transform:uppercase;line-height:1.35;color:{_V2_NAVY};">{_esc(agency)}</td></tr>'
-            f'<tr><td style="padding:8px 12px 10px;vertical-align:top;font-family:{_V2_SANS};">'
+            f'<tr><td class="v2-rcb" style="padding:9px 14px 0;vertical-align:top;height:100%;font-family:{_V2_SANS};">'
             + (f'<div style="font-size:12px;line-height:1.4;color:{_V2_META};">{_esc(official)}</div>' if official else "")
             + f'<div style="{_V2_HEAD.replace("15px", "14px")}margin-top:3px;">{action}</div>'
             + (f'<div style="font-size:13px;line-height:1.5;color:{_V2_BODY};margin-top:4px;">{detail}</div>' if detail else "")
-            + (f'<div style="font-size:12px;line-height:1.6;color:{_V2_META};margin-top:6px;">{src}</div>' if src else "")
-            + '</td></tr></table></div>')
+            + '</td></tr>'
+            # The source in a row of its own at the card's foot: where the
+            # stylesheet evens a row's heights, the extra space goes to the
+            # body above it, so a pair's source lines sit on one line.
+            + f'<tr><td valign="bottom" style="padding:7px 14px 11px;vertical-align:bottom;font-family:{_V2_SANS};'
+              f'font-size:12px;line-height:1.6;color:{_V2_META};">{src or "&nbsp;"}</td></tr>'
+            + '</table></div>')
     if not cards:
         return ""
     out = '<!--[if mso]><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td width="50%" valign="top"><![endif]-->'
@@ -3782,14 +3805,23 @@ def _v2_sentiment_card(sentiment: dict, delta, spark: str, stale: str) -> str:
     # Synthèse, wider than the fallback sans.
     survey = "<br>".join(x for x in (_esc(str(ap.get("source") or "")).strip(),
                                      _esc(str(ap.get("last_updated") or "")).strip()) if x)
+    # The trend sentence opens with today's figure, which the block shows in
+    # large type just above it: "39%, down from 42% on Aug 25-27" reads
+    # "Down from 42% on Aug 25-27" here.
+    if spark and approval and spark.startswith(approval.replace("&#37;", "%") + ", "):
+        spark = spark[len(approval) + 2:]
+        spark = spark[:1].upper() + spark[1:]
     hero = (f'<div style="{lab}">Lee approval</div>'
             f'<div style="font-family:{_V2_SERIF};font-size:34px;font-weight:700;line-height:1.05;margin-top:2px;'
             f'color:{_V2_NAVY if approval else _V2_META};">{approval or "--"}</div>'
             + change
-            + (f'<div style="font-size:12px;line-height:1.45;color:{_V2_META};">{survey}</div>' if survey else ""))
+            + (f'<div style="font-size:12px;line-height:1.45;color:{_V2_META};">{survey}</div>' if survey else "")
+            + (f'<div class="v2-rule" style="font-size:12px;line-height:1.45;color:{_V2_META};margin-top:6px;'
+               f'padding-top:6px;border-top:1px solid {_V2_TINT_RULE};"><b style="color:{_V2_BODY};">Trend:</b> '
+               f'{spark.rstrip(".")}.</div>' if spark else ""))
     boxes = "".join(
         '<div class="v2-psc" style="display:inline-block;vertical-align:top;width:33.33%;min-width:92px;">'
-        f'<div class="v2-psb" style="margin:0 2px;padding:8px 3px 9px;border:1px solid {_V2_TINT_RULE};text-align:center;'
+        f'<div class="v2-psb" style="margin:0 2px;padding:14px 3px 15px;border:1px solid {_V2_TINT_RULE};text-align:center;'
         'font-size:12px;line-height:1.4;">'
         f'<div style="{lab}">{label}</div>'
         f'<div style="font-size:12px;line-height:1.4;color:{_V2_META};">{sub or "&nbsp;"}</div>'
@@ -3798,17 +3830,15 @@ def _v2_sentiment_card(sentiment: dict, delta, spark: str, stale: str) -> str:
         for label, v, sub in parties)
     out = ('<div class="v2-psr" style="padding:10px 0 2px;">'
            '<!--[if mso]><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>'
-           '<td width="190" valign="middle"><![endif]-->'
-           '<div class="v2-ps" style="display:inline-block;vertical-align:middle;width:100%;max-width:190px;padding:0 0 10px;">'
-           f'{hero}</div>'
+           '<td width="236" valign="middle"><![endif]-->'
+           '<div class="v2-ps" style="display:inline-block;vertical-align:middle;width:100%;max-width:236px;'
+           'box-sizing:border-box;padding:0 0 10px;">'
+           f'<div class="v2-pst" style="padding:10px 12px 11px;background:{_V2_TINT};border-left:3px solid {_V2_ACCENT};">'
+           f'{hero}</div></div>'
            '<!--[if mso]></td><td valign="middle"><![endif]--> '
-           '<div class="v2-pp" style="display:inline-block;vertical-align:middle;width:100%;max-width:372px;padding:0 0 10px;">'
+           '<div class="v2-pp" style="display:inline-block;vertical-align:middle;width:100%;max-width:326px;padding:0 0 10px;">'
            f'<div style="font-size:0;line-height:0;margin:0 -2px;">{boxes}</div></div>'
            '<!--[if mso]></td></tr></table><![endif]--></div>')
-    line = (f'<div class="v2-rule" style="padding-top:7px;border-top:1px solid {_V2_HAIR};font-size:12px;'
-            f'line-height:1.5;color:{_V2_META};">')
-    if spark:
-        out += f'{line}<b style="color:{_V2_BODY};">Trend:</b> {spark.rstrip(".")}.</div>'
     if stale:
         out += f'<div style="font-size:12px;line-height:1.5;color:{TAEGUK_RED};margin-top:4px;">{stale}</div>'
     spot = sentiment.get("gallup_spotlight")
@@ -4974,7 +5004,17 @@ _V2_CSS = """
     /* Where the stylesheet survives, the ROK cards pair up at equal heights. */
     .v2-rg { display:flex !important; flex-wrap:wrap; justify-content:space-between; }
     .v2-rg > .v2-rc { display:flex !important; width:49% !important; max-width:none !important; padding:0 0 10px !important; }
+    /* Public Sentiment, where the stylesheet survives: the party boxes as
+       tall as the approval block beside them, their figures centred, so the
+       row has no empty band above and below the boxes. */
+    .v2-psr { display:flex !important; flex-wrap:wrap; justify-content:space-between; align-items:stretch; }
+    .v2-ps, .v2-pp { display:flex !important; }
+    .v2-pst { flex:1; }
+    .v2-pp > div { display:flex !important; width:100%; }
+    .v2-psc { display:flex !important; }
+    .v2-psb { flex:1; display:flex; flex-direction:column; justify-content:center; }
     .v2-rct { height:100%; }
+    .v2-rcb { height:100%; }
     @media only screen and (min-width: 621px) and (max-width: 768px) {
       .wrapper { max-width:640px !important; }
     }
@@ -4983,7 +5023,8 @@ _V2_CSS = """
       .wrapper .sec-bar, .wrapper .mast-band, .wrapper .v2-foot { background:#001F59 !important; }
       .wrapper .v2-it, .wrapper .v2-rule, .wrapper .v2-rule td { border-color:#3A4048 !important; }
       .wrapper .v2-sub, .wrapper .v2-btn, .wrapper [style*="border-bottom:2px solid #001F59"] { border-color:#8FB6E8 !important; }
-      .wrapper .v2-bl, .wrapper .v2-tint { border-left-color:#5C8FD6 !important; }
+      .wrapper .v2-bl, .wrapper .v2-tint, .wrapper .v2-pst { border-left-color:#5C8FD6 !important; }
+      .wrapper .v2-pst .v2-rule { border-color:#34465F !important; }
       .wrapper .v2-glance td.v2-rule { border-color:#34465F !important; }
       .wrapper .listen-bar, .wrapper .listen-bar td { background:#262A30 !important; }
       .wrapper .listen-bar .listen-title { color:#E8E6E1 !important; }
