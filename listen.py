@@ -522,7 +522,16 @@ def write_pages(public: Path, **kw) -> str:
     out.mkdir(parents=True, exist_ok=True)
     date_slug = kw["date_slug"]
     (out / f"{date_slug}.html").write_text(render_page(**kw), encoding="utf-8")
-    (out / "index.html").write_text(render_page(**kw, is_index=True), encoding="utf-8")
+    # index.html carries the recent-episodes list, taken from the feed's
+    # episode list. episodes is None when update_feed could not read the
+    # published podcast.json; writing the index then would replace the
+    # published page with one that has lost its history, which is the
+    # archive.json defect again. The dated page has no history and is safe.
+    # Without a web base nothing is published, so a local run still gets one.
+    if kw.get("episodes") is not None or not kw.get("web_base"):
+        (out / "index.html").write_text(render_page(**kw, is_index=True), encoding="utf-8")
+    else:
+        print("  ⚠  listen/index.html not rewritten — the published episode list was unreadable")
     return f"{LISTEN_DIR}/{date_slug}.html"
 
 

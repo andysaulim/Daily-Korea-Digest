@@ -1837,7 +1837,8 @@ def update_feed(public: Path, web_base: str, episode: dict) -> list[dict] | None
     # whose history is read over HTTP would stop updating whenever Pages is off.
     episodes, ok = load_list(manifest, web_base)
     if not ok:
-        print("  ⚠  Podcast feed not updated — published episode list unreadable")
+        print("::warning title=Podcast feed not updated::the published podcast.json could not "
+              "be read, so today's episode is not in the feed (the MP3 is still published)")
         return None
     episodes = [e for e in episodes if e.get("date") != episode["date"]] + [episode]
     episodes.sort(key=lambda e: e.get("date", ""))

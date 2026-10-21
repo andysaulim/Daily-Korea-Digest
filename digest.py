@@ -1237,6 +1237,15 @@ def generate_digest(payload: dict, db_context: str = "",
                 time.sleep(wait)
             else:
                 print(f"  ✗  API error (giving up): {e}")
+                # An earlier attempt may already have produced a usable, if
+                # thin, digest; an expansion retry that then hits an API error
+                # used to throw it away and cost the day's brief. Validation
+                # still decides whether it is fit to send.
+                if best_digest:
+                    print(f"::warning title=Digest from an earlier attempt::the final "
+                          f"API call failed ({type(e).__name__}); using the best earlier "
+                          f"draft (~{best_word_count} words)")
+                    return best_digest
                 raise
         except json.JSONDecodeError as e:
             if attempt < MAX_ATTEMPTS - 1:
@@ -1244,6 +1253,11 @@ def generate_digest(payload: dict, db_context: str = "",
                 time.sleep(2)
             else:
                 print(f"  ✗  JSON parse error: {e}")
+                if best_digest:
+                    print(f"::warning title=Digest from an earlier attempt::the final "
+                          f"response was not valid JSON; using the best earlier draft "
+                          f"(~{best_word_count} words)")
+                    return best_digest
                 raise
 
     # All attempts exhausted via exceptions — return best if available
