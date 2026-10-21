@@ -523,6 +523,10 @@ LISTEN_STYLE = "card"
 # kickers, one sans), as the China Room brief. Styling only; see the "Design
 # v2" block below.
 DESIGN = "classic"
+# True when rendering the web page (web_page.py), which is the full reference:
+# anything that shortens an item's text for the email must leave it whole when
+# this is set. Read it as one line, `if not FULL_TEXT: ...`.
+FULL_TEXT = False
 # Section headings: "bar" (black bar, white label) or "rule" (heavy ink rule,
 # serif heading in sentence case). Masthead: "band" (blue band) or "white".
 SECTION_STYLE = "bar"
