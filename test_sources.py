@@ -1570,14 +1570,17 @@ def check_stale_native_candidate_falls_through() -> list[str]:
     its last file would otherwise win, be emptied by the recency filter, and
     keep the press search from ever running.
     """
-    import time as _time
     import feedparser
+    from datetime import datetime as _dt, timedelta as _td, timezone as _tz
 
     def entry(days_old: int, title: str):
+        # Dated from the same clock the collector reads (datetime.now), not
+        # time.time(): run under timetravel.py the two disagree, and a "1 day
+        # old" item became a year old and lost to the fallback.
         e = feedparser.FeedParserDict()
         e["title"] = title
         e["link"] = f"https://example.invalid/{title}"
-        e["published_parsed"] = _time.gmtime(_time.time() - days_old * 86400)
+        e["published_parsed"] = (_dt.now(_tz.utc) - _td(days=days_old)).utctimetuple()
         return e
 
     pages = {"https://native.invalid/rss": [entry(40, "old1"), entry(30, "old2")],
