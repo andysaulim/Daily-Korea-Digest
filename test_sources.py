@@ -1739,7 +1739,147 @@ def check_send_guard_counts_sends_not_runs() -> list[str]:
     return problems
 
 
+def _web_sample() -> dict:
+    """A small digest with one long top story, for the web edition checks."""
+    long_body = " ".join(f"Sentence {i} carries word{i} for the record." for i in range(70))
+    return {
+        "re_line": "DPRK test · Seoul responds",
+        "web_url": "https://example.org/kdb/latest.html", "date_slug": "2026-10-20",
+        "issue_no": 12, "listen_url": "https://example.org/kdb/listen/2026-10-20.html?utm_source=email",
+        "audio_url": "https://example.org/kdb/digest_2026-10-20.mp3",
+        "morning_memo": ["North Korea tested a missile.", "Seoul convened the NSC.", "KOSPI fell."],
+        "top_stories": [{"headline": "North Korea fires a missile", "body": long_body,
+                         "source": "Yonhap", "url": "https://example.org/a"},
+                        {"headline": "Seoul convenes NSC", "body": "Short body.", "source": "Korea Herald",
+                         "url": "https://example.org/b"}],
+        "overnight_items": [{"headline": f"Overnight {i}", "body": "One line.", "source": "Reuters",
+                             "url": f"https://example.org/o{i}"} for i in range(3)],
+        "business_economy": [{"headline": "KOSPI falls", "body": "Chips led.", "source": "Bloomberg",
+                              "url": "https://example.org/c"}],
+    }
+
+
+def check_web_edition() -> list[str]:
+    """The published page is the web edition: folding sections, a menu, every word, a fallback."""
+    import re
+    import render
+    import web_page
+    problems = []
+    d = _web_sample()
+    saved = (render.DESIGN, render.FULL_TEXT)
+    archive = [{"date": "2026-10-19"}, {"date": "2026-10-20"}, {"date": "2026-10-21"}]
+    page = web_page.build(d, "<html>EMAIL</html>", "2026-10-20", archive_entries=archive)
+    if (render.DESIGN, render.FULL_TEXT) != saved:
+        problems.append("web_page.build left render.DESIGN or render.FULL_TEXT changed")
+    if page == "<html>EMAIL</html>":
+        return problems + ["web_page.build fell back to the email on a valid digest"]
+    n_details = page.count('<details open class="wsec"')
+    if n_details < 3 or page.count("<summary") != n_details:
+        problems.append(f"sections are not <details open> with a <summary> bar ({n_details} found)")
+    menu = re.search(r'<nav class="wmenu[^"]*" id="wmenu".*?</nav>', page, re.S)
+    if not menu:
+        problems.append("no section menu")
+    else:
+        for anchor in ("top-stories", "overnight", "business"):
+            if f'href="#{anchor}"' not in menu.group(0):
+                problems.append(f"the menu does not link #{anchor}")
+            if f'id="{anchor}"' not in page:
+                problems.append(f"the menu links #{anchor}, which the page does not have")
+    if "position:sticky" not in page:
+        problems.append("the menu is not sticky")
+    text = re.sub(r"<[^>]+>", " ", page)
+    if not all(f"word{i}" in text for i in range(70)):
+        problems.append("a long body is not shown in full")
+    if 'href="digest_2026-10-19.html"' not in page or 'href="digest_2026-10-21.html"' not in page:
+        problems.append("previous/next issue links missing")
+    if 'href="listen/2026-10-20.html"' not in page or 'href="archive.html#search"' not in page:
+        problems.append("Listen or archive search link missing")
+    if 'href="#top"' not in page or '<meta name="robots" content="noindex">' not in page:
+        problems.append("Back to top or noindex missing")
+    if "@media print" not in page or "prefers-color-scheme: dark" not in page:
+        problems.append("print or dark-mode stylesheet missing")
+    if not re.search(r'<meta name="description" content="[^"]+">', page):
+        problems.append("no meta description")
+    if re.search(r"<(?:script|link)[^>]+(?:src|href)=\"https?://", page):
+        problems.append("the web edition loads an external script or stylesheet")
+    chrome = page.split("</head>", 1)[0] + "".join(re.findall(r'<nav class="wmenu.*?</nav>|<div class="wnav-in">.*?</div>', page, re.S))
+    if re.search("[·—▲▼←-⇿]|&middot;|&rarr;|&larr;", chrome.split("<style", 1)[0] + chrome.split("</style>")[-1]):
+        problems.append("middle dot, em dash, arrow or triangle in the web chrome")
+    sizes = [int(s) for s in re.findall(r"font-size:(\d+)px", web_page._CSS)]
+    if max(sizes) > 16:
+        problems.append(f"the web stylesheet sets a {max(sizes)}px font")
+    # Without the manifest, prev/next are left to the page and start hidden.
+    bare = web_page.build(d, "<html>EMAIL</html>", "2026-10-20", archive_entries=None)
+    if re.search(r'<a data-wprev="" href="digest_', bare):
+        problems.append("a previous-issue link was baked in without an archive")
+    # Anything failing inside returns the email HTML.
+    import contextlib
+    import io
+    real = web_page._render_v2
+    try:
+        web_page._render_v2 = lambda _d: (_ for _ in ()).throw(RuntimeError("boom"))
+        with contextlib.redirect_stdout(io.StringIO()):
+            fell_back = web_page.build(d, "<html>EMAIL</html>", "2026-10-20")
+        if fell_back != "<html>EMAIL</html>":
+            problems.append("web_page.build does not fall back to the email HTML when it fails")
+    finally:
+        web_page._render_v2 = real
+    return problems
+
+
+def check_run_falls_back_to_the_email_page() -> list[str]:
+    """run.build_web_html never raises: if web_page raises, the page is the email, with a warning."""
+    import contextlib
+    import io
+    from pathlib import Path
+    import run
+    import web_page
+    problems = []
+    real = web_page.build
+    out = io.StringIO()
+    try:
+        def boom(*a, **k):
+            raise RuntimeError("web edition broke")
+        web_page.build = boom
+        with contextlib.redirect_stdout(out):
+            got = run.build_web_html({}, "<html>EMAIL</html>", "2026-10-20", None)
+        if got != "<html>EMAIL</html>":
+            problems.append("run.build_web_html did not fall back to the email HTML")
+        if "::warning" not in out.getvalue():
+            problems.append("the fallback printed no ::warning annotation")
+    finally:
+        web_page.build = real
+    src = (Path(__file__).parent / "run.py").read_text(encoding="utf-8")
+    if 'write_text(web_html' not in src or 'html_from_input(Path("latest.html"))' not in src:
+        problems.append("run.py does not publish the web edition, or the PDF is not from the email")
+    return problems
+
+
+def check_archive_search() -> list[str]:
+    """The archive page searches past headlines from the published corpus shards, and writes nothing."""
+    from pathlib import Path
+    import archive_page
+    problems = []
+    page = archive_page.build([{"date": "2026-10-20", "headline_re": "x", "url": "digest_2026-10-20.html"}],
+                              title="Korea Daily Brief", chair="CSIS Korea Chair", accent="#167EFF",
+                              latest_href="latest.html", prefix="digest_")
+    for needle in ('id="q"', 'id="hits"', 'id="hit-list"', '"corpus/"', "manifest.json", "index_",
+                   'data-date="2026-10-20"', "used"):
+        if needle not in page:
+            problems.append(f"archive search markup missing {needle!r}")
+    off = archive_page.build([], title="t", chair="c", accent="#167EFF", corpus_dir=None)
+    if "manifest.json" in off:
+        problems.append("corpus_dir=None still loads the corpus")
+    src = (Path(__file__).parent / "archive_page.py").read_text(encoding="utf-8")
+    if "write_text" in src or "open(" in src:
+        problems.append("archive_page writes a file; the search must only read published indexes")
+    return problems
+
+
 CHECKS = [
+    ("web edition: folding sections, menu, full text, fallback", check_web_edition),
+    ("run.py falls back to the email page", check_run_falls_back_to_the_email_page),
+    ("archive page searches past headlines", check_archive_search),
     ("tracker state survives a cache miss", check_tracker_state_survives_a_cache_miss),
     ("send guard counts sends, not runs", check_send_guard_counts_sends_not_runs),
     ("design preview goes only to the preview list", check_design_preview_goes_only_to_preview_list),
