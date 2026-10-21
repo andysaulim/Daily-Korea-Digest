@@ -2580,7 +2580,32 @@ def check_preview_pdf_link():
     return problems
 
 
+def check_validation_does_not_hold_a_real_brief():
+    """X posts are input, not fabrications; on the last attempt an unsourced item costs itself, not the brief."""
+    import run
+    problems = []
+    payload = {"tier1": [{"url": "https://news.example/a", "title": "Seoul acts"}],
+               "x_signals": [{"url": "https://x.com/Jaemyung_Lee/status/1", "text": "post"}]}
+    d = {"social_statements": [{"who": "Lee Jae-myung", "quote_text": "q", "url": "https://x.com/Jaemyung_Lee/status/1"}],
+         "overnight_items": [{"headline": "Real", "url": "https://news.example/a"},
+                             {"headline": "Invented", "url": "https://made.up/zzz"}],
+         "top_stories": [{"headline": "Lead", "url": "https://made.up/lead"}]}
+    w = run.validate_digest(d, payload=payload)
+    fab = [x for x in w if x.startswith("FABRICATED ARTICLE CRITICAL")]
+    if any("x.com" in x for x in fab):
+        problems.append("an X post in the input was flagged as fabricated")
+    if not any("made.up/zzz" in x for x in fab):
+        problems.append("an invented URL was not flagged")
+    lines = run.drop_unsourced_items(d, payload)
+    if [i["headline"] for i in d["overnight_items"]] != ["Real"] or d["top_stories"][0]["url"]:
+        problems.append(f"drop_unsourced_items wrong: {lines}")
+    if len(d["social_statements"]) != 1:
+        problems.append("drop_unsourced_items dropped a sourced X quote")
+    return problems
+
+
 CHECKS = [
+    ("validation does not hold a real brief", check_validation_does_not_hold_a_real_brief),
     ("design preview links its own PDF", check_preview_pdf_link),
     ("banned words named; headline outlet linked once", check_banned_prose_and_single_headline_link),
     ("status line: KCNA trend and provocations", check_status_line_kcna_trend_and_provocations),

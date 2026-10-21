@@ -17,7 +17,7 @@ from pathlib import Path
 from datetime import datetime, timezone, timedelta
 from zoneinfo import ZoneInfo
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from digest import _count_digest_words
+from digest import _count_digest_words, MIN_DIGEST_WORDS
 
 
 # An eight-minute read. An issue once shipped at 3,518 words because the
@@ -1045,17 +1045,17 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
 
     # ── Cross-reference: every digest URL must exist in input feed ────────
     if payload:
-        input_urls: set[str] = set()
-        for tier_key in ("tier1", "tier2", "tier3", "tier4"):
-            for a in (payload.get(tier_key) or []):
-                u = (a.get("url") or "").strip()
-                if u and u.startswith("http"):
-                    input_urls.add(u)
+        # The same input the URL repair reads (links.corpus_index): the tiers,
+        # the Hill and world streams, satellite reports and the X signals. The
+        # tiers alone flagged every quoted X post as fabricated, and on 21 Oct
+        # that cost two regenerations and the day's brief.
+        import links as _links
+        _index = _links.corpus_index(payload)
         fabricated_count = 0
         for section_key in _ALL_ITEM_SECTIONS:
             for item in (digest.get(section_key) or []):
                 url = (item.get("url") or "").strip()
-                if url and url.startswith("http") and url not in input_urls:
+                if url and url.startswith("http") and not _links.lookup(url, _index):
                     headline = (item.get("headline") or item.get("translated_title")
                                 or item.get("title") or "")[:80]
                     fabricated_count += 1
@@ -1127,6 +1127,41 @@ def banned_prose(digest: dict) -> list[str]:
 
     walk({k: v for k, v in digest.items() if k != "bp_locations"}, "")
     return found
+
+# On the last attempt a brief this long is sent with a warning rather than
+# held: the minimum exists to catch truncated output, and a short brief is
+# worth more to the reader than none.
+FINAL_ATTEMPT_MIN_WORDS = 900
+
+
+def drop_unsourced_items(digest: dict, payload: dict) -> list[str]:
+    """Remove items whose URL is in no collected input; a top story loses only its link.
+
+    Used on the final attempt, so a link the model invented costs that item,
+    not the day's brief. Returns one line per change.
+    """
+    import links as _links
+    index = _links.corpus_index(payload or {})
+    out: list[str] = []
+    for key in _ALL_ITEM_SECTIONS:
+        items = digest.get(key)
+        if not isinstance(items, list):
+            continue
+        kept = []
+        for item in items:
+            url = str((item or {}).get("url") or "").strip() if isinstance(item, dict) else ""
+            if url.startswith("http") and not _links.lookup(url, index):
+                head = str(item.get("headline") or item.get("title") or item.get("who") or "")[:60]
+                if key == "top_stories":
+                    item["url"] = ""
+                    out.append(f"unlinked {key}: {head!r}")
+                else:
+                    out.append(f"dropped {key}: {head!r}")
+                    continue
+            kept.append(item)
+        digest[key] = kept
+    return out
+
 
 def magnitude_warnings(digest: dict, payload: dict | None = None) -> list[str]:
     """Figures far out of scale for what they describe, usually a dropped decimal.
@@ -2448,6 +2483,15 @@ def main():
         # not stop the brief: a heuristic should never cost a day's issue.
         if validation_attempt >= MAX_VALIDATION_RETRIES:
             critical_warnings = [w for w in critical_warnings if not w.startswith("MAGNITUDE")]
+            if any(w.startswith("FABRICATED") for w in critical_warnings):
+                for _line in drop_unsourced_items(digest_data, payload):
+                    print(f"  🧹  {_line}")
+                critical_warnings = [w for w in critical_warnings if not w.startswith("FABRICATED")]
+            _wc = _count_digest_words(digest_data)
+            if _wc >= FINAL_ATTEMPT_MIN_WORDS and any(w.startswith("WORD COUNT CRITICAL") for w in critical_warnings):
+                critical_warnings = [w for w in critical_warnings if not w.startswith("WORD COUNT CRITICAL")]
+                warn("Brief sent short", f"{_wc} words after the last attempt, under the "
+                     f"{MIN_DIGEST_WORDS} target; sent rather than held")
 
         # Don't retry for DUPLICATE TOPIC issues — dedup already handled them,
         # and retrying just causes dedup to fight the retry loop.
@@ -2461,7 +2505,11 @@ def main():
         # text, duplicated the same Yonhap articles across sections again,
         # and lost more each round: 26%, then 32%, then 21% of the draft.
         # The retry gate stays on the CRITICAL subset; only the feedback widens.
-        retryable_warnings = [w for w in validation_warnings if "DUPLICATE TOPIC" not in w]
+        # "Over the ceiling" is handled by length_budget after validation. Sent
+        # as feedback it made the model cut hard: on 21 Oct the retry fell
+        # from 2,676 words to 1,194 and the brief was held for being short.
+        retryable_warnings = [w for w in validation_warnings
+                              if "DUPLICATE TOPIC" not in w and "over the prompt's" not in w]
 
         if not critical_warnings:
             # Passed — print any non-critical warnings and move on
