@@ -131,26 +131,38 @@ TIER1_FEEDS = {
     "Korea Times":        ["https://feed.koreatimes.co.kr/k/allnews.xml",
                            "https://www.koreatimes.co.kr/www/rss/nation.xml",
                            _gnews("site:koreatimes.co.kr")],
-    "Yonhap English":    _native("https://en.yna.co.kr/RSS/news.xml", "site:en.yna.co.kr"),
+    # /RSS/news.xml and /RSS/northkorea.xml return 404 (21 October 2026 log);
+    # the section feed /RSS/national.xml is the one English path still in use.
+    "Yonhap English":    _native("https://en.yna.co.kr/RSS/national.xml", "site:en.yna.co.kr"),
     "JoongAng Daily":     _gnews("Korea+site:koreajoongangdaily.joins.com"),
-    # Both guessed publisher paths return 404; english.chosun.com does not
-    # expose a feed at either. Back to the search until a real one is found.
-    "Chosun English":     _gnews("Korea+site:english.chosun.com"),
-    "Hankyoreh English":  _gnews("Korea+site:english.hani.co.kr"),
+    # The English edition left english.chosun.com for chosun.com/english/
+    # (Arc). The old site: search had been silent for three runs because the
+    # host no longer publishes; Arc serves a per-category outbound feed in the
+    # same shape as the Korean one below. Unverified from here; the search
+    # behind it answers if wrong.
+    "Chosun English":     _native("https://www.chosun.com/arc/outboundfeeds/rss/category/english/?outputType=xml",
+                                  "site:chosun.com/english"),
+    # The Hankyoreh's English desk runs on the same CMS as hani.co.kr/rss/.
+    "Hankyoreh English":  _native("https://english.hani.co.kr/rss/", "Korea+site:english.hani.co.kr"),
     "Dong-A English":     _gnews("Korea+site:donga.com/en"),
     "NK News":           _native("https://www.nknews.org/feed/", "site:nknews.org"),
     # ── Korean-language feeds (Claude translates during analysis) ──────────
     "조선일보":            _native("https://www.chosun.com/arc/outboundfeeds/rss/?outputType=xml", "site:chosun.com+-english"),
     "한겨레":              _native("https://www.hani.co.kr/rss/", "site:hani.co.kr+-english"),
     "동아일보":            _native("https://rss.donga.com/total.xml", "site:donga.com"),
-    "MBN":                _gnews("Korea+site:mbn.co.kr"),
+    # A Korean-language outlet searched for the English word "Korea" in the
+    # English edition finds almost nothing: MBN was silent for three runs.
+    "MBN":                _windowed("site:mbn.co.kr", 2, locale="ko"),
     "중앙일보":            _native("https://rss.joins.com/joins_news_list.xml", "site:joongang.co.kr"),
-    "한국일보":            _native("https://www.hankookilbo.com/rss/total", "site:hankookilbo.com"),
+    # /rss/total returns 404; no other Hankook Ilbo path is known.
+    "한국일보":            _gnews("site:hankookilbo.com", locale="ko"),
     "뉴시스":              _native("https://www.newsis.com/RSS/politics.xml", "site:newsis.com"),
     "서울신문":            _gnews("site:seoul.co.kr"),
     "경향신문":            _native("https://www.khan.co.kr/rss/rssdata/total_news.xml", "site:khan.co.kr"),
     "뉴스1":              _gnews("site:news1.kr"),
-    "연합뉴스":            _native("https://www.yna.co.kr/RSS/news.xml", "site:yna.co.kr+-en"),
+    # Yonhap's Korean feeds moved to lower-case /rss/ (the politics and North
+    # Korea desks below answer there); /RSS/news.xml returns 404.
+    "연합뉴스":            _native("https://www.yna.co.kr/rss/news.xml", "site:yna.co.kr+-en"),
     # ── Korean broadcast & cable news ────────────────────────────────────
     "JTBC":               _gnews("site:news.jtbc.co.kr"),
     "KBS":                _gnews("site:news.kbs.co.kr"),
@@ -167,8 +179,10 @@ TIER1_FEEDS = {
                                   "북한 OR 한미 OR 미국 site:news.sbs.co.kr"),
     "YTN":                _gnews("site:ytn.co.kr"),
     # A guessed publisher feed here does not resolve at all (no such host),
-    # so it cost a DNS failure every run and delivered nothing.
-    "Channel A":          _gnews("Korea+site:channela.com"),
+    # so it cost a DNS failure every run and delivered nothing. Channel A's
+    # news site is ichannela.com, and its pages are Korean: "Korea
+    # site:channela.com" in the English edition was silent for three runs.
+    "Channel A":          _windowed("site:ichannela.com", 2, locale="ko"),
     "Arirang News":       _gnews("Korea+site:arirang.com"),
     # ── Korean business dailies ──────────────────────────────────────────
     "매일경제":            _native("https://www.mk.co.kr/rss/30000001/", "site:mk.co.kr"),
@@ -178,19 +192,30 @@ TIER1_FEEDS = {
                              "https://www.kedglobal.com/rss/allArticle.xml",
                              _gnews("Korea+site:kedglobal.com")],
     # ── Major international — Korea correspondents ────────────────────────
-    "WSJ Korea":          _gnews("Korea+site:wsj.com"),
-    "NYT Korea":          _gnews("Korea+site:nytimes.com"),
+    # 87% of delivering feeds went through Google News on 21 October 2026.
+    # The outlets below publish section RSS; each is filtered for Korea, and a
+    # feed with no Korea item that day gives way to the search behind it
+    # (_parse_feed's accept), so a general world feed cannot cost the outlet.
+    "WSJ Korea":          _native("https://feeds.a.dj.com/rss/RSSWorldNews.xml", "Korea+site:wsj.com"),
+    "NYT Korea":          _native("https://rss.nytimes.com/services/xml/rss/nyt/AsiaPacific.xml",
+                                  "Korea+site:nytimes.com"),
     "WaPo Korea":         _gnews("Korea+site:washingtonpost.com"),
-    "FT Korea":           _gnews("Korea+site:ft.com"),
-    "Reuters Korea":      _native("https://www.reutersagency.com/feed/?best-topics=political-general&post_type=best", "Korea+site:reuters.com"),
+    # FT section pages serve RSS with ?format=rss.
+    "FT Korea":           _native("https://www.ft.com/south-korea?format=rss", "Korea+site:ft.com",
+                                  also=["https://www.ft.com/asia-pacific?format=rss"]),
+    # Reuters has published no public RSS since 2020, and the agency feed that
+    # stood in for it returns 404: the search is the only path.
+    "Reuters Korea":      _gnews("Korea+site:reuters.com"),
+    # apnews.com/index.rss answers a browser but 403s an unfamiliar agent;
+    # _parse_one retries a 403 once as a browser.
     "AP Korea":           _native("https://apnews.com/index.rss", "Korea+site:apnews.com"),
-    "Bloomberg Korea":    _gnews("Korea+site:bloomberg.com"),
+    "Bloomberg Korea":    _native("https://feeds.bloomberg.com/politics/news.rss", "Korea+site:bloomberg.com"),
     "BBC Korea":          _native("https://feeds.bbci.co.uk/news/world/asia/rss.xml", "Korea+site:bbc.com"),
-    "CNN Korea":          _gnews("Korea+site:cnn.com"),
-    "CNBC Korea":         _gnews("Korea+site:cnbc.com"),
+    "CNN Korea":          _native("http://rss.cnn.com/rss/edition_asia.rss", "Korea+site:cnn.com"),
+    "CNBC Korea":         _native("https://www.cnbc.com/id/100727362/device/rss/rss.html", "Korea+site:cnbc.com"),
     "Economist Korea":    _native("https://www.economist.com/asia/rss.xml", "Korea+site:economist.com"),
     "Guardian Korea":     _native("https://www.theguardian.com/world/south-korea/rss", "Korea+site:theguardian.com"),
-    "Al Jazeera Korea":   _gnews("Korea+site:aljazeera.com"),
+    "Al Jazeera Korea":   _native("https://www.aljazeera.com/xml/rss/all.xml", "Korea+site:aljazeera.com"),
     # ── Regional Asia ─────────────────────────────────────────────────────
     "Nikkei Korea":       _native("https://asia.nikkei.com/rss/feed/nar", "Korea+site:asia.nikkei.com"),
     "Japan Times Korea":  _native("https://www.japantimes.co.jp/feed/", "Korea+site:japantimes.co.jp"),
@@ -198,12 +223,17 @@ TIER1_FEEDS = {
     "Kyodo Korea":        _gnews("Korea+site:english.kyodonews.net"),
     "Mainichi Korea":     _gnews("Korea+site:mainichi.jp/english"),
     "Asahi Korea":        _gnews("Korea+site:asahi.com/ajw"),
-    "CNA Korea":          _gnews("Korea+site:channelnewsasia.com"),
+    # CNA's outbound feed, category 6511 = Asia.
+    "CNA Korea":          _native("https://www.channelnewsasia.com/api/v1/rss-outbound-feed?_format=xml&category=6511",
+                                  "Korea+site:channelnewsasia.com"),
     # ── ROK/US Government ─────────────────────────────────────────────────
-    "White House":        _gnews("Korea+site:whitehouse.gov"),
+    # whitehouse.gov is WordPress, which serves /feed/ for every site.
+    "White House":        _native("https://www.whitehouse.gov/feed/", "Korea+site:whitehouse.gov"),
+    # 403 to the collector's agent; _parse_one retries a 403 once as a browser.
     "State Dept":         _native("https://www.state.gov/rss-feed/press-releases/feed/", "Korea+site:state.gov"),
     "Pentagon":           _native("https://www.defense.gov/DesktopModules/ArticleCS/RSS.ashx?ContentType=1&Site=945&max=40", "Korea+site:defense.gov"),
-    "Stars and Stripes":  _native("https://www.stripes.com/rss/pacific.rss", "Korea+site:stripes.com"),
+    # /rss/pacific.rss returns 404; no current Stripes feed path is known.
+    "Stars and Stripes":  _gnews("Korea+site:stripes.com"),
     # ── ROK/Japan Government ─────────────────────────────────────────────
     "USFK":               _gnews("site:usfk.mil"),
     # ── ROK government ───────────────────────────────────────────────────
@@ -264,12 +294,12 @@ TIER1_FEEDS = {
     # /rss/pressrelease.xml, /rss/policy.xml and one /rss/dept_<code>.xml per
     # ministry. It announced the end of its RSS service on 1 July 2026, and
     # the native feed delivered nothing in October: both of its items that
-    # week came through the search behind it. The URLs stay first because a
-    # dead native candidate costs one fast request; no other feed relies on
-    # korea.kr any longer.
-    "ROK Policy Briefing": ["https://www.korea.kr/rss/pressrelease.xml",
-                            "https://www.korea.kr/rss/policy.xml",
-                            _gnews("site:korea.kr")],
+    # week came through the search behind it. The dead URLs are gone (each
+    # cost a 404 in every run log). What korea.kr published most was cabinet
+    # decisions and joint government briefings, which the press reports by
+    # those names; that search follows the site: one.
+    "ROK Policy Briefing": [*_windowed("site:korea.kr", 2, locale="ko"),
+                            *_press('"국무회의 의결" OR "정부 합동브리핑" OR "관계부처 합동"')],
     # Korea.net's Policies feed (news/3) rather than "All" (news/2), which is
     # mostly culture and travel.
     "Korea.net":          _native("https://www.korea.net/koreanet/rss/news/3", "site:korea.net"),
@@ -292,9 +322,10 @@ TIER1_FEEDS = {
                                   "국방 OR 외교 OR 통일 site:yna.co.kr", locale="ko"),
     "Yonhap North Korea": _native("https://www.yna.co.kr/rss/northkorea.xml",
                                   "북한 site:yna.co.kr", locale="ko"),
-    "Yonhap English National": _native("https://en.yna.co.kr/RSS/national.xml",
-                                       'defense OR military OR unification OR "foreign ministry" '
-                                       'site:en.yna.co.kr'),
+    # national.xml is now Yonhap English's own native feed; this keeps the
+    # defence and ministry wire copy a path of its own.
+    "Yonhap English National": _windowed('defense OR military OR unification OR "foreign ministry" '
+                                         'site:en.yna.co.kr', 2),
     "Japan MOFA":         _gnews("Korea+site:mofa.go.jp"),
     # ── US Economic agencies ────────────────────────────────────────────
     "USTR":               _gnews("Korea+OR+trade+site:ustr.gov"),
@@ -302,8 +333,11 @@ TIER1_FEEDS = {
     "Dept of Commerce":   _gnews("Korea+site:commerce.gov"),
     "Dept of Treasury":   _gnews("Korea+site:treasury.gov"),
     "OFAC":               _gnews("Korea+OR+DPRK+site:ofac.treasury.gov"),
-    "BIS":                ["https://www.bis.doc.gov/index.php/all-articles?format=feed&type=rss",
-                           _gnews("Korea+OR+DPRK+site:bis.doc.gov")],
+    # BIS left bis.doc.gov for bis.gov in 2025: the old Joomla feed and the
+    # bis.doc.gov search were silent for three runs. The bureau's rules reach
+    # the brief mostly through the press, so that search follows its own site.
+    "BIS":                [*_windowed("Korea+OR+DPRK+site:bis.gov", 7),
+                           *_windowed('"Bureau of Industry and Security" Korea OR Samsung OR "SK Hynix"', 3)],
     # ── US Congress ─────────────────────────────────────────────────────
     "Senate Foreign Relations": _gnews("Korea+site:foreign.senate.gov"),
     "Senate Armed Services":    _gnews("Korea+site:armed-services.senate.gov"),
@@ -316,9 +350,9 @@ TIER1_FEEDS = {
     # ── Cyber/enforcement ───────────────────────────────────────────────
     "CISA":               _gnews("Korea+OR+DPRK+OR+Lazarus+site:cisa.gov"),
     # ── Reaction layer (China/Russia) ─────────────────────────────────────
-    "Global Times Korea": _gnews("Korea+site:globaltimes.cn"),
+    "Global Times Korea": _native("https://www.globaltimes.cn/rss/outbrain.xml", "Korea+site:globaltimes.cn"),
     "Xinhua Korea":       _gnews("Korea+site:xinhuanet.com"),
-    "TASS Korea":         _gnews("Korea+site:tass.com"),
+    "TASS Korea":         _native("https://tass.com/rss/v2.xml", "Korea+site:tass.com"),
     "Caixin Korea":       _gnews("Korea+site:caixinglobal.com"),
     "China Daily Korea":  _gnews("Korea+site:chinadaily.com.cn"),
     "People's Daily Korea": _gnews("Korea+site:en.people.cn"),
@@ -349,18 +383,24 @@ TIER2_FEEDS = {
     "Beyond Parallel":   (_analysis("https://beyondparallel.csis.org/feed/",
                                     "site:beyondparallel.csis.org", 7), "A"),
     "Brookings":         (_analysis("https://www.brookings.edu/feed/", "Korea+site:brookings.edu", 7), "A"),
-    "CFR":               (_analysis("https://www.cfr.org/rss.xml", "Korea+site:cfr.org", 7), "A"),
+    # Native paths that returned 404 or 500, or timed out, in the 21 October
+    # 2026 run (CFR, CNAS, Wilson Center, TNSR, AccessDPRK, WaPo Opinion) are
+    # removed: each cost a request and a log line every run and never
+    # answered. The searches behind them were already doing the work.
+    "CFR":               (_analysis(None, "Korea+site:cfr.org", 7), "A"),
     "Carnegie":          (_analysis("https://carnegieendowment.org/rss/solr?query=korea",
                                     "Korea+site:carnegieendowment.org", 7), "A"),
     "RAND":              (_analysis("https://www.rand.org/topics/north-korea.xml", "Korea+site:rand.org", 7,
                                     also=["https://www.rand.org/topics/south-korea.xml"]), "A"),
     "Stimson":           (_analysis("https://www.stimson.org/feed/", "Korea+site:stimson.org", 7), "A"),
     "38 North":          (_analysis("https://www.38north.org/feed/", "site:38north.org", 7), "A"),
-    "CNAS":              (_analysis("https://www.cnas.org/feed", "Korea+site:cnas.org", 7), "A"),
+    "CNAS":              (_analysis(None, "Korea+site:cnas.org", 7), "A"),
+    # Heritage, AEI and Asan answer 403 to the collector's agent; _parse_one
+    # retries a 403 once as a browser before the search takes over.
     "Heritage":          (_analysis("https://www.heritage.org/rss/all-research", "Korea+site:heritage.org", 7), "B"),
     "AEI":               (_analysis("https://www.aei.org/feed/", "Korea+site:aei.org", 7), "A"),
     "Hudson Institute":  (_analysis("https://www.hudson.org/rss.xml", "Korea+site:hudson.org", 7), "B"),
-    "Wilson Center":     (_analysis("https://www.wilsoncenter.org/rss.xml", "Korea+site:wilsoncenter.org", 7), "A"),
+    "Wilson Center":     (_analysis(None, "Korea+site:wilsoncenter.org", 7), "A"),
     "KEIA":              (_analysis("https://keia.org/feed/", "site:keia.org", 7), "A"),
     "Atlantic Council":  (_analysis("https://www.atlanticcouncil.org/feed/", "Korea+site:atlanticcouncil.org", 7), "B"),
     "Hoover":            (_analysis("https://www.hoover.org/rss.xml", "Korea+site:hoover.org", 7), "B"),
@@ -370,7 +410,10 @@ TIER2_FEEDS = {
     "NBR":               (_analysis(None, "Korea+site:nbr.org", 7), "B"),
     "PIIE":              (_analysis("https://www.piie.com/rss/update.xml", "Korea+site:piie.com", 7), "B"),
     "USIP":              (_analysis(None, "Korea+site:usip.org", 7), "B"),
-    "AccessDPRK":        (_analysis("https://accessdprk.com/feed/", "site:accessdprk.com", 7), "A"),
+    # accessdprk.com times out from the runner. It publishes a few times a
+    # year, so a silent week is normal; the prompt's specialist rule names
+    # it, so the feed stays, on its search alone.
+    "AccessDPRK":        (_analysis(None, "site:accessdprk.com", 7), "A"),
     "ArmsControlWonk":   (_analysis("https://www.armscontrolwonk.com/feed/", "site:armscontrolwonk.com", 7), "A"),
     # ── Korean and regional think tanks ──────────────────────────────────
     "ASAN Institute":    (_analysis("https://en.asaninst.org/feed/", "site:asaninst.org", 7), "A"),
@@ -390,7 +433,7 @@ TIER2_FEEDS = {
     "Foreign Affairs":   (_analysis("https://www.foreignaffairs.com/rss.xml", "Korea+site:foreignaffairs.com", 7), "A"),
     "Foreign Policy":    (_analysis("https://foreignpolicy.com/feed/", "Korea+site:foreignpolicy.com", 7), "B"),
     "War on the Rocks":  (_analysis("https://warontherocks.com/feed/", "Korea+site:warontherocks.com", 7), "B"),
-    "Texas National Security Review": (_analysis("https://tnsr.org/feed/", "Korea+site:tnsr.org", 7), "A"),
+    "Texas National Security Review": (_analysis(None, "Korea+site:tnsr.org", 7), "A"),
     "Diplomat":          (_analysis("https://thediplomat.com/feed/", "Korea+site:thediplomat.com", 7), "C"),
     # NK Pro is reporting, not analysis (see ANALYSIS_KIND); it stays here
     # because its feed has always been read in this tier.
@@ -400,13 +443,12 @@ TIER2_FEEDS = {
                                     "Korea+opinion+site:nytimes.com", 3), "A"),
     "WSJ Opinion":       (_analysis("https://feeds.a.dj.com/rss/RSSOpinion.xml",
                                     "Korea+opinion+site:wsj.com", 3), "A"),
-    "WaPo Opinion":      (_analysis("https://feeds.washingtonpost.com/rss/opinions",
-                                    "Korea+opinion+site:washingtonpost.com", 3), "A"),
+    "WaPo Opinion":      (_analysis(None, "Korea+opinion+site:washingtonpost.com", 3), "A"),
     "FT Opinion":        (_analysis(None, "Korea+opinion+site:ft.com", 3), "A"),
     "Bloomberg Opinion": (_analysis(None, "Korea+site:bloomberg.com/opinion", 3), "A"),
     "Korea Herald Opinion": (_analysis(None, "column+OR+opinion+OR+editorial+site:koreaherald.com", 3), "B"),
     "JoongAng Opinion":  (_analysis(None, "column+OR+opinion+OR+editorial+site:koreajoongangdaily.joins.com", 3), "B"),
-    "Chosun English Opinion": (_analysis(None, "column+OR+opinion+OR+editorial+site:english.chosun.com", 3), "B"),
+    "Chosun English Opinion": (_analysis(None, "column+OR+opinion+OR+editorial+site:chosun.com/english", 3), "B"),
     # ── CRS / Congressional research ────────────────────────────────────────
     "CRS Korea":         ([*_windowed("Korea+OR+DPRK+site:crsreports.congress.gov", 7),
                            _gnews("%22Congressional+Research+Service%22+Korea")], "B"),
@@ -453,8 +495,8 @@ TIER3_FEEDS = {
     "Washington Quarterly":   (_analysis(_TANDF + "rwaq20", "%22Washington+Quarterly%22+Korea+OR+DPRK", 7), "A"),
     "J. Strategic Studies":   (_analysis(_TANDF + "fjss20", "%22Journal+of+Strategic+Studies%22+Korea+OR+DPRK", 7), "A"),
     "Security Studies":       (_analysis(_TANDF + "fsst20", "%22Security+Studies%22+journal+Korea+OR+DPRK", 7), "A"),
-    "Asian Survey":           (_analysis("https://online.ucpress.edu/as/rss/current",
-                                         "%22Asian+Survey%22+Korea+OR+DPRK", 7), "A"),
+    # online.ucpress.edu/as/rss/current returns 404; the search answers.
+    "Asian Survey":           (_analysis(None, "%22Asian+Survey%22+Korea+OR+DPRK", 7), "A"),
     "Pacific Affairs":        (_analysis(None, "%22Pacific+Affairs%22+journal+Korea+OR+DPRK", 7), "A"),
     "J. East Asian Studies":  (_analysis(None, "%22Journal+of+East+Asian+Studies%22", 7), "A"),
     "Pacific Review":         (_analysis(_TANDF + "rpre20", "%22Pacific+Review%22+Korea+OR+DPRK", 7), "A"),
@@ -473,8 +515,10 @@ TIER4_FEEDS = {
     "KCNA Watch":         _native("https://kcnawatch.org/newstream/feed/",
                                   "KCNA+site:kcnawatch.org"),
     # Wire services / outlets that relay KCNA content daily (primary indirect)
-    # Yonhap's North Korea section feed: the wire that relays KCNA first.
-    "KCNA (Yonhap)":      _native("https://en.yna.co.kr/RSS/northkorea.xml", "KCNA site:en.yna.co.kr"),
+    # Yonhap, the wire that relays KCNA first. Its English North Korea feed
+    # (/RSS/northkorea.xml) returns 404, so this is the search alone; the
+    # Korean desk's own feed is "Yonhap North Korea" in tier 1.
+    "KCNA (Yonhap)":      _windowed("KCNA site:en.yna.co.kr", 2),
     "KCNA (Reuters)":     _gnews("KCNA+site:reuters.com"),
     "KCNA (AP)":          _gnews("KCNA+site:apnews.com"),
     "KCNA (AFP)":         _gnews("KCNA+OR+%22North+Korea+state+media%22+site:france24.com"),
@@ -484,9 +528,9 @@ TIER4_FEEDS = {
     "KCNA (38 North)":    _native("https://www.38north.org/feed/", "KCNA+site:38north.org"),
     "KCNA (Daily NK)":    _native("https://www.dailynk.com/english/feed/", "KCNA+site:dailynk.com"),
     "KCNA (NK News)":     _gnews("KCNA+site:nknews.org"),
-    # The guessed NK News category feed 404s. KCNA Watch proper now delivers
-    # through its own entry, so this one stays on its search.
-    "KCNA (Korea Risk)":  _gnews("KCNA+site:koreariskgroup.com"),
+    # "KCNA (Korea Risk)" (KCNA site:koreariskgroup.com) is retired: the group
+    # publishes no KCNA copy on that domain, and the search was silent for
+    # three runs. KCNA Watch, its KCNA product, has its own entry above.
     # Major newspapers that relay KCNA statements
     "KCNA (BBC)":         _gnews("KCNA+OR+%22North+Korea+state+media%22+site:bbc.com"),
     "KCNA (NYT)":         _gnews("KCNA+site:nytimes.com"),
@@ -547,14 +591,15 @@ CAPITOL_HILL_FEEDS = {
     "Politico Congress":   _native("https://rss.politico.com/congress.xml",
                                    "Korea+Congress+OR+Senate+OR+House+site:politico.com", when_days=3),
     "Punchbowl":           _windowed("Korea+site:punchbowl.news", 7),
-    "HFAC Hearings":       _native("https://foreignaffairs.house.gov/feed/",
-                                   "Korea+site:foreignaffairs.house.gov", when_days=7),
-    "HASC":                _native("https://armedservices.house.gov/rss.xml",
-                                   "Korea+site:armedservices.house.gov", when_days=7),
-    "SFRC Hearings":       _native("https://www.foreign.senate.gov/rss/feeds/?type=hearings",
-                                   "Korea+site:foreign.senate.gov", when_days=7),
-    "SASC Hearings":       _native("https://www.armed-services.senate.gov/rss/feeds/?type=hearings",
-                                   "Korea+site:armed-services.senate.gov", when_days=7),
+    # The four committees' own feeds (foreignaffairs.house.gov/feed/,
+    # armedservices.house.gov/rss.xml, and the Senate committees'
+    # /rss/feeds/) all return 404 since the sites were rebuilt. Their
+    # hearings reach the brief through the schedules in HILL_CALENDAR_FEEDS;
+    # their press releases through these searches.
+    "HFAC Hearings":       _windowed("Korea+site:foreignaffairs.house.gov", 7),
+    "HASC":                _windowed("Korea+site:armedservices.house.gov", 7),
+    "SFRC Hearings":       _windowed("Korea+site:foreign.senate.gov", 7),
+    "SASC Hearings":       _windowed("Korea+site:armed-services.senate.gov", 7),
     "House Appropriations": _native("https://appropriations.house.gov/rss.xml",
                                     "Korea+site:appropriations.house.gov", when_days=7),
     "Senate Appropriations": _windowed("Korea+site:appropriations.senate.gov", 7),
@@ -602,26 +647,23 @@ HILL_CALENDAR_FEEDS = {
     "House Ways and Means schedule": _HOUSE_MEETING_FEED + "WM00",
     "House Appropriations schedule": _HOUSE_MEETING_FEED + "AP00",
     "House Intelligence schedule": _HOUSE_MEETING_FEED + "IG00",
-    "HFAC schedule":             "https://foreignaffairs.house.gov/feed/?post_type=hearing",
-    "HASC schedule":             "https://armedservices.house.gov/rss.xml",
-    "SFRC schedule":             "https://www.foreign.senate.gov/rss/feeds/?type=hearings",
-    "SASC schedule":             "https://www.armed-services.senate.gov/rss/feeds/?type=hearings",
+    # The four committee-site schedules (HFAC, HASC, SFRC, SASC) are retired:
+    # each returned 404 and was silent for three runs, and each duplicated a
+    # feed above. senate.gov's hearings.xml lists every Senate committee's
+    # meetings, SFRC's and SASC's included; docs.house.gov FA00 and AS00 are
+    # HFAC's and HASC's official meeting notices.
 }
 _HOUSE_DOCS_FEEDS = [k for k, v in HILL_CALENDAR_FEEDS.items() if v.startswith(_HOUSE_MEETING_FEED)]
 # Where a reader can see the schedule when a listing carries no link of its own.
 HILL_SCHEDULE_PAGES = {"Senate committee schedule": "https://www.senate.gov/committees/hearings_meetings.htm"}
 HILL_SCHEDULE_PAGES.update({k: "https://docs.house.gov/Committee/Calendar/ByWeek.aspx"
                             for k in _HOUSE_DOCS_FEEDS})
-HILL_CALENDAR_COMMITTEES = {
-    "HFAC schedule": "House Foreign Affairs", "HASC schedule": "House Armed Services",
-    "SFRC schedule": "Senate Foreign Relations", "SASC schedule": "Senate Armed Services",
-}
-HILL_CALENDAR_COMMITTEES.update({k: k.replace(" schedule", "") for k in _HOUSE_DOCS_FEEDS})
+HILL_CALENDAR_COMMITTEES = {k: k.replace(" schedule", "") for k in _HOUSE_DOCS_FEEDS}
 # Feeds that list only meetings. Their titles are the hearing's subject
 # ("Countering the CCP's Maritime Coercion"), rarely the word "hearing", so
 # the title test that keeps press releases out of a committee's news feed
 # dropped every item they carried.
-HILL_MEETING_ONLY_FEEDS = set(_HOUSE_DOCS_FEEDS) | {"HFAC schedule", "SFRC schedule", "SASC schedule"}
+HILL_MEETING_ONLY_FEEDS = set(_HOUSE_DOCS_FEEDS)
 # senate.gov and house.gov sit behind a CDN that refuses unfamiliar agents
 # from cloud addresses; the schedules are public pages, fetched as a browser.
 HILL_CALENDAR_HEADERS = {
@@ -647,7 +689,8 @@ KOREA_WORLD_FEEDS = {
                                        "Korea+site:notesfrompoland.com"),
     "Arab News Korea":       _native("https://www.arabnews.com/rss.xml", "Korea+site:arabnews.com"),
     "VnExpress Korea":       _native("https://e.vnexpress.net/rss/news.rss", "Korea+site:e.vnexpress.net"),
-    "Kyiv Independent Korea": _native("https://kyivindependent.com/rss/", "Korea+site:kyivindependent.com"),
+    # /rss/ returns 404 since the site left Ghost; no current path is known.
+    "Kyiv Independent Korea": _gnews("Korea+site:kyivindependent.com"),
     "UN News Korea":         _native("https://news.un.org/feed/subscribe/en/news/all/rss.xml",
                                      "Korea+OR+DPRK+site:news.un.org"),
     "Korea defense exports": _gnews("%22South+Korea%22+arms+OR+defense+export+K2+OR+K9+OR+Chunmoo+OR+FA-50+OR+KF-21"),
@@ -714,7 +757,9 @@ KOREA_NATIVE_FEEDS = ROK_GOVERNMENT_FEEDS | {
     "매일경제", "한국경제", "서울경제", "머니투데이",
     # English-language Korea desks whose entire output is Korea
     "Yonhap English", "Yonhap English National", "Yonhap Politics", "Yonhap North Korea",
-    "Korea Herald", "Korea Times", "Korea JoongAng Daily",
+    # "JoongAng Daily" is the feed's name; this set said "Korea JoongAng
+    # Daily", which named no feed, so the exemption never applied.
+    "Korea Herald", "Korea Times", "JoongAng Daily",
     "Korea Economic Daily", "Dong-A English", "Chosun English",
     "Hankyoreh English", "Pressian",
 }
@@ -762,17 +807,37 @@ _unresolved_urls = []   # sources whose Google News link would not decode
 _offsite_dropped = {}   # {candidate url: items dropped for coming from another site}
 
 MAJOR_FEEDS = {"Yonhap English", "Korea Herald", "Reuters Korea", "AP Korea"}
+# Major feeds whose publisher offers no public RSS at all, so the search is
+# the only path there is. Reuters withdrew its feeds in 2020; the agency feed
+# that stood in for one returned 404 on 21 October 2026.
+NO_PUBLIC_RSS = {"Reuters Korea"}
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # HELPERS
 # ─────────────────────────────────────────────────────────────────────────────
 
+# Sent once, on a 403, to a publisher's own feed. Arab News, AEI, Heritage,
+# Asan, AP, CRS and the State Department answered 403 to HEADERS on 21
+# October 2026: their CDNs refuse an agent they do not recognise. Google News
+# is never retried this way; it answers HEADERS.
+BROWSER_HEADERS = {
+    "User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                   "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"),
+    "Accept": "application/rss+xml,application/atom+xml,application/xml;q=0.9,text/xml;q=0.8,*/*;q=0.5",
+}
+
+
 def _parse_one(url: str, retries: int = 3) -> list:
     """Fetch and parse a single feed URL. Never raises; returns [] on failure."""
+    headers = HEADERS
     for attempt in range(retries):
         try:
-            resp = requests.get(url, timeout=REQUEST_TIMEOUT, headers=HEADERS)
+            resp = requests.get(url, timeout=REQUEST_TIMEOUT, headers=headers)
+            if (resp.status_code == 403 and headers is HEADERS
+                    and "news.google.com" not in url):
+                headers = BROWSER_HEADERS
+                resp = requests.get(url, timeout=REQUEST_TIMEOUT, headers=headers)
             if resp.status_code in (401, 403):
                 print(f"    ⚠  Feed blocked ({resp.status_code}): {url[:80]}")
                 return []
@@ -1306,48 +1371,40 @@ def _collect_tier4() -> list:
 
 
 def _scrape_kcna_watch() -> list:
-    """Scrape KCNA Watch newstream page for today's article headlines and categories.
-    Falls back to Google cache / web search if direct scrape is blocked (403).
-    Returns a list of dicts with title, url, category."""
-    articles = []
+    """Today's KCNA Watch headlines and categories, from its newstream page.
 
-    # Attempt 1: direct scrape. Retry once with a browser-like User-Agent —
-    # kcnawatch.org 403s the default UA intermittently; a real browser UA
-    # often gets through on the retry.
-    _browser_ua = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                   "(KHTML, like Gecko) Chrome/122.0 Safari/537.36")
-    for attempt, ua in enumerate((HEADERS.get("User-Agent", ""), _browser_ua)):
+    Falls back to a Google News search of the site. Returns a list of dicts
+    with title, url, category, or [] — quietly: tier 4 carries KCNA through
+    a dozen other feeds (41 items on 21 October 2026 while this returned
+    nothing), so an empty scrape is a note in the log, not a warning.
+    """
+    articles, notes = [], []
+
+    # Attempt 1: the page itself, as the collector and then as a browser
+    # (kcnawatch.org refuses unfamiliar agents intermittently).
+    for headers in (HEADERS, BROWSER_HEADERS):
         try:
-            resp = requests.get(
-                "https://kcnawatch.org/newstream/",
-                timeout=REQUEST_TIMEOUT,
-                headers={**HEADERS, "User-Agent": ua, "Accept": "text/html"},
-            )
+            resp = requests.get("https://kcnawatch.org/newstream/", timeout=REQUEST_TIMEOUT,
+                                headers={**headers, "Accept": "text/html"})
             if resp.status_code == 403:
-                if attempt == 0:
-                    print("  ── KCNA Watch scrape: blocked (403) — retrying with browser UA")
-                    continue
-                print("  ── KCNA Watch scrape: blocked (403) — trying fallback")
-                break
+                notes.append("page 403")
+                continue
             resp.raise_for_status()
             articles = _parse_kcna_watch_html(resp.text)
             if articles:
                 print(f"  ── KCNA Watch scrape: {len(articles)} articles from newstream page")
                 return articles
-            break  # 200 but nothing parsed — go to Google News fallback
-        except Exception as e:
-            print(f"  ── KCNA Watch scrape: ⚠ direct failed ({e})")
-            if attempt == 0:
-                continue
+            notes.append("page had no dated article links")
+            break
+        except Exception as e:                                  # noqa: BLE001
+            notes.append(f"page {type(e).__name__}")
             break
 
     # Attempt 2: Google News search for kcnawatch.org articles. 72h window —
     # DPRK/KST vs UTC rollover and Google News indexing lag mean a 48h window
     # can miss same-day items entirely.
     try:
-        gnews_url = _gnews("site:kcnawatch.org/newstream/")
-        entries = _parse_feed(gnews_url)
-        for entry in entries:
+        for entry in _parse_feed(_gnews("site:kcnawatch.org/newstream/")):
             if not _is_recent(entry, hours=72):
                 continue
             title = entry.get("title", "").strip()
@@ -1360,55 +1417,68 @@ def _scrape_kcna_watch() -> list:
                 })
         if articles:
             print(f"  ── KCNA Watch scrape: {len(articles)} articles via Google News fallback")
-    except Exception as e:
-        print(f"  ── KCNA Watch scrape: ⚠ Google fallback also failed ({e})")
+            return articles
+        notes.append("search empty")
+    except Exception as e:                                      # noqa: BLE001
+        notes.append(f"search {type(e).__name__}")
 
-    if not articles:
-        print(f"  ── KCNA Watch scrape: 0 articles (all methods failed)")
-
+    print(f"  ── KCNA Watch scrape: none ({', '.join(notes)}); "
+          f"KCNA coverage comes from the tier-4 feeds")
     return articles
 
 
-def _parse_kcna_watch_html(html: str) -> list:
-    """Parse KCNA Watch newstream HTML for article entries."""
-    articles = []
-    import re as _re
+# KCNA Watch article links, in either shape the site has used:
+#   /newstream/2026/10/21/<slug>/            (dated path, the shape this parser
+#                                             was written for)
+#   /newstream/1792540800-123456789/<slug>/  (unix time of publication, then an
+#                                             id: the shape its article URLs
+#                                             have had in recent years)
+# The parser read only the first, so a page linking the second could never
+# match, and the scrape reported "all methods failed" every run. Absolute or
+# relative hrefs; the anchor text may be wrapped in <h3>/<span>.
+_KCNA_WATCH_LINK = re.compile(
+    r'<a\b[^>]*?\bhref=["\']((?:https?://(?:www\.)?kcnawatch\.org)?/newstream/'
+    r'(?:(\d{4})/(\d{2})/(\d{2})|(\d{10})-\d+)/[^"\']*)["\'][^>]*>(.*?)</a>',
+    re.IGNORECASE | re.DOTALL,
+)
+_KCNA_WATCH_CATEGORY = re.compile(
+    r'<(?:span|div|a)[^>]*class="[^"]*(?:category|source|tag)[^"]*"[^>]*>\s*([^<]{2,60}?)\s*</',
+    re.IGNORECASE,
+)
 
-    link_pattern = _re.compile(
-        r'<a\s+href="(https?://kcnawatch\.org/newstream/\d{4}/\d{2}/\d{2}/[^"]+)"[^>]*>\s*([^<]+?)\s*</a>',
-        _re.IGNORECASE,
-    )
-    cat_pattern = _re.compile(
-        r'<span[^>]*class="[^"]*category[^"]*"[^>]*>\s*([^<]+?)\s*</span>',
-        _re.IGNORECASE,
-    )
 
-    # Accept the last 3 days (UTC) — KCNA Watch dates URLs in KST, so a strict
-    # today/yesterday-UTC window drops same-day items around the date rollover.
-    now_utc = datetime.now(timezone.utc)
-    recent_date_strs = {(now_utc - timedelta(days=d)).strftime("%Y/%m/%d")
-                        for d in range(3)}
+def _parse_kcna_watch_html(html: str, now: datetime | None = None) -> list:
+    """Article entries from the KCNA Watch newstream HTML, last 72 hours only.
 
-    seen_urls = set()
-    for match in link_pattern.finditer(html):
-        url, title = match.group(1), match.group(2).strip()
-        if url in seen_urls:
+    A link carries its own date (the dated path or the unix timestamp); one
+    without a readable date is skipped rather than assumed to be today's.
+    """
+    now = now or datetime.now(timezone.utc)
+    oldest = now - timedelta(hours=72)
+    articles, seen = [], set()
+    for m in _KCNA_WATCH_LINK.finditer(html or ""):
+        href, y, mo, d, ts, inner = m.groups()
+        url = (href if href.startswith("http") else "https://kcnawatch.org" + href).split("#")[0]
+        if url in seen:
             continue
-        if not any(ds in url for ds in recent_date_strs):
+        try:
+            if ts:
+                when = datetime.fromtimestamp(int(ts), tz=timezone.utc)
+            else:
+                # Dated in KST: the end of that day is the latest it can be.
+                when = datetime(int(y), int(mo), int(d), 23, 59, tzinfo=timezone.utc)
+        except (ValueError, OverflowError, OSError):
             continue
-        seen_urls.add(url)
-
-        start = max(0, match.start() - 500)
-        context = html[start:match.end() + 200]
-        cat_match = cat_pattern.search(context)
-        category = cat_match.group(1).strip() if cat_match else "Uncategorized"
-
-        articles.append({
-            "title": re.sub(r"<[^>]+>", "", title).strip(),
-            "url": url,
-            "category": category,
-        })
-
+        if when < oldest or when > now + timedelta(days=1):
+            continue
+        title = re.sub(r"\s+", " ", html_lib.unescape(re.sub(r"<[^>]+>", " ", inner))).strip()
+        if len(title) < 12:
+            continue      # "Read more", an image link, a category chip
+        seen.add(url)
+        context = html[max(0, m.start() - 500): m.end() + 200]
+        cat = _KCNA_WATCH_CATEGORY.search(context)
+        articles.append({"title": title, "url": url,
+                         "category": cat.group(1).strip() if cat else "Uncategorized"})
     return articles
 
 
@@ -1689,14 +1759,16 @@ HILL_CALENDAR_KEYWORDS = re.compile(
     r"korea|dprk|pyongyang|kim jong"
     r"|indo-?pacific|indopacom|pacific command|pacific fleet|pacific air forces|u\.?s\.? army pacific"
     r"|marine forces,? pacific|usfk|forces,? korea|east asia|northeast asia"
+    r"|asia-?pacific|asia and the pacific|seventh fleet|7th fleet|\baukus\b"
     r"|shipbuild|shipyard|maritime industrial|ships for america|korus",
     re.IGNORECASE,
 )
 # Terms that count only beside an Asia or ally term: a trade hearing is about
 # Korea when it is about Asian partners, autos, steel or chips, not when it is
-# about a farm bill; an alliance or posture hearing when it is about the Pacific.
-_HILL_CONDITIONAL = re.compile(r"\btrade\b|tariff|reciprocal|section 232|alliances?|posture",
-                               re.IGNORECASE)
+# about a farm bill; an alliance or posture hearing when it is about the Pacific;
+# a Taiwan hearing when it is about the region, not the Strait alone.
+_HILL_CONDITIONAL = re.compile(r"\btrade\b|tariff|reciprocal|section 232|alliances?|posture"
+                               r"|taiwan", re.IGNORECASE)
 _HILL_CONTEXT = re.compile(r"asia|pacific|japan|allies|ally\b|partners|semiconductor|chips?\b"
                            r"|\bsteel\b|\bautos?\b|automobile", re.IGNORECASE)
 HILL_CALENDAR_DAYS = 7
@@ -1850,6 +1922,11 @@ def _schedule_records(content: bytes) -> list[dict]:
     return out
 
 
+_NOTICE_SUBCOMMITTEE = re.compile(
+    r"\bSubcommittee on (?:the )?([A-Z][A-Za-z,'&\- ]{2,80}?)(?=\s*(?:[.;:(\[]|$|\bDate\b|\bMeeting\b"
+    r"|\bLocation\b|\bHearing\b|\bMarkup\b))")
+
+
 def _parse_hill_schedule(content: bytes, source: str) -> list:
     """Hearings and markups from a committee schedule, as event dicts.
 
@@ -1880,8 +1957,14 @@ def _parse_hill_schedule(content: bytes, source: str) -> list:
                 continue
             when = _parse_event_date(title) or _event_date_in_notice(body)
             if when:
+                # A full-committee feed also carries its subcommittees'
+                # meetings, named only in the notice: "Subcommittee on East
+                # Asia and the Pacific". The calendar's relevance test reads
+                # the committee label, so the subcommittee belongs in it.
+                sub = _NOTICE_SUBCOMMITTEE.search(f"{title} {body}")
+                committee = f"{label}: {sub.group(1).strip(' ,')}" if sub else label
                 events.append({"date": when.isoformat(), "time": _event_time(body), "chamber": chamber,
-                               "committee": label, "title": title,
+                               "committee": committee, "title": title,
                                "url": entry.get("link", "") or HILL_SCHEDULE_PAGES.get(source, ""),
                                "source": source})
         return events
@@ -1940,10 +2023,12 @@ def _collect_hill_calendar() -> list:
                                       "error_msg": err}
             per_source[source] = "error" if err else len(found)
             events.extend(found)
-    kept = filter_hill_events(events, today, horizon)
+    dropped: dict = {}
+    kept = filter_hill_events(events, today, horizon, reasons=dropped)
     _hill_calendar_stats.clear()
     _hill_calendar_stats.update({
-        "fetched": len(events), "kept": len(kept),
+        "fetched": len(events), "kept": len(kept), "dropped": dropped,
+        "window": f"{today.isoformat()}..{horizon.isoformat()}",
         "answered": sum(1 for v in per_source.values() if v != "error"),
         "feeds": len(per_source), "per_source": per_source,
     })
@@ -1957,25 +2042,44 @@ def hill_event_relevant(text: str) -> bool:
     return bool(_HILL_CONDITIONAL.search(text) and _HILL_CONTEXT.search(text))
 
 
-def filter_hill_events(events: list, today, horizon) -> list:
-    """Keep Korea-relevant events inside the window, one per date and title."""
+def filter_hill_events(events: list, today, horizon, reasons: dict | None = None) -> list:
+    """Keep Korea-relevant events inside the window, one per date and title.
+
+    `reasons`, when given, is filled with why the rest were dropped: a log
+    line saying "127 fetched, 0 kept" cannot tell a recess (every meeting
+    already held) from a filter that rejects everything, and these counts can.
+    """
     seen, out = set(), []
+    why = {"past": 0, "beyond_window": 0, "not_relevant": 0, "undated": 0, "duplicate": 0}
+    dates = []
     for ev in events:
-        text = f"{ev.get('title', '')} {ev.get('committee', '')}"
-        if not hill_event_relevant(text):
-            continue
         try:
             d = datetime.strptime(ev.get("date", ""), "%Y-%m-%d").date()
         except ValueError:
+            why["undated"] += 1
             continue
-        if not (today <= d <= horizon):
+        dates.append(d)
+        if d < today:
+            why["past"] += 1
+            continue
+        if d > horizon:
+            why["beyond_window"] += 1
+            continue
+        text = f"{ev.get('title', '')} {ev.get('committee', '')}"
+        if not hill_event_relevant(text):
+            why["not_relevant"] += 1
             continue
         key = (ev["date"], re.sub(r"[^a-z0-9]+", " ", ev.get("title", "").lower()).strip()[:80])
         if key in seen:
+            why["duplicate"] += 1
             continue
         seen.add(key)
         out.append(ev)
     out.sort(key=lambda e: (e["date"], _time_key(e.get("time") or "")))
+    if reasons is not None:
+        reasons.update({k: v for k, v in why.items() if v})
+        if dates:
+            reasons["date_range"] = f"{min(dates).isoformat()}..{max(dates).isoformat()}"
     return out[:10]
 
 
@@ -2192,171 +2296,162 @@ def _fetch_bok_rate() -> dict:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# PUBLIC SENTIMENT — Korean Wikipedia structured tables
+# PUBLIC SENTIMENT — Gallup Korea's weekly poll, from the Korean press
 # ─────────────────────────────────────────────────────────────────────────────
+# Why the live parse failed every run (21 October 2026: "using fallbacks for
+# presidential_approval, party_ruling, party_opposition, party_independent"):
+#
+# 1. The headline searches were built twice. Each query was already a full
+#    Google News URL, and was passed through _gnews() again, so Google was
+#    asked to search for the text of a URL and returned nothing usable.
+# 2. The headline pattern wanted "지지율" after the president's name. Gallup
+#    Korea reports "직무 긍정률" (job-performance positive rate), and the press
+#    writes "직무 긍정률 39%" or "긍정 평가 39%" as often as "지지율 39%".
+# 3. The Korean Wikipedia pass picked the party figures by size ("the largest
+#    share is the ruling party, the second the opposition"). With independents
+#    (29%) above the PPP (27%), that labelled independents as the PPP. It also
+#    took approval and party support from different rows, which may be
+#    different weeks. It is removed.
+#
+# Same-poll rule: every number the collector passes on comes from one Gallup
+# Korea survey. A live record must carry approval and both parties from one
+# article; the independents figure may come from another article only when
+# both name the same survey dates. A live record that is incomplete, older
+# than the stored baseline, or not Gallup's is dropped whole, and the
+# baseline is used whole: four numbers from one poll, never a mix.
 
-def _scrape_wiki_polling(sentiment: dict) -> bool:
-    """Scrape Korean Wikipedia for latest Gallup Korea polling data.
+_GALLUP_APPROVAL = re.compile(
+    r"(?:대통령|이재명|李|국정)[^%\d]{0,20}?"
+    r"(?:직무\s*긍정률|직무\s*긍정\s*평가|긍정\s*평가|긍정률|지지율|지지도|국정\s*수행\s*(?:지지|긍정))"
+    r"[^%\d]{0,12}(\d{1,2}(?:\.\d)?)\s*%(?!\s*p)"
+    r"|approval(?:\s+rating)?[^%\d]{0,25}(\d{1,2}(?:\.\d)?)\s*(?:%|percent)",
+    re.IGNORECASE,
+)
+# Label first, one bounded gap with no digit or %, so a label never reaches
+# the next party's number ("민주 36%·국힘 27%").
+_GALLUP_DP = re.compile(r"(?:더불어민주당|민주당|민주|Democratic\s+Party)[^%\d]{0,12}(\d{1,2}(?:\.\d)?)\s*(?:%|percent)",
+                        re.IGNORECASE)
+_GALLUP_PPP = re.compile(r"(?:국민의힘|국힘|People\s+Power\s+Party|PPP)[^%\d]{0,12}(\d{1,2}(?:\.\d)?)\s*(?:%|percent)",
+                         re.IGNORECASE)
+_GALLUP_IND = re.compile(r"(?:무당층|무당파|independents?|no\s+party\s+preference)[^%\d]{0,12}"
+                         r"(\d{1,2}(?:\.\d)?)\s*(?:%|percent)", re.IGNORECASE)
+GALLUP_MAX_AGE_DAYS = 9
 
-    Korean Wikipedia maintains well-structured HTML tables of weekly polling
-    data at:
-      - 대한민국의_대통령_지지율 (presidential approval)
-      - 대한민국의_정당_지지율 (party support)
 
-    Returns True if all 4 metrics were successfully extracted from the
-    same source (guaranteeing consistency), False otherwise.
+def _pct_group(m) -> float | None:
+    if not m:
+        return None
+    g = next((x for x in m.groups() if x), None)
+    try:
+        return float(g) if g is not None else None
+    except ValueError:
+        return None
+
+
+def parse_gallup_report(text: str, published: str = "") -> dict:
+    """The Gallup Korea figures one article reports, or {}.
+
+    `published` is the article's date (YYYY-MM-DD), used as the poll's date
+    only when the text names no survey dates. Realmeter, NBS and other
+    pollsters are not Gallup and return {}.
     """
-    # ── Presidential approval ─────────────────────────────────────────────
-    pres_url = "https://ko.wikipedia.org/wiki/%EB%8C%80%ED%95%9C%EB%AF%BC%EA%B5%AD%EC%9D%98_%EB%8C%80%ED%86%B5%EB%A0%B9_%EC%A7%80%EC%A7%80%EC%9C%A8"
-    party_url = "https://ko.wikipedia.org/wiki/%EB%8C%80%ED%95%9C%EB%AF%BC%EA%B5%AD%EC%9D%98_%EC%A0%95%EB%8B%B9_%EC%A7%80%EC%A7%80%EC%9C%A8"
-
-    headers = {
-        "User-Agent": "KoreaDailyBrief/1.0 (research; contact: korea-brief@csis.org)",
-        "Accept": "text/html",
-    }
-
-    pres_val = None
-    pres_date = None
-    pres_source = None
-
-    # Fetch presidential approval page
+    t = re.sub(r"\s+", " ", html_lib.unescape(re.sub(r"<[^>]+>", " ", str(text or ""))))
+    if not re.search(r"갤럽|gallup", t, re.IGNORECASE):
+        return {}
+    if re.search(r"리얼미터|realmeter|\bNBS\b|전국지표조사", t, re.IGNORECASE) and \
+            not re.search(r"한국갤럽|gallup korea", t, re.IGNORECASE):
+        return {}
     try:
-        resp = requests.get(pres_url, timeout=15, headers=headers)
-        resp.raise_for_status()
-        html = resp.text
+        from gallup_fetch import _parse_survey_dates
+        label, key = _parse_survey_dates(t)
+    except Exception:                                           # noqa: BLE001
+        label, key = "", ""
+    return {"approval": _pct_group(_GALLUP_APPROVAL.search(t)),
+            "dp": _pct_group(_GALLUP_DP.search(t)),
+            "ppp": _pct_group(_GALLUP_PPP.search(t)),
+            "ind": _pct_group(_GALLUP_IND.search(t)),
+            "survey_label": label, "sort_key": key or published,
+            "explicit_dates": bool(key)}
 
-        # Find Gallup Korea rows in wikitable. The tables have rows like:
-        #   <td>3월 3주차</td><td>한국갤럽</td>...<td>67%</td>...
-        # We look for the last (most recent) Gallup Korea row with a percentage.
-        # Pattern: find all rows containing "갤럽" and extract the percentage.
-        gallup_rows = re.findall(
-            r'<tr[^>]*>(.*?)</tr>',
-            html, re.DOTALL
-        )
-        for row in reversed(gallup_rows):
-            if '갤럽' not in row and 'Gallup' not in row:
-                continue
-            # Extract all cell contents
-            cells = re.findall(r'<td[^>]*>(.*?)</td>', row, re.DOTALL)
-            if len(cells) < 3:
-                continue
-            # Clean HTML tags from cells
-            clean_cells = [re.sub(r'<[^>]+>', '', c).strip() for c in cells]
-            # Find the percentage value (긍정/approval column)
-            for cell in clean_cells:
-                m = re.search(r'(\d{2})(?:\.\d+)?%', cell)
-                if m:
-                    val = float(m.group(1))
-                    if 30 <= val <= 85:
-                        pres_val = val
-                        break
-            if pres_val:
-                # Extract date from the row (e.g., "3월 3주차" or "2026-03-17")
-                for cell in clean_cells:
-                    if re.search(r'\d+월.*주|20\d{2}', cell):
-                        pres_date = cell
-                        break
-                pres_source = "Gallup Korea" if "갤럽" in row else "Realmeter"
-                break
-    except Exception as e:
-        print(f"      ⚠ Wikipedia presidential page fetch failed: {e}")
-        return False
 
-    if not pres_val:
-        return False
+def pick_gallup_poll(reports: list, baseline: dict) -> dict:
+    """The newest complete, plausible Gallup poll in `reports`, or {}.
 
-    # ── Party support ─────────────────────────────────────────────────────
-    dp_val = None
-    ppp_val = None
-    ind_val = None
-    party_date = None
-
+    Complete means approval, DP and PPP from one article. Independents are
+    taken from that article, else from another naming the same survey dates,
+    else from the baseline when the baseline is that same poll. A poll older
+    than the baseline is not newer information and returns {}.
+    """
+    baseline = baseline or {}
     try:
-        resp = requests.get(party_url, timeout=15, headers=headers)
-        resp.raise_for_status()
-        html = resp.text
+        import gallup_update as gu
+        base_key = gu._current_sort_key(baseline)
+        sane = gu._sane
+    except Exception:                                           # noqa: BLE001
+        base_key, sane = "", (lambda *a: [])
 
-        gallup_rows = re.findall(
-            r'<tr[^>]*>(.*?)</tr>',
-            html, re.DOTALL
-        )
-        for row in reversed(gallup_rows):
-            if '갤럽' not in row and 'Gallup' not in row:
-                continue
-            cells = re.findall(r'<td[^>]*>(.*?)</td>', row, re.DOTALL)
-            if len(cells) < 4:
-                continue
-            clean_cells = [re.sub(r'<[^>]+>', '', c).strip() for c in cells]
-            # In the party support table, columns typically are:
-            # Date | Pollster | DP% | PPP% | (others) | Independents%
-            # We need to find the DP and PPP columns by looking for
-            # cells with percentages in the expected range.
-            pcts = []
-            for cell in clean_cells:
-                m = re.search(r'(\d{1,2})(?:\.\d+)?%', cell)
-                if m:
-                    pcts.append(float(m.group(1)))
-                else:
-                    pcts.append(None)
+    def _d(key):
+        try:
+            return datetime.strptime(key, "%Y-%m-%d").date()
+        except (TypeError, ValueError):
+            return None
 
-            # Heuristic: DP is usually the largest party %, PPP second
-            valid_pcts = [(i, v) for i, v in enumerate(pcts) if v is not None and 5 <= v <= 60]
-            if len(valid_pcts) >= 2:
-                # Sort by value descending - largest is likely ruling party (DP)
-                valid_pcts.sort(key=lambda x: x[1], reverse=True)
-                dp_val = valid_pcts[0][1]
-                ppp_val = valid_pcts[1][1]
-                # Independents are often the 3rd largest or labeled 무당층
-                if len(valid_pcts) >= 3:
-                    ind_val = valid_pcts[2][1]
-                # Extract date
-                for cell in clean_cells:
-                    if re.search(r'\d+월.*주|20\d{2}', cell):
-                        party_date = cell
-                        break
+    # An article that names no survey dates is dated by publication. Gallup
+    # surveys Tuesday to Thursday and publishes on Friday, so an article from
+    # up to six days after a known survey's start reports that survey: it is
+    # given that survey's dates (another article's, or the baseline's) rather
+    # than counted as a newer poll.
+    known = sorted({r["sort_key"] for r in reports if r and r.get("explicit_dates")}
+                   | ({base_key} if base_key else set()), reverse=True)
+    reports = [dict(r) for r in reports if r]
+    for r in reports:
+        pub = None if r.get("explicit_dates") else _d(r.get("sort_key"))
+        if not pub:
+            continue
+        for k in known:
+            start = _d(k)
+            if start and 0 <= (pub - start).days <= 6:
+                r["sort_key"], r["explicit_dates"] = k, True
+                r["survey_label"] = r.get("survey_label") or next(
+                    (x.get("survey_label") for x in reports
+                     if x.get("sort_key") == k and x.get("survey_label")),
+                    baseline.get("survey_dates", "") if k == base_key else "")
                 break
-    except Exception as e:
-        print(f"      ⚠ Wikipedia party page fetch failed: {e}")
-        # Still use presidential data if we got it
-        pass
-
-    # ── Set sentiment values ──────────────────────────────────────────────
-    date_label = pres_date or party_date or "recent"
-    source = pres_source or "Gallup Korea"
-
-    sentiment["presidential_approval"] = {
-        "value": f"{pres_val:g}%", "trend": None,
-        "source": source, "last_updated": date_label,
-    }
-
-    if dp_val and ppp_val:
-        sentiment["party_ruling"] = {
-            "value": f"{dp_val:g}%",
-            "party": "Democratic Party", "party_kr": "더불어민주당",
-            "source": source, "last_updated": party_date or date_label,
-        }
-        sentiment["party_opposition"] = {
-            "value": f"{ppp_val:g}%",
-            "party": "People Power Party", "party_kr": "국민의힘",
-            "source": source, "last_updated": party_date or date_label,
-        }
-        if ind_val:
-            sentiment["party_independent"] = {
-                "value": f"{ind_val:g}%",
-                "source": source, "last_updated": party_date or date_label,
-            }
-        return True
-
-    # Got presidential but not party - partial success
-    return False
+    whole = [r for r in reports if r.get("sort_key") and None not in
+             (r.get("approval"), r.get("dp"), r.get("ppp"))]
+    whole = [r for r in whole if not sane(r["approval"], r["dp"], r["ppp"], r.get("ind"))]
+    if not whole:
+        return {}
+    best = max(whole, key=lambda r: (r["sort_key"], r["explicit_dates"]))
+    if base_key and best["sort_key"] < base_key:
+        return {}
+    poll = dict(best)
+    if poll.get("ind") is None and poll["explicit_dates"]:
+        poll["ind"] = next((r["ind"] for r in reports if r and r.get("ind") is not None
+                            and r.get("explicit_dates") and r.get("sort_key") == poll["sort_key"]),
+                           None)
+    if poll.get("ind") is None and base_key and poll["sort_key"] == base_key:
+        try:
+            poll["ind"] = float(str((baseline.get("party_independent") or {}).get("value", ""))
+                                .rstrip("%"))
+        except ValueError:
+            pass
+    if poll.get("ind") is None:
+        return {}           # three numbers from this poll and one from another is a mix
+    return poll
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# PUBLIC SENTIMENT — Gallup Korea, Realmeter (headline scraping fallback)
-# ─────────────────────────────────────────────────────────────────────────────
+def _gallup_label(poll: dict) -> str:
+    if poll.get("explicit_dates") and poll.get("survey_label"):
+        return poll["survey_label"]
+    try:
+        return datetime.strptime(poll["sort_key"], "%Y-%m-%d").strftime("%b %d, %Y")
+    except (KeyError, ValueError):
+        return "recent"
+
 
 def _collect_sentiment() -> dict:
-    """Scrape latest Korean polling data from news headlines.
+    """Latest Gallup Korea weekly poll, from Korean news reports of it.
 
     Returns structured sentiment data for presidential approval,
     party support ratings (ruling, opposition, independents), and
@@ -2371,232 +2466,53 @@ def _collect_sentiment() -> dict:
         "gallup_spotlight": None,
         "discourse_flag": None,
     }
+    baseline = load_gallup_baseline()
 
-    # ── Pass 0: Korean Wikipedia structured tables (most reliable) ──────
-    # Korean Wikipedia maintains well-structured tables of weekly polling
-    # data from Gallup Korea and Realmeter. This is the most reliable
-    # source because volunteer editors verify the numbers and the table
-    # format is consistent.
-    wiki_scraped = False
-    try:
-        wiki_scraped = _scrape_wiki_polling(sentiment)
-        if wiki_scraped:
-            print("      ✓ Wikipedia polling data scraped successfully")
-    except Exception as e:
-        print(f"      ⚠ Wikipedia scrape failed: {e}")
-
-    # ── Fallback: News headline scraping ──────────────────────────────
-    # If Wikipedia scrape failed or returned no data, fall back to
-    # extracting from Korean news headlines about Gallup/Realmeter polls.
-    #
-    # IMPORTANT: Presidential approval regex MUST require "대통령" or
-    # "presidential" near the number. The old regex matched generic
-    # "support"/"지지율" which would grab party ratings or unrelated
-    # percentages as presidential approval — the #1 cause of wrong numbers.
-
-    # Presidential approval: MUST have "대통령" or "presidential" nearby.
-    # The [^\d]{0,10} gap between the keyword block and the % capture is
-    # critical — without it, the space before the digit isn't consumed.
-    _RE_PRES_APPROVAL = re.compile(
-        r'(?:대통령\s*(?:직무)?(?:수행)?(?:긍정)?[^\d]{0,20}지지율|'    # 대통령 지지율 XX%
-        r'대통령[^\d]{0,30}(?:긍정|approval))[^\d]{0,10}'              # 대통령...긍정/approval
-        r'(\d{1,3}(?:\.\d+)?)%|'
-        r'(?:presidential\s+approval)[^\d]{0,20}(\d{1,3}(?:\.\d+)?)%|'  # presidential approval XX%
-        r'(\d{1,3}(?:\.\d+)?)%\s*(?:presidential\s+approval)',          # XX% presidential approval
-        re.IGNORECASE,
-    )
-    # Ruling party: 민주당 / Democratic Party
-    _RE_RULING = re.compile(
-        r'(?:민주당|Democratic\s*Party)[^\d]{0,30}(\d{1,3}(?:\.\d+)?)%|'
-        r'(\d{1,3}(?:\.\d+)?)%\s*(?:민주당|Democratic\s*Party)',
-        re.IGNORECASE,
-    )
-    # Opposition: 국민의힘 / People Power Party
-    _RE_OPP = re.compile(
-        r'(?:국민의힘|People\s*Power\s*Party)[^\d]{0,30}(\d{1,3}(?:\.\d+)?)%|'
-        r'(\d{1,3}(?:\.\d+)?)%\s*(?:국민의힘|People\s*Power\s*Party)',
-        re.IGNORECASE,
-    )
-    # Independents: 무당층 / 무당파
-    _RE_IND = re.compile(
-        r'(?:무당층|무당파|no\s*party\s*preference|independents?)[^\d]{0,30}(\d{1,3}(?:\.\d+)?)%|'
-        r'(\d{1,3}(?:\.\d+)?)%\s*(?:무당층|무당파|no\s*party|independents?)',
-        re.IGNORECASE,
-    )
-
-    # ── Korean news headline pattern ─────────────────────────────────────
-    # Korean news outlets reliably report Gallup results in a standard
-    # headline format that includes ALL numbers together, e.g.:
-    #   "李대통령 지지율 67%…민주 46%·국힘 20% [한국갤럽]"
-    #   "이재명 대통령 지지율 67%...민주 46%·국민의힘 20%"
-    # This is far more reliable than trying to parse article body text.
-    # We extract all percentages from these compact headline strings.
-    _RE_HEADLINE_ALL = re.compile(
-        r'(?:대통령|이재명|李)\s*(?:대통령)?\s*지지율?'
-        r'.*?(?<!\d)(\d{2})%(?!p)'              # group 1: presidential approval (2 digits, skip %p)
-        r'.*?(?:민주당?|민주|DP)\s*(\d{1,2})%'  # group 2: ruling party (DP)
-        r'.*?(?:국힘|국민의힘|PPP)\s*(\d{1,2})%', # group 3: opposition (PPP)
-        re.IGNORECASE,
-    )
-
-    def _gnews_kr(query: str) -> str:
-        return f"https://news.google.com/rss/search?q={query}&hl=ko&gl=KR&ceid=KR:ko"
-
-    # Queries: Korean news headlines about Gallup polls (most reliable source)
-    # Use Korean-locale Google News for better Korean-language polling coverage
-    combined_queries = [
-        _gnews_kr("한국갤럽+대통령+지지율+민주+국힘"),
-        _gnews_kr("한국갤럽+대통령+지지율+민주당+국민의힘"),
-        _gnews("한국갤럽+대통령+지지율+민주+국힘"),
-        _gnews("한국갤럽+대통령+지지율+민주당+국민의힘"),
-        _gnews("한국갤럽+대통령+지지율"),
-        _gnews_kr("리얼미터+대통령+지지율+민주+국힘"),
-        _gnews("리얼미터+대통령+지지율+민주+국힘"),
+    # Korean-edition searches for the weekly report. Each is a finished URL:
+    # the old code wrapped these in _gnews() a second time.
+    poll_searches = [
+        _gnews('한국갤럽 "직무 긍정률"', locale="ko"),
+        _gnews("한국갤럽 대통령 지지율 민주당 국민의힘", locale="ko"),
+        _gnews("갤럽 이재명 대통령 긍정 평가 무당층", locale="ko"),
+        _gnews('"Gallup Korea" approval Lee Jae-myung'),
     ]
-
-    def _sane_pct_any(match) -> float | None:
-        """Extract percentage from any non-None group in a match."""
-        for i in range(1, (match.lastindex or 0) + 1):
-            g = match.group(i)
-            if g is not None:
-                val = float(g)
-                return val if 5 <= val <= 85 else None
-        return None
-
-    def _is_polling_article(text: str) -> bool:
-        """Check that article is actually about polling."""
-        poll_signals = ("갤럽", "gallup", "리얼미터", "realmeter", "여론조사",
-                        "poll", "survey", "지지율", "approval rating")
-        return any(s in text.lower() for s in poll_signals)
-
-    def _get_pub_date(entry) -> str | None:
-        for attr in ("published_parsed", "updated_parsed"):
-            parsed = getattr(entry, attr, None)
-            if parsed:
-                return datetime(*parsed[:6], tzinfo=timezone.utc).strftime("%b %d, %Y")
-        return None
-
-    def _get_source(text: str) -> str:
-        if "gallup" in text.lower() or "갤럽" in text:
-            return "Gallup Korea"
-        if "realmeter" in text.lower() or "리얼미터" in text:
-            return "Realmeter"
-        return "Poll"
-
-    def _try_headline_extraction(entry) -> bool:
-        """Strategy 1 (preferred): Extract all metrics from a Korean news headline.
-        Korean outlets report Gallup results in compact format like:
-          '李대통령 지지율 67%…민주 46%·국힘 20% [한국갤럽]'
-        This grabs presidential + both parties in one regex match,
-        guaranteeing they come from the same source and same article."""
-        text = f"{entry.get('title', '')} {entry.get('summary', entry.get('description', ''))}"
-        if not _is_polling_article(text):
-            return False
-        m = _RE_HEADLINE_ALL.search(text)
-        if not m:
-            return False
-        pres_val = float(m.group(1))
-        dp_val = float(m.group(2))
-        ppp_val = float(m.group(3))
-        # Sanity: presidential should be higher than individual party ratings
-        if not (30 <= pres_val <= 85 and 5 <= dp_val <= 60 and 5 <= ppp_val <= 50):
-            return False
-        if pres_val < dp_val or pres_val < ppp_val:
-            return False
-        source = _get_source(text)
-        pub_date = _get_pub_date(entry)
-        # Set all from the same source/date
-        sentiment["presidential_approval"] = {
-            "value": f"{pres_val:g}%", "trend": None,
-            "source": source, "last_updated": pub_date or "recent",
-        }
-        sentiment["party_ruling"] = {
-            "value": f"{dp_val:g}%",
-            "party": "Democratic Party", "party_kr": "더불어민주당",
-            "source": source, "last_updated": pub_date or "recent",
-        }
-        sentiment["party_opposition"] = {
-            "value": f"{ppp_val:g}%",
-            "party": "People Power Party", "party_kr": "국민의힘",
-            "source": source, "last_updated": pub_date or "recent",
-        }
-        # Try to get independents from the same text
-        ind_m = _RE_IND.search(text)
-        sentiment["party_independent"] = None
-        if ind_m:
-            val = _sane_pct_any(ind_m)
-            if val is not None:
-                sentiment["party_independent"] = {
-                    "value": f"{val:g}%",
-                    "source": source, "last_updated": pub_date or "recent",
-                }
-        return True
-
-    def _try_field_extraction(entry) -> bool:
-        """Strategy 2 (fallback): Extract metrics individually.
-        Presidential approval requires '대통령' or 'presidential' nearby."""
-        text = f"{entry.get('title', '')} {entry.get('summary', entry.get('description', ''))}"
-        if not _is_polling_article(text):
-            return False
-        appr_m = _RE_PRES_APPROVAL.search(text)
-        if not appr_m:
-            return False
-        appr_val = _sane_pct_any(appr_m)
-        if appr_val is None:
-            return False
-        source = _get_source(text)
-        pub_date = _get_pub_date(entry)
-        sentiment["presidential_approval"] = {
-            "value": f"{appr_val:g}%", "trend": None,
-            "source": source, "last_updated": pub_date or "recent",
-        }
-        sentiment["party_ruling"] = None
-        sentiment["party_opposition"] = None
-        sentiment["party_independent"] = None
-        for regex, key, extra in [
-            (_RE_RULING, "party_ruling", {"party": "Democratic Party", "party_kr": "더불어민주당"}),
-            (_RE_OPP, "party_opposition", {"party": "People Power Party", "party_kr": "국민의힘"}),
-            (_RE_IND, "party_independent", {}),
-        ]:
-            m = regex.search(text)
-            if m:
-                val = _sane_pct_any(m)
-                if val is not None:
-                    sentiment[key] = {"value": f"{val:g}%", "source": source,
-                                      "last_updated": pub_date or "recent", **extra}
-        return True
-
-    # ── Pass 1: Headline extraction (skip if Wikipedia already got data)
-    if not (sentiment["presidential_approval"] and sentiment["party_ruling"]):
-        for query in combined_queries:
-            try:
-                entries = _parse_feed(_gnews(query))
-                for entry in entries[:8]:
-                    if _try_headline_extraction(entry):
+    reports, seen = [], set()
+    for url in poll_searches:
+        try:
+            for entry in _parse_feed(url)[:15]:
+                link = entry.get("link", "")
+                if link in seen or not _is_recent(entry, hours=24 * GALLUP_MAX_AGE_DAYS):
+                    continue
+                seen.add(link)
+                pub = ""
+                for attr in ("published_parsed", "updated_parsed"):
+                    parsed = getattr(entry, attr, None) or entry.get(attr)
+                    if parsed:
+                        pub = f"{parsed[0]:04d}-{parsed[1]:02d}-{parsed[2]:02d}"
                         break
-                if sentiment["presidential_approval"] and sentiment["party_ruling"]:
-                    break
-            except Exception as e:
-                print(f"    ⚠  Sentiment pass 1 ({query[:40]}): {e}")
-                continue
-
-    # ── Pass 2: Field-by-field extraction (fallback if no headline match)
-    if not sentiment["presidential_approval"]:
-        for query in combined_queries:
-            try:
-                entries = _parse_feed(_gnews(query))
-                for entry in entries[:5]:
-                    if _try_field_extraction(entry) and (
-                        sentiment["party_ruling"] or sentiment["party_opposition"]
-                    ):
-                        break
-                if sentiment["presidential_approval"] and (
-                    sentiment["party_ruling"] or sentiment["party_opposition"]
-                ):
-                    break
-            except Exception as e:
-                print(f"    ⚠  Sentiment pass 2 ({query[:40]}): {e}")
-                continue
+                text = f"{entry.get('title', '')} {entry.get('summary', entry.get('description', ''))}"
+                r = parse_gallup_report(text, pub)
+                if r:
+                    reports.append(r)
+        except Exception as e:                                  # noqa: BLE001
+            print(f"    ⚠  Sentiment search failed: {e}")
+    poll = pick_gallup_poll(reports, baseline)
+    if poll:
+        label = _gallup_label(poll)
+        common = {"source": "Gallup Korea", "last_updated": label}
+        sentiment["presidential_approval"] = {"value": f"{poll['approval']:g}%", "trend": None, **common}
+        sentiment["party_ruling"] = {"value": f"{poll['dp']:g}%", "party": "Democratic Party",
+                                     "party_kr": "더불어민주당", **common}
+        sentiment["party_opposition"] = {"value": f"{poll['ppp']:g}%", "party": "People Power Party",
+                                         "party_kr": "국민의힘", **common}
+        sentiment["party_independent"] = {"value": f"{poll['ind']:g}%", **common}
+        print(f"      ✓ Gallup Korea poll read from the press: {label} "
+              f"(approval {poll['approval']:g}%, DP {poll['dp']:g}%, PPP {poll['ppp']:g}%, "
+              f"ind {poll['ind']:g}%)")
+    else:
+        complete = sum(1 for r in reports if None not in (r.get("approval"), r.get("dp"), r.get("ppp")))
+        print(f"      Gallup: {len(reports)} report(s) found, {complete} with approval and both "
+              f"parties; none newer than the baseline and complete, so the baseline is used whole")
 
     # ── Gallup Korea Spotlight (weekly special-topic finding) ───────────
     # Each weekly poll includes a rotating social/policy topic beyond the
@@ -2694,8 +2610,12 @@ def _collect_sentiment() -> dict:
         fallback_used.append("party_independent")
         sentiment["party_independent"] = _bl(
             "party_independent", {"value": "21%", "trend": "down"})
-    if fallback_used:
-        print(f"    ⚠  Sentiment: using fallbacks for {', '.join(fallback_used)}")
+    if fallback_used and len(fallback_used) < 4:
+        # Cannot happen through _collect_sentiment's live path, which sets
+        # all four or none; kept loud in case a later edit breaks that.
+        print(f"    ⚠  Sentiment: MIXED POLLS, baseline used for {', '.join(fallback_used)} only")
+    elif fallback_used:
+        print(f"    Sentiment: Gallup baseline ({bl_date}) used for all four figures")
     if not sentiment["gallup_spotlight"]:
         fallback_used.append("gallup_spotlight")
         spotlight = baseline.get("spotlight") or {
