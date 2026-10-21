@@ -1617,6 +1617,41 @@ def check_v2_lead():
     return problems
 
 
+def check_v2_contents_and_sentiment():
+    """The contents line has no numbers and one face; Public Sentiment is approval beside three party boxes and the trend."""
+    import re as _r
+    problems = []
+    d = {"digest_date": "Wednesday, October 21, 2026", "date_slug": "2026-10-21",
+         "web_url": "https://example.org/brief/latest.html",
+         "top_stories": [{"headline": "Lead", "body": "Body."}],
+         "overnight_items": [{"headline": "O", "body_text": "B."}],
+         "business_economy": [{"headline": "Chips", "body_text": "Exports rose sharply in October. "
+                               "The rise was the largest in two years. A third sentence the email cuts off here."}],
+         "northeast_asia": [{"headline": "N", "body_text": "B."}],
+         "calendar_watch": [{"month": "Oct", "day": 22, "headline": "Audit continues"}],
+         "public_sentiment": {"presidential_approval": {"value": "39%", "source": "Gallup Korea",
+                                                        "last_updated": "October 13-15, 2026"},
+                              "party_ruling": {"value": "36%", "party": "Democratic Party"},
+                              "party_opposition": {"value": "27%", "party": "People Power Party"},
+                              "party_independent": {"value": "29%"}}}
+    html = _v2_render(d)
+    toc = html[html.find('class="v2-toc'):]
+    toc = toc[:toc.find("</div>")]
+    if not toc:
+        problems.append("no contents line")
+    if _r.search(r">\s*0\d\s*<", toc) or "Georgia" in toc:
+        problems.append("the contents line still carries numbers or a second face")
+    card = html[html.find('name="sentiment"'):]
+    card = card[:card.find('class="v2-gap"', 50)]
+    for t in ("Lee approval", "39%", "Gallup Korea, October 13-15, 2026", "Democratic", "People Power",
+              "36%", "27%", "29%"):
+        if t not in card:
+            problems.append(f"Public Sentiment lacks {t!r}")
+    if card.count('class="v2-psb"') != 3:
+        problems.append("the party figures are not three boxes")
+    return problems
+
+
 def check_v2_shortened_email():
     """In v2 only top stories run in full; other items keep their lead and link to the web page."""
     import copy, render
@@ -2868,6 +2903,7 @@ CHECKS = [
     ("v2 status line drops missing facts", check_v2_status_line),
     ("v2 shortening cuts at real sentence ends", check_v2_first_sentence),
     ("v2 email keeps two sentences or about fifty words", check_v2_lead),
+    ("v2 contents line plain; Public Sentiment approval, party boxes, trend", check_v2_contents_and_sentiment),
     ("v2 email runs top stories in full, the rest shortened", check_v2_shortened_email),
     ("v2 no Leaders' words card; its quotes stay under Statements", check_v2_no_leaders_card),
     ("v2 ROK government card grid", check_v2_rok_cards),

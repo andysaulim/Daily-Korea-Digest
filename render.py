@@ -2904,10 +2904,11 @@ def render(digest: dict) -> str:
 #   * The top is an internal-use strip with the issue links, a navy band
 #     with the CSIS lockup, the brief's name in an outlined box (text, not an
 #     image, since Gmail blocks images) and the date, number and read time,
-#     the Listen card, then a card with a wrapping line of numbered contents
-#     links. A hidden preheader opens the body (_v2_preheader).
+#     the Listen card, then a card with a plain two-line row of contents
+#     links (no numbers, one face). A hidden preheader opens the body (_v2_preheader).
 #   * Stat of the day follows Overnight: the navy bar over a blue body. ROK Government is a
-#     grid of agency cards; Public Sentiment four figures in a row; trade a
+#     grid of agency cards; Public Sentiment classic's approval figure beside
+#     three party boxes, the trend line under both; trade a
 #     tracker table. The sign-off card is black, the footer navy with the
 #     Korea Chair lockup.
 #   * Items carry a teal kicker (source, then whatever category adds
@@ -3678,11 +3679,19 @@ def _v2_rok_cards(items: list) -> str:
 # ── Public sentiment ────────────────────────────────────────────────────────
 
 def _v2_sentiment_card(sentiment: dict, delta, spark: str, stale: str) -> str:
-    """Approval and the three party figures as four equal blocks, then one line of survey detail.
+    """Classic's Public Sentiment in a v2 card: the approval figure, the parties in a row of boxes, the trend.
 
-    The blocks are a quarter of the card each, one row on a desktop; below
-    120px a block keeps that width and they wrap two to a row, so a phone
-    gets a two-by-two square with no empty corner, stylesheet or not.
+    The owner preferred classic's panel (a large approval figure with its
+    change and survey dates, the party standings beside it) to four equal
+    blocks. Classic's version left the right half empty under three small
+    figures; here the parties are three bordered boxes of the approval
+    block's height, centred beside it, and the trend line runs the full
+    width under both, so neither side has dead space.
+
+    Two blocks that sit side by side where they fit (a desktop) and stack
+    by themselves where they do not (a phone), stylesheet or not; Outlook
+    gets a table in conditional comments. The three boxes stay in one row
+    down to a 320px phone with the stylesheet; without it, the third wraps.
     """
     ap = sentiment.get("presidential_approval") or {}
 
@@ -3695,35 +3704,52 @@ def _v2_sentiment_card(sentiment: dict, delta, spark: str, stale: str) -> str:
         name = _re.sub(r"\s+Party$", "", name)
         return _esc(_en_label(name)) or fallback
 
-    sub_ap = ""
+    parties = [("Ruling", val(sentiment.get("party_ruling")), party(sentiment.get("party_ruling"), "Democratic")),
+               ("Opposition", val(sentiment.get("party_opposition")), party(sentiment.get("party_opposition"), "People Power")),
+               ("Independents", val(sentiment.get("party_independent")), "")]
+    approval = val(ap)
+    if not approval and not any(p[1] for p in parties):
+        return ""
+    # Sentence case: "INDEPENDENTS" in capitals is 86px at 11px, wider than a
+    # box on a 320px phone; "Independents" at 12px is 78px.
+    lab = f"font-size:12px;font-weight:700;line-height:1.4;color:{_V2_INK};"
+    change = ""
     if delta:
         pts, prior = delta
         colour = UP_GREEN if pts > 0 else DOWN_RED if pts < 0 else _V2_META
         sign = "+" if pts > 0 else "&minus;" if pts < 0 else ""
-        sub_ap = (f'<span style="color:{colour};">{sign}{abs(pts):g} pts</span>'
-                  + (f" vs {_esc(prior)}" if prior else ""))
-    blocks = [("Lee approval", val(ap), sub_ap, _V2_NAVY),
-              ("Ruling", val(sentiment.get("party_ruling")), party(sentiment.get("party_ruling"), "Democratic"), _V2_INK),
-              ("Opposition", val(sentiment.get("party_opposition")), party(sentiment.get("party_opposition"), "People Power"), _V2_INK),
-              ("Independents", val(sentiment.get("party_independent")), "", _V2_INK)]
-    if not any(b[1] for b in blocks):
-        return ""
-    cells = "".join(
-        '<div class="v2-ps" style="display:inline-block;vertical-align:top;width:25%;min-width:120px;font-size:13px;">'
-        f'<div style="padding:10px 6px 8px 0;"><div style="font-size:11px;font-weight:700;text-transform:uppercase;'
-        f'color:{_V2_META};">{label}</div>'
-        f'<div style="font-family:{_V2_SERIF};font-size:24px;font-weight:700;line-height:1.1;margin-top:3px;'
-        f'color:{colour if v else _V2_META};">{v or "--"}</div>'
-        f'<div style="font-size:12px;line-height:1.4;color:{_V2_META};margin-top:2px;">{sub or "&nbsp;"}</div></div></div> '
-        for label, v, sub, colour in blocks)
-    survey = " ".join(x for x in (_esc(str(ap.get("source") or "")).strip(),
-                                  _esc(str(ap.get("last_updated") or "")).strip()) if x)
-    detail = ". ".join(x.rstrip(".") for x in (survey, spark) if x)
-    out = f'<div style="font-size:0;line-height:0;">{cells}</div>'
+        change = (f'<div style="font-size:12px;line-height:1.45;color:{_V2_META};margin-top:2px;">'
+                  f'<span style="color:{colour};font-weight:700;">{sign}{abs(pts):g} pts</span>'
+                  + (f" vs {_esc(prior)}" if prior else "") + '</div>')
+    survey = ", ".join(x for x in (_esc(str(ap.get("source") or "")).strip(),
+                                   _esc(str(ap.get("last_updated") or "")).strip()) if x)
+    hero = (f'<div style="{lab}">Lee approval</div>'
+            f'<div style="font-family:{_V2_SERIF};font-size:34px;font-weight:700;line-height:1.05;margin-top:2px;'
+            f'color:{_V2_NAVY if approval else _V2_META};">{approval or "--"}</div>'
+            + change
+            + (f'<div style="font-size:12px;line-height:1.45;color:{_V2_META};">{survey}</div>' if survey else ""))
+    boxes = "".join(
+        '<div class="v2-psc" style="display:inline-block;vertical-align:top;width:33.33%;min-width:92px;">'
+        f'<div class="v2-psb" style="margin:0 2px;padding:8px 3px 9px;border:1px solid {_V2_TINT_RULE};text-align:center;'
+        'font-size:12px;line-height:1.4;">'
+        f'<div style="{lab}">{label}</div>'
+        f'<div style="font-size:12px;line-height:1.4;color:{_V2_META};">{sub or "&nbsp;"}</div>'
+        f'<div style="font-family:{_V2_SERIF};font-size:22px;font-weight:700;line-height:1.1;margin-top:3px;'
+        f'color:{_V2_INK if v else _V2_META};">{v or "--"}</div></div></div>'
+        for label, v, sub in parties)
+    out = ('<div class="v2-psr" style="padding:10px 0 2px;">'
+           '<!--[if mso]><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>'
+           '<td width="190" valign="middle"><![endif]-->'
+           '<div class="v2-ps" style="display:inline-block;vertical-align:middle;width:100%;max-width:190px;padding:0 0 10px;">'
+           f'{hero}</div>'
+           '<!--[if mso]></td><td valign="middle"><![endif]--> '
+           '<div class="v2-pp" style="display:inline-block;vertical-align:middle;width:100%;max-width:372px;padding:0 0 10px;">'
+           f'<div style="font-size:0;line-height:0;margin:0 -2px;">{boxes}</div></div>'
+           '<!--[if mso]></td></tr></table><![endif]--></div>')
     line = (f'<div class="v2-rule" style="padding-top:7px;border-top:1px solid {_V2_HAIR};font-size:12px;'
             f'line-height:1.5;color:{_V2_META};">')
-    if detail:
-        out += f'{line}{detail}.</div>'
+    if spark:
+        out += f'{line}<b style="color:{_V2_BODY};">Trend:</b> {spark.rstrip(".")}.</div>'
     if stale:
         out += f'<div style="font-size:12px;line-height:1.5;color:{TAEGUK_RED};margin-top:4px;">{stale}</div>'
     spot = sentiment.get("gallup_spotlight")
@@ -4726,23 +4752,23 @@ def _v2_finish(body: str, more_url: str = "") -> str:
         return (f' (see <a href="#{n}" style="color:{_V2_NAVY};font-weight:700;text-decoration:none;">'
                 f'{names[n]}</a>)' if n in names else "")
     body = _re.sub(r"\s?%%V2REF:([\w-]+)%%", ref, body)
-    # One wrapping line of short links. The reference's two-column grid took
-    # eight rows on a 375px phone and pushed the first story past 1,250px.
-    # Each link is nowrap, but none is wider than a phone; the space after
-    # each is where the line breaks.
-    # Each entry carries its bar's number in Georgia, in the meta grey: a
-    # finding aid, not an alert, so not red.
-    links = [f'<b style="font-family:{_V2_SERIF};color:{_V2_META};">{i:02d}</b>&nbsp;'
-             + (f'<a href="#{name}" style="color:{_V2_NAVY};text-decoration:underline;text-decoration-color:#B8C4D6;'
-                f'text-underline-offset:3px;white-space:nowrap;">{text}</a>' if name else text)
-             for i, (text, name) in enumerate(toc, 1)]
+    # One wrapping line of short links, no numbers: the owner found the
+    # grey Georgia numerals in front of each entry fussy, and a line of
+    # three. One face (the sans), regular weight, navy, no underline: the
+    # links are a finding aid, quieter than the headlines under them. At
+    # 13px the fourteen entries take two lines on a desktop. Each link is
+    # nowrap, but none is wider than a phone; the space after each is where
+    # the line breaks.
+    links = [(f'<a href="#{name}" style="color:{_V2_NAVY};text-decoration:none;white-space:nowrap;">{text}</a>'
+              if name else f'<span style="white-space:nowrap;">{text}</span>')
+             for text, name in toc]
     toc_html = ""
     if len(links) >= 4:
-        toc_html = (f'<!--c--><div class="v2-toc no-print" style="font-size:13px;font-weight:700;line-height:1.9;">'
-                    f'<span style="font-size:11px;letter-spacing:0.5px;text-transform:uppercase;color:{_V2_META};">'
-                    'In this issue</span>&emsp; ' + "&emsp; ".join(links) + '</div><!--/c-->')
+        toc_html = (f'<!--c--><div class="v2-toc no-print" style="font-size:13px;line-height:1.7;color:{_V2_NAVY};">'
+                    f'<span style="font-size:11px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;'
+                    f'color:{_V2_META};">In this issue</span>&emsp; ' + "&emsp; ".join(links) + '</div><!--/c-->')
     if more_url and not PRINT:
-        toc_html += (f'<!--c--><div class="v2-more no-print" style="margin-top:4px;font-size:12px;line-height:1.5;'
+        toc_html += (f'<!--c--><div class="v2-more no-print" style="margin-top:3px;font-size:12px;line-height:1.5;'
                      f'color:{_V2_META};">Some sections are shortened here. Full text:&ensp;'
                      f'<a href="{_esc(more_url)}" style="color:{_V2_NAVY};font-weight:700;">Read online</a></div><!--/c-->')
     if PRINT:
@@ -4778,7 +4804,7 @@ _V2_CSS = """
       .v2-cell div[style*="font-size:16px"] { font-size:15px !important; }
       .wrapper .v2-tint { padding-left:11px !important; }
       .wrapper .mast-band { padding:13px 12px 14px !important; }
-      .wrapper .v2-toc { font-size:12px !important; line-height:1.8 !important; }
+      .wrapper .v2-toc { font-size:12px !important; line-height:1.65 !important; }
       .v2-hn > tbody > tr > td { padding:2px 0 !important; }
       .v2-cell { width:32% !important; min-width:96px; }
       .wrapper .v2-c4 { border-left:0 !important; }
@@ -4794,7 +4820,7 @@ _V2_CSS = """
       /* Classic sets h3 at 14px on a phone; a top story under an item's 15px read as the lesser of the two. */
       .wrapper .v2-it h3 { font-size:15px !important; }
       .wrapper .v2-rg > .v2-rc { width:100% !important; max-width:none !important; padding-right:0 !important; }
-      .wrapper .v2-ps { width:50% !important; }
+      .wrapper .v2-ps, .wrapper .v2-pp { max-width:none !important; }
       .wrapper .v2-mdate { font-size:12px !important; margin-top:9px !important; }
       .wrapper .v2-lk-csis { font-size:30px !important; }
     }
@@ -4816,7 +4842,7 @@ _V2_CSS = """
       .wrapper .listen-bar .listen-title { color:#E8E6E1 !important; }
       .wrapper .listen-bar .listen-sub { color:#9AA3AE !important; }
       .wrapper .listen-bar .listen-btn { color:#8FB6E8 !important; border-color:#8FB6E8 !important; }
-      .wrapper .v2-rct, .wrapper .v2-trk, .wrapper .v2-cell { border-color:#3A4048 !important; }
+      .wrapper .v2-rct, .wrapper .v2-trk, .wrapper .v2-cell, .wrapper .v2-psb { border-color:#3A4048 !important; }
       .wrapper .v2-signoff { border:1px solid #3A4048 !important; }
       .v2-pre { color:#E8E6E1 !important; }
 """ + _v2_dark_css() + """
@@ -5019,7 +5045,7 @@ _V2_PRINT_HEAD = (
   .v2-in:not(.v2-tint):not(.v2-stat) { background:transparent !important; }
   .v2-card[style*="background:#FFFFFF"] > tbody > tr > td.v2-in.v2-stat { padding:10px 14px 12px !important; }
   .sec-bar, .v2-card > tbody > tr:first-child, .v2-sub { break-after:avoid !important; page-break-after:avoid !important; }
-  .v2-it, .v2-rc, .v2-bl, .v2-ps, .v2-glance tr, .v2-trk tr, .v2-foot, .v2-hn, .v2-stat {
+  .v2-it, .v2-rc, .v2-bl, .v2-psr, .v2-glance tr, .v2-trk tr, .v2-foot, .v2-hn, .v2-stat {
     break-inside:avoid !important; page-break-inside:avoid !important; }
   /* The stat and sign-off cards, whole. Its own rule: a selector Chromium
      cannot parse would take the rest of the list down with it. */
