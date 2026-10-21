@@ -187,10 +187,30 @@ def is_primary_url(url: str) -> bool:
     return base_domain(h) in _PRIMARY_DOMAINS or ("assembly" in h and h.endswith(".kr"))
 
 
+def _english_outlet(name: str) -> str:
+    """A Korean outlet name in English ('조선일보' -> 'Chosun Ilbo'); others unchanged.
+
+    Google News gives a Korean-edition item's publisher in Korean, and the
+    label pass used it as anchor text: 'Chosun Ilbo' became '조선일보' on
+    21 October 2026, to be mapped back later by english.apply.
+    """
+    s = str(name or "").strip()
+    if not _HANGUL.search(s):
+        return s
+    try:
+        import english
+        return english.outlet(s) or s
+    except Exception:                                           # noqa: BLE001
+        return s
+
+
+_HANGUL = re.compile(r"[ㄱ-ㆎ가-힣]")
+
+
 def publisher_name(url: str, publisher: str | None = None) -> str:
-    """The outlet a URL opens, for anchor text."""
+    """The outlet a URL opens, for anchor text, in English."""
     if publisher:
-        return str(publisher).strip()
+        return _english_outlet(publisher)
     bd = base_domain(url)
     if bd in DOMAIN_NAMES:
         return DOMAIN_NAMES[bd]
@@ -228,7 +248,7 @@ def label_matches_url(label: str, url: str, publisher: str | None = None) -> boo
     stem = bd.split(".")[0]
     if len(stem) >= 3 and (stem in sq or (len(sq) >= 3 and sq in _squash(host(url)))):
         return True
-    names = [publisher or "", DOMAIN_NAMES.get(bd, "")]
+    names = [publisher or "", _english_outlet(publisher or ""), DOMAIN_NAMES.get(bd, "")]
     lab_words = {w for w in re.split(r"[^0-9a-z가-힣]+", lab) if w and w not in _LABEL_STOP}
     for name in names:
         words = {w for w in re.split(r"[^0-9a-z가-힣]+", name.lower()) if w and w not in _LABEL_STOP}
@@ -642,12 +662,59 @@ def fix_labels(digest: dict, index: dict) -> list[str]:
             outlets, _tail = split_outlets(lab)
             if len(outlets) > 1:
                 break
-            if not label_matches_url(lab, url, pub_raw):
-                new = publisher_name(url, pub_raw)
+            new = _better_label(lab, url, pub_raw, art, sec)
+            if new and new != lab:
                 log.append(f"  label {path}.{lk}: {lab!r} -> {new!r} ({host(url)})")
                 item[lk] = new
             break
     return log
+
+
+# Hosts that publish journals for many societies. The anchor text for an
+# article there is the journal ("Asian Security"), which no host name says:
+# on 21 October 2026 the label pass replaced 'Asian Security' with
+# 'tandfonline.com'.
+JOURNAL_PLATFORMS = {
+    "tandfonline.com", "mit.edu", "ucpress.edu", "jhu.edu", "oup.com", "cambridge.org",
+    "springer.com", "sagepub.com", "wiley.com", "jstor.org", "sciencedirect.com",
+    "brill.com", "degruyter.com", "muse.jhu.edu", "kci.go.kr", "dbpia.co.kr", "nbr.org",
+}
+_X_HOSTS = {"x.com", "twitter.com"}
+
+
+def x_owner_label(label: str, url: str, art: dict | None = None) -> str:
+    """'<account owner> on X' for a post: 'MOF Minister on X', not 'X'.
+
+    The owner is the collected account's name (x_signals carry it), else the
+    label the model wrote when it names someone, else the handle in the URL.
+    """
+    art = art or {}
+    lab = re.sub(r"\s+on\s+(?:x|twitter)\s*$", "", str(label or "").strip(), flags=re.I).strip()
+    owner = str(art.get("name") or "").strip()
+    if not owner and lab.lower() not in ("", "x", "twitter", "x.com", "twitter.com"):
+        owner = lab
+    if not owner:
+        m = re.match(r"https?://(?:www\.|mobile\.)?(?:x|twitter)\.com/([A-Za-z0-9_]{1,15})(?:/|$)",
+                     str(url or ""))
+        owner = f"@{m.group(1)}" if m and m.group(1).lower() not in ("i", "home", "search") else ""
+    return f"{owner} on X" if owner else "X"
+
+
+def _better_label(lab: str, url: str, pub_raw, art: dict, sec: str) -> str | None:
+    """The anchor text a link should carry, or None to keep `lab`."""
+    bd = base_domain(url)
+    if bd in _X_HOSTS:
+        return x_owner_label(lab, url, art)
+    if label_matches_url(lab, url, pub_raw):
+        return None
+    # A journal keeps its name: the host is a publishing platform.
+    if sec == "academic_today" or bd in JOURNAL_PLATFORMS or host(url) in JOURNAL_PLATFORMS:
+        return None
+    new = publisher_name(url, pub_raw)
+    # Never trade an English label for a Korean one.
+    if _HANGUL.search(new) and not _HANGUL.search(lab):
+        return None
+    return new
 
 
 def fix_multi_outlet(digest: dict, index: dict, used_elsewhere: set) -> list[str]:
