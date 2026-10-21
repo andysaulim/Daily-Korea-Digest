@@ -80,6 +80,18 @@ the old site searches delivered 15 items a week across twenty feeds. korea.kr
 ended its RSS service on 2026-07-01. Only a government-domain URL ranks as a
 primary document; a press report of a briefing ranks in band 2.
 
+**A native feed that answers can still be empty for us.** The Hill or
+Brookings publish daily, so their feed always "wins", and the Korea filter
+then dropped every item while the search behind it never ran. `_parse_feed`
+takes the collector's keep test (`accept`): a candidate with nothing that
+passes gives way to the next. Searches are wrapped by `_windowed()`, which
+puts a `when:Nd` search ahead of the plain one, because a plain Google News
+search returns its 100 most relevant hits, mostly too old for a 24h window.
+
+**Prestige names match as whole words.** "ap " once matched the end of
+"Yonhap ", so Yonhap took 130 of the 140 tier-1 slots and the Korea Herald,
+Korea Times and the Korean dailies never reached the model.
+
 Run `python test_sources.py` after any change here.
 
 ## Length
@@ -126,8 +138,8 @@ costs one day of listing, while writing a stub costs all of them.
 ## Feed Tiers
 
 - **Tier 1 (News, 24h window)**: Korea Herald, Reuters, WSJ, NYT, Bloomberg, Yonhap, JTBC, Global Times, Xinhua, TASS; ROK primary sources (Presidential Office, MOFA, MND, Unification, MOEF, MOTIE, DAPA, Joint Chiefs, National Assembly, Prosecution, Courts, Bank of Korea, KOSTAT, Customs, DART, korea.kr); Korean-language dailies (조선·중앙·동아·한겨레·경향·한국일보·연합·뉴시스) and broadcast
-- **Tier 2 (Analysis, 36h)**: CSIS, Brookings, 38 North, Foreign Affairs, The Diplomat, RAND
-- **Tier 3 (Academic, 72h)**: International Security, Asian Survey, Pacific Affairs
+- **Tier 2 (Analysis; 96h reports, 48h op-ed pages)**: ~52 feeds: US, Korean and regional think tanks (CSIS, Brookings, CFR, Carnegie, RAND, Stimson/38 North, CNAS, KEI, Asan, EAI, KINU, Sejong, Lowy, IISS...) and Korea-filtered op-ed pages. Each item carries a kind (report, oped, journal, news); `digest.rank_analysis` puts reports first.
+- **Tier 3 (Academic, 7 days)**: ~17 journals via the publishers' contents RSS (International Security, Washington Quarterly, Survival, Asia Policy, Asian Survey, Pacific Affairs...)
 - **Tier 4 (DPRK, 24h)**: KCNA Watch, Rodong Sinmun, Daily NK, NK News
 - **Capitol Hill stream (48h; CRS and GovInfo 72h)**: congress.gov, GovInfo, CRS,
   committee feeds, The Hill, Roll Call, Politico, Punchbowl (`collect.CAPITOL_HILL_FEEDS`).

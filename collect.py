@@ -31,8 +31,22 @@ def _gnews(query: str, locale: str = "en") -> str:
     return links.gnews_url(query, locale)
 
 
+def _windowed(query: str, days: int, locale: str = "en") -> list:
+    """A Google News search limited to the last `days`, then the same search unlimited.
+
+    An unlimited search is ranked by relevance, not date, and returns at most
+    a hundred items: for a phrase the press uses every week ("한국은행은",
+    "South Korea" + senator) the hundred can be mostly last month's, and a
+    24-48h window then keeps none of them. The feed still "answered", so feed
+    health saw nothing wrong. `when:Nd` asks for the window itself. The plain
+    search stays behind it in case the operator ever stops being honoured, so
+    the window can only add items, never cost the feed.
+    """
+    return [_gnews(f"{query} when:{days}d", locale), _gnews(query, locale)]
+
+
 def _native(native_url: str, gnews_query: str, also: tuple | list = (),
-            locale: str = "en") -> list:
+            locale: str = "en", when_days: int | None = None) -> list:
     """A feed defined as: try the outlet's own RSS, fall back to Google News.
 
     The fallback is what makes this safe to write for a URL nobody could
@@ -41,12 +55,15 @@ def _native(native_url: str, gnews_query: str, also: tuple | list = (),
     what the feed did before.
 
     `also` holds further candidates tried between the two, in order (a second
-    native board, a site: search for the body's own pages).
+    native board, a site: search for the body's own pages). `when_days` puts
+    a date-limited search ahead of the plain one (see _windowed).
     """
-    return [native_url, *also, _gnews(gnews_query, locale)]
+    search = (_windowed(gnews_query, when_days, locale) if when_days
+              else [_gnews(gnews_query, locale)])
+    return [native_url, *also, *search]
 
 
-def _press(query: str) -> str:
+def _press(query: str) -> list:
     """Korean-edition Google News search for how the press reports a body.
 
     The ROK government feeds used to be `site:xxx.go.kr` searches, and Google
@@ -57,8 +74,14 @@ def _press(query: str) -> str:
     for that instead. Items found this way are reporting, not documents: they
     carry the outlet as their source and rank below a primary URL
     (digest._prompt_band).
+
+    Returned as candidates, a two-day search first (see _windowed). Plain,
+    these searches answered every run and delivered nothing for the
+    Presidential Office, the Joint Chiefs, the Bank of Korea and Customs on
+    19-21 October 2026: Google's hundred most relevant hits for "합참은"
+    were not the last day's.
     """
-    return _gnews(query, locale="ko")
+    return _windowed(query, 2, locale="ko")
 
 
 def _resolve_gnews_url(url: str) -> str:
@@ -203,28 +226,35 @@ TIER1_FEEDS = {
     # the Presidential Office is back at 청와대. Old names stay in the queries
     # because the press still uses both.
     "ROK MOFA":           _native("https://www.mofa.go.kr/www/brd/rss.do?brdId=235",
-                                  '"외교부 대변인" OR "외교부 정례브리핑" OR "외교부는"', locale="ko"),
+                                  '"외교부 대변인" OR "외교부 정례브리핑" OR "외교부는" OR "외교부 장관"',
+                                  locale="ko", when_days=2),
     # MOFA's English board: press releases (302), then spokesperson briefings (303).
     "ROK MOFA English":   _native("https://www.mofa.go.kr/www/brd/rss.do?brdId=302",
                                   '"South Korean foreign ministry" OR "Seoul\'s foreign ministry" '
                                   'OR "South Korea\'s foreign ministry"',
-                                  also=["https://www.mofa.go.kr/www/brd/rss.do?brdId=303"]),
-    "ROK MOTIE":          [_press('"산업통상부" OR "산업통상자원부" OR "통상교섭본부장" OR "산업부 장관"')],
+                                  also=["https://www.mofa.go.kr/www/brd/rss.do?brdId=303"], when_days=2),
+    # Vietnam's Ministry of Industry and Trade (Bộ Công Thương) is machine-
+    # translated as 산업통상부 by vietnam.vn's Korean edition, which was 7 of
+    # the feed's 12 items on 21 October 2026.
+    "ROK MOTIE":          _press('"산업통상부" OR "산업통상자원부" OR "통상교섭본부장" OR "산업부 장관" '
+                                 '-site:vietnam.vn'),
     "ROK MND":            _native("https://www.mnd.go.kr/bbs/mnd/13000005/rssList.do?row=50",
-                                  '"국방부 대변인" OR "국방부 정례브리핑" OR "국방부는"', locale="ko"),
-    "ROK Presidential Office": [_press('"청와대 대변인" OR "청와대 브리핑" OR "대통령실 대변인" '
-                                       'OR "대통령실 브리핑" OR "청와대 관계자"')],
+                                  '"국방부 대변인" OR "국방부 정례브리핑" OR "국방부는" OR "국방부 장관"',
+                                  locale="ko", when_days=2),
+    "ROK Presidential Office": _press('"청와대 대변인" OR "청와대 브리핑" OR "대통령실 대변인" '
+                                       'OR "대통령실 브리핑" OR "청와대 관계자" OR "이재명 대통령은"'),
     "ROK Unification Ministry": _native("https://www.unikorea.go.kr/web/unikorea/rss/bbs_0000000000000004",
-                                        '"통일부 대변인" OR "통일부 정례브리핑" OR "통일부는"', locale="ko"),
-    "ROK MOEF":           [_press('"재정경제부" OR "기획예산처" OR "재경부 장관" OR "기재부"')],
-    "ROK DAPA":           [_press('"방위사업청" OR "방사청은"')],
+                                        '"통일부 대변인" OR "통일부 정례브리핑" OR "통일부는" OR "통일부 장관"',
+                                        locale="ko", when_days=2),
+    "ROK MOEF":           _press('"재정경제부" OR "기획예산처" OR "재경부 장관" OR "기재부"'),
+    "ROK DAPA":           _press('"방위사업청" OR "방사청은"'),
     # October is 국정감사, the Assembly's annual audit of every ministry.
-    "ROK National Assembly": [_press('"국회 본회의" OR "국정감사" OR "국회의장" OR "상임위원회 전체회의"')],
+    "ROK National Assembly": _press('"국회 본회의" OR "국정감사" OR "국회의장" OR "상임위원회 전체회의"'),
     # Prosecution and the courts drive the ROK political cycle. The
     # prosecution service is being replaced by 공소청 and 중대범죄수사청, and
     # the special counsels carry the cases that matter, so all are named.
-    "ROK Prosecution Service": [_press('"공소청" OR "중대범죄수사청" OR "대검찰청" OR "특검팀은"')],
-    "ROK Courts":         [_press('"대법원은" OR "대법원 선고" OR "헌법재판소는" OR "헌재 선고"')],
+    "ROK Prosecution Service": _press('"공소청" OR "중대범죄수사청" OR "대검찰청" OR "특검팀은"'),
+    "ROK Courts":         _press('"대법원은" OR "대법원 선고" OR "헌법재판소는" OR "헌재 선고"'),
     # DART is the financial supervisory disclosure system. Samsung, Hyundai and
     # SK file there before they announce, so this is corporate news at source
     # rather than through the business dailies.
@@ -245,16 +275,16 @@ TIER1_FEEDS = {
     "Korea.net":          _native("https://www.korea.net/koreanet/rss/news/3", "site:korea.net"),
     # The Joint Chiefs are the originating source for every DPRK launch
     # detection. They publish no RSS; the press quotes them within minutes.
-    "ROK Joint Chiefs":   [_press('"합참은" OR "합동참모본부는" OR "합참 관계자" OR "합참 공보실장"')],
+    "ROK Joint Chiefs":   _press('"합참은" OR "합동참모본부는" OR "합참 관계자" OR "합참 공보실장"'),
     # BOK press releases and MPC statements. The ECOS statistics API is
     # already called for the rate itself; this is the accompanying language.
-    "Bank of Korea":      [_press('"한국은행은" OR "한은 총재" OR "금융통화위원회"')],
-    "Statistics Korea":   [_press('"국가데이터처" OR "통계청은" OR "통계청에 따르면"')],
+    "Bank of Korea":      _press('"한국은행은" OR "한은 총재" OR "금융통화위원회"'),
+    "Statistics Korea":   _press('"국가데이터처" OR "통계청은" OR "통계청에 따르면"'),
     # Customs publishes the ten-day export figures — the earliest read on what
     # the tariff regime is actually doing to trade.
-    "Korea Customs":      [_press('"관세청은" OR "관세청에 따르면"')],
-    "ROK Justice Ministry": [_press('"법무부는" OR "법무부 장관"')],
-    "ROK FSC":            [_press('"금융위원회는" OR "금융위원장"')],
+    "Korea Customs":      _press('"관세청은" OR "관세청에 따르면"'),
+    "ROK Justice Ministry": _press('"법무부는" OR "법무부 장관"'),
+    "ROK FSC":            _press('"금융위원회는" OR "금융위원장"'),
     # Yonhap's own politics and North Korea desks. The all-news feeds above
     # carry the latest items across every desk; these keep the ministry,
     # defence and inter-Korean wire copy from being pushed out by volume.
@@ -294,73 +324,148 @@ TIER1_FEEDS = {
     "People's Daily Korea": _gnews("Korea+site:en.people.cn"),
 }
 
+def _analysis(native: str | None, query: str, days: int, also: tuple | list = ()) -> list:
+    """An analysis feed: the publisher's RSS, then a date-limited search, then the plain one.
+
+    A think tank publishes a few pieces a week, so a relevance-ranked
+    "Korea site:csis.org" returns its best-known Korea pages of the last
+    decade before Tuesday's report, and the strict recency test then drops
+    them all. That is most of why tier 2 delivered ten items on 21 October
+    2026 and tier 3 none. The window comes first (see _windowed).
+    """
+    return [*([native] if native else []), *also, *_windowed(query, days)]
+
+
+# Tier 2: the Analysis section's material — think-tank reports and research,
+# then commentary and op-eds. (url_or_candidates, prestige). Most of these
+# publish on everything, so they are filtered for Korea; the Korea-only
+# outlets in KOREA_ANALYSIS_FEEDS are not. Native URLs were written without
+# network access to the publishers: if one is wrong it returns nothing and the
+# search behind it answers, as before.
 TIER2_FEEDS = {
-    "CSIS":              (_gnews("Korea+site:csis.org"), "A"),
-    "Brookings":         (_native("https://www.brookings.edu/feed/",
-                                  "Korea+site:brookings.edu"), "A"),
-    "Carnegie":          (_native("https://carnegieendowment.org/rss/solr?query=korea",
-                                  "Korea+site:carnegieendowment.org"), "A"),
-    "RAND":              (_native("https://www.rand.org/topics/north-korea.xml",
-                                  "Korea+site:rand.org"), "A"),
-    "CFR":               (_gnews("Korea+site:cfr.org"), "A"),
-    "38 North":          ("https://www.38north.org/feed/", "A"),
-    # Timed out rather than 404ing on 14 September: the host exists and may
-    # simply have been down, which is not proof the path is wrong. Kept.
-    "AccessDPRK":        (["https://accessdprk.com/feed/",
-                           _gnews("site:accessdprk.com")], "A"),
-    "ArmsControlWonk":   (_gnews("site:armscontrolwonk.com"), "A"),
-    "Stimson":           (_gnews("Korea+site:stimson.org"), "B"),
-    "IISS":              (_gnews("Korea+site:iiss.org"), "B"),
-    "ASAN Institute":    (_gnews("Korea+site:asaninst.org"), "B"),
-    "EAI":               (_gnews("Korea+site:eai.or.kr"), "B"),
-    "Sejong Institute":  (_gnews("Korea+site:sejong.org"), "B"),
-    "SIPRI":             (_gnews("Korea+site:sipri.org"), "B"),
-    "War on the Rocks":  ("https://warontherocks.com/feed/", "B"),
-    "Foreign Affairs":   ("https://www.foreignaffairs.com/rss.xml", "A"),
-    "Foreign Policy":    ("https://foreignpolicy.com/feed/", "B"),
-    "Diplomat":          ("https://thediplomat.com/feed/", "C"),
-    "NKPro":             ("https://www.nknews.org/pro/feed/", "A"),
-    # ── Additional think tanks ───────────────────────────────────────────
-    "AEI":               (_gnews("Korea+site:aei.org"), "A"),
-    "Hudson Institute":  (_gnews("Korea+site:hudson.org"), "B"),
-    "Heritage":          (_gnews("Korea+site:heritage.org"), "B"),
-    "Atlantic Council":  (_gnews("Korea+site:atlanticcouncil.org"), "B"),
-    "KEIA":              (_gnews("Korea+site:keia.org"), "A"),
-    "NBR":               (_gnews("Korea+site:nbr.org"), "B"),
-    "PIIE":              (_gnews("Korea+site:piie.com"), "B"),
-    "USIP":              (_gnews("Korea+site:usip.org"), "B"),
+    # ── US think tanks ───────────────────────────────────────────────────
+    "CSIS":              (_analysis("https://www.csis.org/rss.xml", "Korea+site:csis.org", 7), "A"),
+    "CSIS Korea Chair":  (_analysis(None, "%22Korea+Chair%22+OR+%22Victor+Cha%22+site:csis.org", 7), "A"),
+    "Beyond Parallel":   (_analysis("https://beyondparallel.csis.org/feed/",
+                                    "site:beyondparallel.csis.org", 7), "A"),
+    "Brookings":         (_analysis("https://www.brookings.edu/feed/", "Korea+site:brookings.edu", 7), "A"),
+    "CFR":               (_analysis("https://www.cfr.org/rss.xml", "Korea+site:cfr.org", 7), "A"),
+    "Carnegie":          (_analysis("https://carnegieendowment.org/rss/solr?query=korea",
+                                    "Korea+site:carnegieendowment.org", 7), "A"),
+    "RAND":              (_analysis("https://www.rand.org/topics/north-korea.xml", "Korea+site:rand.org", 7,
+                                    also=["https://www.rand.org/topics/south-korea.xml"]), "A"),
+    "Stimson":           (_analysis("https://www.stimson.org/feed/", "Korea+site:stimson.org", 7), "A"),
+    "38 North":          (_analysis("https://www.38north.org/feed/", "site:38north.org", 7), "A"),
+    "CNAS":              (_analysis("https://www.cnas.org/feed", "Korea+site:cnas.org", 7), "A"),
+    "Heritage":          (_analysis("https://www.heritage.org/rss/all-research", "Korea+site:heritage.org", 7), "B"),
+    "AEI":               (_analysis("https://www.aei.org/feed/", "Korea+site:aei.org", 7), "A"),
+    "Hudson Institute":  (_analysis("https://www.hudson.org/rss.xml", "Korea+site:hudson.org", 7), "B"),
+    "Wilson Center":     (_analysis("https://www.wilsoncenter.org/rss.xml", "Korea+site:wilsoncenter.org", 7), "A"),
+    "KEIA":              (_analysis("https://keia.org/feed/", "site:keia.org", 7), "A"),
+    "Atlantic Council":  (_analysis("https://www.atlanticcouncil.org/feed/", "Korea+site:atlanticcouncil.org", 7), "B"),
+    "Hoover":            (_analysis("https://www.hoover.org/rss.xml", "Korea+site:hoover.org", 7), "B"),
+    "Quincy Institute":  (_analysis("https://quincyinst.org/feed/", "Korea+site:quincyinst.org", 7,
+                                    also=["https://responsiblestatecraft.org/feed/"]), "B"),
+    "Pacific Forum":     (_analysis("https://pacforum.org/feed", "Korea+site:pacforum.org", 7), "B"),
+    "NBR":               (_analysis(None, "Korea+site:nbr.org", 7), "B"),
+    "PIIE":              (_analysis("https://www.piie.com/rss/update.xml", "Korea+site:piie.com", 7), "B"),
+    "USIP":              (_analysis(None, "Korea+site:usip.org", 7), "B"),
+    "AccessDPRK":        (_analysis("https://accessdprk.com/feed/", "site:accessdprk.com", 7), "A"),
+    "ArmsControlWonk":   (_analysis("https://www.armscontrolwonk.com/feed/", "site:armscontrolwonk.com", 7), "A"),
+    # ── Korean and regional think tanks ──────────────────────────────────
+    "ASAN Institute":    (_analysis("https://en.asaninst.org/feed/", "site:asaninst.org", 7), "A"),
+    "EAI":               (_analysis(None, "site:eai.or.kr", 7), "B"),
+    "KINU":              (_analysis(None, "site:kinu.or.kr OR %22Korea+Institute+for+National+Unification%22", 7), "B"),
+    "Sejong Institute":  (_analysis(None, "site:sejong.org OR %22Sejong+Institute%22", 7), "B"),
+    "KIDA":              (_analysis(None, "site:kida.re.kr OR %22Korea+Institute+for+Defense+Analyses%22", 7), "B"),
+    "KDI":               (_analysis(None, "site:kdi.re.kr OR %22Korea+Development+Institute%22", 7), "B"),
+    "IFANS":             (_analysis(None, "%22Institute+of+Foreign+Affairs+and+National+Security%22+OR+IFANS", 7), "B"),
+    "Lowy Interpreter":  (_analysis("https://www.lowyinstitute.org/the-interpreter/rss.xml",
+                                    "Korea+site:lowyinstitute.org", 7), "B"),
+    "IISS":              (_analysis(None, "Korea+site:iiss.org", 7), "A"),
+    "Chatham House":     (_analysis(None, "Korea+site:chathamhouse.org", 7), "B"),
+    "SIPRI":             (_analysis(None, "Korea+site:sipri.org", 7), "B"),
+    "RUSI":              (_analysis(None, "Korea+site:rusi.org", 7), "B"),
+    # ── Policy magazines ──────────────────────────────────────────────────
+    "Foreign Affairs":   (_analysis("https://www.foreignaffairs.com/rss.xml", "Korea+site:foreignaffairs.com", 7), "A"),
+    "Foreign Policy":    (_analysis("https://foreignpolicy.com/feed/", "Korea+site:foreignpolicy.com", 7), "B"),
+    "War on the Rocks":  (_analysis("https://warontherocks.com/feed/", "Korea+site:warontherocks.com", 7), "B"),
+    "Texas National Security Review": (_analysis("https://tnsr.org/feed/", "Korea+site:tnsr.org", 7), "A"),
+    "Diplomat":          (_analysis("https://thediplomat.com/feed/", "Korea+site:thediplomat.com", 7), "C"),
+    # NK Pro is reporting, not analysis (see ANALYSIS_KIND); it stays here
+    # because its feed has always been read in this tier.
+    "NKPro":             (_analysis("https://www.nknews.org/pro/feed/", "site:nknews.org/pro", 3), "A"),
+    # ── Op-ed pages, filtered for Korea ──────────────────────────────────
+    "NYT Opinion":       (_analysis("https://rss.nytimes.com/services/xml/rss/nyt/Opinion.xml",
+                                    "Korea+opinion+site:nytimes.com", 3), "A"),
+    "WSJ Opinion":       (_analysis("https://feeds.a.dj.com/rss/RSSOpinion.xml",
+                                    "Korea+opinion+site:wsj.com", 3), "A"),
+    "WaPo Opinion":      (_analysis("https://feeds.washingtonpost.com/rss/opinions",
+                                    "Korea+opinion+site:washingtonpost.com", 3), "A"),
+    "FT Opinion":        (_analysis(None, "Korea+opinion+site:ft.com", 3), "A"),
+    "Bloomberg Opinion": (_analysis(None, "Korea+site:bloomberg.com/opinion", 3), "A"),
+    "Korea Herald Opinion": (_analysis(None, "column+OR+opinion+OR+editorial+site:koreaherald.com", 3), "B"),
+    "JoongAng Opinion":  (_analysis(None, "column+OR+opinion+OR+editorial+site:koreajoongangdaily.joins.com", 3), "B"),
+    "Chosun English Opinion": (_analysis(None, "column+OR+opinion+OR+editorial+site:english.chosun.com", 3), "B"),
     # ── CRS / Congressional research ────────────────────────────────────────
-    "CRS Korea":         ([_gnews("Korea+OR+DPRK+site:crsreports.congress.gov"),
+    "CRS Korea":         ([*_windowed("Korea+OR+DPRK+site:crsreports.congress.gov", 7),
                            _gnews("%22Congressional+Research+Service%22+Korea")], "B"),
-    "CRS North Korea":   (_gnews("North+Korea+site:everycrsreport.com"), "B"),
-    # ── DPRK-specialist direct feeds ────────────────────────────────────────
-    "Beyond Parallel":   ("https://beyondparallel.csis.org/feed/", "A"),
+    "CRS North Korea":   (_windowed("North+Korea+site:everycrsreport.com", 7), "B"),
 }
 
-# Tier 3: Use Google Scholar RSS and site-specific searches to reduce noise
+# What each tier-2 feed publishes, for the model and the validators: a
+# think-tank report or research ("report"), commentary ("oped"), a journal
+# article ("journal", tier 3), or reporting that is not analysis ("news").
+_OPED_FEEDS = {"NYT Opinion", "WSJ Opinion", "WaPo Opinion", "FT Opinion", "Bloomberg Opinion",
+               "Korea Herald Opinion", "JoongAng Opinion", "Chosun English Opinion",
+               "Foreign Policy", "War on the Rocks", "Diplomat", "Lowy Interpreter",
+               "ArmsControlWonk"}
+ANALYSIS_KIND = {name: ("news" if name == "NKPro" else "oped" if name in _OPED_FEEDS else "report")
+                 for name in TIER2_FEEDS}
+
+# Analysis feeds about nothing but Korea: no relevance filter, which would drop
+# a KINU paper on "the 2027 unification budget" for naming no keyword.
+KOREA_ANALYSIS_FEEDS = {"CSIS Korea Chair", "Beyond Parallel", "38 North", "KEIA", "AccessDPRK",
+                        "ASAN Institute", "EAI", "KINU", "Sejong Institute", "KIDA", "KDI", "IFANS",
+                        "NKPro", "Korea Herald Opinion", "JoongAng Opinion", "Chosun English Opinion",
+                        "Korean J. Def. Analysis", "North Korean Review", "Korea Journal",
+                        "J. East Asian Studies"}
+
+# Hours each analysis feed's items stay eligible. Op-ed pages run on the
+# news cycle; a think-tank report is current for days; a journal's issue for
+# a week. Run.py drops any piece a brief has already carried in the last week
+# (drop_recently_used_analysis), so the longer window cannot repeat one.
+TIER2_HOURS = 96
+TIER2_OPED_HOURS = 48
+TIER3_HOURS = 168
+
+# Tier 3: academic journals. Taylor & Francis, MIT Press and the university
+# presses publish a table-of-contents RSS per journal; every item is a paper,
+# so the native feeds need only the Korea filter. A search follows each.
+_TANDF = "https://www.tandfonline.com/feed/rss/"
 TIER3_FEEDS = {
     # A+ tier — top IR/security journals
-    "Int'l Security":         (_gnews("%22International+Security%22+%22Korea%22+OR+%22DPRK%22+OR+%22Pyongyang%22"), "A+"),
-    "Int'l Organization":     (_gnews("%22International+Organization%22+%22Korea%22+OR+%22DPRK%22"), "A+"),
-    "World Politics":         (_gnews("%22World+Politics%22+%22Korea%22+OR+%22DPRK%22+OR+%22Korean+Peninsula%22"), "A+"),
-    "American Pol. Sci. Review": (_gnews("%22American+Political+Science+Review%22+%22Korea%22+OR+%22DPRK%22"), "A+"),
+    "Int'l Security":         (_analysis("https://direct.mit.edu/rss/site_1000043/1000024.xml",
+                                         "%22International+Security%22+journal+Korea+OR+DPRK", 7), "A+"),
+    "World Politics":         (_analysis(None, "%22World+Politics%22+journal+Korea+OR+DPRK", 7), "A+"),
     # A tier — strong IR/area studies journals
-    "J. Conflict Resolution": (_gnews("%22Journal+of+Conflict+Resolution%22+%22Korea%22+OR+%22DPRK%22"), "A"),
-    "J. Peace Research":      (_gnews("%22Journal+of+Peace+Research%22+%22Korea%22+OR+%22DPRK%22"), "A"),
-    "Security Studies":       (_gnews("%22Security+Studies%22+%22Korea%22+OR+%22DPRK%22+OR+%22North+Korea%22"), "A"),
-    "Int'l Studies Quarterly": (_gnews("%22International+Studies+Quarterly%22+%22Korea%22+OR+%22DPRK%22"), "A"),
-    "J. Strategic Studies":   (_gnews("%22Journal+of+Strategic+Studies%22+%22Korea%22+OR+%22DPRK%22"), "A"),
-    "Asian Survey":           (_gnews("%22Asian+Survey%22+%22Korea%22+OR+%22DPRK%22+OR+%22Korean+Peninsula%22"), "A"),
-    "Pacific Review":         (_gnews("%22Pacific+Review%22+%22Korea%22+OR+%22DPRK%22"), "A"),
-    "Survival":               (_gnews("%22Survival%22+IISS+%22Korea%22+OR+%22DPRK%22"), "A"),
-    # B tier — specialized Korea/Asia journals
-    "Korean J. Def. Analysis": (_gnews("%22Korean+Journal+of+Defense+Analysis%22"), "B"),
-    "North Korean Review":    (_gnews("%22North+Korean+Review%22"), "B"),
-    "Asian Security":         (_gnews("%22Asian+Security%22+%22Korea%22+OR+%22DPRK%22"), "B"),
-    "Pacific Affairs":        (_gnews("%22Pacific+Affairs%22+%22Korea%22+OR+%22DPRK%22"), "B"),
-    "Korean Studies":         (_gnews("%22Korean+Studies%22+journal+%22North+Korea%22+OR+%22DPRK%22+OR+%22Korean+Peninsula%22"), "B"),
-    "Nonproliferation Rev.":  (_gnews("%22Nonproliferation+Review%22+%22Korea%22+OR+%22DPRK%22"), "B"),
-    "Washington Quarterly":   (_gnews("%22Washington+Quarterly%22+%22Korea%22+OR+%22DPRK%22"), "B"),
+    "Survival":               (_analysis(_TANDF + "tsur20", "%22Survival%22+IISS+Korea+OR+DPRK", 7), "A"),
+    "Washington Quarterly":   (_analysis(_TANDF + "rwaq20", "%22Washington+Quarterly%22+Korea+OR+DPRK", 7), "A"),
+    "J. Strategic Studies":   (_analysis(_TANDF + "fjss20", "%22Journal+of+Strategic+Studies%22+Korea+OR+DPRK", 7), "A"),
+    "Security Studies":       (_analysis(_TANDF + "fsst20", "%22Security+Studies%22+journal+Korea+OR+DPRK", 7), "A"),
+    "Asian Survey":           (_analysis("https://online.ucpress.edu/as/rss/current",
+                                         "%22Asian+Survey%22+Korea+OR+DPRK", 7), "A"),
+    "Pacific Affairs":        (_analysis(None, "%22Pacific+Affairs%22+journal+Korea+OR+DPRK", 7), "A"),
+    "J. East Asian Studies":  (_analysis(None, "%22Journal+of+East+Asian+Studies%22", 7), "A"),
+    "Pacific Review":         (_analysis(_TANDF + "rpre20", "%22Pacific+Review%22+Korea+OR+DPRK", 7), "A"),
+    "Asia Policy":            (_analysis(None, "%22Asia+Policy%22+NBR+Korea+OR+DPRK", 7), "A"),
+    "J. Conflict Resolution": (_analysis(None, "%22Journal+of+Conflict+Resolution%22+Korea+OR+DPRK", 7), "A"),
+    # B tier — specialised Korea/Asia journals
+    "Korean J. Def. Analysis": (_analysis(None, "%22Korean+Journal+of+Defense+Analysis%22", 7), "B"),
+    "North Korean Review":    (_analysis(None, "%22North+Korean+Review%22", 7), "B"),
+    "Asian Security":         (_analysis(_TANDF + "fasi20", "%22Asian+Security%22+journal+Korea+OR+DPRK", 7), "B"),
+    "Nonproliferation Rev.":  (_analysis(_TANDF + "rnpr20", "%22Nonproliferation+Review%22+Korea+OR+DPRK", 7), "B"),
+    "Korea Journal":          (_analysis(None, "%22Korea+Journal%22+OR+%22Korean+Studies%22+journal", 7), "B"),
 }
 
 TIER4_FEEDS = {
@@ -414,48 +519,71 @@ KIM_TRACKER_FEEDS = {
 # committee searches already in TIER1_FEEDS stay where they are; the entries
 # here add the committees' own feeds and the hearing calendars.
 CAPITOL_HILL_FEEDS = {
+    # Every native feed here publishes about everything Congress does. Each
+    # gives way to the search behind it when it has no Korea item in the
+    # window (see _parse_feed's accept), and each search is date-limited
+    # first (_windowed), because a relevance-ranked "Korea site:thehill.com"
+    # returns last month's hundred best hits as readily as today's.
     "Congress.gov House Floor": _native("https://www.congress.gov/rss/house-floor-today.xml",
-                                        "Korea+site:congress.gov"),
+                                        "Korea+site:congress.gov", when_days=3),
     "Congress.gov Senate Floor": _native("https://www.congress.gov/rss/senate-floor-today.xml",
-                                         "%22North+Korea%22+OR+%22South+Korea%22+site:congress.gov"),
+                                         "%22North+Korea%22+OR+%22South+Korea%22+site:congress.gov",
+                                         when_days=3),
     "Congress.gov Bills":  _native("https://www.congress.gov/rss/most-viewed-bills.xml",
-                                   "Korea+bill+site:congress.gov"),
+                                   "Korea+bill+site:congress.gov", when_days=7),
     "GovInfo Bills":       _native("https://www.govinfo.gov/rss/bills.xml",
-                                   "Korea+site:govinfo.gov"),
+                                   "Korea+site:govinfo.gov", when_days=7),
     "GovInfo Hearings":    _native("https://www.govinfo.gov/rss/chrg.xml",
-                                   "Korea+hearing+site:govinfo.gov"),
+                                   "Korea+hearing+site:govinfo.gov", when_days=7),
     "CRS Reports":         ["https://crsreports.congress.gov/rss",
                             "https://www.everycrsreport.com/rss.xml",
-                            _gnews("Korea+OR+DPRK+OR+%22North+Korea%22+site:crsreports.congress.gov")],
+                            *_windowed("Korea+OR+DPRK+OR+%22North+Korea%22+site:crsreports.congress.gov", 7)],
     "The Hill Defense":    _native("https://thehill.com/policy/defense/feed/",
-                                   "Korea+site:thehill.com"),
+                                   "Korea+site:thehill.com", when_days=3),
     "The Hill International": _native("https://thehill.com/policy/international/feed/",
-                                      "%22North+Korea%22+OR+%22South+Korea%22+site:thehill.com"),
-    "Roll Call":           _native("https://rollcall.com/feed/", "Korea+site:rollcall.com"),
+                                      "%22North+Korea%22+OR+%22South+Korea%22+site:thehill.com",
+                                      when_days=3),
+    "Roll Call":           _native("https://rollcall.com/feed/", "Korea+site:rollcall.com", when_days=3),
     "Politico Congress":   _native("https://rss.politico.com/congress.xml",
-                                   "Korea+Congress+OR+Senate+OR+House+site:politico.com"),
-    "Punchbowl":           _gnews("Korea+site:punchbowl.news"),
+                                   "Korea+Congress+OR+Senate+OR+House+site:politico.com", when_days=3),
+    "Punchbowl":           _windowed("Korea+site:punchbowl.news", 7),
     "HFAC Hearings":       _native("https://foreignaffairs.house.gov/feed/",
-                                   "Korea+hearing+site:foreignaffairs.house.gov"),
+                                   "Korea+site:foreignaffairs.house.gov", when_days=7),
     "HASC":                _native("https://armedservices.house.gov/rss.xml",
-                                   "Korea+site:armedservices.house.gov"),
+                                   "Korea+site:armedservices.house.gov", when_days=7),
     "SFRC Hearings":       _native("https://www.foreign.senate.gov/rss/feeds/?type=hearings",
-                                   "Korea+hearing+site:foreign.senate.gov"),
+                                   "Korea+site:foreign.senate.gov", when_days=7),
     "SASC Hearings":       _native("https://www.armed-services.senate.gov/rss/feeds/?type=hearings",
-                                   "Korea+hearing+site:armed-services.senate.gov"),
+                                   "Korea+site:armed-services.senate.gov", when_days=7),
     "House Appropriations": _native("https://appropriations.house.gov/rss.xml",
-                                    "Korea+site:appropriations.house.gov"),
-    "Senate Appropriations": _gnews("Korea+site:appropriations.senate.gov"),
+                                    "Korea+site:appropriations.house.gov", when_days=7),
+    "Senate Appropriations": _windowed("Korea+site:appropriations.senate.gov", 7),
     # Searches across outlets. No publisher feed exists for a topic, so these
     # are search-only, and they must also show a US-Congress signal: "Korea"
     # plus "lawmaker" is far more often the National Assembly.
-    "Korea Caucus":        _gnews("%22Korea+Caucus%22+Congress"),
-    "US Congress Korea":   _gnews("%22South+Korea%22+OR+%22North+Korea%22+Congress+OR+senator+OR+congressman+OR+NDAA"),
-    "Congress Shipbuilding Korea": _gnews("MASGA+OR+shipbuilding+Korea+Congress+OR+senator+OR+bill"),
+    "Korea Caucus":        _windowed("%22Korea+Caucus%22+OR+%22Korea+Studies+Caucus%22", 7),
+    "US Congress Korea":   _windowed("%22South+Korea%22+OR+%22North+Korea%22+Congress+OR+senator+OR+"
+                                     "congressman+OR+congresswoman+OR+lawmakers+OR+NDAA", 3),
+    "Congress Shipbuilding Korea": _windowed("MASGA+OR+shipbuilding+Korea+Congress+OR+senator+OR+bill", 3),
+    # The standing Korea items on the Hill, each by what its headlines say.
+    "Congress Korea sanctions": _windowed("%22North+Korea%22+sanctions+bill+OR+act+OR+senators+OR+House", 3),
+    "Congress USFK troops":  _windowed("USFK+OR+%22troops+in+South+Korea%22+NDAA+OR+Congress+OR+senators", 3),
+    "Korean worker visa bill": _windowed("%22Partner+with+Korea+Act%22+OR+%22Korean+workers%22+visa+bill"
+                                         "+OR+Congress", 7),
+    "Congress Korea hearing": _windowed("hearing+Korea+%22Foreign+Affairs+Committee%22+OR+"
+                                        "%22Armed+Services+Committee%22+OR+%22Foreign+Relations+Committee%22", 7),
+    "Congress Korea letter": _windowed("Korea+lawmakers+OR+senators+letter+OR+resolution+Congress", 3),
 }
 
 # Search feeds that must show a US-Congress signal as well as a Korea one.
-HILL_SEARCH_FEEDS = {"Korea Caucus", "US Congress Korea", "Congress Shipbuilding Korea", "Punchbowl"}
+HILL_SEARCH_FEEDS = {"Korea Caucus", "US Congress Korea", "Congress Shipbuilding Korea", "Punchbowl",
+                     "Congress Korea sanctions", "Congress USFK troops", "Korean worker visa bill",
+                     "Congress Korea hearing", "Congress Korea letter"}
+# CRS and GovInfo publish in batches, and a committee's hearing record or a
+# bill's text arrives days after the event: a week, not two days.
+HILL_SLOW_FEEDS = ("CRS", "GovInfo", "Congress.gov Bills", "HFAC", "HASC", "SFRC", "SASC",
+                   "House Appropriations", "Senate Appropriations", "Korea Caucus",
+                   "Korean worker visa bill", "Congress Korea hearing", "Punchbowl")
 
 # Congressional hearing and markup schedules. Parsed for events, not articles:
 # see _collect_hill_calendar. Each is tried on its own, and every failure is
@@ -662,7 +790,14 @@ def _parse_one(url: str, retries: int = 3) -> list:
     return []
 
 
-def _parse_feed(url) -> list:
+def _safe_accept(accept, entry) -> bool:
+    try:
+        return bool(accept(entry))
+    except Exception:                                           # noqa: BLE001
+        return False
+
+
+def _parse_feed(url, accept=None) -> list:
     """Fetch a feed that may be defined as several candidate URLs.
 
     Nearly every feed in this file is a Google News `site:` search rather than
@@ -691,6 +826,17 @@ def _parse_feed(url) -> list:
     emptied by the recency filter, and keep the search behind it from ever
     running. No tier's window is longer than a week, so this drops nothing
     the collector would have kept.
+
+    `accept` is the collector's own test for an item it would keep (its
+    recency window and its relevance filter). A candidate none of whose items
+    pass it has not answered either. Without it a publisher's whole-site feed
+    always won: The Hill's defense feed, Roll Call, congress.gov's floor
+    feeds, Brookings and Foreign Affairs all publish daily, so they returned
+    live items, the Korea filter then removed every one, and the
+    `Korea site:` search behind each never ran. That is how all twenty
+    Capitol Hill feeds "answered" on 19-21 October 2026 and the stream
+    delivered nothing. The same rule stops a ministry board with last week's
+    posts from emptying a 24-hour tier.
     """
     candidates = [url] if isinstance(url, str) else list(url)
     for i, candidate in enumerate(candidates):
@@ -700,6 +846,9 @@ def _parse_feed(url) -> list:
         entries = _parse_one(candidate, retries=3 if last else 1)
         entries = _keep_site_matches(entries, candidate)
         if entries and not last and not _any_live(entries):
+            continue
+        if entries and not last and accept is not None and not any(_safe_accept(accept, e)
+                                                                    for e in entries):
             continue
         if entries:
             _feed_source_used[candidate] = ("native" if "news.google.com" not in candidate
@@ -910,9 +1059,12 @@ def _dedup(articles: list) -> list:
 # PARALLEL FEED FETCHER
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _fetch_feeds_parallel(feed_dict: dict, is_tiered: bool = False) -> dict:
+def _fetch_feeds_parallel(feed_dict: dict, is_tiered: bool = False, accept=None) -> dict:
     """Fetch all feeds in parallel. Returns {source: (entries, extra_info)}.
-    Also records per-source health data in the module-level _source_health dict."""
+    Also records per-source health data in the module-level _source_health dict.
+
+    `accept(source, entry)` is the collector's keep test; a candidate with no
+    item that passes it gives way to the next one (see _parse_feed)."""
     results = {}
 
     def _fetch_one(source, url_or_tuple):
@@ -925,7 +1077,8 @@ def _fetch_feeds_parallel(feed_dict: dict, is_tiered: bool = False) -> dict:
         else:
             url = url_or_tuple
             tier_val = None
-        entries = _parse_feed(url)
+        keep = (lambda e, _s=source: accept(_s, e)) if accept else None
+        entries = _parse_feed(url, accept=keep)
         return source, entries, tier_val
 
     items = list(feed_dict.items())
@@ -1050,9 +1203,16 @@ def _newest(entries: list, n: int) -> list:
     return sorted(entries, key=key, reverse=True)[:n]
 
 
+def _tier1_keeps(source: str, entry) -> bool:
+    """Would _collect_tier1 keep this entry? (Recency, then relevance.)"""
+    if not _is_recent(entry, hours=24):
+        return False
+    return source in KOREA_NATIVE_FEEDS or _is_korea_related(entry)
+
+
 def _collect_tier1() -> list:
     articles = []
-    results = _fetch_feeds_parallel(TIER1_FEEDS)
+    results = _fetch_feeds_parallel(TIER1_FEEDS, accept=_tier1_keeps)
     for source, (entries, _) in results.items():
         # Korean-language feeds get lang="KO"
         lang = "KO" if source in KOREAN_LANGUAGE_FEEDS else "EN"
@@ -1072,41 +1232,63 @@ def _collect_tier1() -> list:
     return _add_fulltext(_dedup(articles))
 
 
+def _tier2_hours(source: str) -> int:
+    return TIER2_OPED_HOURS if ANALYSIS_KIND.get(source) == "oped" else TIER2_HOURS
+
+
+def _analysis_relevant(source: str, entry) -> bool:
+    if _is_entertainment(entry):
+        return False
+    return source in KOREA_ANALYSIS_FEEDS or _is_korea_related(entry)
+
+
+def _tier2_keeps(source: str, entry) -> bool:
+    # strict: drop undated think-tank pieces (evergreen backfill from
+    # low-volume site: queries — e.g. old AEI essays with no date).
+    return (_is_recent(entry, hours=_tier2_hours(source), strict=True)
+            and _analysis_relevant(source, entry))
+
+
 def _collect_tier2() -> list:
     articles = []
-    results = _fetch_feeds_parallel(TIER2_FEEDS, is_tiered=True)
+    results = _fetch_feeds_parallel(TIER2_FEEDS, is_tiered=True, accept=_tier2_keeps)
     for source, (entries, prestige) in results.items():
         for entry in entries:
-            # strict: drop undated think-tank pieces (evergreen backfill from
-            # low-volume site: queries — e.g. old AEI essays with no date).
-            if not _is_recent(entry, hours=36, strict=True):
+            if not _tier2_keeps(source, entry):
                 continue
-            if not _is_korea_related(entry):
-                continue
-            article = _entry_to_article(entry, source, extra={"prestige": prestige})
+            article = _entry_to_article(entry, source, extra={
+                "prestige": prestige, "kind": ANALYSIS_KIND.get(source, "report")})
             articles.append(article)
     return _dedup(articles)
 
 
+_ACADEMIC_SIGNALS = ("journal", "paper", "study", "research", "analysis", "findings",
+                     "abstract", "doi", "vol.", "issue")
+
+
+def _tier3_keeps(source: str, entry) -> bool:
+    # strict: undated academic hits are almost always old evergreen
+    # papers backfilled by the journal site: query — reject them.
+    if not _is_recent(entry, hours=TIER3_HOURS, strict=True):
+        return False
+    if not _analysis_relevant(source, entry):
+        return False
+    # A journal's own table of contents is all papers. A search hit must
+    # also look academic, or a news story naming the journal gets in.
+    if "news.google.com" not in str(entry.get("link", "")):
+        return True
+    text = _entry_text(entry).lower()
+    return any(s in text for s in (*_ACADEMIC_SIGNALS, source.lower()))
+
+
 def _collect_tier3() -> list:
     articles = []
-    results = _fetch_feeds_parallel(TIER3_FEEDS, is_tiered=True)
+    results = _fetch_feeds_parallel(TIER3_FEEDS, is_tiered=True, accept=_tier3_keeps)
     for source, (entries, tier) in results.items():
         for entry in entries:
-            # strict: undated academic hits are almost always old evergreen
-            # papers backfilled by the journal site: query — reject them.
-            if not _is_recent(entry, hours=72, strict=True):
+            if not _tier3_keeps(source, entry):
                 continue
-            if not _is_korea_related(entry):
-                continue
-            # Extra filter: must mention academic-like terms or the journal name
-            text = f"{entry.get('title', '')} {entry.get('summary', entry.get('description', ''))}".lower()
-            academic_signals = ("journal", "paper", "study", "research", "analysis",
-                                "findings", "abstract", "doi", "vol.", "issue",
-                                source.lower())
-            if not any(s in text for s in academic_signals):
-                continue
-            article = _entry_to_article(entry, source, extra={"journal_tier": tier})
+            article = _entry_to_article(entry, source, extra={"journal_tier": tier, "kind": "journal"})
             articles.append(article)
     return _dedup(articles)
 
@@ -1368,17 +1550,52 @@ def _collect_kim_tracker() -> list:
 # the Korean firms building in the US, the worker visa.
 HILL_KOREA_KEYWORDS = re.compile(
     r"masga|make american shipbuilding great|hanwha|hyundai|samsung|sk hynix|sk on\b"
-    r"|lg energy|e-4 visa|partner with korea|lazarus|korean",
+    r"|lg energy|e-4 visa|partner with korea|lazarus|korean|usfk|opcon|korus",
     re.IGNORECASE,
 )
 # A US-Congress signal, required of the search feeds only.
 HILL_US_SIGNAL = re.compile(
-    r"congress|senat|capitol|ndaa|appropriation|caucus|\bcrs\b|\brep\.|\bsen\."
+    r"congress|senat|capitol hill|\bndaa\b|appropriation|caucus|\bcrs\b|\brep\.\s|\bsen\.\s"
     r"|house of representatives|house (?:armed|foreign|committee|panel|vote|pass|bill"
-    r"|republican|democrat|speaker|lawmaker)|u\.s\. lawmaker|american lawmaker|us lawmaker",
+    r"|republican|democrat|speaker|lawmaker|gop)|\bh\.\s?r\.\s?\d|\bh\.\s?res\.|\bs\.\s?res\."
+    r"|(?<![.\w])s\.\s?\d{2,4}\b|national defense authorization|foreign (?:affairs|relations) committee"
+    r"|armed services committee|intelligence committee",
+    re.IGNORECASE,
+)
+# "Lawmakers" or "senators" is the US Congress only with a US qualifier; on
+# its own it is far more often the National Assembly.
+_HILL_US_MEMBERS = re.compile(
+    r"\b(?:u\.\s?s\.|us|american|republican|gop|bipartisan|washington)\s+"
+    r"(?:lawmakers?|legislators?|senators?|congressmen|congresswomen|members of congress)\b",
+    re.IGNORECASE,
+)
+# Congresses that are not the US Congress. North Korea's Workers' Party holds
+# a Party Congress, China a National People's Congress, and trade shows are
+# congresses too ("V2X platform at the ITS congress"): a search for "North
+# Korea" + "Congress" returns them first.
+_NOT_US_CONGRESS = re.compile(
+    r"\b(?:party|world|its|people'?s|youth|union|workers'?|trade|medical|scientific|ninth|eighth"
+    r"|tenth|\d+(?:st|nd|rd|th))\s+congress\b|\bcongress of\b|\bcongress (?:center|centre|hall)\b",
     re.IGNORECASE,
 )
 _ROK_ASSEMBLY = re.compile(r"national assembly|국회|assemblyman|assemblywoman|blue house", re.IGNORECASE)
+# ROK party politics: with one of these and no strong Congress signal, a
+# "lawmaker" is a member of the National Assembly.
+_ROK_POLITICS = re.compile(
+    r"people power|\bppp\b|\bdpk\b|\bdp\b|ruling party|ruling democratic|main opposition"
+    r"|rebuilding korea|democratic party of korea|korean lawmakers|south korean lawmakers"
+    r"|seoul lawmakers|assembly speaker",
+    re.IGNORECASE,
+)
+
+
+def us_congress_signal(text: str) -> bool:
+    """True when the text is about the US Congress (not the National Assembly,
+    not a Party Congress)."""
+    t = _NOT_US_CONGRESS.sub(" ", str(text or ""))
+    if HILL_US_SIGNAL.search(t):
+        return True
+    return bool(_HILL_US_MEMBERS.search(t)) and not _ROK_POLITICS.search(t)
 
 # A place or body outside the US and Northeast Asia. northeast_asia owns Japan,
 # China, Russia, Taiwan and Mongolia; us_korea the United States.
@@ -1405,9 +1622,27 @@ def _is_hill_relevant(entry, source: str) -> bool:
     text = _entry_text(entry)
     if not (KOREA_KEYWORDS.search(text) or HILL_KOREA_KEYWORDS.search(text)):
         return False
+    if _is_entertainment(entry):
+        return False
     if source in HILL_SEARCH_FEEDS:
-        return bool(HILL_US_SIGNAL.search(text)) and not _ROK_ASSEMBLY.search(entry.get("title", ""))
+        title = str(entry.get("title", ""))
+        if _ROK_ASSEMBLY.search(title):
+            return False
+        # A headline about Korean party politics is the Assembly's story even
+        # when its summary mentions Washington.
+        if _ROK_POLITICS.search(title) and not us_congress_signal(title):
+            return False
+        return us_congress_signal(text)
     return True
+
+
+def _hill_hours(source: str) -> int:
+    return 72 if source.startswith(HILL_SLOW_FEEDS) else 48
+
+
+def _hill_keeps(source: str, entry) -> bool:
+    """Would _collect_capitol_hill keep this entry?"""
+    return _is_recent(entry, hours=_hill_hours(source)) and _is_hill_relevant(entry, source)
 
 
 def _is_world_relevant(entry) -> bool:
@@ -1420,28 +1655,28 @@ def _collect_capitol_hill() -> list:
     """US Congress items about Korea. 48h window; CRS and GovInfo 72h, as they
     publish in batches rather than through the day."""
     articles = []
-    results = _fetch_feeds_parallel(CAPITOL_HILL_FEEDS)
+    results = _fetch_feeds_parallel(CAPITOL_HILL_FEEDS, accept=_hill_keeps)
     for source, (entries, _) in results.items():
-        hours = 72 if source.startswith(("CRS", "GovInfo")) else 48
         for entry in entries:
-            if not _is_recent(entry, hours=hours):
-                continue
-            if not _is_hill_relevant(entry, source):
+            if not _hill_keeps(source, entry):
                 continue
             articles.append(_entry_to_article(entry, source, extra={"stream": "capitol_hill"}))
     return _dedup(articles)
+
+
+def _world_keeps(source: str, entry) -> bool:
+    return (_is_recent(entry, hours=36) and _is_world_relevant(entry)
+            and not _is_entertainment(entry))
 
 
 def _collect_korea_world() -> list:
     """Korea's relations beyond the US and Northeast Asia. 36h window: these
     are lower-volume topics than the daily news."""
     articles = []
-    results = _fetch_feeds_parallel(KOREA_WORLD_FEEDS)
+    results = _fetch_feeds_parallel(KOREA_WORLD_FEEDS, accept=_world_keeps)
     for source, (entries, _) in results.items():
         for entry in entries:
-            if not _is_recent(entry, hours=36):
-                continue
-            if not _is_world_relevant(entry) or _is_entertainment(entry):
+            if not _world_keeps(source, entry):
                 continue
             articles.append(_entry_to_article(entry, source, extra={"stream": "korea_world"}))
     return _dedup(articles)

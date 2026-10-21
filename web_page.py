@@ -97,7 +97,8 @@ def _fold_sections(html: str) -> tuple[str, list]:
         gap = html.rfind('<div class="v2-gap"', 0, m.start())
         anchors = _ANCHOR.findall(html[gap:m.start()]) if gap != -1 else []
         name = anchors[-1] if anchors else ""
-        label = re.sub(r"<[^>]+>", "", m.group(2)).strip()
+        # The bar's section number is the email's; the menu names the section only.
+        label = re.sub(r"^\d{2}\s*", "", re.sub(r"<[^>]+>", "", m.group(2)).strip())
         if name:
             sections.append((name, label))
         td_attrs = m.group(3)
@@ -178,9 +179,11 @@ body { background:#E6E9EE; }
 .wmenu a:focus-visible, .wnav-in a:focus-visible { outline:2px solid #007DAD; outline-offset:1px; }
 details.wsec > summary { list-style:none; cursor:pointer; display:flex; align-items:center;
   justify-content:space-between; gap:12px; padding:9px 20px; background:%(navy)s; color:#FFFFFF;
-  font-family:%(sans)s; font-size:15px; font-weight:700; line-height:1.25; }
+  font-family:%(sans)s; font-size:13px; font-weight:700; letter-spacing:1px; text-transform:uppercase;
+  line-height:1.35; }
 details.wsec > summary::-webkit-details-marker { display:none; }
-details.wsec > summary::after { content:"Hide"; flex:none; font-size:12px; font-weight:700; color:#DCE4EC; }
+details.wsec > summary::after { content:"Hide"; flex:none; font-size:12px; font-weight:700; color:#DCE4EC;
+  letter-spacing:0; text-transform:none; }
 details.wsec:not([open]) > summary::after { content:"Show"; }
 details.wsec > summary:focus-visible { outline:2px solid #5CBDE6; outline-offset:-2px; }
 .wrapper .v2-toc { display:none !important; }
