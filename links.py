@@ -434,6 +434,35 @@ def _item_body(container: dict) -> str:
 _TRACKING_PARAMS = re.compile(r"^(utm_|fbclid|gclid|ocid|cmpid|ref$|rss$|from$|oc$)")
 
 
+_TLS_ON_HTTP = re.compile(r"^http://([^/:]+):443(?=/|$)", re.I)
+
+
+def fix_scheme(url: str) -> str:
+    """'http://host:443/...' (the Foreign Ministry's feed writes its links so)
+    cannot be opened: plain HTTP spoken to the TLS port. It means https."""
+    u = str(url or "")
+    return _TLS_ON_HTTP.sub(r"https://\1", u)
+
+
+def fix_schemes(digest) -> list[str]:
+    """Rewrite every such URL in the digest in place; one log line per change."""
+    out: list[str] = []
+
+    def walk(v):
+        if isinstance(v, dict):
+            for k, x in list(v.items()):
+                if isinstance(x, str) and k in ("url", "secondary_url", "source_url") and _TLS_ON_HTTP.match(x):
+                    v[k] = fix_scheme(x)
+                    out.append(f"{x[:60]} -> https")
+                else:
+                    walk(x)
+        elif isinstance(v, list):
+            for x in v:
+                walk(x)
+    walk(digest)
+    return out
+
+
 def norm_url(url: str) -> str:
     """Matching key: scheme-less, no www, no tracking params, no fragment or trailing slash."""
     u = str(url or "").strip()
@@ -1160,6 +1189,7 @@ def finalize(digest: dict, payload, network: bool = True,
     try:
         index = corpus_index(payload)
         for title, fn in (
+                ("http on port 443", lambda: fix_schemes(digest)),
                 ("labels", lambda: fix_labels(digest, index)),
                 ("multi-outlet top stories",
                  lambda: fix_multi_outlet(digest, index, used_urls(digest, "top_stories"))),

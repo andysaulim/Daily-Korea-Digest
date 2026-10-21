@@ -1234,6 +1234,7 @@ def check_english_only():
          "rok_government": [{"ministry": "MND", "ministry_korean": "국방부", "source_label": "뉴시스"}],
          "public_sentiment": {"party_ruling": {"party": "Democratic Party", "party_kr": "더불어민주당"}},
          "social_statements": [{"quote_text": 'Lee said "국민이 주인" ("the people are the owners").'}],
+         "official_x_posts": [{"who": "MSIT Minister", "quote_text": "보스턴컨설팅그룹이 우리나라를 선도국으로 평가했습니다."}],
          "overnight_items": [{"headline": "y", "body": "Officials said 비상 without explanation."}]}
     warns = english.apply(d)
     if d["top_stories"][0]["source"] != "Newsis / Kyunghyang Shinmun":
@@ -1246,6 +1247,8 @@ def check_english_only():
         problems.append("outlet name in prose not mapped")
     if any("social_statements" in w for w in warns):
         problems.append("a translated quote was flagged")
+    if d.get("official_x_posts"):
+        problems.append("an untranslated Korean X post was kept")
     if not any("overnight_items" in w for w in warns):
         problems.append("untranslated Korean in prose was not reported")
     return problems
@@ -1701,7 +1704,10 @@ def check_v2_brand_assets():
         problems.append("the masthead lacks the CSIS wordmark or the footer the Korea Chair lockup")
     for tag, src, alt in ((mark[0] if mark else "", render._V2_WORDMARK, 'alt="CSIS"'),
                           (lock[0] if lock else "", render._V2_LOGO, 'alt="CSIS Korea Chair"')):
-        for need in (f'src="{base}assets/{src}"', alt, 'width="', 'height="', "color:#FFFFFF"):
+        # Images come from the repository's assets/, which exists the moment a
+        # change merges; the Pages copy lags the send by a deploy.
+        for need in (f'/main/assets/{src}"', 'src="https://raw.githubusercontent.com/', alt, 'width="',
+                     'height="', "color:#FFFFFF"):
             if need not in tag:
                 problems.append(f"<img> for {src} lacks {need!r}")
     if mark and "font-family:Georgia" not in mark[0]:
@@ -1803,8 +1809,8 @@ def check_v2_shortened_email():
         render.DESIGN = saved
     if html.count("The closing sentence is detail") != 1:
         problems.append("v2: expected the long body in full exactly once (the top story)")
-    if html.count("Some sections are shortened here.") != 1 or 'href="https://example.org/brief/digest_2026-10-19.html"' not in html:
-        problems.append("v2: not exactly one shortened-note under the contents, linking the issue page")
+    if "Some sections are shortened" in html or 'href="https://example.org/brief/digest_2026-10-19.html"' not in html:
+        problems.append("v2: the shortened-note is back, or no link to the issue page remains")
     if "Shortened for email" in html:
         problems.append("v2: a per-section 'Shortened for email' line is back")
     if 'name="business"' not in html:
@@ -3061,7 +3067,20 @@ def check_audio_drops_empty_cued_sections():
     return problems
 
 
+def check_content_farms_dropped():
+    """Aggregators and machine-translated mirrors never reach the model."""
+    import collect
+    kept = collect._drop_content_farms([
+        {"source": "BigGo Finance", "url": "https://finance.biggo.com/news/1"},
+        {"source": "Vietnam.vn", "url": "https://www.vietnam.vn/en/x"},
+        {"source": "Yonhap English", "url": "https://en.yna.co.kr/view/AEN1"},
+        {"source": "Reuters", "url": "https://www.reuters.com/world/asia-pacific/x"}])
+    names = [a["source"] for a in kept]
+    return [] if names == ["Yonhap English", "Reuters"] else [f"content-farm filter kept {names}"]
+
+
 CHECKS = [
+    ("content farms dropped", check_content_farms_dropped),
     ("audio drops empty cued sections", check_audio_drops_empty_cued_sections),
     ("inbox preview line; test send gets the design preview", check_inbox_preview_and_test_send_preview),
     ("validation does not hold a real brief", check_validation_does_not_hold_a_real_brief),

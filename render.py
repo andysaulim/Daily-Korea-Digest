@@ -884,11 +884,8 @@ def render(digest: dict) -> str:
             '<div class="listen-sub" style="font-size:12px;color:#353C48;margin-top:1px;">The audio edition, read aloud</div></td>'
             f'<td class="listen-len" align="right" style="vertical-align:middle;font-family:Arial,sans-serif;font-size:12px;font-weight:700;color:#353C48;white-space:nowrap;"></td>'
             '</tr></table></a>')
-    elif re_line:
-        _masthead_bar = ("<div style='margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.28);"
-                         "font-size:13px;color:rgba(255,255,255,0.92);font-family:Georgia,serif;line-height:1.55;'>"
-                         "<strong style='color:#FFFFFF;font-size:11px;letter-spacing:1.5px;font-family:Arial,sans-serif;'>RE:</strong>&nbsp; "
-                         + re_line + "</div>")
+    # No RE line in its place: the owner dropped it (22 Oct). The glance
+    # carries the same three stories a few lines down.
     else:
         _masthead_bar = ""
     sections.append(f"""
@@ -4100,7 +4097,17 @@ def _v2_asset(digest: dict, name: str, mime: str = "image/png") -> str:
     if PRINT:
         return _v2_data_uri(name, mime)
     base = _v2_base(digest)
-    return f"{base}assets/{name}" if base else ""
+    if not base:
+        return ""
+    if mime.startswith("image/"):
+        # Images come from the repository, not the Pages site: the email goes
+        # out minutes before the deploy that would publish a new asset, and a
+        # test send deploys nothing, so a Pages URL showed a broken image the
+        # first day. assets/ is checked in, so this URL exists as soon as the
+        # change is merged. Fonts stay on Pages, which serves them as fonts.
+        repo = __import__("os").environ.get("GITHUB_REPOSITORY") or "andysaulim/Daily-Korea-Digest"
+        return f"https://raw.githubusercontent.com/{repo}/main/assets/{name}"
+    return f"{base}assets/{name}"
 
 
 def _v2_logo(digest: dict, width: int) -> str:
@@ -4123,7 +4130,8 @@ def _v2_logo(digest: dict, width: int) -> str:
 
 
 # The official CSIS wordmark, cropped from the Korea Chair logo and set in
-# white: 259 by 97, shown at 134 by 50 (2x for a crisp 1x), 2KB.
+# white: 259 by 97, shown at 80 by 30 (over 3x for a crisp 1x), 2KB. Sized
+# to sit level with the name beside it: at 50px tall it outweighed it.
 _V2_WORDMARK = "csis_wordmark_white.png"
 
 
@@ -4132,9 +4140,9 @@ def _v2_wordmark(digest: dict) -> str:
     src = _v2_asset(digest, _V2_WORDMARK)
     if not src:
         return ""
-    return (f'<img src="{_esc(src)}" width="134" height="50" alt="CSIS" class="v2-wm" '
-            'style="display:block;width:100%;min-width:64px;max-width:134px;height:auto;border:0;outline:none;text-decoration:none;'
-            f'font-family:{_V2_SERIF};font-size:34px;line-height:50px;color:#FFFFFF;text-align:center;">')
+    return (f'<img src="{_esc(src)}" width="64" height="24" alt="CSIS" class="v2-wm" '
+            'style="display:block;width:100%;min-width:44px;max-width:64px;height:auto;border:0;outline:none;text-decoration:none;'
+            f'font-family:{_V2_SERIF};font-size:24px;line-height:30px;color:#FFFFFF;text-align:center;">')
 
 
 def _v2_masthead(digest: dict, now, listen_bar: str) -> str:
@@ -4178,18 +4186,18 @@ def _v2_masthead(digest: dict, now, listen_bar: str) -> str:
     # With no web URL to load it from it is Georgia text. The full lockup,
     # with the Korea Chair line, is in the footer.
     mark = _v2_wordmark(digest) or (
-        f'<span class="v2-csis" style="font-family:{_V2_SERIF};font-size:54px;line-height:50px;color:#FFFFFF;">CSIS</span>')
+        f'<span class="v2-csis" style="font-family:{_V2_SERIF};font-size:32px;line-height:30px;color:#FFFFFF;">CSIS</span>')
     band = (f'<div bgcolor="{_V2_NAVY}" class="mast-band" style="background-color:{_V2_NAVY};padding:30px 16px 22px;'
             'text-align:center;">'
-            '<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" class="v2-mrow" '
-            'style="margin:0 auto;"><tr>'
-            f'<td class="v2-mk" valign="middle" style="padding:0 18px 0 0;vertical-align:middle;">{mark}</td>'
-            '<td valign="middle" style="vertical-align:middle;">'
-            '<table role="presentation" cellpadding="0" cellspacing="0" border="0" class="v2-namebox"><tr>'
-            '<td class="v2-nbt" style="border:2px solid #4A90D0;border-radius:6px;padding:10px 22px;">'
-            f'<h1 class="v2-name" style="margin:0;font-family:{_V2_SANS};font-size:27px;font-weight:700;'
-            'letter-spacing:1.5px;line-height:1.2;color:#FFFFFF;">KOREA DAILY BRIEF</h1></td></tr></table>'
-            '</td></tr></table>'
+            # One outlined nameplate, as the owner chose (option B): the
+            # wordmark and the name inside the same box, a thin rule between.
+            '<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" class="v2-mrow v2-namebox" '
+            'style="margin:0 auto;border:2px solid #4A90D0;border-radius:6px;"><tr>'
+            f'<td class="v2-mk" valign="middle" style="padding:8px 10px 8px 12px;vertical-align:middle;">{mark}</td>'
+            '<td class="v2-nbt" valign="middle" style="vertical-align:middle;padding:8px 12px 8px 10px;'
+            'border-left:1px solid #4A90D0;">'
+            f'<h1 class="v2-name" style="margin:0;font-family:{_V2_SANS};font-size:18px;font-weight:700;white-space:nowrap;'
+            'letter-spacing:1px;line-height:1.2;color:#FFFFFF;">KOREA DAILY BRIEF</h1></td></tr></table>'
             'td_date</div>')
     if PRINT:
         strip = ""          # links and a notice for the inbox; nothing to click on paper
@@ -4208,10 +4216,6 @@ def _v2_masthead(digest: dict, now, listen_bar: str) -> str:
             f'<span class="listen-btn" style="display:inline-block;border:1px solid {_V2_NAVY};padding:6px 12px;'
             f'font-size:13px;font-weight:700;color:{_V2_NAVY};white-space:nowrap;">Play</span></td>'
             '</tr></table></a>', top=12, bottom=0)
-    elif digest.get("re_line") and not PRINT:
-        listen = _v2_gap(_v2_cardbox(f'<div style="font-size:13px;line-height:1.5;color:{_V2_BODY};">'
-                                     f'<b style="color:{_V2_INK};">RE:</b> {_esc(digest["re_line"])}</div>', "10px 20px"),
-                         top=12, bottom=0)
     # The date, the issue number and the reading time, under the name on the
     # navy band. Each part is nowrap and the space after it is where a phone
     # breaks the line, so it wraps whole parts and never runs off the screen.
@@ -4529,7 +4533,10 @@ def _v2_shorten(digest: dict) -> tuple:
 
     def shorten(obj, field, anchor):
         if isinstance(obj, dict) and isinstance(obj.get(field), str):
-            short = _v2_lead(obj[field])
+            # Analysis keeps one sentence: its first is the piece's own
+            # summary, and a second was too often the model's commentary on
+            # it ("The timing aligns with...").
+            short = _v2_lead(obj[field], 1 if anchor == "analysis" else 2)
             if short != obj[field]:
                 obj[field] = short
                 cut.add(anchor)
@@ -4992,10 +4999,8 @@ def _v2_finish(body: str, more_url: str = "") -> str:
         toc_html = (f'<!--c--><div class="v2-toc no-print" style="font-size:12px;line-height:1.7;color:{_V2_NAVY};">'
                     f'<span style="font-size:11px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;'
                     f'color:{_V2_META};">In this issue</span>&emsp;' + "&ensp; ".join(links) + '</div><!--/c-->')
-    if more_url and not PRINT:
-        toc_html += (f'<!--c--><div class="v2-more no-print" style="margin-top:3px;font-size:12px;line-height:1.5;'
-                     f'color:{_V2_META};">Some sections are shortened here. Full text:&ensp;'
-                     f'<a href="{_esc(more_url)}" style="color:{_V2_NAVY};font-weight:700;">Read online</a></div><!--/c-->')
+    # No "Some sections are shortened" note: the owner dropped it; "Read
+    # online" in the strip above the masthead opens the full text.
     if PRINT:
         toc_html = ""       # links do nothing on paper
     body = body.replace("%%NAV%%", "")
@@ -5020,15 +5025,26 @@ def _v2_dark_css() -> str:
 
 
 _V2_CSS = """
+    /* The nameplate's inline size is the phone's, so it fits even where a
+       client drops this stylesheet; wide screens enlarge it here. */
+    @media only screen and (min-width: 621px) {
+      .wrapper .v2-name { font-size:27px !important; letter-spacing:1.5px !important; }
+      .wrapper .v2-wm { max-width:80px !important; }
+      .wrapper .v2-mk { padding:10px 16px 10px 22px !important; }
+      .wrapper .v2-nbt { padding:10px 22px 10px 16px !important; }
+    }
     @media only screen and (max-width: 620px) {
       .wrapper .v2-gap { padding-left:8px !important; padding-right:8px !important; }
       .wrapper .v2-strip td { padding-left:8px !important; padding-right:8px !important; }
       .wrapper .v2-in { padding-left:14px !important; padding-right:14px !important; }
       .wrapper .sec-bar td { padding:9px 14px !important; }
       .wrapper .v2-name { font-size:17px !important; letter-spacing:1px !important; }
-      .wrapper .v2-nbt { padding:7px 12px !important; }
-      .wrapper .v2-mk { padding-right:14px !important; }
-      .wrapper .v2-csis { font-size:37px !important; line-height:34px !important; }
+      /* Jump links barely work in phone mail apps, and the list took five lines
+         above the glance; the numbered bars carry the order. */
+      .wrapper .v2-tocc { display:none !important; }
+      .wrapper .v2-nbt { padding:7px 12px 7px 10px !important; }
+      .wrapper .v2-mk { padding:7px 10px 7px 12px !important; }
+      .wrapper .v2-csis { font-size:24px !important; line-height:22px !important; }
       .wrapper .mast-meta { padding-top:2px !important; }
       .v2-cell div[style*="font-size:16px"] { font-size:15px !important; }
       .wrapper .v2-tint { padding-left:11px !important; }
@@ -5041,7 +5057,7 @@ _V2_CSS = """
          nothing removed. With these and the wrapping contents line, the first
          top story's headline at 375px moved from 1,278/1,327/1,408px to
          1,176/1,178/1,261px (Oct 18/19/20). The rest is the glance itself. */
-      .wrapper .v2-wm { max-width:91px !important; }
+      .wrapper .v2-wm { max-width:56px !important; }
       .wrapper .listen-bar td { padding-top:9px !important; padding-bottom:9px !important; }
       .wrapper .listen-bar .listen-sub { display:none !important; }
       .v2-cell { padding:7px 0 6px !important; }
@@ -5052,13 +5068,22 @@ _V2_CSS = """
       .wrapper .v2-mdate { font-size:12px !important; margin-top:9px !important; }
       .wrapper .v2-lk-csis { font-size:30px !important; }
     }
+    /* After the 620px block, so the narrowest phones win: the nameplate on one line. */
+    @media only screen and (max-width: 360px) {
+      .wrapper .v2-name { font-size:14px !important; letter-spacing:0.5px !important; }
+      .wrapper .v2-wm { max-width:46px !important; }
+      .wrapper .v2-nbt { padding:6px 9px 6px 8px !important; }
+      .wrapper .v2-mk { padding:6px 8px 6px 9px !important; }
+    }
     /* Where the stylesheet survives, the ROK cards pair up at equal heights. */
     .v2-rg { display:flex !important; flex-wrap:wrap; justify-content:space-between; }
     .v2-rg > .v2-rc { display:flex !important; width:49% !important; max-width:none !important; padding:0 0 10px !important; }
-    /* Public Sentiment, where the stylesheet survives: the party boxes as
-       tall as the approval block beside them, their figures centred, so the
-       row has no empty band above and below the boxes. */
-    .v2-psr { display:flex !important; flex-wrap:wrap; justify-content:space-between; align-items:stretch; }
+    /* An odd last ministry card takes the full row rather than leaving a gap. */
+    .v2-rg > .v2-rc:last-child:nth-child(odd) { width:100% !important; }
+    /* Public Sentiment, where the stylesheet survives: the party boxes at
+       their own height, centred beside the approval block. Stretched to its
+       height they left an empty band under each figure. */
+    .v2-psr { display:flex !important; flex-wrap:wrap; justify-content:space-between; align-items:center; }
     .v2-ps, .v2-pp { display:flex !important; }
     .v2-pst { flex:1; }
     .v2-pp > div { display:flex !important; width:100%; }
