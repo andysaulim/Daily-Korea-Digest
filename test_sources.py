@@ -1806,8 +1806,8 @@ def check_v2_shortened_email():
         render.DESIGN = saved
     if html.count("The closing sentence is detail") != 1:
         problems.append("v2: expected the long body in full exactly once (the top story)")
-    if html.count("Some sections are shortened here.") != 1 or 'href="https://example.org/brief/digest_2026-10-19.html"' not in html:
-        problems.append("v2: not exactly one shortened-note under the contents, linking the issue page")
+    if "Some sections are shortened" in html or 'href="https://example.org/brief/digest_2026-10-19.html"' not in html:
+        problems.append("v2: the shortened-note is back, or no link to the issue page remains")
     if "Shortened for email" in html:
         problems.append("v2: a per-section 'Shortened for email' line is back")
     if 'name="business"' not in html:

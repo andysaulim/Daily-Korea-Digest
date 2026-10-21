@@ -884,11 +884,8 @@ def render(digest: dict) -> str:
             '<div class="listen-sub" style="font-size:12px;color:#353C48;margin-top:1px;">The audio edition, read aloud</div></td>'
             f'<td class="listen-len" align="right" style="vertical-align:middle;font-family:Arial,sans-serif;font-size:12px;font-weight:700;color:#353C48;white-space:nowrap;"></td>'
             '</tr></table></a>')
-    elif re_line:
-        _masthead_bar = ("<div style='margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.28);"
-                         "font-size:13px;color:rgba(255,255,255,0.92);font-family:Georgia,serif;line-height:1.55;'>"
-                         "<strong style='color:#FFFFFF;font-size:11px;letter-spacing:1.5px;font-family:Arial,sans-serif;'>RE:</strong>&nbsp; "
-                         + re_line + "</div>")
+    # No RE line in its place: the owner dropped it (22 Oct). The glance
+    # carries the same three stories a few lines down.
     else:
         _masthead_bar = ""
     sections.append(f"""
@@ -4208,10 +4205,6 @@ def _v2_masthead(digest: dict, now, listen_bar: str) -> str:
             f'<span class="listen-btn" style="display:inline-block;border:1px solid {_V2_NAVY};padding:6px 12px;'
             f'font-size:13px;font-weight:700;color:{_V2_NAVY};white-space:nowrap;">Play</span></td>'
             '</tr></table></a>', top=12, bottom=0)
-    elif digest.get("re_line") and not PRINT:
-        listen = _v2_gap(_v2_cardbox(f'<div style="font-size:13px;line-height:1.5;color:{_V2_BODY};">'
-                                     f'<b style="color:{_V2_INK};">RE:</b> {_esc(digest["re_line"])}</div>', "10px 20px"),
-                         top=12, bottom=0)
     # The date, the issue number and the reading time, under the name on the
     # navy band. Each part is nowrap and the space after it is where a phone
     # breaks the line, so it wraps whole parts and never runs off the screen.
@@ -4992,10 +4985,8 @@ def _v2_finish(body: str, more_url: str = "") -> str:
         toc_html = (f'<!--c--><div class="v2-toc no-print" style="font-size:12px;line-height:1.7;color:{_V2_NAVY};">'
                     f'<span style="font-size:11px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;'
                     f'color:{_V2_META};">In this issue</span>&emsp;' + "&ensp; ".join(links) + '</div><!--/c-->')
-    if more_url and not PRINT:
-        toc_html += (f'<!--c--><div class="v2-more no-print" style="margin-top:3px;font-size:12px;line-height:1.5;'
-                     f'color:{_V2_META};">Some sections are shortened here. Full text:&ensp;'
-                     f'<a href="{_esc(more_url)}" style="color:{_V2_NAVY};font-weight:700;">Read online</a></div><!--/c-->')
+    # No "Some sections are shortened" note: the owner dropped it; "Read
+    # online" in the strip above the masthead opens the full text.
     if PRINT:
         toc_html = ""       # links do nothing on paper
     body = body.replace("%%NAV%%", "")
