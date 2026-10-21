@@ -2532,7 +2532,26 @@ def check_status_line_kcna_trend_and_provocations():
     return problems
 
 
+def check_banned_prose_and_single_headline_link():
+    """Banned words are named, not rewritten; a top story's headline outlet is not linked twice."""
+    import run, render
+    problems = []
+    d = {"top_stories": [{"headline": "Seoul acts amid strain", "body": "It signals a shift.",
+                          "url": "https://a.example/1", "src_line": "Reuters / AP",
+                          "source_links": [{"label": "Reuters", "url": "https://a.example/1"},
+                                           {"label": "AP", "url": "https://b.example/2"}]}],
+         "bp_locations": [{"note": "redeployed amid tensions"}]}
+    got = run.banned_prose(d)
+    if got != ["amid (top_stories)", "signals (top_stories)"]:
+        problems.append(f"banned_prose found {got}")
+    line = render._top_story_sources(d["top_stories"][0])
+    if line.count("https://a.example/1") or "Reuters" not in line or line.count("https://b.example/2") != 1:
+        problems.append(f"headline outlet linked twice or other outlet lost: {line}")
+    return problems
+
+
 CHECKS = [
+    ("banned words named; headline outlet linked once", check_banned_prose_and_single_headline_link),
     ("status line: KCNA trend and provocations", check_status_line_kcna_trend_and_provocations),
     ("web edition: folding sections, menu, full text, fallback", check_web_edition),
     ("run.py falls back to the email page", check_run_falls_back_to_the_email_page),

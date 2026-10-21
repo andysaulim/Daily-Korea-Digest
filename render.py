@@ -49,7 +49,10 @@ def _top_story_sources(story: dict) -> str:
     if len(sl) < 2:
         return _esc(_clean_src(raw))
     _, tail = _linkq.split_outlets(raw)
-    parts = [f'<a href="{_esc(l["url"])}" style="color:#6B7280;text-decoration:underline;'
+    # The outlet the headline already opens is named, not linked a second time.
+    head = str(story.get("url") or "")
+    parts = [_esc(str(l["label"])) if l["url"] == head else
+             f'<a href="{_esc(l["url"])}" style="color:#6B7280;text-decoration:underline;'
              f'text-decoration-color:#C9D1DC;">{_esc(str(l["label"]))}</a>' for l in sl]
     return " / ".join(parts) + (f", {_esc(tail)}" if tail else "")
 

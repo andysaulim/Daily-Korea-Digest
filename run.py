@@ -1098,6 +1098,36 @@ _BALANCE_RE = re.compile(r"\b(surplus|surpluses|deficit|deficits)\b", re.I)
 KOREA_BALANCE_CEILING_B = 300
 
 
+
+# Words and constructions the prompt bans (digest.py, writing rules). The
+# model still uses some; this names them on the run page so whether the rules
+# hold can be tracked. It reports and rewrites nothing.
+_BANNED_PROSE = re.compile(
+    r"\b(amid|signal(?:s|ed|ing)?|underscor\w*|highlight(?:s|ed|ing)|framing|posture|deepening|"
+    r"sweeping|sharpest|landscape|robust|pivotal|notably|coincid\w*|first-ever)\b|\bthe same day\b",
+    re.I)
+
+
+def banned_prose(digest: dict) -> list[str]:
+    """Each banned word or phrase in the brief's prose, as 'word (section)', in order found."""
+    found: list[str] = []
+
+    def walk(v, path: str):
+        if isinstance(v, dict):
+            for k, x in v.items():
+                if not str(k).startswith("_") and k not in ("url", "secondary_url", "source_url",
+                                                             "gnews_url", "source", "src_line", "note"):
+                    walk(x, path or k)
+        elif isinstance(v, list):
+            for x in v:
+                walk(x, path)
+        elif isinstance(v, str):
+            for m in _BANNED_PROSE.finditer(v):
+                found.append(f"{m.group(0).lower()} ({path})")
+
+    walk({k: v for k, v in digest.items() if k != "bp_locations"}, "")
+    return found
+
 def magnitude_warnings(digest: dict, payload: dict | None = None) -> list[str]:
     """Figures far out of scale for what they describe, usually a dropped decimal.
 
@@ -2634,6 +2664,9 @@ def main():
         import english
         for _w in english.apply(digest_data):
             print(f"::warning title=Korean text in brief::{_w}")
+        _banned = banned_prose(digest_data)
+        if _banned:
+            warn("Banned words in brief", f"{len(_banned)}: " + "; ".join(_banned[:8]))
     except Exception as _e:                                     # noqa: BLE001
         print(f"  ⚠  English pass skipped (non-fatal): {_e}")
         warn("English pass skipped", f"Korean outlet names and labels may reach the reader: {_e}")
