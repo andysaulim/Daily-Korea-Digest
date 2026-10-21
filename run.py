@@ -797,6 +797,11 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
 
     # ── Morning memo uniqueness check ───────────────────────────────────
     memo_items = digest.get("morning_memo") or []
+    for _i, _m in enumerate(memo_items):
+        _n = len(str(_m).split())
+        if _n > 30:
+            warnings.append(f"MORNING MEMO: item {_i + 1} is {_n} words (limit 25); "
+                            f"the glance is meant to be read in one look")
     if len(memo_items) >= 2:
         memo_texts = [str(m).strip() for m in memo_items]
         if len(set(memo_texts)) < len(memo_texts):
