@@ -1,6 +1,6 @@
 # Korea Daily Brief
 
-Automated intelligence briefing on Korean Peninsula affairs, delivered daily at 6 AM ET to senior policymakers and analysts.
+Automated intelligence briefing on Korean Peninsula affairs, delivered daily at 7 AM ET to senior policymakers and analysts.
 
 ## Architecture
 
@@ -8,7 +8,7 @@ Automated intelligence briefing on Korean Peninsula affairs, delivered daily at 
 COLLECT (160+ feeds, 25 threads) → RANK (editorial priority) → DIGEST (Claude Sonnet/Opus) → VALIDATE (dedup, URL repair, source caps) → RENDER (HTML email) → SEND (Gmail SMTP)
 ```
 
-Orchestrated by `run.py`. Triggered via external cron (cron-job.org) → GitHub Actions `workflow_dispatch`, with fallback crons at 7:30 and 9:00 AM ET.
+Orchestrated by `run.py`. Triggered via external cron (cron-job.org) → GitHub Actions `workflow_dispatch`, with fallback crons at 7:30 and 9:00 AM ET (each listed for both EDT and EST, since GitHub cron is UTC). cron-job.org must be set to America/New_York so the primary trigger also follows daylight saving.
 
 ## Key Files
 
