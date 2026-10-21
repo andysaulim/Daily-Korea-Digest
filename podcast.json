@@ -208,5 +208,35 @@
     "transcript": "digest_2026-10-20.vtt",
     "chapters": "digest_2026-10-20.chapters.json",
     "page": "listen/2026-10-20.html"
+  },
+  {
+    "date": "2026-10-21",
+    "title": "Korea Daily Brief | Wednesday, October 21",
+    "summary": "Kim Yo Jong orders loudspeakers along full border by month-end, Kim inspects fortifications, South Korean exports surge 105 percent, Ukraine staff pullback, North Korea sites go offline.",
+    "file": "digest_2026-10-21.mp3",
+    "bytes": 5209767,
+    "seconds": 651,
+    "script": "written",
+    "transcript_text": "digest_2026-10-21.txt",
+    "notes": [
+      {
+        "headline": "Kim Yo Jong orders loudspeakers along full border by October month-end",
+        "source": "Yonhap English / Yonhap North Korea KO / NK News Oct 21",
+        "url": "https://en.yna.co.kr/view/AEN20261021010600320"
+      },
+      {
+        "headline": "South Korea October 1-20 exports surge 105% on record chip sales",
+        "source": "Reuters / Yonhap English",
+        "url": "https://www.reuters.com/world/asia-pacific/south-korea-october-1-20-exports-surge-105-record-chip-sales-2026-10-21/"
+      },
+      {
+        "headline": "Seoul withdraws more embassy staff from Ukraine as North Korean POW row deepens",
+        "source": "AP News / Korea JoongAng Daily / Yonhap English",
+        "url": "https://apnews.com/article/south-korea-ukraine-zelenskyy-pow-70cd52e7d282fa918e394f2eea714e82"
+      }
+    ],
+    "transcript": "digest_2026-10-21.vtt",
+    "chapters": "digest_2026-10-21.chapters.json",
+    "page": "listen/2026-10-21.html"
   }
 ]
