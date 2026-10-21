@@ -1021,6 +1021,10 @@ def _entry_to_article(entry, source: str, lang: str = "EN", extra: dict | None =
         title = title[: -len(f" - {publisher}")].rstrip()
     _raw_link = entry.get("link", "").strip()
     link = _resolve_gnews_url(_raw_link)
+    # mofa.go.kr's board RSS writes links as http://www.mofa.go.kr:443/...,
+    # which no browser opens; it means https.
+    from links import fix_scheme
+    link = fix_scheme(link)
     # Google's newer article IDs are fully opaque and cannot be decoded, so the
     # reader gets a news.google.com redirect instead of the publisher's page.
     # Counting them makes the cost of the Google News dependency visible rather

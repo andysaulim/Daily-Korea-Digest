@@ -4097,7 +4097,17 @@ def _v2_asset(digest: dict, name: str, mime: str = "image/png") -> str:
     if PRINT:
         return _v2_data_uri(name, mime)
     base = _v2_base(digest)
-    return f"{base}assets/{name}" if base else ""
+    if not base:
+        return ""
+    if mime.startswith("image/"):
+        # Images come from the repository, not the Pages site: the email goes
+        # out minutes before the deploy that would publish a new asset, and a
+        # test send deploys nothing, so a Pages URL showed a broken image the
+        # first day. assets/ is checked in, so this URL exists as soon as the
+        # change is merged. Fonts stay on Pages, which serves them as fonts.
+        repo = __import__("os").environ.get("GITHUB_REPOSITORY") or "andysaulim/Daily-Korea-Digest"
+        return f"https://raw.githubusercontent.com/{repo}/main/assets/{name}"
+    return f"{base}assets/{name}"
 
 
 def _v2_logo(digest: dict, width: int) -> str:
@@ -4522,7 +4532,10 @@ def _v2_shorten(digest: dict) -> tuple:
 
     def shorten(obj, field, anchor):
         if isinstance(obj, dict) and isinstance(obj.get(field), str):
-            short = _v2_lead(obj[field])
+            # Analysis keeps one sentence: its first is the piece's own
+            # summary, and a second was too often the model's commentary on
+            # it ("The timing aligns with...").
+            short = _v2_lead(obj[field], 1 if anchor == "analysis" else 2)
             if short != obj[field]:
                 obj[field] = short
                 cut.add(anchor)

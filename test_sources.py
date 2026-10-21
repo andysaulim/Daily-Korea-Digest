@@ -1704,7 +1704,10 @@ def check_v2_brand_assets():
         problems.append("the masthead lacks the CSIS wordmark or the footer the Korea Chair lockup")
     for tag, src, alt in ((mark[0] if mark else "", render._V2_WORDMARK, 'alt="CSIS"'),
                           (lock[0] if lock else "", render._V2_LOGO, 'alt="CSIS Korea Chair"')):
-        for need in (f'src="{base}assets/{src}"', alt, 'width="', 'height="', "color:#FFFFFF"):
+        # Images come from the repository's assets/, which exists the moment a
+        # change merges; the Pages copy lags the send by a deploy.
+        for need in (f'/main/assets/{src}"', 'src="https://raw.githubusercontent.com/', alt, 'width="',
+                     'height="', "color:#FFFFFF"):
             if need not in tag:
                 problems.append(f"<img> for {src} lacks {need!r}")
     if mark and "font-family:Georgia" not in mark[0]:
