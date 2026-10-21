@@ -4189,15 +4189,15 @@ def _v2_masthead(digest: dict, now, listen_bar: str) -> str:
         f'<span class="v2-csis" style="font-family:{_V2_SERIF};font-size:32px;line-height:30px;color:#FFFFFF;">CSIS</span>')
     band = (f'<div bgcolor="{_V2_NAVY}" class="mast-band" style="background-color:{_V2_NAVY};padding:30px 16px 22px;'
             'text-align:center;">'
-            '<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" class="v2-mrow" '
-            'style="margin:0 auto;"><tr>'
-            f'<td class="v2-mk" valign="middle" style="padding:0 18px 0 0;vertical-align:middle;">{mark}</td>'
-            '<td valign="middle" style="vertical-align:middle;">'
-            '<table role="presentation" cellpadding="0" cellspacing="0" border="0" class="v2-namebox"><tr>'
-            '<td class="v2-nbt" style="border:2px solid #4A90D0;border-radius:6px;padding:10px 22px;">'
+            # One outlined nameplate, as the owner chose (option B): the
+            # wordmark and the name inside the same box, a thin rule between.
+            '<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" class="v2-mrow v2-namebox" '
+            'style="margin:0 auto;border:2px solid #4A90D0;border-radius:6px;"><tr>'
+            f'<td class="v2-mk" valign="middle" style="padding:10px 16px 10px 22px;vertical-align:middle;">{mark}</td>'
+            '<td class="v2-nbt" valign="middle" style="vertical-align:middle;padding:10px 22px 10px 16px;'
+            'border-left:1px solid #4A90D0;">'
             f'<h1 class="v2-name" style="margin:0;font-family:{_V2_SANS};font-size:27px;font-weight:700;'
             'letter-spacing:1.5px;line-height:1.2;color:#FFFFFF;">KOREA DAILY BRIEF</h1></td></tr></table>'
-            '</td></tr></table>'
             'td_date</div>')
     if PRINT:
         strip = ""          # links and a notice for the inbox; nothing to click on paper
@@ -5031,8 +5031,8 @@ _V2_CSS = """
       .wrapper .v2-in { padding-left:14px !important; padding-right:14px !important; }
       .wrapper .sec-bar td { padding:9px 14px !important; }
       .wrapper .v2-name { font-size:17px !important; letter-spacing:1px !important; }
-      .wrapper .v2-nbt { padding:7px 12px !important; }
-      .wrapper .v2-mk { padding-right:14px !important; }
+      .wrapper .v2-nbt { padding:7px 12px 7px 10px !important; }
+      .wrapper .v2-mk { padding:7px 10px 7px 12px !important; }
       .wrapper .v2-csis { font-size:24px !important; line-height:22px !important; }
       .wrapper .mast-meta { padding-top:2px !important; }
       .v2-cell div[style*="font-size:16px"] { font-size:15px !important; }
@@ -5056,6 +5056,13 @@ _V2_CSS = """
       .wrapper .v2-ps, .wrapper .v2-pp { max-width:none !important; }
       .wrapper .v2-mdate { font-size:12px !important; margin-top:9px !important; }
       .wrapper .v2-lk-csis { font-size:30px !important; }
+    }
+    /* After the 620px block, so the narrowest phones win: the nameplate on one line. */
+    @media only screen and (max-width: 360px) {
+      .wrapper .v2-name { font-size:14px !important; letter-spacing:0.5px !important; }
+      .wrapper .v2-wm { max-width:46px !important; }
+      .wrapper .v2-nbt { padding:6px 9px 6px 8px !important; }
+      .wrapper .v2-mk { padding:6px 8px 6px 9px !important; }
     }
     /* Where the stylesheet survives, the ROK cards pair up at equal heights. */
     .v2-rg { display:flex !important; flex-wrap:wrap; justify-content:space-between; }
