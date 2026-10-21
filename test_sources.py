@@ -959,15 +959,24 @@ def check_audio_extras():
         path.write_bytes(b"\x00" * 100)
         return {"tts_model": "m", "tts_voice": "v", "audio_bytes": 100, "audio_seconds": 600,
                 "_chunks": chunks}
+    import contextlib
+    import io
+    # produce() reports these injected failures as GitHub annotations, which is
+    # right in a real run and wrong here: printed straight through, every daily
+    # run showed "Player page skipped: injected" beside the real warnings.
+    # Captured instead, and checked, so the warning path is still proven.
+    captured = io.StringIO()
     try:
         podcast.synthesize, podcast._previous_issue = fake_synth, (lambda s: None)
         listen.build_chapters = listen.write_pages = listen.show_notes = listen.vtt = boom
-        with tempfile.TemporaryDirectory() as tmp:
+        with tempfile.TemporaryDirectory() as tmp, contextlib.redirect_stdout(captured):
             rec = podcast.produce(digest, Path(tmp), "", "2026-10-18")
             if not rec or "listen_page" in rec or "_chunks" in rec:
                 problems.append("a failing chapter/page step changed or blocked the episode")
             if not (Path(tmp) / "latest.mp3").exists():
                 problems.append("a failing chapter/page step stopped latest.mp3")
+        if "::warning title=Player page skipped::injected" not in captured.getvalue():
+            problems.append("a failing player page no longer raises an annotation for the operator")
     except Exception as e:                                      # noqa: BLE001
         problems.append(f"a failing new audio step raised out of produce(): {e}")
     finally:
