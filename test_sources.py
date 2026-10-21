@@ -1454,6 +1454,134 @@ def check_v2_shortened_email():
     return problems
 
 
+def _v2_render(d: dict) -> str:
+    import copy, render
+    saved = render.DESIGN
+    try:
+        render.DESIGN = "v2"
+        return render.render(copy.deepcopy(d))
+    finally:
+        render.DESIGN = saved
+
+
+def check_v2_leaders_words():
+    """Leaders' words quotes Lee, Trump and Kim only, one each, verbatim, and is absent without a quote."""
+    import render
+    problems = []
+    d = {"digest_date": "Wednesday, October 21, 2026",
+         "social_statements": [
+             {"who": "Kim Yo Jong", "handle_context": "Kim Jong Un's sister", "quote_text": "Decoy sister quote."},
+             {"who": "Spokesperson for President Lee", "quote_text": "Decoy spokesperson quote."},
+             {"who": "President Lee Jae-myung", "handle_context": "President, ROK",
+              "quote_text": "AI should bridge healthcare gaps.", "url": "https://en.yna.co.kr/view/AEN1"},
+             {"who": "Lee Jae-myung", "quote_text": "A second Lee quote."},
+             {"who": "Trump administration official", "quote_text": "Decoy administration quote."},
+             {"who": "Chung Dong-young", "quote_text": "Unification minister quote."}],
+         "official_x_posts": [{"who": "Donald J. Trump", "handle_context": "@realDonaldTrump",
+                               "platform_date": "@realDonaldTrump, Oct 21", "quote_text": "Korea will pay.",
+                               "url": "https://x.com/realDonaldTrump/status/1"}],
+         "kcna_delta": {"key_quotes": [{"speaker": "General Secretary Kim Jong Un", "quote": "Strength is peace.",
+                                        "source_article": "Rodong Sinmun"}],
+                        "senior_officials": [{"name": "Kim Yo Jong", "activity": "Inspected the border."}]},
+         "rok_government": [{"official": "President Lee Jae-myung", "ministry": "Presidential Office",
+                             "action": "Lee urges reform", "detail": "He urged reform.", "quote": "Reform now."}]}
+    qs = render._v2_leader_quotes(d)
+    if [q["key"] for q in qs] != ["lee", "trump", "kim"]:
+        problems.append(f"expected Lee, Trump, Kim once each, got {[q['key'] for q in qs]}")
+    texts = {q["key"]: q["text"] for q in qs}
+    if texts != {"lee": "AI should bridge healthcare gaps.", "trump": "Korea will pay.", "kim": "Strength is peace."}:
+        problems.append(f"quotes not taken verbatim from the first source: {texts}")
+    for decoy, who in (("Kim Yo Jong", "lee"), ("Spokesperson for President Lee", ""),
+                       ("Kim Jong Un's sister", ""), ("Trump administration official", ""),
+                       ("Lee Jae-yong", ""), ("Kim Yo Jong", "")):
+        got = render._v2_leader_of(decoy)
+        if decoy != "Kim Yo Jong" and got:
+            problems.append(f"{decoy!r} matched as {got}")
+    if render._v2_leader_of("Kim Yo Jong"):
+        problems.append("Kim Yo Jong matched as a leader")
+    for name, want in (("President Trump", "trump"), ("Kim Jong-un", "kim"), ("President Lee", "lee"),
+                       ("Lee Jae-myung, President", "lee"), ("North Korean leader Kim Jong Un", "kim")):
+        if render._v2_leader_of(name) != want:
+            problems.append(f"{name!r} not matched as {want}")
+    html = _v2_render({**d, "top_stories": [{"headline": "Lead", "body": "Body."}]})
+    card = html[html.find('name="leaders"'):]
+    card = card[:card.find('class="v2-gap"', 50)]
+    for t in ("AI should bridge healthcare gaps.", "Korea will pay.", "Strength is peace."):
+        if t not in card:
+            problems.append(f"card lacks {t!r}")
+    for t in ("Decoy", "A second Lee quote", "Unification minister quote", "Reform now."):
+        if t in card:
+            problems.append(f"card shows {t!r}")
+    if card.count('class="v2-it"') != 3:
+        problems.append("card does not hold exactly three quotes")
+    if "AI should bridge healthcare gaps." in html[html.find('name="analysis"'):]:
+        problems.append("a quote in Leaders' words is repeated under Statements")
+    if "Unification minister quote." not in html:
+        problems.append("a non-leader statement was dropped from Analysis")
+    none = _v2_render({"digest_date": "Wednesday, October 21, 2026",
+                       "top_stories": [{"headline": "Lead", "body": "Body."}],
+                       "social_statements": [{"who": "Kim Yo Jong", "quote_text": "Sister."}],
+                       "rok_government": [{"official": "President Lee Jae-myung", "ministry": "Presidential Office",
+                                           "action": "Lee acts", "detail": "Lee said things."}]})
+    if 'name="leaders"' in none:
+        problems.append("Leaders' words drawn without a leader's quote (a detail is not a quote)")
+    return problems
+
+
+def check_v2_rok_cards():
+    """ROK government in v2 is a grid of agency cards that wraps to one column without the stylesheet."""
+    import re as _r, render
+    problems = []
+    items = [{"ministry": "Blue House / President's Office", "official": "President Lee Jae-myung",
+              "action": "Lee meets envoy", "detail": "Detail one.", "url": "https://www.president.go.kr/x",
+              "source_label": "Presidential Office"},
+             {"ministry": "Ministry of Foreign Affairs", "official": "MOFA spokesperson",
+              "action": "MOFA briefs", "detail": "Detail two.", "url": "https://en.yna.co.kr/view/AEN2",
+              "source_label": "Yonhap"},
+             {"ministry": "Ministry of National Defense", "official": "", "action": "MND acts", "detail": "Three."}]
+    html = _v2_render({"rok_government": items, "top_stories": [{"headline": "Lead", "body": "Body."}]})
+    if 'class="v2-rg"' not in html:
+        return ["no card grid in the ROK section"]
+    cards = _r.findall(r'<div class="v2-rc" style="([^"]*)"', html)
+    if len(cards) != 3:
+        problems.append(f"expected 3 cards, got {len(cards)}")
+    for st in cards:
+        if "display:inline-block" not in st or "max-width:280px" not in st or "width:100%" not in st:
+            problems.append(f"card does not wrap by itself without the stylesheet: {st}")
+            break
+    for head in ("Presidential Office", "Ministry of Foreign Affairs", "Ministry of National Defense"):
+        if f">{head}</td>" not in html:
+            problems.append(f"no agency header {head} (Blue House / President's Office reads Presidential Office)")
+    if 'text-transform:uppercase;line-height:1.35;color:#001F59;">Presidential Office' not in html:
+        problems.append("agency header not set in capitals")
+    if "Primary</b>" not in html:
+        problems.append("a government URL is not marked Primary")
+    if "<!--[if mso]>" not in html.split('class="v2-rg"', 1)[1][:400]:
+        problems.append("no Outlook table for the grid")
+    return problems
+
+
+def check_v2_preheader():
+    """v2 opens its body with a hidden preview line of 90 to 110 characters; classic has none."""
+    import render
+    problems = []
+    d = {"morning_memo": ["Kim Yo Jong ordered loudspeaker broadcasts along the full inter-Korean border by "
+                          "October month-end, hours after inspecting border fortifications.",
+                          "Exports rose 105%, a record.", "Seoul withdrew staff from Kyiv."],
+         "top_stories": [{"headline": "Lead", "body": "Body."}]}
+    pre = render._v2_preheader(d)
+    if not 90 <= len(pre) <= 110:
+        problems.append(f"preheader is {len(pre)} characters: {pre!r}")
+    if "\u00b7" in pre or "&middot;" in pre:
+        problems.append("preheader uses a middle dot")
+    html = _v2_render(d)
+    body = html.split("<body", 1)[1]
+    first = body[body.find(">") + 1:].lstrip()
+    if not first.startswith('<div class="v2-pre" style="display:none;max-height:0;overflow:hidden;mso-hide:all;'):
+        problems.append("hidden preheader is not first in the body")
+    return problems
+
+
 # ── ROK government feeds ────────────────────────────────────────────────────
 
 def _candidates(value) -> list[str]:
@@ -2028,6 +2156,9 @@ CHECKS = [
     ("v2 status line drops missing facts", check_v2_status_line),
     ("v2 shortening cuts at real sentence ends", check_v2_first_sentence),
     ("v2 email runs top stories in full, the rest shortened", check_v2_shortened_email),
+    ("v2 Leaders' words: Lee, Trump, Kim only, one each", check_v2_leaders_words),
+    ("v2 ROK government card grid", check_v2_rok_cards),
+    ("v2 hidden inbox preview line", check_v2_preheader),
     ("audio is formatted for the ear", check_audio_formatting),
     ("no Korean script on the page", check_english_only),
     ("API cost is recorded and kept", check_api_cost_is_recorded),
