@@ -1345,7 +1345,96 @@ def check_design_preview_goes_only_to_preview_list():
     return problems
 
 
+def check_tracker_state_survives_a_cache_miss() -> list[str]:
+    """A cache miss or an older cached copy must not reset a tracker.
+
+    The trackers used to live only in the Actions cache, and each one treats a
+    missing file as "start empty" and saves. restore_state.py picks the newer
+    of cache and repository; the workflow commits the trackers so there is a
+    repository copy to pick.
+    """
+    import json
+    import tempfile
+    from pathlib import Path
+    import restore_state
+    problems = []
+    with tempfile.TemporaryDirectory() as td:
+        root = Path(td)
+        repo_kim = {"appearances": [{"date": "2026-10-19"}], "last_updated": "2026-10-20T11:05:00"}
+        (root / "kim_tracker.json").write_text(json.dumps(repo_kim))
+        (root / "feed_health.json").write_text(json.dumps({"total_runs": 40, "feeds": {"A": {}}}))
+        (root / "kcna_tracker.json").write_text(json.dumps({"days": [1], "last_updated": "2026-10-20"}))
+        (root / "metrics.jsonl").write_text('{"date": "2026-10-19"}\n{"date": "2026-10-20"}\n')
+        restore_state.stash(root)
+        # The cache restore: Kim missing (a miss), feed health older, KCNA
+        # corrupt, metrics a day short.
+        (root / "kim_tracker.json").unlink()
+        (root / "feed_health.json").write_text(json.dumps({"total_runs": 12, "feeds": {}}))
+        (root / "kcna_tracker.json").write_text("{not json")
+        (root / "metrics.jsonl").write_text('{"date": "2026-10-19"}\n')
+        notes = restore_state.reconcile(root)
+        if json.loads((root / "kim_tracker.json").read_text()) != repo_kim:
+            problems.append("a tracker missing from the cache was not restored from the repository")
+        if json.loads((root / "feed_health.json").read_text()).get("total_runs") != 40:
+            problems.append("an older cached feed_health.json beat the newer committed one")
+        if json.loads((root / "kcna_tracker.json").read_text()).get("days") != [1]:
+            problems.append("a corrupt cached tracker was kept over a readable committed one")
+        if (root / "metrics.jsonl").read_text().count("\n") != 2:
+            problems.append("metrics.jsonl rows in the repository were lost to the cache copy")
+        if not any("bp_tracker.json" in n and "starts empty" in n for n in notes):
+            problems.append("a tracker in neither copy is not annotated as a cold start")
+    gi = Path(__file__).parent / ".gitignore"
+    ignored = {l.strip() for l in gi.read_text().splitlines()} if gi.exists() else set()
+    for name in restore_state.TRACKERS:
+        if name in ignored:
+            problems.append(f"{name} is gitignored, so the commit step can never add it")
+    wf = Path(__file__).parent / ".github/workflows/daily-digest.yml"
+    if wf.exists():
+        text = wf.read_text(encoding="utf-8")
+        for name in restore_state.TRACKERS:
+            if name not in text.split("Commit updated README", 1)[-1].split("Save tracker data", 1)[0]:
+                problems.append(f"the workflow does not commit {name}")
+        if "restore_state.py stash" not in text or "restore_state.py reconcile" not in text:
+            problems.append("the workflow does not reconcile cached and committed trackers")
+    return problems
+
+
+def check_send_guard_counts_sends_not_runs() -> list[str]:
+    """The fallback crons skip only when a send step succeeded today.
+
+    Counting successful runs counted the guard's own skips (a run that skips
+    concludes success), so after DST an hour-floor skip of the 7:30 fallback
+    stopped the 9:00 one. A test send must not count either.
+    """
+    import re
+    from pathlib import Path
+    problems = []
+    wf = Path(__file__).parent / ".github/workflows/daily-digest.yml"
+    if not wf.exists():
+        return problems
+    text = wf.read_text(encoding="utf-8")
+    # Step blocks by name; PyYAML is not a dependency of the pipeline.
+    blocks = {m.group(1).strip(): m.group(2) for m in re.finditer(
+        r"^      - name: ([^\n]+)\n(.*?)(?=^      - |\Z)", text, re.M | re.S)}
+    guard = blocks.get("Check if already sent today", "")
+    if '.name == "Generate and send digest"' not in guard:
+        problems.append("the send guard no longer keys on the send step")
+    if "--status success" in guard:
+        problems.append("the send guard counts successful runs again, which includes skipped ones")
+    send = blocks.get("Generate and send digest", "")
+    if "inputs.send_to == ''" not in send or "--send-to" in send:
+        problems.append("a test send can run under the step name the guard counts as a real send")
+    for name in ("Deploy to GitHub Pages", "Commit updated README + Gallup baseline"):
+        if "inputs.send_to == ''" not in blocks.get(name, ""):
+            problems.append(f"{name} runs on a test send, publishing the test as the issue")
+    if not re.search(r"^concurrency:", text, re.M):
+        problems.append("runs are not serialised, so two guards can decide at once")
+    return problems
+
+
 CHECKS = [
+    ("tracker state survives a cache miss", check_tracker_state_survives_a_cache_miss),
+    ("send guard counts sends, not runs", check_send_guard_counts_sends_not_runs),
     ("design preview goes only to the preview list", check_design_preview_goes_only_to_preview_list),
     ("audio is formatted for the ear", check_audio_formatting),
     ("no Korean script on the page", check_english_only),
