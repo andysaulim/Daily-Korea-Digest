@@ -393,7 +393,10 @@ SECTION_CAPS = {
     "social_statements": (0, 3),
     "rok_government":    (0, 6),
     "rok_assembly":      (0, 3),
-    "opeds_today":       (0, 3),
+    # The Analysis section: the best 3-5 pieces across the two, never more
+    # than ANALYSIS_MAX together (validate_digest trims the op-ed tail first,
+    # since the prompt orders reports ahead of op-eds).
+    "opeds_today":       (0, 4),
     "academic_today":    (0, 2),
     "rok_personnel":     (0, 3),
     "morning_memo":      (3, 3),
@@ -793,6 +796,9 @@ def hill_calendar_log_line(payload: dict | None) -> str:
     return line
 
 
+ANALYSIS_MAX = 5
+
+
 def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
     """Pre-send quality gate. Returns list of warnings (empty = all clear)."""
     warnings = []
@@ -818,6 +824,14 @@ def validate_digest(digest: dict, payload: dict | None = None) -> list[str]:
             # the tail is what it ranked lowest.
             digest[section_key] = items[:max_ct]
             warnings.append(f"{label}: {len(items)} items trimmed to {max_ct}")
+    _opeds = list(digest.get("opeds_today") or [])
+    _acad = list(digest.get("academic_today") or [])
+    if len(_opeds) + len(_acad) > ANALYSIS_MAX:
+        _before = len(_opeds) + len(_acad)
+        while len(_opeds) + len(_acad) > ANALYSIS_MAX:
+            (_opeds if len(_opeds) > 3 or not _acad else _acad).pop()
+        digest["opeds_today"], digest["academic_today"] = _opeds, _acad
+        warnings.append(f"ANALYSIS: {_before} pieces trimmed to {ANALYSIS_MAX}")
 
     # ── Morning memo uniqueness check ───────────────────────────────────
     memo_items = digest.get("morning_memo") or []
@@ -1373,6 +1387,98 @@ _PLACEHOLDER_NAME_RE = re.compile(
     r"unknown|n/?a$|tbd|placeholder|see\s+source", re.IGNORECASE)
 
 
+# The leaders whose words the brief highlights (the "Leaders' words" card):
+# at most one quote each. Kim Jong Un's go in kcna_delta.key_quotes.
+_LEADERS = {"lee": re.compile(r"\blee jae[- ]?myung\b|^president lee\b|\bpresident lee jae", re.I),
+            "trump": re.compile(r"\btrump\b", re.I)}
+
+
+def _cap_leader_quotes(digest: dict) -> list[str]:
+    """One quote per leader in social_statements, one Kim quote in kcna_delta.
+
+    The model is asked for this; the cap makes it hold. The first quote a
+    leader has is kept (the model orders by importance), the rest dropped.
+    """
+    log = []
+    kept, seen = [], set()
+    for item in digest.get("social_statements") or []:
+        who = str((item or {}).get("who") or "")
+        leader = next((k for k, rx in _LEADERS.items() if rx.search(who)), None)
+        if leader and leader in seen:
+            log.append(f"  social_statements: second {who} quote dropped")
+            continue
+        if leader:
+            seen.add(leader)
+        kept.append(item)
+    if digest.get("social_statements") is not None:
+        digest["social_statements"] = kept
+    kcna = digest.get("kcna_delta")
+    if isinstance(kcna, dict) and len(kcna.get("key_quotes") or []) > 1:
+        log.append(f"  kcna_delta.key_quotes: {len(kcna['key_quotes'])} trimmed to 1")
+        kcna["key_quotes"] = kcna["key_quotes"][:1]
+    return log
+
+
+def _drop_news_from_analysis(digest: dict, payload: dict | None) -> list[str]:
+    """A news story is never analysis.
+
+    An opeds_today item whose URL is a tier-1 article and not a tier-2 piece,
+    or a tier-2 item of kind "news" (NK Pro), is reporting. Dropped rather
+    than moved: the news sections were written without it, and moving it
+    could duplicate one of their items.
+    """
+    if not payload:
+        return []
+    analysis = {}
+    for tier in ("tier2", "tier3"):
+        for a in payload.get(tier) or []:
+            if isinstance(a, dict) and a.get("url"):
+                analysis[a["url"].strip()] = a.get("kind") or "report"
+    news = {a["url"].strip() for a in payload.get("tier1") or []
+            if isinstance(a, dict) and a.get("url")}
+    log, kept = [], []
+    for item in digest.get("opeds_today") or []:
+        url = str((item or {}).get("url") or "").strip()
+        kind = analysis.get(url)
+        if kind == "news" or (kind is None and url in news):
+            log.append(f"  opeds_today: news story dropped from Analysis: "
+                       f"{str(item.get('headline', ''))[:70]}")
+            continue
+        kept.append(item)
+    if log:
+        digest["opeds_today"] = kept
+    return log
+
+
+def drop_recently_used_analysis(payload: dict, index_rows: list, today_slug: str) -> int:
+    """Remove tier-2/3 and Capitol Hill pieces a brief already carried this week.
+
+    Their windows run from two days to a week, so without this the same
+    think-tank report or CRS report would be offered, and could run, on
+    several mornings. Only pieces a published brief used are removed; one
+    collected yesterday but left out is still eligible. Returns the count.
+    """
+    used_urls, used_titles = set(), set()
+    for r in index_rows or []:
+        if r.get("used") and str(r.get("date", "")) < today_slug:
+            if r.get("url"):
+                used_urls.add(str(r["url"]).strip())
+            if r.get("title"):
+                used_titles.add(re.sub(r"\W+", " ", str(r["title"]).lower()).strip())
+    if not used_urls and not used_titles:
+        return 0
+    dropped = 0
+    for key in ("tier2", "tier3", "capitol_hill_articles"):
+        items = payload.get(key) or []
+        kept = [a for a in items
+                if str(a.get("url") or "").strip() not in used_urls
+                and re.sub(r"\W+", " ", str(a.get("title") or "").lower()).strip() not in used_titles]
+        dropped += len(items) - len(kept)
+        if key in payload:
+            payload[key] = kept
+    return dropped
+
+
 def _drop_nameless_personnel(digest: dict) -> list[str]:
     """Strip rok_personnel entries whose name is missing or a placeholder.
 
@@ -1875,6 +1981,12 @@ def _postprocess_digest(digest_data: dict, payload: dict | None = None) -> tuple
         log.append(f"\n🧹  Source diversity: removed {len(diversity_log)} over-represented item(s):")
         log.extend(diversity_log)
 
+    for label, _l in (("Analysis section", _drop_news_from_analysis(digest_data, payload)),
+                      ("Leaders' quotes", _cap_leader_quotes(digest_data))):
+        if _l:
+            log.append(f"\n🧹  {label}: {len(_l)} change(s):")
+            log.extend(_l)
+
     nameless_log = _drop_nameless_personnel(digest_data)
     if nameless_log:
         log.append(f"\n🧹  Dropped {len(nameless_log)} personnel entr(ies) with placeholder names:")
@@ -2187,6 +2299,10 @@ def main():
         if recent_coverage:
             print(f"  🔁  Recent coverage: {len(recent_coverage.splitlines())} prior stories "
                   f"in context, {len(recent_urls)} URLs for cross-day dedup")
+        _today_slug = datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d")
+        _n_rep = drop_recently_used_analysis(payload, _idx, _today_slug)
+        if _n_rep:
+            print(f"  🔁  Dropped {_n_rep} analysis/Hill piece(s) a brief already ran this week")
     except Exception as e:
         print(f"  ⚠  Recent-coverage context skipped (non-fatal): {e}")
         warn("Recent coverage skipped", f"no cross-day dedup this run: {e}")
