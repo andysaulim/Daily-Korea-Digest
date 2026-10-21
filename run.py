@@ -790,6 +790,20 @@ def hill_calendar_log_line(payload: dict | None) -> str:
         return f"Hill calendar: {kept} event(s) kept (no fetch counts in this payload)"
     line = (f"Hill calendar: {stats.get('fetched', 0)} event(s) fetched from "
             f"{stats.get('answered', 0)}/{stats.get('feeds', 0)} schedule(s), {kept} kept")
+    # Why the rest went: "127 fetched, 0 kept" read as a broken filter when
+    # every meeting listed had already been held (an October recess).
+    dropped = stats.get("dropped") or {}
+    parts = [f"{dropped[k]} {label}" for k, label in (
+        ("past", "already held"), ("beyond_window", "beyond the 7-day window"),
+        ("not_relevant", "not Korea/Indo-Pacific"), ("undated", "undated"),
+        ("duplicate", "duplicate")) if dropped.get(k)]
+    if parts:
+        line += f" (dropped: {', '.join(parts)}"
+        if dropped.get("date_range"):
+            line += f"; listed dates {dropped['date_range']}"
+        if stats.get("window"):
+            line += f"; window {stats['window']}"
+        line += ")"
     failed = [k for k, v in (stats.get("per_source") or {}).items() if v == "error"]
     if failed:
         line += f"; no answer from {', '.join(sorted(failed))}"
@@ -2330,10 +2344,14 @@ def main():
             warn("Thin collection", f"only {_ok}/{_total} feeds returned articles; "
                  f"check for a Google News block before trusting this issue")
 
+        # Not a failure: the collector leaves current Google News IDs encoded
+        # on purpose, and the link pass decodes the few that reach the brief
+        # (links.decode_digest_links). The old wording ("could not be
+        # decoded") read as a fault every run.
         _unres = (payload or {}).get("unresolved_url_count") or 0
         if _unres:
-            print(f"    {_unres} article link(s) stayed as Google News redirects "
-                  f"(publisher URL could not be decoded)")
+            print(f"    {_unres} collected link(s) are Google News redirects; "
+                  f"those that reach the brief are decoded in the final link pass")
 
         # Silence across runs is what separates a dead feed from a quiet one.
         # Not on --from-cache: the same collection recorded twice would count
