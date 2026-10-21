@@ -1343,6 +1343,128 @@ def check_design_preview_goes_only_to_preview_list():
             os.environ["DESIGN_PREVIEW_TO"] = saved_env
     return problems
 
+def check_v2_status_line():
+    """The Peninsula status line states only what the trackers hold; a missing fact drops out."""
+    import render
+    problems = []
+    full = {"kcna_delta": {"kim_appearance_today": False, "days_since_last_appearance": 2,
+                           "watch_flag": True, "silence_today": False},
+            "bp_locations": [{"name": "A", "status": "alert"}, {"name": "B", "status": "elevated"},
+                             {"name": "C", "status": "normal"}],
+            "_bp_changes": ["A", "C"]}
+    want = ["Kim last seen 2 days ago.", "KCNA watch flag up.",
+            "New reporting at 2 of 3 monitored sites.", "Elevated or alert at 2 sites."]
+    if render._v2_status_facts(full) != want:
+        problems.append(f"full data gave {render._v2_status_facts(full)}")
+    cases = [
+        ("no kcna_delta", {k: v for k, v in full.items() if k != "kcna_delta"},
+         lambda f: not any("Kim" in x or "KCNA" in x for x in f)),
+        ("Kim days unknown", {**full, "kcna_delta": {"days_since_last_appearance": None, "watch_flag": False}},
+         lambda f: not any("Kim" in x for x in f) and "No KCNA watch flag." in f),
+        ("KCNA data unavailable", {**full, "kcna_delta": {"data_unavailable": True, "watch_flag": False}},
+         lambda f: not any("KCNA" in x for x in f)),
+        ("previous issue unread", {**full, "_bp_changes": None},
+         lambda f: not any("reporting" in x for x in f)),
+        ("a site without status", {**full, "bp_locations": full["bp_locations"] + [{"name": "D"}]},
+         lambda f: not any("alert" in x for x in f)),
+        ("seen today", {**full, "kcna_delta": {"kim_appearance_today": True, "days_since_last_appearance": 0}},
+         lambda f: f[0] == "Kim seen in public today."),
+    ]
+    for label, d, ok in cases:
+        if not ok(render._v2_status_facts(d)):
+            problems.append(f"{label}: {render._v2_status_facts(d)}")
+    if render._v2_status({}) != "":
+        problems.append("an empty digest still drew a status line")
+    line = render._v2_status(full)
+    if any(x in line for x in ("·", "&middot;", "→", "&rarr;", "—", "&mdash;")):
+        problems.append("status line uses a dot, arrow or em dash as a separator")
+    return problems
+
+
+def check_v2_first_sentence():
+    """Shortening cuts at a real sentence end only: not after U.S. or Gen., never inside a quotation."""
+    import render
+    f = render._v2_first_sentence
+    problems = []
+    tail = " The second sentence carries on for long enough to be worth a link."
+    cases = [
+        ("U.S. officials met Gen. Kim Myung-soo in Seoul on Monday." + tail,
+         "U.S. officials met Gen. Kim Myung-soo in Seoul on Monday."),
+        ("The ministry said it was 'gravely concerned.' Officials added nothing on the record today." + tail,
+         "The ministry said it was 'gravely concerned.'"),
+        ('He said "We will respond. Firmly and soon." before the meeting ended in Seoul.' + tail,
+         'He said "We will respond. Firmly and soon." before the meeting ended in Seoul.'),
+        ("Talks resumed at 9 a.m. Seoul time with both delegations present in full." + tail,
+         "Talks resumed at 9 a.m. Seoul time with both delegations present in full."),
+        ("KOSPI fell 3.7% on Monday as chip stocks slid across the board." + tail,
+         "KOSPI fell 3.7% on Monday as chip stocks slid across the board."),
+        ("One sentence only, with nothing after it to cut.", "One sentence only, with nothing after it to cut."),
+        ("A first sentence that is long enough. Short tail here.", "A first sentence that is long enough. Short tail here."),
+    ]
+    for text, want in cases:
+        got = f(text)
+        if got != want:
+            problems.append(f"{text[:40]!r} -> {got!r}")
+        if not text.startswith(got):
+            problems.append(f"shortening reworded {text[:40]!r}")
+    return problems
+
+
+def check_v2_reading_time():
+    """Bar reading time: 230 words a minute, rounded half up, at least one, none under forty words."""
+    import render
+    problems = []
+    for words, want in ((0, None), (39, None), (40, 1), (344, 1), (345, 2), (574, 2), (575, 3), (690, 3)):
+        got = render._v2_read_minutes(words)
+        if got != want:
+            problems.append(f"{words} words gave {got}, expected {want}")
+    return problems
+
+
+def check_v2_shortened_email():
+    """In v2 only top stories run in full; other items keep their first sentence and link to the web page."""
+    import copy, render
+    problems = []
+    long_body = ("Seoul announced a new measure on Monday. The second sentence is detail that the web "
+                 "page carries in full for anyone who wants it.")
+    d = {"digest_date": "Monday, October 19, 2026", "date_slug": "2026-10-19", "issue_no": 12,
+         "web_url": "https://example.org/brief/latest.html",
+         "top_stories": [{"headline": "Lead story", "body": long_body, "category_tag": "DPRK"}],
+         "business_economy": [{"headline": "Chip exports rise", "body_text": long_body, "source": "Yonhap"}],
+         "calendar_watch": [{"month": "Oct", "day": 20, "headline": "Assembly votes on the budget"}],
+         "morning_memo": ["One.", "Two.", "Three."]}
+    before = copy.deepcopy(d)
+    saved = render.DESIGN
+    try:
+        render.DESIGN = "v2"
+        html = render.render(d)
+        render.DESIGN = "classic"
+        classic = render.render(copy.deepcopy(before))
+    finally:
+        render.DESIGN = saved
+    if html.count("The second sentence is detail") != 1:
+        problems.append("v2: expected the long body in full exactly once (the top story)")
+    if 'digest_2026-10-19.html#business' not in html:
+        problems.append("v2: no Read online link to the business section of the issue page")
+    if "That&#8217;s today&#8217;s brief." not in html or "Assembly votes on the budget" not in html:
+        problems.append("v2: sign-off missing, or without tomorrow's calendar item")
+    if f"border-left:5px solid {render.TAEGUK_BLUE};" not in html:
+        problems.append("v2: Business bar lacks the South Korea edge")
+    if classic.count("The second sentence is detail") != 2:
+        problems.append("classic was shortened")
+    if d != {**before, "_word_count": d.get("_word_count")}:
+        problems.append("v2 shortening changed the caller's digest")
+    saved_full = render.FULL_TEXT
+    try:
+        render.DESIGN, render.FULL_TEXT = "v2", True
+        web = render.render(copy.deepcopy(before))
+    finally:
+        render.DESIGN, render.FULL_TEXT = saved, saved_full
+    if web.count("The second sentence is detail") != 2 or "Shortened for email" in web:
+        problems.append("v2 with FULL_TEXT set still shortened the bodies")
+    return problems
+
+
 # ── ROK government feeds ────────────────────────────────────────────────────
 
 def _candidates(value) -> list[str]:
@@ -1743,6 +1865,10 @@ CHECKS = [
     ("tracker state survives a cache miss", check_tracker_state_survives_a_cache_miss),
     ("send guard counts sends, not runs", check_send_guard_counts_sends_not_runs),
     ("design preview goes only to the preview list", check_design_preview_goes_only_to_preview_list),
+    ("v2 status line drops missing facts", check_v2_status_line),
+    ("v2 shortening cuts at real sentence ends", check_v2_first_sentence),
+    ("v2 reading time rounds as stated", check_v2_reading_time),
+    ("v2 email runs top stories in full, the rest shortened", check_v2_shortened_email),
     ("audio is formatted for the ear", check_audio_formatting),
     ("no Korean script on the page", check_english_only),
     ("API cost is recorded and kept", check_api_cost_is_recorded),

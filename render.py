@@ -523,6 +523,7 @@ LISTEN_STYLE = "card"
 # kickers, one sans), as the China Room brief. Styling only; see the "Design
 # v2" block below.
 DESIGN = "classic"
+FULL_TEXT = False
 # Section headings: "bar" (black bar, white label) or "rule" (heavy ink rule,
 # serif heading in sentence case). Masthead: "band" (blue band) or "white".
 SECTION_STYLE = "bar"
@@ -731,6 +732,11 @@ def _status_line(digest: dict) -> str:
 
 def render(digest: dict) -> str:
     from zoneinfo import ZoneInfo
+    if DESIGN == "v2":
+        # The email shows top stories in full and the first sentence of
+        # everything else; the issue's web page carries the rest.
+        _v2_src = digest
+        digest, _v2_more = _v2_shorten(digest)
     now = datetime.now(ZoneInfo("America/New_York"))
     date_str = now.strftime("%A, %B %-d, %Y")  # Thursday, March 20, 2026
     gen_time = now.strftime("%-I:%M %p ET")
@@ -2606,6 +2612,7 @@ def render(digest: dict) -> str:
     """)
     if DESIGN == "v2":
         sections[-1] = _v2_footer(digest, now)
+        sections.insert(len(sections) - 1, _v2_signoff(digest))
 
     # Resolve the navigation placeholder now that every section is known. At a
     # 1,600-2,000 word target the brief is too long to scan end to end and the
@@ -2621,7 +2628,7 @@ def render(digest: dict) -> str:
             ("Polling", "sentiment"), ("Upcoming", "upcoming"),
             ("Analysis", "analysis"), ("Satellite", "satellite")]
     if DESIGN == "v2":
-        sections = _v2_order([_v2_restyle(s) for s in sections])
+        sections = _v2_order([_v2_restyle(s, _v2_more) for s in sections])
     body = "\n".join(sections)
     if DESIGN == "v2":
         body = _v2_finish(body)
@@ -2648,6 +2655,8 @@ def render(digest: dict) -> str:
     body = (body.replace("%%WORDS%%", f"{word_count:,}")
                 .replace("%%READMIN%%", str(read_min)))
     digest["_word_count"] = word_count      # run.py's floor check reads this
+    if DESIGN == "v2":
+        _v2_src["_word_count"] = word_count
 
     html = f"""<!DOCTYPE html>
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
@@ -2861,6 +2870,15 @@ def render(digest: dict) -> str:
 #   * Two faces: the platform sans for body and furniture, Georgia for
 #     headlines, the stat figure and the CSIS letters. No size is larger than classic's: top
 #     stories 16px, other headlines 15px at most. No arrows, dots or emoji.
+#   * Identity and wayfinding: each bar carries a 5px family edge (flag red
+#     for the North, flag blue for the South, a light blue for the US and the
+#     world; _V2_FAMILY) and its reading time at the right. The date card
+#     has a Peninsula status line built from tracker data only
+#     (_v2_status_facts), and a sign-off card closes the brief with
+#     tomorrow's scheduled items and the reply address.
+#   * Only top stories run in full. Every other item keeps its first
+#     sentence (_v2_shorten, cut at a real sentence end) and the section
+#     links to the issue's web page; FULL_TEXT turns this off for the web.
 #   * Sections run in reading priority, not in the order they were added to
 #     the code (_V2_ORDER).
 #   * Nothing depends on the stylesheet. Gmail drops <style> for some accounts
@@ -2934,6 +2952,28 @@ _V2_DARK_BG = {_V2_GROUND: "#121212"}
 # Already light on navy in both schemes.
 _V2_DARK_EXEMPT = {_V2_NAVY, _V2_FOOT}
 
+# Section families, as a thin edge on the left of each navy bar: the flag's
+# red for the North, its blue for the South, a lighter blue for Washington
+# and the wider world. A working code for finding one's way, not decoration;
+# general sections (top stories, the forward look, the reference panels)
+# carry no edge. The flag blue sits close to the navy bar, but the edge also
+# meets the grey ground (or black, in dark mode) on its outer side, where it
+# reads. Same colours in both schemes, since the bar stays navy in both.
+_V2_FAM_NK = TAEGUK_RED
+_V2_FAM_ROK = TAEGUK_BLUE
+_V2_FAM_WORLD = "#6B8FC7"     # 4.8:1 against the navy bar
+_V2_FAMILY = {
+    "pyongyang watch": _V2_FAM_NK, "satellite & location watch": _V2_FAM_NK,
+    "rok government": _V2_FAM_ROK, "election tracker": _V2_FAM_ROK,
+    "business & economy": _V2_FAM_ROK, "public sentiment": _V2_FAM_ROK,
+    "us-korea trade & investment": _V2_FAM_WORLD, "capitol hill": _V2_FAM_WORLD,
+    "northeast asia watch": _V2_FAM_WORLD, "korea and the world": _V2_FAM_WORLD,
+}
+# The reading time at the right of a bar: muted white, 8.6:1 on the navy.
+_V2_BAR_META = "#B9C6DD"
+_V2_DARK_EXEMPT |= {_V2_FAM_NK, _V2_FAM_ROK, _V2_FAM_WORLD, _V2_BAR_META}
+_V2_WPM = 230
+
 # Reading order. A policymaker at 6 a.m. wants what happened, then the two
 # Koreas, then Washington, then the region; the forward look and the analysis
 # next; the reference panels (the stat, the location watch) last.
@@ -2979,9 +3019,35 @@ def _v2_bar(label: str, numbered: bool = True) -> str:
     it. It sits inside chrome markers so the word count is classic's.
     """
     mark = f"<!--c-->%%V2N:{label}%%<!--/c-->" if numbered else ""
+    # The family edge is a border on the cell, which Outlook draws; the
+    # padding gives back its width so the name still lines up with the text.
+    fam = _V2_FAMILY.get(_v2_key(label))
+    edge = (f' class="v2-edge" style="border-left:5px solid {fam};padding:9px 20px 9px 15px;'
+            if fam else ' style="padding:9px 20px;')
     return ('<table width="100%" cellpadding="0" cellspacing="0" border="0" class="sec-bar" '
-            f'style="background:{_V2_NAVY};"><tr><td style="padding:9px 20px;font-family:{_V2_SANS};'
+            f'style="background:{_V2_NAVY};"><tr><td{edge}font-family:{_V2_SANS};'
             f'font-size:15px;font-weight:700;line-height:1.25;color:#FFFFFF;">{mark}{_v2_label(label)}</td></tr></table>')
+
+
+def _v2_read_minutes(words: int):
+    """Minutes to read `words` at _V2_WPM, at least one; None under forty words, where a label is noise."""
+    if words < 40:
+        return None
+    return max(1, int(words / _V2_WPM + 0.5))
+
+
+def _v2_bar_time(bar: str, content: str) -> str:
+    """The bar with the section's reading time in a cell at its right end, when it has one."""
+    words = _count_rendered_words(_v2_unchrome(content))
+    mins = _v2_read_minutes(words)
+    if mins is None or not bar.endswith("</td></tr></table>"):
+        return bar
+    # Every byte counts against Gmail's clip and this repeats on each bar:
+    # the align attribute does text-align's work, and the family is kept
+    # only because Outlook does not carry one into a new cell.
+    cell = (f'<td class="v2-rt" align="right" style="padding:9px 20px 9px 8px;font-family:{_V2_SANS};'
+            f'font-size:11px;color:{_V2_BAR_META};white-space:nowrap;"><!--c-->{mins} min<!--/c--></td>')
+    return bar[:-len("</tr></table>")] + cell + "</tr></table>"
 
 
 def _v2_srctype(src: str) -> str:
@@ -3307,12 +3373,16 @@ _V2_BAR = _re.compile(r'<table width="100%" cellpadding="0" cellspacing="0" bord
                       r'<tr><td[^>]*>.*?</td></tr></table>', _re.S)
 
 
-def _v2_card(section: str) -> str:
+def _v2_card(section: str, more: dict | None = None) -> str:
     """A section with a bar becomes a white card on the grey ground, the bar across its top.
 
     Sections arrive as an outer box holding an anchor, the bar and the
     content. The box goes; the bar becomes the card's first row and the
     content its second. A section in any other shape is left as it is.
+
+    The bar takes the section's reading time at its right end. `more` maps a
+    section anchor to the web page's copy of that section; a section in it
+    was shortened for the email (_v2_shorten) and ends with a link there.
     """
     m = _V2_BAR.search(section)
     if not m:
@@ -3333,9 +3403,16 @@ def _v2_card(section: str) -> str:
              f'border-left:3px solid {_V2_ACCENT};font-family:{_V2_SANS};"'
              if 'class="v2-glance"' in rest[:200] else
              f'class="v2-in" style="padding:4px 20px 12px;font-family:{_V2_SANS};"')
+    bar = _v2_bar_time(m.group(0), rest)
+    anchors = _re.findall(r'<a name="([\w-]+)"', p.group(1) + p.group(2))
+    href = next((more[a] for a in anchors if more and a in more), "")
+    if href:
+        rest += (f'<!--c--><div class="v2-more v2-rule" style="margin-top:10px;padding-top:8px;border-top:1px solid {_V2_HAIR};'
+                 f'font-size:12px;color:{_V2_META};">Shortened for email.&ensp;'
+                 f'<a href="{_esc(href)}" style="color:{_V2_NAVY};font-weight:700;">Read online</a></div><!--/c-->')
     return (f'{head}<div class="v2-gap" style="padding:0 16px 12px;">{p.group(1)}{p.group(2)}'
             '<table width="100%" cellpadding="0" cellspacing="0" border="0" class="v2-card" style="background:#FFFFFF;">'
-            f'<tr><td style="padding:0;">{m.group(0)}</td></tr>'
+            f'<tr><td style="padding:0;">{bar}</td></tr>'
             f'<tr><td {inner}>{rest}</td></tr></table></div>')
 
 
@@ -3402,7 +3479,7 @@ def _v2_masthead(digest: dict, now, listen_bar: str) -> str:
         f'<td class="mast-main" style="font-family:{_V2_SANS};font-size:16px;font-weight:700;color:{_V2_INK};">'
         f'{now:%A, %B} {now.day}, {now.year}</td>'
         f'<td class="mast-meta" align="right" style="font-family:{_V2_SANS};font-size:13px;color:{_V2_META};'
-        f'white-space:nowrap;"><!--c-->{"&emsp;".join(facts)}<!--/c--></td></tr></table>%%TOC%%',
+        f'white-space:nowrap;"><!--c-->{"&emsp;".join(facts)}<!--/c--></td></tr></table>{_v2_status(digest)}%%TOC%%',
         "16px 20px 14px"), top=12)
     return f'<!--v2--><a name="top" id="top"></a>{strip}{band}{listen}{date_card}'
 
@@ -3563,6 +3640,29 @@ def _v2_glance(digest: dict, memo_items: list) -> str:
 _V2_ABBR = _re.compile(r"(?:\b(?:[A-Z]\.){1,3}|\b(?:Gen|Lt|Col|Maj|Capt|Adm|Sgt|Dr|Mr|Ms|Mrs|No|St|Jr|Sr|Rep|Sen|"
                        r"Gov|Pres|Amb|Prof|vs|Inc|Corp|Co|Ltd|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)\.)$")
 _V2_QUOTE = _re.compile(r"(?<![A-Za-z])'|'(?![A-Za-z])")
+# Abbreviations _V2_ABBR misses, mostly lower case, that are never a
+# sentence end before a capital ("at 9 a.m. Seoul time", "e.g. Samsung").
+_V2_ABBR_LC = _re.compile(r"\b(?:a\.m|p\.m|e\.g|i\.e|approx|est|Dept|Univ|Mt|Ft|Op|Fig|Vol)\.$")
+
+
+def _v2_sentence_ends(text: str):
+    """Each text up to a real sentence end, shortest first.
+
+    A full stop, question or exclamation mark (with any closing quote or
+    bracket) before a space and a capital or a figure. Not one that closes an
+    abbreviation or an initial (U.S., Gen.), nor one inside a quotation or
+    inside the model's **bold** or *italic* marks.
+    """
+    for m in _re.finditer(r"[.!?]['\"’”)]?(?=\s+['\"‘“(]?[A-Z0-9*])", text):
+        left = text[:m.end()]
+        bare = left.rstrip("'\"’”)")
+        if _V2_ABBR.search(bare) or _V2_ABBR_LC.search(bare):
+            continue
+        if (left.count("*") % 2 or left.count('"') % 2 or left.count("“") != left.count("”")
+                or len(_V2_QUOTE.findall(left)) % 2 or left.count("‘") != left.count("’")
+                and "‘" in left):
+            continue
+        yield left
 
 
 def _v2_paragraphs(text: str, limit: int = 60) -> list:
@@ -3577,19 +3677,12 @@ def _v2_paragraphs(text: str, limit: int = 60) -> list:
     if words <= limit:
         return [text]
     best = None
-    for m in _re.finditer(r"[.!?]['\"\u2019\u201d)]?(?=\s+['\"\u2018\u201c(]?[A-Z0-9*])", text):
-        left = text[:m.end()]
-        if _V2_ABBR.search(left.rstrip("'\"\u2019\u201d)")):
-            continue
-        if (left.count("*") % 2 or left.count('"') % 2 or left.count("\u201c") != left.count("\u201d")
-                or len(_V2_QUOTE.findall(left)) % 2 or left.count("\u2018") != left.count("\u2019")
-                and "\u2018" in left):
-            continue
+    for left in _v2_sentence_ends(text):
         n = len(left.split())
         if n < 20 or words - n < 20:
             continue
         if best is None or abs(n - words / 2) < best[0]:
-            best = (abs(n - words / 2), m.end())
+            best = (abs(n - words / 2), len(left))
     if not best:
         return [text]
     return [text[:best[1]].strip(), text[best[1]:].strip()]
@@ -3616,6 +3709,200 @@ def _v2_top_stories(stories: list) -> str:
                 f'{_link_or_text(headline, url, style=_V2_LINK)}</h3>{body}</div>')
     return (f'<!--v2--><div><a name="top-stories" id="top-stories"></a>'
             f'{_sec_label("Top Stories")}{out}</div>')
+
+
+def _v2_first_sentence(text: str, min_words: int = 4, min_rest: int = 8) -> str:
+    """The text's first sentence, or the text itself when there is nothing worth cutting.
+
+    The cut is made at a real sentence end only (_v2_sentence_ends), so
+    nothing is reworded: what is kept is the text up to that point. A first
+    "sentence" under `min_words` words is taken as a mis-split and the next
+    end is tried; when what would be cut is under `min_rest` words, the text
+    stays whole, since a link to read a few more words costs more than it saves.
+    """
+    text = str(text or "")
+    total = len(text.split())
+    for left in _v2_sentence_ends(text):
+        n = len(left.split())
+        if n < min_words:
+            continue
+        return left.strip() if total - n >= min_rest else text
+    return text
+
+
+# What the email shortens to its first sentence, by section anchor: each list
+# in the digest and the fields of its items that carry running text.
+# Untouched: top stories (full text), the glance, Overnight and The Wire
+# (already one line), the calendars, the numbers strip, Pyongyang Watch's
+# bottom line, and every quotation, which is never cut short.
+_V2_SHORTEN = (
+    ("rok-gov", "rok_government", ("detail",)),
+    ("rok-gov", "rok_personnel", ("detail",)),
+    ("rok-gov", "rok_assembly", ("detail",)),
+    ("business", "business_economy", ("body_text",)),
+    ("nea", "northeast_asia", ("body_text",)),
+    ("world", "korea_world", ("body_text",)),
+    ("hill", "capitol_hill", ("body_text",)),
+    ("analysis", "opeds_today", ("summary",)),
+    ("analysis", "academic_today", ("summary", "policy_implication")),
+    ("analysis", "social_statements", ("analyst_note",)),
+    ("analysis", "official_x_posts", ("analyst_note",)),
+    ("satellite", "bp_locations", ("note",)),
+)
+
+
+def _v2_shorten(digest: dict) -> tuple:
+    """A copy of the digest with every item outside the top stories cut to its first sentence.
+
+    Returns (copy, {anchor: url}), the url being that section on the issue's
+    web page, digest_{date}.html, which carries the full text. Only the
+    email is shortened, and only when that page exists: without a web_url
+    there is nowhere to read the rest, and the copy is left whole. Nor when
+    FULL_TEXT is set: that render is the web page, which is the full text.
+    """
+    import copy
+    web_url = digest.get("web_url", "")
+    base = web_url[:-len("latest.html")] if web_url.endswith("latest.html") else ""
+    page = _issue_file(digest, base, "html") or web_url
+    if FULL_TEXT or not page:
+        return digest, {}
+    d = copy.deepcopy(digest)
+    cut = set()
+
+    def shorten(obj, field, anchor):
+        if isinstance(obj, dict) and isinstance(obj.get(field), str):
+            short = _v2_first_sentence(obj[field])
+            if short != obj[field]:
+                obj[field] = short
+                cut.add(anchor)
+
+    for anchor, key, fields in _V2_SHORTEN:
+        for item in d.get(key) or []:
+            for f in fields:
+                shorten(item, f, anchor)
+    kc = d.get("kcna_delta")
+    if isinstance(kc, dict):
+        shorten(kc, "kim_activity", "kcna")
+        for art in kc.get("top_articles") or []:
+            shorten(art, "summary", "kcna")
+        for off in kc.get("senior_officials") or []:
+            shorten(off, "activity", "kcna")
+    for f in ("body", "summary"):
+        shorten(d.get("imagery_report"), f, "satellite")
+    shorten(d.get("us_korea_deals"), "state_of_play", "trade")
+    shorten(d.get("key_stat"), "context", "key-stat")
+    shorten(d.get("election_tracker"), "summary", "election")
+    return d, {a: f"{page}#{a}" for a in cut}
+
+
+def _v2_status_facts(digest: dict) -> list:
+    """The Peninsula status line's facts, in plain words, from tracker data only.
+
+    Kim Jong Un's last appearance and the KCNA watch flag come from
+    kcna_delta (the same fields the numbers strip and the glance's tracker
+    row read); the monitored sites from bp_locations and run.py's
+    _bp_changes. A fact whose data is missing is left out, never guessed.
+    """
+    facts = []
+    kc = digest.get("kcna_delta") if isinstance(digest.get("kcna_delta"), dict) else {}
+    days = kc.get("days_since_last_appearance")
+    if kc.get("kim_appearance_today") is True:
+        facts.append("Kim seen in public today.")
+    elif isinstance(days, int) and not isinstance(days, bool) and days > 0:
+        facts.append(f"Kim last seen {days} day{'s' if days != 1 else ''} ago.")
+    if kc and not kc.get("data_unavailable"):
+        if kc.get("silence_today") is True:
+            facts.append("KCNA silent today.")
+        elif kc.get("watch_flag") is True:
+            facts.append("KCNA watch flag up.")
+        elif kc.get("watch_flag") is False:
+            facts.append("No KCNA watch flag.")
+    locs = [x for x in digest.get("bp_locations") or [] if isinstance(x, dict) and x.get("name")]
+    changes = digest.get("_bp_changes")
+    if locs and isinstance(changes, list):
+        n = len([c for c in changes if c])
+        facts.append(f"New reporting at {n} of {len(locs)} monitored sites." if n
+                     else f"No new reporting at the {len(locs)} monitored sites.")
+    if locs and all(str(x.get("status") or "").strip() for x in locs):
+        hot = sum(1 for x in locs if str(x["status"]).strip().lower() in ("elevated", "alert"))
+        if hot:
+            facts.append(f"Elevated or alert at {hot} site{'s' if hot != 1 else ''}.")
+    return facts
+
+
+def _v2_status(digest: dict) -> str:
+    """The Peninsula status line under the date: three or four facts as sentences, or nothing."""
+    facts = _v2_status_facts(digest)
+    if not facts:
+        return ""
+    return (f'<!--c--><div class="v2-status" style="margin-top:8px;font-size:13px;line-height:1.55;color:{_V2_BODY};">'
+            f'<b style="color:{_V2_NAVY};">Peninsula status</b>&emsp;' + "&ensp; ".join(facts) + '</div><!--/c-->')
+
+
+def _v2_tomorrow(digest: dict, limit: int = 3) -> list:
+    """What is scheduled for the day after the issue: the model's calendar, the
+    fixed observances and the committee schedules, as short lines, at most `limit`.
+
+    An event that merely continues tomorrow (a strike that began last week)
+    is not one scheduled for tomorrow and is left out.
+    """
+    today = _issue_day(digest)
+    if today is None:
+        return []
+    from datetime import timedelta
+    tmr = today + timedelta(days=1)
+    rows = []
+    try:
+        import korea_calendar
+        for raw in digest.get("calendar_watch") or []:
+            n = korea_calendar.normalize(raw, today)
+            if n and n.get("_date") == tmr.isoformat() and n.get("headline") and not korea_calendar.off_topic(n):
+                rows.append(_str(n["headline"]))
+        rows += [_str(c["headline"]) for c in korea_calendar.upcoming(tmr, days=0)]
+    except Exception:                                           # noqa: BLE001
+        pass
+    for ev in digest.get("hill_calendar") or []:
+        if isinstance(ev, dict) and ev.get("title") and str(ev.get("date", ""))[:10] == tmr.isoformat():
+            rows.append(hill_event_text(ev) + (f" ({ev['time']})" if ev.get("time") else ""))
+    out, seen = [], set()
+    for r in rows:
+        k = _re.sub(r"\W+", " ", r).strip().lower()
+        if r and k not in seen:
+            seen.add(k)
+            out.append(r)
+    return out[:limit]
+
+
+def _v2_reply_address() -> str:
+    """The address replies reach: send_email's own Reply-To, so the two cannot drift apart."""
+    try:
+        from send_email import reply_address
+        return reply_address()
+    except Exception:                                           # noqa: BLE001
+        return ""
+
+
+def _v2_signoff(digest: dict) -> str:
+    """The closing card before the footer: the sign-off with the issue number,
+    tomorrow's scheduled items when there are any, and an invitation to write in."""
+    issue = digest.get("issue_no")
+    no = (f'<span style="font-size:12px;font-weight:400;color:{_V2_META};">&emsp;No. {int(issue)}</span>'
+          if isinstance(issue, (int, float)) and issue > 0 else "")
+    inner = (f'<div style="font-size:15px;font-weight:700;line-height:1.35;color:{_V2_INK};">'
+             f'That&#8217;s today&#8217;s brief.{no}</div>')
+    ahead = _v2_tomorrow(digest)
+    if ahead:
+        inner += (f'<div style="margin-top:10px;font-size:11px;font-weight:700;letter-spacing:0.5px;'
+                  f'text-transform:uppercase;color:{_V2_META};">Tomorrow</div>'
+                  + "".join(f'<div style="margin-top:3px;font-size:13px;line-height:1.5;color:{_V2_BODY};">'
+                            f'{_emphasis(_esc(r))}</div>' for r in ahead))
+    addr = _v2_reply_address()
+    if addr:
+        inner += (f'<div class="v2-rule" style="margin-top:12px;padding-top:9px;border-top:1px solid {_V2_HAIR};'
+                  f'font-size:13px;line-height:1.5;color:{_V2_BODY};">Feedback and tips are welcome. Reply to this '
+                  f'email or write to <a href="mailto:{_esc(addr)}" style="color:{_V2_NAVY};font-weight:700;">'
+                  f'{_esc(addr)}</a>.</div>')
+    return '<!--v2--><!--c-->' + _v2_gap(_v2_cardbox(inner, "16px 20px 14px")) + '<!--/c-->'
 
 
 def _v2_kcna(kc: dict) -> str:
@@ -3813,14 +4100,14 @@ def _v2_style(style: str) -> str:
     return ";".join(out) + ";"
 
 
-def _v2_restyle(section: str) -> str:
+def _v2_restyle(section: str, more: dict | None = None) -> str:
     """Apply v2's type and palette to a classic section, then make any section with a bar a card."""
     if not section.lstrip().startswith("<!--v2-->"):
         section = _v2_buttons(section)
         section = _v2_lists(section)
         section = _re.sub(r'style="([^"]*)"', lambda m: f'style="{_v2_style(m.group(1))}"', section)
         section = _re.sub(r"style='([^']*)'", lambda m: f"style='{_v2_style(m.group(1))}'", section)
-    return _v2_card(section)
+    return _v2_card(section, more)
 
 
 def _v2_order(sections: list) -> list:
@@ -3872,11 +4159,23 @@ def _v2_finish(body: str) -> str:
               f'text-underline-offset:3px;white-space:nowrap;">{text}</a>' if name else text)
              for text, name in toc]
     toc_html = ""
+    # The key to the bar edges, for the families that rendered today. A run
+    # of non-breaking spaces on a coloured ground draws the swatch, which
+    # Outlook paints as well; an empty sized box it would drop.
+    keys = [(c, n) for c, n in ((_V2_FAM_NK, "North Korea"), (_V2_FAM_ROK, "South Korea"),
+                                (_V2_FAM_WORLD, "US and the world"))
+            if f"border-left:5px solid {c};" in body]
+    legend = ""
+    if keys:
+        legend = ('<div style="margin-top:2px;font-size:11px;font-weight:400;line-height:1.8;color:'
+                  f'{_V2_META};">Bar edges:&ensp; ' + "&emsp; ".join(
+                      f'<span style="white-space:nowrap;"><span style="background:{c};font-size:9px;">'
+                      f'&nbsp;&nbsp;&nbsp;</span>&nbsp;{n}</span>' for c, n in keys) + '</div>')
     if len(links) >= 4:
         toc_html = (f'<!--c--><div class="v2-rule v2-toc no-print" style="margin-top:10px;padding-top:7px;'
                     f'border-top:1px solid {_V2_HAIR};font-size:13px;font-weight:700;line-height:1.9;">'
                     f'<span style="font-size:11px;letter-spacing:0.5px;text-transform:uppercase;color:{_V2_META};">'
-                    'In this issue</span>&emsp; ' + "&emsp; ".join(links) + '</div><!--/c-->')
+                    'In this issue</span>&emsp; ' + "&emsp; ".join(links) + legend + '</div><!--/c-->')
     body = body.replace("%%NAV%%", "")
     return body.replace("%%TOC%%", toc_html)
 
@@ -3900,6 +4199,8 @@ _V2_CSS = """
       .wrapper .v2-gap { padding-left:8px !important; padding-right:8px !important; }
       .wrapper .v2-in { padding-left:14px !important; padding-right:14px !important; }
       .wrapper .sec-bar td { padding:9px 14px !important; }
+      .wrapper .sec-bar td.v2-edge { padding-left:9px !important; }
+      .wrapper .sec-bar td.v2-rt { padding-left:6px !important; }
       .wrapper .v2-name { font-size:18px !important; }
       .wrapper .mast-meta { padding-top:2px !important; }
       .v2-cell div[style*="font-size:16px"] { font-size:15px !important; }
