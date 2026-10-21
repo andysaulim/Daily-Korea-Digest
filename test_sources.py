@@ -163,7 +163,13 @@ def check_mandatory_outlets_reach_the_prompt() -> list[str]:
 # search. Raise this number as feeds are converted; never lower it. The point
 # is a ratchet: the brief got into trouble by depending on one service for
 # almost every source, and that share should only ever improve.
-MIN_FEEDS_WITH_NATIVE_PATH = 39
+#
+# Lowered once, 39 -> 37, on 21 Oct 2026, for two deliberate reasons: native
+# URLs that 404 every run were removed (Reuters, Stars and Stripes, Hankook,
+# KCNA via Yonhap), and general world feeds (WSJ world, NYT Asia, Bloomberg
+# politics, CNN Asia...) stay search-first, because one Korea item in a world
+# feed wins the chain and stops the Korea search behind it from running.
+MIN_FEEDS_WITH_NATIVE_PATH = 37
 
 
 def check_google_news_dependence_not_regressing() -> list[str]:
@@ -213,9 +219,66 @@ def check_major_feeds_have_native_paths() -> list[str]:
             problems.append(f"MAJOR_FEEDS names {name!r} but no such feed exists")
             continue
         urls = [value] if isinstance(value, str) else value
+        if name in collect.NO_PUBLIC_RSS:
+            continue
         if not any("news.google.com" not in u for u in urls):
             problems.append(f"major feed {name!r} has no native candidate")
+    # The exemption is for publishers with no RSS at all, never a way out.
+    if len(collect.NO_PUBLIC_RSS - collect.MAJOR_FEEDS) or len(collect.NO_PUBLIC_RSS) > 1:
+        problems.append(f"NO_PUBLIC_RSS grew to {sorted(collect.NO_PUBLIC_RSS)}; "
+                        f"find the outlet a native feed instead")
     return problems
+
+
+# Native paths the 21 October 2026 run proved dead (404, 500, timeout, or a
+# service the publisher ended). None may come back as a candidate: each cost
+# a request and a log line every run and never answered.
+_DEAD_NATIVE_URLS = (
+    "wilsoncenter.org/rss.xml", "kyivindependent.com/rss/", "armedservices.house.gov/rss.xml",
+    "foreignaffairs.house.gov/feed/", "en.yna.co.kr/RSS/northkorea.xml", "yna.co.kr/RSS/news.xml",
+    "online.ucpress.edu/as/rss/current", "cfr.org/rss.xml", "cnas.org/feed",
+    "hankookilbo.com/rss/total", "armed-services.senate.gov/rss/feeds/", "foreign.senate.gov/rss/feeds/",
+    "reutersagency.com/feed/", "stripes.com/rss/pacific.rss", "korea.kr/rss/", "tnsr.org/feed/",
+    "accessdprk.com/feed/", "feeds.washingtonpost.com", "bis.doc.gov/index.php",
+)
+
+
+def check_dead_native_urls_stay_gone() -> list[str]:
+    """No feed or schedule tries a native URL the runner has proved dead."""
+    import links
+    problems = []
+    groups = [collect.TIER1_FEEDS, collect.TIER4_FEEDS, collect.CAPITOL_HILL_FEEDS,
+              collect.KOREA_WORLD_FEEDS, collect.KIM_TRACKER_FEEDS, collect.SATELLITE_IMAGERY_FEEDS,
+              {k: v[0] for k, v in collect.TIER2_FEEDS.items()},
+              {k: v[0] for k, v in collect.TIER3_FEEDS.items()},
+              {k: [v] for k, v in collect.HILL_CALENDAR_FEEDS.items()}]
+    for group in groups:
+        for name, value in group.items():
+            for u in ([value] if isinstance(value, str) else value):
+                if "news.google.com" in u:
+                    continue
+                hit = next((d for d in _DEAD_NATIVE_URLS if d in u), None)
+                if hit:
+                    problems.append(f"{name!r} still tries the dead native URL {u}")
+    # Retired outright: silent 3+ runs, and duplicated by another feed.
+    for name in ("KCNA (Korea Risk)", "HFAC schedule", "HASC schedule", "SFRC schedule",
+                 "SASC schedule"):
+        if name in collect.TIER4_FEEDS or name in collect.HILL_CALENDAR_FEEDS:
+            problems.append(f"{name!r} was retired but is back")
+    # A Korean-language outlet searched for the English word "Korea" finds
+    # nothing: MBN and Channel A were silent three runs that way.
+    for name in ("MBN", "Channel A"):
+        for u in collect.TIER1_FEEDS[name]:
+            if "Korea" in links.build_gnews_query(_query_of(u)) or "hl=ko" not in u:
+                problems.append(f"{name!r} searches the English edition or for the word Korea: {u}")
+    if not any("ichannela.com" in u for u in collect.TIER1_FEEDS["Channel A"]):
+        problems.append("Channel A does not search its news domain, ichannela.com")
+    return problems
+
+
+def _query_of(url: str) -> str:
+    from urllib.parse import parse_qs, urlparse
+    return parse_qs(urlparse(url).query).get("q", [""])[0]
 
 
 def check_length_has_a_ceiling() -> list[str]:
@@ -1433,8 +1496,12 @@ def check_v2_shortened_email():
         render.DESIGN = saved
     if html.count("The second sentence is detail") != 1:
         problems.append("v2: expected the long body in full exactly once (the top story)")
-    if 'digest_2026-10-19.html#business' not in html:
-        problems.append("v2: no Read online link to the business section of the issue page")
+    if html.count("Some sections are shortened here.") != 1 or 'href="https://example.org/brief/digest_2026-10-19.html"' not in html:
+        problems.append("v2: not exactly one shortened-note under the contents, linking the issue page")
+    if "Shortened for email" in html:
+        problems.append("v2: a per-section 'Shortened for email' line is back")
+    if 'name="business"' not in html:
+        problems.append("v2: the business section lost its anchor, which the web page links to")
     if "That&#8217;s today&#8217;s brief." not in html or "Assembly votes on the budget" not in html:
         problems.append("v2: sign-off missing, or without tomorrow's calendar item")
     if f"border-left:5px solid {render.TAEGUK_BLUE};" not in html:
@@ -1449,8 +1516,84 @@ def check_v2_shortened_email():
         web = render.render(copy.deepcopy(before))
     finally:
         render.DESIGN, render.FULL_TEXT = saved, saved_full
-    if web.count("The second sentence is detail") != 2 or "Shortened for email" in web:
+    if (web.count("The second sentence is detail") != 2 or "Shortened for email" in web
+            or "Some sections are shortened" in web):
         problems.append("v2 with FULL_TEXT set still shortened the bodies")
+    return problems
+
+
+def check_v2_kicker_outlets():
+    """v2 kickers name publishers, not feeds: no variant suffixes, glued dates or repeats."""
+    import render
+    problems = []
+    for raw, want in (("Yonhap English", "Yonhap"), ("Yonhap North Korea KO", "Yonhap"),
+                      ("NK News Oct 21", "NK News"), ("ROK MOFA English", "Foreign Ministry"),
+                      ("NKPro", "NK Pro"), ("Bloomberg.com", "Bloomberg"), ("Korea Times Opinion", "Korea Times"),
+                      ("Yonhap EN", "Yonhap"), ("Yonhap English (KCNA)", "Yonhap (KCNA)"),
+                      ("via NK News/NewsCord", "via NK News"),
+                      # Names that only look like a feed variant stay as they are.
+                      ("Daily NK", "Daily NK"), ("Asia Economy", "Asia Economy"), ("Korea", "Korea"),
+                      ("Korea JoongAng Daily", "Korea JoongAng Daily")):
+        got = render._v2_outlet(raw)
+        if got != want:
+            problems.append(f"_v2_outlet({raw!r}) gave {got!r}, want {want!r}")
+    line = render._v2_outlets('<a href="https://en.yna.co.kr/x">Yonhap English</a> / Yonhap North Korea KO / NK News Oct 21')
+    if line != '<a href="https://en.yna.co.kr/x">Yonhap</a> / NK News':
+        problems.append(f"outlet list not cleaned and deduplicated: {line!r}")
+    k = render._v2_kicker("ROK MOFA English", "Japan-Korea")
+    text = __import__("re").sub(r"<[^>]+>", "", k)
+    if text != "Foreign Ministry, Japan-Korea, Primary":
+        problems.append(f"MOFA kicker reads {text!r}")
+    k = render._v2_kicker("Seoul Embassy English (@x)", "", "", outlet=False)
+    if "English" not in k:
+        problems.append("a person's name on an X post was cleaned as an outlet")
+    html = _v2_render({"top_stories": [{"headline": "Lead", "body": "Body.", "category_tag": "DPRK",
+                                        "src_line": "Yonhap English / Yonhap North Korea KO / NK News Oct 21"}],
+                       "overnight_items": [{"headline": "Wire item", "source": "NKPro", "category": "DPRK"}]})
+    for bad in ("Yonhap English", "North Korea KO", "Oct 21", "NKPro"):
+        if bad in html:
+            problems.append(f"rendered v2 still shows {bad!r}")
+    import copy
+    saved = render.DESIGN
+    try:
+        render.DESIGN = "classic"
+        classic = render.render({"top_stories": [{"headline": "Lead", "body": "Body.",
+                                                  "src_line": "Yonhap English / NK News Oct 21"}]})
+    finally:
+        render.DESIGN = saved
+    if "Yonhap English / NK News Oct 21" not in classic:
+        problems.append("classic's source line changed")
+    return problems
+
+
+def check_v2_print_layout():
+    """The preview PDF's v2 render (PRINT) carries web fonts and none of the inbox furniture; the email is unchanged."""
+    import copy, render
+    problems = []
+    d = {"digest_date": "Wednesday, October 21, 2026", "date_slug": "2026-10-21", "issue_no": 210,
+         "web_url": "https://example.org/b/latest.html", "audio_url": "https://example.org/b/a.mp3",
+         "top_stories": [{"headline": "Lead", "body": "Body.", "category_tag": "DPRK"}],
+         "overnight_items": [{"headline": "One", "source": "Yonhap"}, {"headline": "Two", "source": "NK News"}],
+         "calendar_watch": [{"month": "Oct", "day": 22, "headline": "Audit"}],
+         "business_economy": [{"headline": "Chips", "body_text": "A. B.", "source": "Yonhap"}],
+         "morning_memo": ["One.", "Two.", "Three."]}
+    saved = (render.DESIGN, render.FULL_TEXT, render.PRINT)
+    try:
+        render.DESIGN, render.FULL_TEXT, render.PRINT = "v2", True, True
+        paper = render.render(copy.deepcopy(d))
+        render.PRINT = False
+        email = render.render(copy.deepcopy(d))
+    finally:
+        render.DESIGN, render.FULL_TEXT, render.PRINT = saved
+    if "fonts.googleapis.com/css2?family=Source+Sans+3" not in paper or "Liberation Sans" not in paper:
+        problems.append("paper render lacks the web fonts or their Liberation fallback")
+    if "break-inside:avoid" not in paper or "break-after:avoid" not in paper:
+        problems.append("paper render lacks its page-break rules")
+    for t in ("listen-bar", "In this issue", "Past issues", "Back to top", "For internal use only"):
+        if t in paper:
+            problems.append(f"paper render still shows {t!r}")
+    if "fonts.googleapis.com" in email or "listen-bar" not in email:
+        problems.append("PRINT leaked into the email render")
     return problems
 
 
@@ -2621,6 +2764,8 @@ CHECKS = [
     ("v2 Leaders' words: Lee, Trump, Kim only, one each", check_v2_leaders_words),
     ("v2 ROK government card grid", check_v2_rok_cards),
     ("v2 hidden inbox preview line", check_v2_preheader),
+    ("v2 kickers name publishers, not feeds", check_v2_kicker_outlets),
+    ("v2 paper layout for the preview PDF", check_v2_print_layout),
     ("audio is formatted for the ear", check_audio_formatting),
     ("no Korean script on the page", check_english_only),
     ("API cost is recorded and kept", check_api_cost_is_recorded),
@@ -2667,6 +2812,229 @@ CHECKS = [
     ("leaders' words: one verbatim quote each", check_leaders_words),
     ("NK-Russia timeline reads its Google Sheet", check_nk_russia_timeline_sheet),
 ]
+
+
+# ── 21 October 2026 test-send fixes ─────────────────────────────────────────
+
+_SENATE_OCT = b"""<?xml version="1.0" encoding="UTF-8"?>
+<css_meetings_scheduled><meetings>
+ <meeting><committee>Armed Services</committee><sub_cmte></sub_cmte>
+  <date>22-OCT-2026 09:30 AM</date>
+  <matter>Hearings to examine the posture of United States Indo-Pacific Command and United States Forces Korea.</matter></meeting>
+ <meeting><committee>Foreign Relations</committee><sub_cmte></sub_cmte>
+  <date>23-OCT-2026 10:00 AM</date>
+  <matter>Hearings to examine AUKUS implementation and submarine industrial base.</matter></meeting>
+ <meeting><committee>Armed Services</committee><sub_cmte>Seapower</sub_cmte>
+  <date>26-OCT-2026 02:30 PM</date>
+  <matter>Hearings to examine shipbuilding programs.</matter></meeting>
+ <meeting><committee>Agriculture, Nutrition, and Forestry</committee>
+  <date>22-OCT-2026 10:00 AM</date><matter>Hearings to examine the farm bill.</matter></meeting>
+ <meeting><committee>Armed Services</committee>
+  <date>24-SEP-2026 09:30 AM</date>
+  <matter>Hearings to examine the nomination of a Commander, United States Forces Korea.</matter></meeting>
+ <meeting><committee>Foreign Relations</committee>
+  <date>12-NOV-2026 10:00 AM</date><matter>Hearings to examine North Korea policy.</matter></meeting>
+</meetings></css_meetings_scheduled>"""
+
+_HOUSE_OCT = b"""<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0"><channel><title>Committee on Foreign Affairs Meeting Feed</title>
+ <item><title>Countering PRC Maritime Coercion</title>
+  <link>https://docs.house.gov/Committee/Calendar/ByEvent.aspx?EventID=1</link>
+  <description>Subcommittee on East Asia and the Pacific. Meeting Date: Thursday, October 22, 2026 2:00 PM (Scheduled)</description></item>
+ <item><title>Deterrence in the Taiwan Strait</title>
+  <link>https://docs.house.gov/Committee/Calendar/ByEvent.aspx?EventID=2</link>
+  <description>Meeting Date: Friday, October 23, 2026 10:00 AM (Scheduled)</description></item>
+ <item><title>Taiwan, Japan and our treaty allies in the Western Pacific</title>
+  <link>https://docs.house.gov/Committee/Calendar/ByEvent.aspx?EventID=3</link>
+  <description>Meeting Date: Monday, October 26, 2026 10:00 AM (Scheduled)</description></item>
+ <item><title>Markup of the Western Hemisphere Partnership Act</title>
+  <link>https://docs.house.gov/Committee/Calendar/ByEvent.aspx?EventID=4</link>
+  <description>Meeting Date: Tuesday, September 15, 2026 10:00 AM (Scheduled)</description></item>
+</channel></rss>"""
+
+
+def check_hill_calendar_keeps_realistic_titles() -> list[str]:
+    """The calendar keeps Indo-Pacific, USFK, AUKUS and shipbuilding hearings and
+    says why it dropped the rest (127 fetched and 0 kept could not be read)."""
+    from datetime import date
+    import run
+    problems = []
+    today, horizon = date(2026, 10, 21), date(2026, 10, 28)
+    events = (collect._parse_hill_schedule(_SENATE_OCT, "Senate committee schedule")
+              + collect._parse_hill_schedule(_HOUSE_OCT, "House Foreign Affairs schedule"))
+    reasons: dict = {}
+    kept = collect.filter_hill_events(events, today, horizon, reasons=reasons)
+    titles = [e["title"][:34] for e in kept]
+    want = ["Hearings to examine the posture of",
+            "Countering PRC Maritime Coercion",
+            "Hearings to examine AUKUS implemen",
+            "Taiwan, Japan and our treaty allie",      # 26 Oct, 10:00 AM
+            "Hearings to examine shipbuilding p"]      # 26 Oct, 2:30 PM
+    if titles != want:
+        problems.append(f"kept {titles}, expected {want}")
+    sub = next((e for e in kept if e["title"].startswith("Countering")), {})
+    if "East Asia and the Pacific" not in sub.get("committee", ""):
+        problems.append(f"the subcommittee named in the notice is not in the label: {sub.get('committee')!r}")
+    if any("Taiwan Strait" in e["title"] for e in kept):
+        problems.append("a Taiwan-only hearing was kept")
+    want_r = {"past": 2, "beyond_window": 1, "not_relevant": 2}
+    got_r = {k: reasons.get(k, 0) for k in want_r}
+    if got_r != want_r:
+        problems.append(f"drop reasons {got_r}, expected {want_r}")
+    if reasons.get("date_range") != "2026-09-15..2026-11-12":
+        problems.append(f"date range {reasons.get('date_range')!r}")
+    for text, want_rel in (("U.S. Indo-Pacific Command posture", True),
+                           ("Hearing on United States Forces Korea", True),
+                           ("East Asia and the Pacific subcommittee hearing", True),
+                           ("Asia-Pacific security architecture", True),
+                           ("AUKUS Pillar II", True), ("Seventh Fleet readiness", True),
+                           ("Army posture in Asia", True), ("Taiwan Relations Act at 47", False),
+                           ("South and Central Asia budget", False)):
+        if collect.hill_event_relevant(text) != want_rel:
+            problems.append(f"relevance of {text!r} should be {want_rel}")
+    # A recess reads as a recess in the run log.
+    line = run.hill_calendar_log_line({"hill_calendar": [], "hill_calendar_stats": {
+        "fetched": 127, "kept": 0, "answered": 6, "feeds": 6, "per_source": {},
+        "window": "2026-10-21..2026-10-28",
+        "dropped": {"past": 120, "not_relevant": 7, "date_range": "2026-01-13..2026-10-02"}}})
+    if "120 already held" not in line or "7 not Korea/Indo-Pacific" not in line \
+            or "2026-01-13..2026-10-02" not in line:
+        problems.append(f"the log line does not say why events were dropped: {line!r}")
+    if len(collect.HILL_CALENDAR_FEEDS) != 6:
+        problems.append(f"{len(collect.HILL_CALENDAR_FEEDS)} schedules; the four dead committee-site "
+                        f"schedules should be gone and the six official ones kept")
+    return problems
+
+
+def check_kcna_watch_parser() -> list[str]:
+    """Both KCNA Watch link shapes parse; old and undated links do not."""
+    from datetime import datetime as _dt, timezone as _tz
+    now = _dt(2026, 10, 21, 12, tzinfo=_tz.utc)
+    ts = int(_dt(2026, 10, 21, 3, tzinfo=_tz.utc).timestamp())
+    old = int(_dt(2026, 10, 1, 3, tzinfo=_tz.utc).timestamp())
+    html = (f'<article><span class="category">Rodong Sinmun</span>'
+            f'<a class="title" href="/newstream/{ts}-551234/kim-jong-un-inspects/">'
+            f'<h3>Respected Comrade Kim Jong Un Inspects Munitions Factory</h3></a></article>'
+            f'<a href="https://kcnawatch.org/newstream/2026/10/20/fm-statement/">DPRK FM spokesperson '
+            f'statement on US-ROK drills</a>'
+            f'<a href="/newstream/{old}-1/old-item/">An item from three weeks ago here</a>'
+            f'<a href="/newstream/{ts}-551234/kim-jong-un-inspects/">Read more</a>'
+            f'<a href="/newstream/about/">About KCNA Watch and its sources</a>')
+    got = collect._parse_kcna_watch_html(html, now)
+    problems = []
+    if [a["title"][:20] for a in got] != ["Respected Comrade Ki", "DPRK FM spokesperson"]:
+        problems.append(f"parsed {[a['title'] for a in got]}")
+    if got and (got[0]["url"] != f"https://kcnawatch.org/newstream/{ts}-551234/kim-jong-un-inspects/"
+                or got[0]["category"] != "Rodong Sinmun"):
+        problems.append(f"first item read as {got[0]}")
+    return problems
+
+
+def check_gallup_parser() -> list[str]:
+    """Gallup figures are read from the press as Gallup reports them, and never mixed."""
+    problems = []
+    baseline = {"survey_dates": "October 13-15, 2026", "poll": "Gallup Korea (October 13-15, 2026)",
+                "presidential_approval": {"value": "39%"}, "party_ruling": {"value": "36%"},
+                "party_opposition": {"value": "27%"}, "party_independent": {"value": "29%"}}
+    p = collect.parse_gallup_report
+    # The forms Korean outlets use for the weekly report.
+    cases = [
+        ("[한국갤럽] 李대통령 직무 긍정률 41%…민주 38%·국힘 26%, 무당층 27%", (41, 38, 26, 27)),
+        ("이재명 대통령 지지율 41%…민주당 38% 국민의힘 26% [한국갤럽]", (41, 38, 26, None)),
+        ("한국갤럽 2026년 10월 20~22일 조사, 이 대통령 직무 긍정 평가 41%, 부정 평가 50%", (41, None, None, None)),
+        ("Lee's approval rating rose to 41 percent, Gallup Korea said; the Democratic Party 38%, "
+         "People Power Party 26%", (41, 38, 26, None)),
+    ]
+    for text, want in cases:
+        r = p(text, "2026-10-24")
+        got = tuple(None if r.get(k) is None else int(r[k]) for k in ("approval", "dp", "ppp", "ind"))
+        if got != want:
+            problems.append(f"{text[:40]!r} read as {got}, expected {want}")
+    if p("리얼미터 李 지지율 52.1%… 민주 45.3% 국힘 30.2%", "2026-10-21"):
+        problems.append("a Realmeter poll was read as Gallup")
+    if p("한국갤럽 2026년 10월 20~22일 조사")["survey_label"] != "October 20-22, 2026":
+        problems.append("survey dates not read")
+
+    # Merge only within one poll: the independents figure from another
+    # article naming the same survey dates.
+    reports = [p("이 대통령 지지율 41%, 민주당 38% 국민의힘 26% - 한국갤럽 2026년 10월 20~22일 조사", "2026-10-24"),
+               p("한국갤럽 2026년 10월 20~22일 조사에서 무당층 27%", "2026-10-24")]
+    poll = collect.pick_gallup_poll(reports, baseline)
+    if (poll.get("approval"), poll.get("ind"), poll.get("survey_label")) != (41, 27, "October 20-22, 2026"):
+        problems.append(f"same-poll merge gave {poll}")
+    # A newer poll without its independents figure is not completed from an older poll.
+    if collect.pick_gallup_poll(reports[:1], baseline):
+        problems.append("a new poll was completed with last week's independents figure")
+    # The baseline's own poll, reported without independents, takes the baseline's.
+    same = collect.pick_gallup_poll([p("한국갤럽 대통령 지지율 39%, 민주 36% 국힘 27%", "2026-10-17")], baseline)
+    if (same.get("ind"), same.get("survey_label")) != (29.0, "October 13-15, 2026"):
+        problems.append(f"the baseline week's report read as {same}")
+    # An older poll than the baseline is not used.
+    if collect.pick_gallup_poll([p("갤럽 대통령 지지율 37%, 민주 33% 국힘 25% 무당층 30%", "2026-10-01")], baseline):
+        problems.append("a poll older than the baseline was used")
+    # Implausible numbers (a party share read as approval) are rejected.
+    if collect.pick_gallup_poll([p("한국갤럽 대통령 지지율 4%, 민주 38% 국힘 26% 무당층 27%", "2026-10-24")], baseline):
+        problems.append("an implausible approval figure was accepted")
+    # The searches are finished URLs, not URLs searched for as text.
+    import inspect
+    src = inspect.getsource(collect._collect_sentiment)
+    if "_gnews_kr(" in src or "_gnews(_gnews" in src:
+        problems.append("the poll searches are wrapped in _gnews twice again")
+    seen = []
+    saved = collect._parse_feed
+    collect._parse_feed = lambda url, accept=None: seen.append(url) or []
+    try:
+        collect._collect_sentiment()
+    finally:
+        collect._parse_feed = saved
+    from urllib.parse import unquote
+    nested = [u for u in seen if "news.google.com" in unquote(u.split("q=", 1)[-1])]
+    if len(seen) < 4:
+        problems.append(f"only {len(seen)} search(es) made")
+    if nested:
+        problems.append(f"a poll search asks Google News to search for a URL: {nested[0][:90]}")
+    return problems
+
+
+def check_feed_403_retries_as_browser() -> list[str]:
+    """A publisher feed that 403s the collector's agent is asked once more as a browser."""
+    calls = []
+
+    class _R:
+        def __init__(self, code):
+            self.status_code, self.content = code, b"<rss><channel><item><title>t</title></item></channel></rss>"
+
+        def raise_for_status(self):
+            if self.status_code >= 400:
+                raise RuntimeError(self.status_code)
+
+    def fake_get(url, timeout=None, headers=None):
+        calls.append((url, headers.get("User-Agent", "")))
+        return _R(200 if "Mozilla" in headers.get("User-Agent", "") else 403)
+
+    saved = collect.requests.get
+    collect.requests.get = fake_get
+    problems = []
+    try:
+        got = collect._parse_one("https://www.aei.org/feed/", retries=1)
+        if len(got) != 1 or len(calls) != 2:
+            problems.append(f"403 then browser retry gave {len(got)} entries over {len(calls)} calls")
+        calls.clear()
+        collect._parse_one("https://news.google.com/rss/search?q=x", retries=1)
+        if len(calls) != 1:
+            problems.append("a Google News search was retried as a browser")
+    finally:
+        collect.requests.get = saved
+    return problems
+
+
+CHECKS.extend([
+    ("dead native feed URLs stay gone; silent feeds fixed or retired", check_dead_native_urls_stay_gone),
+    ("Hill calendar keeps realistic Korea/Indo-Pacific hearings", check_hill_calendar_keeps_realistic_titles),
+    ("KCNA Watch scrape reads both link shapes", check_kcna_watch_parser),
+    ("Gallup parser reads the press and never mixes polls", check_gallup_parser),
+    ("a 403 feed is retried once as a browser", check_feed_403_retries_as_browser),
+])
 
 
 def check_link_quality() -> list[str]:

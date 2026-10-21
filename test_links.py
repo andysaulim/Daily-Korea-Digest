@@ -340,6 +340,59 @@ def check_multi_outlet_and_trade() -> list[str]:
     return problems
 
 
+def check_label_rules() -> list[str]:
+    """The three labels the 21 October 2026 link pass made worse.
+
+    'Asian Security' -> 'tandfonline.com', 'Chosun Ilbo' -> '조선일보' and
+    'MOF' -> 'X'. A journal keeps its name, a Korean publisher is named in
+    English, and a post on X names its account.
+    """
+    problems = []
+    gn = "https://news.google.com/rss/articles/CBMiChosunTestId?oc=5"
+    post = "https://x.com/mof_minister/status/1849000000000000000"
+    payload = {
+        "tier1": [{"url": gn, "title": "Seoul weighs tariff talks", "source": "조선일보",
+                   "publisher": "조선일보"}],
+        "tier3": [{"url": "https://www.tandfonline.com/doi/full/10.1080/14799855.2026.1",
+                   "title": "Alliance management on the peninsula", "source": "Asian Security"}],
+        "x_signals": [{"url": post, "handle": "mof_minister", "name": "MOF Minister",
+                       "text": "Port investment package"}],
+    }
+    d = {
+        "academic_today": [{"headline": "Alliance management", "source": "Asian Security",
+                            "url": "https://www.tandfonline.com/doi/full/10.1080/14799855.2026.1"}],
+        # A journal on a platform outside the academic section keeps its name too.
+        "also_today": [{"headline": "Survival essay", "source": "Survival",
+                        "url": "https://www.tandfonline.com/doi/full/10.1080/00396338.2026.2"}],
+        "korea_world": [{"headline": "Seoul weighs tariff talks", "source": "Chosun Ilbo", "url": gn},
+                        {"headline": "Seoul weighs tariff talks", "source": "Reuters", "url": gn}],
+        "rok_government": [{"headline": "Port package", "source_label": "MOF", "url": post},
+                           {"headline": "Unknown post", "source_label": "X",
+                            "url": "https://x.com/SomeAgency/status/1"}],
+    }
+    links.fix_labels(d, links.corpus_index(payload))
+    if d["academic_today"][0]["source"] != "Asian Security":
+        problems.append(f"journal name became {d['academic_today'][0]['source']!r}")
+    if d["also_today"][0]["source"] != "Survival":
+        problems.append(f"journal on tandfonline outside academic became {d['also_today'][0]['source']!r}")
+    if d["korea_world"][0]["source"] != "Chosun Ilbo":
+        problems.append(f"'Chosun Ilbo' became {d['korea_world'][0]['source']!r}")
+    if d["korea_world"][1]["source"] != "Chosun Ilbo":
+        problems.append(f"a wrong label on a Chosun link became {d['korea_world'][1]['source']!r}, "
+                        f"not the English name")
+    if d["rok_government"][0]["source_label"] != "MOF Minister on X":
+        problems.append(f"'MOF' on an X post became {d['rok_government'][0]['source_label']!r}")
+    if d["rok_government"][1]["source_label"] != "@SomeAgency on X":
+        problems.append(f"bare 'X' became {d['rok_government'][1]['source_label']!r}")
+    if links.publisher_name(gn, "연합뉴스") != "Yonhap":
+        problems.append("a Korean publisher name is not given in English")
+    # A label that already says it is idempotent.
+    d2 = {"rok_government": [{"headline": "p", "source_label": "MOF Minister on X", "url": post}]}
+    if links.fix_labels(d2, links.corpus_index(payload)):
+        problems.append("a correct '... on X' label was rewritten")
+    return problems
+
+
 # ── 8. Self-links ─────────────────────────────────────────────────────────
 
 def check_self_links_are_dated() -> list[str]:
@@ -369,6 +422,7 @@ CHECKS = [
     ("links: one URL, one link per issue", check_dedup_links),
     ("links: Primary only on government documents", check_primary_label),
     ("links: multi-outlet top stories, trade links, anchor text", check_multi_outlet_and_trade),
+    ("links: journals, Korean publishers and X posts keep the right label", check_label_rules),
     ("links: Read online and PDF are that day's files", check_self_links_are_dated),
 ]
 

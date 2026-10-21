@@ -30,7 +30,7 @@ import re
 from datetime import datetime
 from html import escape
 
-_SANS = "system-ui,Segoe UI,Arial,sans-serif"
+_SANS = "-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica Neue,Arial,sans-serif"   # render._V2_SANS
 _NAVY = "#001F59"
 
 # The card _v2_card builds: a white table whose first row holds the navy bar.
