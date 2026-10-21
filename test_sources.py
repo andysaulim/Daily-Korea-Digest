@@ -1695,15 +1695,19 @@ def check_v2_brand_assets():
          "overnight_items": [{"headline": "O", "body_text": "B."}]}
     html = _v2_render(d)
     imgs = _r.findall(r"<img\b[^>]*>", html)
-    if len(imgs) < 2:
-        problems.append("the masthead and footer do not both carry the lockup image")
-    for tag in imgs:
-        for need in (f'src="{base}assets/{render._V2_LOGO}"', 'alt="CSIS Korea Chair"', 'width="', 'height="',
-                     "color:#FFFFFF"):
+    mark = [t for t in imgs if render._V2_WORDMARK in t]
+    lock = [t for t in imgs if render._V2_LOGO in t]
+    if len(mark) != 1 or len(lock) != 1 or html.find(mark[0] if mark else "@") > html.find(lock[0] if lock else "@"):
+        problems.append("the masthead lacks the CSIS wordmark or the footer the Korea Chair lockup")
+    for tag, src, alt in ((mark[0] if mark else "", render._V2_WORDMARK, 'alt="CSIS"'),
+                          (lock[0] if lock else "", render._V2_LOGO, 'alt="CSIS Korea Chair"')):
+        for need in (f'src="{base}assets/{src}"', alt, 'width="', 'height="', "color:#FFFFFF"):
             if need not in tag:
-                problems.append(f"lockup <img> lacks {need!r}")
-    if "CENTER FOR STRATEGIC" in html or ">CSIS</td>" in html:
-        problems.append("the masthead still fakes the lockup in HTML text")
+                problems.append(f"<img> for {src} lacks {need!r}")
+    if mark and "font-family:Georgia" not in mark[0]:
+        problems.append("the wordmark's alt text is not set in Georgia")
+    if "CENTER FOR STRATEGIC" in html or ">CSIS</span>" in html:
+        problems.append("the masthead still fakes the wordmark in HTML text")
     if "KOREA DAILY BRIEF</h1>" not in html:
         problems.append("the brief's name is no longer live text under the logo")
     if f"src:url({base}assets/synthese-400.woff2)" not in html or "font-family:Synthese," not in html:

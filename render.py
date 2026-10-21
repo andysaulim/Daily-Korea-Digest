@@ -2922,9 +2922,9 @@ def render(digest: dict) -> str:
 #     classic section into one). Every bar is plain navy and every card
 #     white but the glance's tint and the stat's blue body.
 #   * The top is an internal-use strip with the issue links, a navy band
-#     with the official Korea Chair lockup (an image with alt text; HTML
-#     text when there is no web URL), the brief's name in an outlined box as
-#     live text, and the date, number and read time,
+#     holding one row: the official CSIS wordmark (an image with Georgia
+#     alt text; Georgia text when there is no web URL) and the brief's name
+#     in an outlined box as live text, then the date, number and read time,
 #     the Listen card, then a card with a plain two-line row of contents
 #     links (no numbers, one face). A hidden preheader opens the body (_v2_preheader).
 #   * Stat of the day follows Overnight: the navy bar over a blue body. ROK Government is a
@@ -3757,6 +3757,10 @@ def _v2_rok_cards(items: list) -> str:
 
 # ── Public sentiment ────────────────────────────────────────────────────────
 
+_V2_UP_ON_TINT = "#276B43"
+_V2_DARK_TEXT[_V2_UP_ON_TINT] = "#5FBF87"
+
+
 def _v2_sentiment_card(sentiment: dict, delta, spark: str, stale: str) -> str:
     """Classic's Public Sentiment in a v2 card: the approval figure, the parties in a row of boxes, the trend.
 
@@ -3795,7 +3799,8 @@ def _v2_sentiment_card(sentiment: dict, delta, spark: str, stale: str) -> str:
     change = ""
     if delta:
         pts, prior = delta
-        colour = UP_GREEN if pts > 0 else DOWN_RED if pts < 0 else _V2_META
+        # On the tint, classic's green measured 4.49:1; a shade darker holds 5.2:1.
+        colour = _V2_UP_ON_TINT if pts > 0 else DOWN_RED if pts < 0 else _V2_META
         sign = "+" if pts > 0 else "&minus;" if pts < 0 else ""
         change = (f'<div style="font-size:12px;line-height:1.45;color:{_V2_META};margin-top:2px;">'
                   f'<span style="color:{colour};font-weight:700;">{sign}{abs(pts):g} pts</span>'
@@ -3808,7 +3813,7 @@ def _v2_sentiment_card(sentiment: dict, delta, spark: str, stale: str) -> str:
     # The trend sentence opens with today's figure, which the block shows in
     # large type just above it: "39%, down from 42% on Aug 25-27" reads
     # "Down from 42% on Aug 25-27" here.
-    if spark and approval and spark.startswith(approval.replace("&#37;", "%") + ", "):
+    if spark and approval and spark.startswith(approval + ", "):
         spark = spark[len(approval) + 2:]
         spark = spark[:1].upper() + spark[1:]
     hero = (f'<div style="{lab}">Lee approval</div>'
@@ -4033,7 +4038,8 @@ def _v2_trade(us_korea: dict, digest: dict, base: str) -> str:
 
 # ── Brand assets ────────────────────────────────────────────────────────────
 # The official Korea Chair lockup (CSIS | Geopolitics and Foreign Policy
-# Department | Korea Chair, white, for the navy bands) and the CSIS brand
+# Department | Korea Chair, white, for the navy footer), the CSIS wordmark
+# (the masthead) and the CSIS brand
 # typeface, Synthèse, live in assets/ and run.publish_assets copies them to
 # public/assets/ each run. That is a static copy of checked-in files, never
 # an index built from history, so it is safe under the archive rule.
@@ -4094,12 +4100,27 @@ def _v2_logo(digest: dict, width: int) -> str:
             f'letter-spacing:1px;color:#FFFFFF;text-align:center;">')
 
 
+# The official CSIS wordmark, cropped from the Korea Chair logo and set in
+# white: 259 by 97, shown at 134 by 50 (2x for a crisp 1x), 2KB.
+_V2_WORDMARK = "csis_wordmark_white.png"
+
+
+def _v2_wordmark(digest: dict) -> str:
+    """The masthead's CSIS wordmark as an image, or '' when there is nowhere to load it from."""
+    src = _v2_asset(digest, _V2_WORDMARK)
+    if not src:
+        return ""
+    return (f'<img src="{_esc(src)}" width="134" height="50" alt="CSIS" class="v2-wm" '
+            'style="display:block;width:100%;min-width:64px;max-width:134px;height:auto;border:0;outline:none;text-decoration:none;'
+            f'font-family:{_V2_SERIF};font-size:34px;line-height:50px;color:#FFFFFF;text-align:center;">')
+
+
 def _v2_masthead(digest: dict, now, listen_bar: str) -> str:
     """The internal-use strip, the navy band with the CSIS lockup, the Listen card, the date card.
 
-    The lockup is the official image (_v2_logo), its alt text standing in
-    when images are blocked; with no web URL to load it from, it is the HTML
-    text it used to be. The brief's name stays live text. The date card's
+    The wordmark is the official image (_v2_wordmark), its alt text standing
+    in when images are blocked; with no web URL to load it from, it is
+    Georgia text. The Korea Chair lockup is the footer's. The brief's name stays live text. The date card's
     contents line is resolved in _v2_finish, once it is known which
     sections rendered.
     """
@@ -4120,28 +4141,34 @@ def _v2_masthead(digest: dict, now, listen_bar: str) -> str:
              'For internal use only</td>'
              f'<td align="right" style="padding:9px 16px 9px 0;font-family:{_V2_SANS};font-size:11px;text-align:right;">'
              f'{links}</td></tr></table>')
-    band = (f'<div bgcolor="{_V2_NAVY}" class="mast-band" style="background-color:{_V2_NAVY};padding:22px 16px 22px;'
+    # One row, as in the owner's mockup: the CSIS wordmark on the left, the
+    # brief's name in its outlined box on the right, both large enough to
+    # fill the band (the one place exempt from the no-larger-type rule), the
+    # date line under the row. A two-cell table, so every client keeps the
+    # row (no flexbox). It never pushes a phone sideways, even without the
+    # stylesheet: the wordmark's width is a percentage, which a table cell
+    # may shrink to nothing, and the name wraps inside its box before the
+    # row would overflow. On a phone the stylesheet scales both down
+    # (wordmark 34px, name 17px), as the mockup does.
+    #
+    # The wordmark is the official one (_v2_wordmark), 2x for a crisp 1x;
+    # blocked, its alt text "CSIS" is set in Georgia at the wordmark's size.
+    # With no web URL to load it from it is Georgia text. The full lockup,
+    # with the Korea Chair line, is in the footer.
+    mark = _v2_wordmark(digest) or (
+        f'<span class="v2-csis" style="font-family:{_V2_SERIF};font-size:54px;line-height:50px;color:#FFFFFF;">CSIS</span>')
+    band = (f'<div bgcolor="{_V2_NAVY}" class="mast-band" style="background-color:{_V2_NAVY};padding:30px 16px 22px;'
             'text-align:center;">'
-            '<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto;"><tr>'
-            f'<td class="v2-csis" style="padding-right:14px;font-family:{_V2_SERIF};font-size:40px;line-height:1;color:#FFFFFF;">CSIS</td>'
-            'td_rule'
-            f'</tr></table>'
-            '<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" class="v2-namebox" style="margin:16px auto 0;">'
-            '<tr><td style="border:2px solid #2E8FCF;border-radius:6px;padding:6px 16px;">'
-            f'<h1 class="v2-name" style="margin:0;font-family:{_V2_SANS};font-size:20px;font-weight:700;'
-            'letter-spacing:1px;line-height:1.25;color:#FFFFFF;">KOREA DAILY BRIEF</h1></td></tr></table>'
+            '<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" class="v2-mrow" '
+            'style="margin:0 auto;"><tr>'
+            f'<td class="v2-mk" valign="middle" style="padding:0 18px 0 0;vertical-align:middle;">{mark}</td>'
+            '<td valign="middle" style="vertical-align:middle;">'
+            '<table role="presentation" cellpadding="0" cellspacing="0" border="0" class="v2-namebox"><tr>'
+            '<td class="v2-nbt" style="border:2px solid #4A90D0;border-radius:6px;padding:10px 22px;">'
+            f'<h1 class="v2-name" style="margin:0;font-family:{_V2_SANS};font-size:27px;font-weight:700;'
+            'letter-spacing:1.5px;line-height:1.2;color:#FFFFFF;">KOREA DAILY BRIEF</h1></td></tr></table>'
+            '</td></tr></table>'
             'td_date</div>')
-    band = band.replace("td_rule", (
-        '<td style="border-left:1px solid #FFFFFF;padding:2px 0 2px 14px;'
-        f'font-family:{_V2_SANS};font-size:12px;line-height:1.4;letter-spacing:1px;color:#FFFFFF;text-align:left;">'
-        'CENTER FOR STRATEGIC &amp;<br>INTERNATIONAL STUDIES</td>'))
-    logo = _v2_logo(digest, 340)
-    if logo:
-        # The official lockup in place of the HTML text. The band keeps the
-        # brief's name as live text under it.
-        band = _re.sub(r'<table role="presentation"[^>]*style="margin:0 auto;"><tr>.*?</tr></table>',
-                       lambda m: logo, band, count=1, flags=_re.S)
-        band = band.replace('style="margin:16px auto 0;"', 'style="margin:14px auto 0;"', 1)
     if PRINT:
         strip = ""          # links and a notice for the inbox; nothing to click on paper
     listen = ""
@@ -4170,7 +4197,7 @@ def _v2_masthead(digest: dict, now, listen_bar: str) -> str:
     facts.append("%%READMIN%% min read")
     nw = '<span style="white-space:nowrap;">'
     band = band.replace("td_date", (
-        f'<div class="v2-mdate" style="margin-top:12px;font-family:{_V2_SANS};font-size:13px;line-height:1.6;'
+        f'<div class="v2-mdate" style="margin-top:16px;font-family:{_V2_SANS};font-size:13px;line-height:1.6;'
         f'color:{_V2_FOOT};"><b style="white-space:nowrap;color:#FFFFFF;">{now:%A, %B} {now.day}, {now.year}</b>'
         '<!--c-->' + "".join(f"&emsp; {nw}{f}</span>" for f in facts) + '<!--/c--></div>'))
     # The contents card: the contents line and the shortened-sections note,
@@ -4976,11 +5003,14 @@ _V2_CSS = """
       .wrapper .v2-strip td { padding-left:8px !important; padding-right:8px !important; }
       .wrapper .v2-in { padding-left:14px !important; padding-right:14px !important; }
       .wrapper .sec-bar td { padding:9px 14px !important; }
-      .wrapper .v2-name { font-size:18px !important; }
+      .wrapper .v2-name { font-size:17px !important; letter-spacing:1px !important; }
+      .wrapper .v2-nbt { padding:7px 12px !important; }
+      .wrapper .v2-mk { padding-right:14px !important; }
+      .wrapper .v2-csis { font-size:37px !important; line-height:34px !important; }
       .wrapper .mast-meta { padding-top:2px !important; }
       .v2-cell div[style*="font-size:16px"] { font-size:15px !important; }
       .wrapper .v2-tint { padding-left:11px !important; }
-      .wrapper .mast-band { padding:13px 12px 14px !important; }
+      .wrapper .mast-band { padding:22px 12px 16px !important; }
       .wrapper .v2-toc { line-height:1.6 !important; }
       .v2-hn > tbody > tr > td { padding:2px 0 !important; }
       .v2-cell { width:32% !important; min-width:96px; }
@@ -4989,8 +5019,7 @@ _V2_CSS = """
          nothing removed. With these and the wrapping contents line, the first
          top story's headline at 375px moved from 1,278/1,327/1,408px to
          1,176/1,178/1,261px (Oct 18/19/20). The rest is the glance itself. */
-      .wrapper .v2-csis { font-size:32px !important; }
-      .wrapper .v2-namebox { margin-top:10px !important; }
+      .wrapper .v2-wm { max-width:91px !important; }
       .wrapper .listen-bar td { padding-top:9px !important; padding-bottom:9px !important; }
       .wrapper .listen-bar .listen-sub { display:none !important; }
       .v2-cell { padding:7px 0 6px !important; }
@@ -5253,7 +5282,8 @@ _V2_PRINT_HEAD = (
   .v2-card, .v2-card > tbody, .v2-card > tbody > tr, .v2-card > tbody > tr > td { display:block !important; }
   .v2-card[style*="background:#FFFFFF"] > tbody > tr > td.v2-in { padding:2px 2px 4px !important; }
   .v2-card[style*="background:#FFFFFF"] > tbody > tr > td.v2-in.v2-tint { padding:4px 14px 8px 12px !important; }
-  .v2-in:not(.v2-tint):not(.v2-stat) { background:transparent !important; }
+  .v2-in:not(.v2-tint):not(.v2-stat):not(.v2-pw) { background:transparent !important; }
+  .v2-card[style*="background:#FFFFFF"] > tbody > tr > td.v2-in.v2-pw { padding:6px 14px 8px !important; }
   .v2-card[style*="background:#FFFFFF"] > tbody > tr > td.v2-in.v2-stat { padding:10px 14px 12px !important; }
   .sec-bar, .v2-card > tbody > tr:first-child, .v2-sub { break-after:avoid !important; page-break-after:avoid !important; }
   .v2-it, .v2-rc, .v2-bl, .v2-psr, .v2-glance tr, .v2-trk tr, .v2-foot, .v2-hn, .v2-stat {
@@ -5302,7 +5332,9 @@ def _v2_font_css(base: str) -> str:
         for w, name in (("400", _V2_FONTS[0]), ("700", _V2_FONTS[1])))
     return (faces
             + f'    .wrapper, .wrapper [style*="font-family:-apple-system"] {{ font-family:Synthese,{_V2_SANS} !important; }}\n'
-            + f'    .wrapper [style*="font-family:Georgia"] {{ font-family:Synthese,{_V2_SERIF} !important; }}\n')
+            + f'    .wrapper [style*="font-family:Georgia"] {{ font-family:Synthese,{_V2_SERIF} !important; }}\n'
+            # The wordmark's alt text stands in for the CSIS letters: Georgia, never the sans.
+            + f'    .wrapper .v2-wm {{ font-family:{_V2_SERIF} !important; }}\n')
 
 
 def _v2_page(html: str, preheader: str = "", base: str = "") -> str:

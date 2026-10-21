@@ -344,10 +344,11 @@ def build_web_html(digest: dict, email_html: str, date_slug: str,
         return email_html
 
 
-# The brand files the brief loads from the site: the Korea Chair lockup
-# (masthead and footer) and Synthèse (web page and Apple Mail). The email
+# The brand files the brief loads from the site: the CSIS wordmark (the
+# masthead), the Korea Chair lockup (the footer) and Synthèse (web page and Apple Mail). The email
 # names them by absolute URL, WEB_URL + "/assets/...".
-BRAND_ASSETS = ("korea_chair_lockup_white.png", "synthese-400.woff2", "synthese-700.woff2")
+BRAND_ASSETS = ("korea_chair_lockup_white.png", "csis_wordmark_white.png",
+                "synthese-400.woff2", "synthese-700.woff2")
 
 
 def publish_assets(public_dir: Path, src_dir: Path = Path("assets")) -> list[str]:
