@@ -102,6 +102,26 @@ def _translated_quote(text: str, start: int) -> bool:
                 or re.search(r"[\"'‘“][A-Za-z][^\"'’”]{8,}[\"'’”]\s*\(\s*[ㄱ-ㆎ가-힣]", window))
 
 
+_QUOTE_SECTIONS = ("official_x_posts", "social_statements")
+
+
+def _drop_untranslated_quotes(digest: dict, warnings: list) -> None:
+    """A quote left in Korean with no English beside it cannot be shown; the item goes."""
+    for key in _QUOTE_SECTIONS:
+        items = digest.get(key)
+        if not isinstance(items, list):
+            continue
+        kept = []
+        for it in items:
+            q = str((it or {}).get("quote_text") or "") if isinstance(it, dict) else ""
+            m = HANGUL.search(q)
+            if m and not _translated_quote(q, m.start()):
+                warnings.append(f"dropped untranslated quote in {key}: {q[:40]!r}")
+                continue
+            kept.append(it)
+        digest[key] = kept
+
+
 def apply(digest: dict) -> list[str]:
     """Rewrite labels to English in place; return warnings for Korean left in prose."""
     warnings: list[str] = []
@@ -128,6 +148,7 @@ def apply(digest: dict) -> list[str]:
             pass  # prose is checked below, after the outlet names are mapped
 
     try:
+        _drop_untranslated_quotes(digest, warnings)
         walk(digest, "")
         # Outlet names inside prose ("a 경향신문 editorial") are names, not
         # quotes; map them. Anything Korean left is reported, not rewritten.

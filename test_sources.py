@@ -1234,6 +1234,7 @@ def check_english_only():
          "rok_government": [{"ministry": "MND", "ministry_korean": "국방부", "source_label": "뉴시스"}],
          "public_sentiment": {"party_ruling": {"party": "Democratic Party", "party_kr": "더불어민주당"}},
          "social_statements": [{"quote_text": 'Lee said "국민이 주인" ("the people are the owners").'}],
+         "official_x_posts": [{"who": "MSIT Minister", "quote_text": "보스턴컨설팅그룹이 우리나라를 선도국으로 평가했습니다."}],
          "overnight_items": [{"headline": "y", "body": "Officials said 비상 without explanation."}]}
     warns = english.apply(d)
     if d["top_stories"][0]["source"] != "Newsis / Kyunghyang Shinmun":
@@ -1246,6 +1247,8 @@ def check_english_only():
         problems.append("outlet name in prose not mapped")
     if any("social_statements" in w for w in warns):
         problems.append("a translated quote was flagged")
+    if d.get("official_x_posts"):
+        problems.append("an untranslated Korean X post was kept")
     if not any("overnight_items" in w for w in warns):
         problems.append("untranslated Korean in prose was not reported")
     return problems
