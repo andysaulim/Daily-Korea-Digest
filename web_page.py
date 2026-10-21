@@ -358,6 +358,10 @@ def _page(digest: dict, date_slug: str, archive_entries) -> str:
     if gap != -1:
         html = html[:gap] + _nav(digest, date_slug, prev, nxt, bottom=False) + html[gap:]
     foot = html.find('<div class="v2-foot"')
+    # The footer sits in a card gap of its own; the nav goes before that gap.
+    fgap = html.rfind('<div class="v2-gap"', 0, foot) if foot != -1 else -1
+    if fgap != -1 and html.find(">", fgap) + 1 == foot:
+        foot = fgap
     nav_bottom = _nav(digest, date_slug, prev, nxt, bottom=True)
     if foot != -1:
         html = html[:foot] + nav_bottom + html[foot:]

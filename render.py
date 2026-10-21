@@ -3601,11 +3601,43 @@ def _v2_card(section: str, more: dict | None = None) -> str:
              f'border-left:3px solid {_V2_ACCENT};font-family:{_V2_SANS};"'
              if 'class="v2-glance"' in rest[:200] else
              f'class="v2-in" style="padding:4px 20px 12px;font-family:{_V2_SANS};"')
+    if 'name="kcna"' in p.group(1) + p.group(2):
+        rest, inner = _v2_pw_shade(rest)
     bar = m.group(0)
     return (f'{head}<div class="v2-gap" style="padding:0 16px 12px;">{p.group(1)}{p.group(2)}'
             '<table width="100%" cellpadding="0" cellspacing="0" border="0" class="v2-card" style="background:#FFFFFF;">'
             f'<tr><td style="padding:0;">{bar}</td></tr>'
             f'<tr><td {inner}>{rest}</td></tr></table></div>')
+
+
+# ── Pyongyang Watch shade ───────────────────────────────────────────────────
+# The owner asked for Pyongyang Watch to stand apart from every other card:
+# its body on a light charcoal ground with light type, under the same navy
+# bar. Every colour in the card is swapped for its counterpart on the
+# charcoal (contrast on #2B2F36: ink 13.0:1, body 10.0:1, meta 6.5:1, teal
+# 7.4:1, navy-light 8.5:1, red 6.4:1). In dark mode the ground lifts to
+# #353A42, lighter than the #262A30 cards, with a hairline border, so it
+# still reads as distinct. On paper a dark block is a lot of ink: the PDF
+# uses a light grey (#E9EBEE) with the usual dark type instead, the red
+# deepened and the hairlines darkened to hold on the grey.
+_V2_PW_BG = "#2B2F36"
+_V2_PW_MAP = {
+    _V2_INK: "#F1F2F4", _V2_BODY: "#D5D9DF", _V2_META: "#AEB5BF", _V2_TEAL: "#7FCBEE",
+    _V2_NAVY: "#B4CBEA", TAEGUK_RED: "#FF9CA3", _V2_HAIR: "#474D57", _V2_ACCENT: "#7FA9E0",
+}
+_V2_PW_PRINT_BG = "#E9EBEE"
+_V2_PW_PRINT_MAP = {TAEGUK_RED: DOWN_RED, _V2_HAIR: "#CDD2D9", _V2_TINT_RULE: "#C3CAD4"}
+_V2_DARK_BG[_V2_PW_BG] = "#353A42"
+_V2_DARK_EXEMPT |= {_V2_PW_PRINT_BG} | set(_V2_PW_MAP.values()) | set(_V2_PW_PRINT_MAP.values())
+
+
+def _v2_pw_shade(rest: str) -> tuple:
+    """Pyongyang Watch's body recoloured for its ground; returns (body, inner td attributes)."""
+    cmap = _V2_PW_PRINT_MAP if PRINT else _V2_PW_MAP
+    bg = _V2_PW_PRINT_BG if PRINT else _V2_PW_BG
+    rx = _re.compile("(color:|solid )(" + "|".join(_re.escape(k) for k in cmap) + ")(?![0-9A-Fa-f])")
+    rest = rx.sub(lambda m: m.group(1) + cmap[m.group(2)], rest)
+    return rest, (f'class="v2-in v2-pw" style="padding:4px 20px 12px;background:{bg};font-family:{_V2_SANS};"')
 
 
 # ── ROK government cards ────────────────────────────────────────────────────
@@ -4053,7 +4085,7 @@ def _v2_masthead(digest: dict, now, listen_bar: str) -> str:
             links += [link(digest.get("_pdf_url") or _issue_file(digest, base, "pdf"), "PDF"),
                       link(base + "archive.html", "Past issues")]
     links = "&emsp; ".join(links)
-    strip = ('<table width="100%" cellpadding="0" cellspacing="0" border="0" class="no-print"><tr>'
+    strip = ('<table width="100%" cellpadding="0" cellspacing="0" border="0" class="no-print v2-strip"><tr>'
              f'<td style="padding:9px 16px;font-family:{_V2_SANS};font-size:11px;font-weight:700;color:#3D4149;">'
              'For internal use only</td>'
              f'<td align="right" style="padding:9px 16px 9px 0;font-family:{_V2_SANS};font-size:11px;text-align:right;">'
@@ -4116,6 +4148,11 @@ def _v2_masthead(digest: dict, now, listen_bar: str) -> str:
     # Pyongyang Watch and the location watch). Built in _v2_finish, which
     # leaves it out when it would be empty, as on paper.
     date_card = "%%TOCCARD%%"
+    # The band sits in the cards' gap, so its edges are theirs: 16px in from
+    # the column (8px on a phone, by the gap's own rule), with or without
+    # the stylesheet. It used to run the column's full width, wider than
+    # every card under it.
+    band = f'<div class="v2-gap" style="padding:0 16px;">{band}</div>'
     return f'<!--v2--><a name="top" id="top"></a>{strip}{band}{listen}{date_card}'
 
 
@@ -4582,11 +4619,12 @@ def _v2_signoff(digest: dict) -> str:
 
 
 def _v2_kcna(kc: dict, digest: dict | None = None) -> str:
-    """Pyongyang Watch as a white card like every other: Kim's status, any quotes, the top
-    KCNA articles, the senior officials around him and the bottom line.
+    """Pyongyang Watch: Kim's status, any quotes, the top KCNA articles, the
+    senior officials around him and the bottom line.
 
-    Classic sets it on a navy panel, which sat in v2 as a dark slab among
-    white cards. The structure is classic's; the type is the house item's.
+    The structure is classic's; the type is the house item's. _v2_card sets
+    its body on a charcoal ground (_v2_pw_shade), the one card that is not
+    white, at the owner's request.
     """
     unavailable = kc.get("data_unavailable", False)
     silence = kc.get("silence_today", False) and not unavailable
@@ -4734,7 +4772,8 @@ def _v2_footer(digest: dict, now) -> str:
         # The official lockup, as in the masthead, in place of the HTML text.
         lockup = ('<div class="v2-lockup" style="padding-bottom:16px;margin-bottom:16px;'
                   f'border-bottom:1px solid #33497A;">{logo}</div>')
-    return (f'<!--v2--><div class="v2-foot" style="background:{_V2_NAVY};padding:22px 22px 24px;margin-top:8px;'
+    # In the cards' gap, as the masthead band is: one width, one pair of edges.
+    return (f'<!--v2--><div class="v2-gap" style="padding:0 16px 16px;"><div class="v2-foot" style="background:{_V2_NAVY};padding:22px 20px 24px;'
             f'font-family:{_V2_SANS};">{lockup}{otd}'
             f'<div style="font-size:13px;line-height:1.6;color:{_V2_FOOT};">This newsletter is automatically '
             'generated, so it may contain errors. Please check all information and sources before citing. '
@@ -4744,7 +4783,7 @@ def _v2_footer(digest: dict, now) -> str:
             'Korea Daily Brief as a member of the CSIS Korea Chair distribution list.'
             + ("" if PRINT else "<br>" + "&emsp; ".join(x for x in links if x)) + '</div>'
             f'<div style="font-size:11px;color:{_V2_FOOT};margin-top:12px;">&copy; {now.year} Center for Strategic '
-            f'and International Studies&emsp;{no}generated {now:%-I:%M %p} ET</div></div>')
+            f'and International Studies&emsp;{no}generated {now:%-I:%M %p} ET</div></div></div>')
 
 
 def _v2_style(style: str) -> str:
@@ -4871,7 +4910,7 @@ def _v2_finish(body: str, more_url: str = "") -> str:
              for text, name in toc]
     toc_html = ""
     if len(links) >= 4:
-        toc_html = (f'<!--c--><div class="v2-toc no-print" style="font-size:13px;line-height:1.7;color:{_V2_NAVY};">'
+        toc_html = (f'<!--c--><div class="v2-toc no-print" style="font-size:12px;line-height:1.7;color:{_V2_NAVY};">'
                     f'<span style="font-size:11px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;'
                     f'color:{_V2_META};">In this issue</span>&emsp;' + "&ensp; ".join(links) + '</div><!--/c-->')
     if more_url and not PRINT:
@@ -4904,6 +4943,7 @@ def _v2_dark_css() -> str:
 _V2_CSS = """
     @media only screen and (max-width: 620px) {
       .wrapper .v2-gap { padding-left:8px !important; padding-right:8px !important; }
+      .wrapper .v2-strip td { padding-left:8px !important; padding-right:8px !important; }
       .wrapper .v2-in { padding-left:14px !important; padding-right:14px !important; }
       .wrapper .sec-bar td { padding:9px 14px !important; }
       .wrapper .v2-name { font-size:18px !important; }
@@ -4911,7 +4951,7 @@ _V2_CSS = """
       .v2-cell div[style*="font-size:16px"] { font-size:15px !important; }
       .wrapper .v2-tint { padding-left:11px !important; }
       .wrapper .mast-band { padding:13px 12px 14px !important; }
-      .wrapper .v2-toc { font-size:12px !important; line-height:1.65 !important; }
+      .wrapper .v2-toc { line-height:1.6 !important; }
       .v2-hn > tbody > tr > td { padding:2px 0 !important; }
       .v2-cell { width:32% !important; min-width:96px; }
       .wrapper .v2-c4 { border-left:0 !important; }
@@ -4951,6 +4991,7 @@ _V2_CSS = """
       .wrapper .listen-bar .listen-btn { color:#8FB6E8 !important; border-color:#8FB6E8 !important; }
       .wrapper .v2-rct, .wrapper .v2-trk, .wrapper .v2-cell, .wrapper .v2-psb { border-color:#3A4048 !important; }
       .wrapper .v2-signoff { border:1px solid #3A4048 !important; }
+      .wrapper .v2-pw { box-shadow:inset 0 0 0 1px #4A515C; }
       .v2-pre { color:#E8E6E1 !important; }
 """ + _v2_dark_css() + """
     }
