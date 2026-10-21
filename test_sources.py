@@ -2550,7 +2550,38 @@ def check_banned_prose_and_single_headline_link():
     return problems
 
 
+def check_preview_pdf_link():
+    """The design preview's PDF link opens the preview's PDF; no preview, no preview PDF."""
+    import os, run, render
+    from pathlib import Path
+    problems, sent = [], []
+    d = {"digest_date": "Wednesday, October 21, 2026", "date_slug": "2026-10-21",
+         "web_url": "https://example.org/b/latest.html", "re_line": "A line for the subject",
+         "top_stories": [{"headline": "Lead", "body": "Body.", "category_tag": "DPRK"}],
+         "morning_memo": ["One.", "Two.", "Three."]}
+    saved = os.environ.get("DESIGN_PREVIEW_TO")
+    try:
+        os.environ.pop("DESIGN_PREVIEW_TO", None)
+        if run.write_preview_pdf(d, Path("."), "2026-10-21") != "":
+            problems.append("a preview PDF was made with no preview configured")
+        os.environ["DESIGN_PREVIEW_TO"] = "p@example.org"
+        run.send_design_preview(d, lambda html, **k: sent.append(html), "Lead",
+                                pdf_url="https://example.org/b/digest_2026-10-21-preview.pdf")
+        if not sent or "digest_2026-10-21-preview.pdf" not in sent[0]:
+            problems.append("the preview does not link its own PDF")
+        render.DESIGN = "classic"
+        if "-preview.pdf" in render.render(dict(d)):
+            problems.append("the list's email links the preview PDF")
+    finally:
+        if saved is None:
+            os.environ.pop("DESIGN_PREVIEW_TO", None)
+        else:
+            os.environ["DESIGN_PREVIEW_TO"] = saved
+    return problems
+
+
 CHECKS = [
+    ("design preview links its own PDF", check_preview_pdf_link),
     ("banned words named; headline outlet linked once", check_banned_prose_and_single_headline_link),
     ("status line: KCNA trend and provocations", check_status_line_kcna_trend_and_provocations),
     ("web edition: folding sections, menu, full text, fallback", check_web_edition),

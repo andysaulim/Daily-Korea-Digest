@@ -3905,7 +3905,8 @@ def _v2_masthead(digest: dict, now, listen_bar: str) -> str:
     if web_url:
         links.append(link(_issue_file(digest, base, "html") or web_url, "Read online"))
         if base:
-            links += [link(_issue_file(digest, base, "pdf"), "PDF"), link(base + "archive.html", "Past issues")]
+            links += [link(digest.get("_pdf_url") or _issue_file(digest, base, "pdf"), "PDF"),
+                      link(base + "archive.html", "Past issues")]
     links = "&emsp; ".join(links)
     strip = ('<table width="100%" cellpadding="0" cellspacing="0" border="0" class="no-print"><tr>'
              f'<td style="padding:9px 16px;font-family:{_V2_SANS};font-size:11px;font-weight:700;color:#3D4149;">'

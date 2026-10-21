@@ -2169,7 +2169,36 @@ def _build_index_html() -> str:
 
 
 
-def send_design_preview(digest_data: dict, send_fn, lead: str = "") -> list:
+def write_preview_pdf(digest_data: dict, out_dir: Path, date_slug: str) -> str:
+    """The issue in the candidate design, full text, as digest_{date}-preview.pdf.
+
+    Written only when a design preview goes out (DESIGN_PREVIEW_TO), so the
+    preview's PDF link opens the design it was sent in. Returns the file name,
+    or '' when there is no preview or the PDF could not be made. Never raises.
+    """
+    if not os.environ.get("DESIGN_PREVIEW_TO", "").strip():
+        return ""
+    try:
+        import copy
+        import render as _render_mod
+        from make_pdf import html_from_input, html_to_pdf
+        saved = (_render_mod.DESIGN, _render_mod.FULL_TEXT)
+        try:
+            _render_mod.DESIGN, _render_mod.FULL_TEXT = PREVIEW_DESIGN, True
+            html = _render_mod.render(copy.deepcopy(digest_data))
+        finally:
+            _render_mod.DESIGN, _render_mod.FULL_TEXT = saved
+        src = Path("preview_print.html")
+        src.write_text(html, encoding="utf-8")
+        name = f"digest_{date_slug}-preview.pdf"
+        html_to_pdf(html_from_input(src), out_dir / name)
+        return name
+    except Exception as e:                                      # noqa: BLE001
+        warn("Preview PDF skipped", f"the design preview's PDF link will open the list's PDF: {e}")
+        return ""
+
+
+def send_design_preview(digest_data: dict, send_fn, lead: str = "", pdf_url: str = "") -> list:
     """Send the same issue in the candidate design to DESIGN_PREVIEW_TO only.
 
     A trial of a new layout against real issues, read side by side with the
@@ -2189,7 +2218,11 @@ def send_design_preview(digest_data: dict, send_fn, lead: str = "") -> list:
         saved = _render_mod.DESIGN
         try:
             _render_mod.DESIGN = PREVIEW_DESIGN
-            preview = minify_email_html(_render_mod.render(copy.deepcopy(digest_data)))
+            _d = copy.deepcopy(digest_data)
+            if pdf_url:
+                # The preview's PDF link opens the preview's own PDF, not the list's.
+                _d["_pdf_url"] = pdf_url
+            preview = minify_email_html(_render_mod.render(_d))
         finally:
             _render_mod.DESIGN = saved
         subject = "[Design preview] " + build_subject(digest_data.get("re_line"), lead)
@@ -2813,6 +2846,7 @@ def main():
         json.dumps(digest_data, ensure_ascii=False), encoding="utf-8"
     )
 
+    _preview_pdf = ""
     # ── Full-color PDF for print/download (best-effort; needs Playwright) ────
     # From the email HTML (the working-directory latest.html), not the web
     # edition: the PDF is the issue as sent.
@@ -2823,6 +2857,9 @@ def main():
         html_to_pdf(pdf_html, archive_dir / "latest.pdf")
         shutil.copy(archive_dir / "latest.pdf", archive_dir / f"digest_{date_slug}.pdf")
         print(f"  🖨  PDF written: public/latest.pdf + public/digest_{date_slug}.pdf")
+        _preview_pdf = write_preview_pdf(digest_data, archive_dir, date_slug)
+        if _preview_pdf:
+            print(f"  🖨  Preview PDF written: public/{_preview_pdf}")
     except Exception as e:
         print(f"  ⚠  PDF generation skipped (non-fatal): {e}")
         warn("PDF skipped", f"the brief's Download PDF link will not resolve today: {e}")
@@ -2945,7 +2982,9 @@ def main():
             send(html, re_line=re_line, lead=_lead, recipients=_test_to)
         else:
             send(html, re_line=re_line, lead=_lead)
-            send_design_preview(digest_data, send, _lead)
+            _wb = os.environ.get("WEB_URL", "").rstrip("/")
+            send_design_preview(digest_data, send, _lead,
+                                pdf_url=f"{_wb}/{_preview_pdf}" if _wb and _preview_pdf else "")
 
     # ── Step 5: Pipeline health checks ─────────────────────────────────────
     health_report = {}
