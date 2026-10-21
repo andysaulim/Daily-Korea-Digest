@@ -19,9 +19,10 @@ email:
   * A print stylesheet, a description and noindex (the listen pages already
     carry it; the brief is for internal use only).
 
-Inline CSS and script only: no libraries, no web fonts. `build` never raises:
-if anything fails it returns the email HTML it was given, which is what the
-page used to be, and prints a warning annotation.
+Inline CSS and script only: no libraries. The one web font is the brand's,
+Synthèse, served from the site's own assets/ (run.publish_assets). `build`
+never raises: if anything fails it returns the email HTML it was given,
+which is what the page used to be, and prints a warning annotation.
 """
 from __future__ import annotations
 
@@ -30,7 +31,10 @@ import re
 from datetime import datetime
 from html import escape
 
-_SANS = "-apple-system,BlinkMacSystemFont,Segoe UI,Arial,sans-serif"   # render._V2_SANS
+# Synthèse, the CSIS brand face, first: the page's own stylesheet (render's
+# _v2_font_css) loads it from assets/, and the menu and folding bars use it
+# too, with the platform sans behind it.
+_SANS = "Synthese,-apple-system,BlinkMacSystemFont,Segoe UI,Arial,sans-serif"   # render._V2_SANS
 _NAVY = "#001F59"
 
 # The card _v2_card builds: a white table whose first row holds the navy bar.
@@ -147,13 +151,19 @@ def _nav(digest: dict, date_slug: str, prev: str | None, nxt: str | None, bottom
     links.append('<a href="archive.html#search">Search past issues</a>')
     if bottom:
         links.append('<a href="#top">Back to top</a>')
-    return (f'<div class="v2-gap wnav no-print" style="padding:0 16px 12px;">'
+    # The top one follows the Listen card, whose gap has no bottom: it
+    # takes its own space above, or it read as part of that card.
+    pad = "0 16px 12px" if bottom else "12px 16px"
+    return (f'<div class="v2-gap wnav no-print" style="padding:{pad};">'
             f'<div class="wnav-in">{"".join(links)}</div></div>')
 
 
 def _menu(sections: list) -> str:
     short = _short_labels()
-    links = "".join(
+    # Joined by spaces: a flex row ignores them, and without the stylesheet
+    # they are where the line of links wraps (joined by nothing, it was one
+    # unbreakable word that held a phone at 407px).
+    links = " ".join(
         f'<a href="#{escape(n)}" data-sec="{escape(n)}">'
         f'{escape(short.get(n) or _EXTRA_SHORT.get(n) or label)}</a>'
         for n, label in sections)
@@ -348,6 +358,10 @@ def _page(digest: dict, date_slug: str, archive_entries) -> str:
     if gap != -1:
         html = html[:gap] + _nav(digest, date_slug, prev, nxt, bottom=False) + html[gap:]
     foot = html.find('<div class="v2-foot"')
+    # The footer sits in a card gap of its own; the nav goes before that gap.
+    fgap = html.rfind('<div class="v2-gap"', 0, foot) if foot != -1 else -1
+    if fgap != -1 and html.find(">", fgap) + 1 == foot:
+        foot = fgap
     nav_bottom = _nav(digest, date_slug, prev, nxt, bottom=True)
     if foot != -1:
         html = html[:foot] + nav_bottom + html[foot:]

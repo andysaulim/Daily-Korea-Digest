@@ -53,7 +53,7 @@ def html_from_input(path: Path) -> str:
 # so they see none of its stylesheet or web fonts: each names its own face
 # and size. Chromium sets the template in the page margin at 1:1, unscaled,
 # with `side` the horizontal inset that lines it up with the text column.
-_RUN_FONT = "font-family:'Source Sans 3','Liberation Sans',Arial,sans-serif;font-size:8px;color:#5F6670;"
+_RUN_FONT = "font-family:'Liberation Sans',Arial,sans-serif;font-size:8px;color:#5F6670;"
 
 
 def _run_line(left: str, right: str, side: str, rule: str) -> str:

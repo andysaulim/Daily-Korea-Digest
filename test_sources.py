@@ -1493,44 +1493,6 @@ def check_v2_stat_bar():
     return problems
 
 
-def check_v2_leader_context():
-    """Each leader's quote carries a line saying where it comes from: the context, else outlet or platform and date."""
-    import re as _r, render
-    problems = []
-    d = {"digest_date": "Wednesday, October 21, 2026",
-         "social_statements": [{"who": "Lee Jae-myung", "quote_text": "AI should bridge gaps.",
-                                "context": "At a cabinet meeting on Oct 21, on AI healthcare", "source": "Yonhap",
-                                "url": "https://en.yna.co.kr/view/AEN1"}],
-         "official_x_posts": [{"who": "Donald J. Trump", "handle_context": "@realDonaldTrump",
-                               "platform_date": "@realDonaldTrump, Oct 21", "quote_text": "Korea will pay.",
-                               "url": "https://x.com/realDonaldTrump/status/1"}],
-         "kcna_delta": {"key_quotes": [{"speaker": "Kim Jong Un", "quote": "Strength is peace.",
-                                        "source_article": "KCNA", "date": "2026-10-20"}]}}
-    metas = {q["key"]: _r.sub(r"<[^>]+>", "", render._v2_leader_meta(q)) for q in render._v2_leader_quotes(d)}
-    want = {"lee": "At a cabinet meeting on Oct 21, on AI healthcare, Yonhap",
-            "trump": "Post on X, Oct 21", "kim": "KCNA, Oct 20"}
-    if metas != want:
-        problems.append(f"meta lines {metas}, want {want}")
-    note = {"digest_date": "Wednesday, October 21, 2026",
-            "social_statements": [{"who": "Lee Jae-myung", "quote_text": "Q.", "url": "",
-                                   "analyst_note": "Lee spoke at the presidential office on October 21, per Yonhap English."}]}
-    m = _r.sub(r"<[^>]+>", "", render._v2_leader_meta(render._v2_leader_quotes(note)[0]))
-    if m != "Yonhap, Oct 21":
-        problems.append(f"no context and no link: meta {m!r}, want the outlet the note names and the date")
-    html = _v2_render({**d, "top_stories": [{"headline": "L", "body": "B."}]})
-    if "Direct quotes from Lee Jae-myung, Donald Trump and Kim Jong Un in today&#8217;s reporting." not in html:
-        problems.append("Leaders' words lacks its one-line intro")
-    if html.count('class="v2-lw-meta"') != 3:
-        problems.append("not every quote has its meta line")
-    text = _prompt_text()
-    if "context (REQUIRED, under 15 words" not in text.split("- social_statements:", 1)[-1][:4000]:
-        problems.append("the prompt does not ask social_statements for a context field")
-    import digest as _dg
-    if "context (REQUIRED, under 15 words" not in _dg._KCNA_FULL_INSTRUCTIONS:
-        problems.append("the prompt does not ask kcna key_quotes for a context field")
-    return problems
-
-
 def check_v2_upcoming_merge():
     """Upcoming holds the model's dated events, the fixed observances and the week's hearings, each once, in date order."""
     import render
@@ -1625,12 +1587,205 @@ def check_v2_first_sentence():
     return problems
 
 
-def check_v2_shortened_email():
-    """In v2 only top stories run in full; other items keep their first sentence and link to the web page."""
+def check_v2_lead():
+    """The email keeps two sentences or about fifty words, whichever comes first, cut at a real sentence end."""
+    import render
+    f = render._v2_lead
+    problems = []
+    s1 = "U.S. officials met Gen. Kim Myung-soo in Seoul on Monday to discuss the alliance."   # 15 words
+    s2 = " The ministry said it was 'gravely concerned. Very much so.' and asked for calm."       # 14
+    s3 = " A third sentence carries on for long enough to be worth a link to the page."          # 16
+    long2 = (" The second sentence is very long indeed, running on and on with clause after clause"
+             " about the budget, the Assembly, the ministry, the markets and the alliance, so that"
+             " with the first it passes fifty words by some way.")
+    cases = [
+        (s1 + s2 + s3, s1 + s2, "two sentences, the quote kept whole"),
+        (s1 + long2 + s3, s1, "the second sentence would pass fifty words"),
+        (s1 + s2, s1 + s2, "two sentences and nothing more: whole"),
+        ("Talks resumed at 9 a.m. Seoul time with both sides present. Officials said very little. "
+         "Nothing more was said on the record by either delegation at the talks today.",
+         "Talks resumed at 9 a.m. Seoul time with both sides present. Officials said very little.",
+         "no cut after a.m."),
+        (s1 + s2 + " Short tail.", s1 + s2 + " Short tail.", "a tail under eight words stays"),
+    ]
+    for text, want, why in cases:
+        got = f(text)
+        if got != want.strip():
+            problems.append(f"{why}: {text[:40]!r} -> {got!r}")
+        if not text.startswith(got):
+            problems.append(f"shortening reworded {text[:40]!r}")
+    return problems
+
+
+def check_v2_contents_and_sentiment():
+    """The contents line has no numbers and one face; Public Sentiment is approval beside three party boxes and the trend."""
+    import re as _r
+    problems = []
+    d = {"digest_date": "Wednesday, October 21, 2026", "date_slug": "2026-10-21",
+         "web_url": "https://example.org/brief/latest.html",
+         "top_stories": [{"headline": "Lead", "body": "Body."}],
+         "overnight_items": [{"headline": "O", "body_text": "B."}],
+         "business_economy": [{"headline": "Chips", "body_text": "Exports rose sharply in October. "
+                               "The rise was the largest in two years. A third sentence the email cuts off here."}],
+         "northeast_asia": [{"headline": "N", "body_text": "B."}],
+         "calendar_watch": [{"month": "Oct", "day": 22, "headline": "Audit continues"}],
+         "public_sentiment": {"presidential_approval": {"value": "39%", "source": "Gallup Korea",
+                                                        "last_updated": "October 13-15, 2026"},
+                              "party_ruling": {"value": "36%", "party": "Democratic Party"},
+                              "party_opposition": {"value": "27%", "party": "People Power Party"},
+                              "party_independent": {"value": "29%"}}}
+    html = _v2_render(d)
+    toc = html[html.find('class="v2-toc'):]
+    toc = toc[:toc.find("</div>")]
+    if not toc:
+        problems.append("no contents line")
+    if _r.search(r">\s*0\d\s*<", toc) or "Georgia" in toc:
+        problems.append("the contents line still carries numbers or a second face")
+    card = html[html.find('name="sentiment"'):]
+    card = card[:card.find('class="v2-gap"', 50)]
+    for t in ("Lee approval", "39%", "Gallup Korea<br>October 13-15, 2026", "Democratic", "People Power",
+              "36%", "27%", "29%"):
+        if t not in card:
+            problems.append(f"Public Sentiment lacks {t!r}")
+    if card.count('class="v2-psb"') != 3:
+        problems.append("the party figures are not three boxes")
+    return problems
+
+
+def check_wire_labels():
+    """The Wire's group headings keep their acronyms: DPRK, ROK Economy, US-Korea, not Dprk or Us-Korea."""
     import copy, render
     problems = []
-    long_body = ("Seoul announced a new measure on Monday. The second sentence is detail that the web "
-                 "page carries in full for anyone who wants it.")
+    for key, want in (("DPRK", "DPRK"), ("dprk", "DPRK"), ("ROK Economy", "ROK Economy"), ("rok politics", "ROK Politics"),
+                      ("US-Korea", "US-Korea"), ("nk-russia-china", "NK-Russia-China"), ("Japan-Korea", "Japan-Korea"),
+                      ("Semiconductors", "Semiconductors"), ("energy security", "Energy security"), ("", "Other")):
+        if render._wire_label(key) != want:
+            problems.append(f"_wire_label({key!r}) gave {render._wire_label(key)!r}, want {want!r}")
+    d = {"digest_date": "Wednesday, October 21, 2026", "top_stories": [{"headline": "L", "body": "B."}],
+         "also_today": [{"headline": "A", "body_text": "B.", "category": "DPRK"},
+                        {"headline": "C", "body_text": "D.", "category": "US-Korea"}]}
+    saved = render.DESIGN
+    try:
+        for design in ("classic", "v2"):
+            render.DESIGN = design
+            html = render.render(copy.deepcopy(d))
+            if ">Dprk<" in html or ">Us-Korea<" in html or ">DPRK<" not in html:
+                problems.append(f"{design}: Wire headings title-cased")
+    finally:
+        render.DESIGN = saved
+    return problems
+
+
+def check_v2_brand_assets():
+    """The official lockup and Synthèse: published each run, an <img> with alt text in the email, embedded in the PDF."""
+    import copy, re as _r, tempfile, pathlib, render, run, web_page
+    problems = []
+    with tempfile.TemporaryDirectory() as tmp:
+        done = run.publish_assets(pathlib.Path(tmp))
+        for name in run.BRAND_ASSETS:
+            f = pathlib.Path(tmp) / "assets" / name
+            if name not in done or not f.is_file() or f.stat().st_size == 0:
+                problems.append(f"publish_assets did not copy {name}")
+    logo = pathlib.Path("assets") / render._V2_LOGO
+    if logo.is_file() and logo.stat().st_size > 30_000:
+        problems.append(f"the lockup PNG is {logo.stat().st_size:,} bytes; resize it")
+    base = "https://example.org/brief/"
+    d = {"digest_date": "Wednesday, October 21, 2026", "date_slug": "2026-10-21", "web_url": base + "latest.html",
+         "top_stories": [{"headline": "Lead", "body": "Body."}],
+         "overnight_items": [{"headline": "O", "body_text": "B."}]}
+    html = _v2_render(d)
+    imgs = _r.findall(r"<img\b[^>]*>", html)
+    mark = [t for t in imgs if render._V2_WORDMARK in t]
+    lock = [t for t in imgs if render._V2_LOGO in t]
+    if len(mark) != 1 or len(lock) != 1 or html.find(mark[0] if mark else "@") > html.find(lock[0] if lock else "@"):
+        problems.append("the masthead lacks the CSIS wordmark or the footer the Korea Chair lockup")
+    for tag, src, alt in ((mark[0] if mark else "", render._V2_WORDMARK, 'alt="CSIS"'),
+                          (lock[0] if lock else "", render._V2_LOGO, 'alt="CSIS Korea Chair"')):
+        for need in (f'src="{base}assets/{src}"', alt, 'width="', 'height="', "color:#FFFFFF"):
+            if need not in tag:
+                problems.append(f"<img> for {src} lacks {need!r}")
+    if mark and "font-family:Georgia" not in mark[0]:
+        problems.append("the wordmark's alt text is not set in Georgia")
+    if "CENTER FOR STRATEGIC" in html or ">CSIS</span>" in html:
+        problems.append("the masthead still fakes the wordmark in HTML text")
+    if "KOREA DAILY BRIEF</h1>" not in html:
+        problems.append("the brief's name is no longer live text under the logo")
+    if f"src:url({base}assets/synthese-400.woff2)" not in html or "font-family:Synthese," not in html:
+        problems.append("the email lacks the Synthèse @font-face enhancement")
+    plain = _v2_render({k: v for k, v in d.items() if k != "web_url"})
+    if "<img" in plain or "CSIS" not in plain:
+        problems.append("without a web URL the lockup should fall back to HTML text")
+    page = web_page.build(copy.deepcopy(d), html, "2026-10-21", archive_entries=[])
+    if "@font-face" not in page or "Synthese" not in page or 'alt="CSIS Korea Chair"' not in page:
+        problems.append("the web page lacks Synthèse or the lockup")
+    saved = (render.DESIGN, render.FULL_TEXT, render.PRINT)
+    try:
+        render.DESIGN, render.FULL_TEXT, render.PRINT = "v2", True, True
+        paper = render.render(copy.deepcopy(d))
+    finally:
+        render.DESIGN, render.FULL_TEXT, render.PRINT = saved
+    if "googleapis" in paper:
+        problems.append("the PDF still loads Google Fonts")
+    if "src:url(data:font/woff2;base64," not in paper:
+        problems.append("the PDF does not embed Synthèse as a data URI")
+    if 'src="data:image/png;base64,' not in paper:
+        problems.append("the PDF's lockup is not embedded")
+    if base + "assets/" in paper:
+        problems.append("the PDF depends on the network for an asset")
+    return problems
+
+
+def check_v2_round6_layout():
+    """One width for band, cards and footer; charcoal Pyongyang Watch; blue date boxes; grey ROK cards; tinted approval."""
+    import copy, render
+    problems = []
+    d = {"digest_date": "Wednesday, October 21, 2026", "date_slug": "2026-10-21",
+         "web_url": "https://example.org/brief/latest.html",
+         "top_stories": [{"headline": "Lead", "body": "Body."}],
+         "kcna_delta": {"days_since_last_appearance": 2, "bottom_line": "Quiet.",
+                        "senior_officials": [{"name": "Kim Yo Jong", "role": "Deputy Director", "activity": "Spoke."}]},
+         "rok_government": [{"ministry": "Ministry of Unification", "official": "Minister", "action": "Met",
+                             "detail": "Met the WHO chief.", "source": "Yonhap", "url": "https://en.yna.co.kr/x"}],
+         "calendar_watch": [{"month": "Oct", "day": 22, "headline": "Audit continues"}],
+         "public_sentiment": {"presidential_approval": {"value": "39%", "source": "Gallup Korea",
+                                                        "last_updated": "October 13-15, 2026"},
+                              "party_ruling": {"value": "36%"}}}
+    html = _v2_render(d)
+    band = html.find('class="mast-band"')
+    foot = html.find('class="v2-foot"')
+    for name, pos in (("masthead band", band), ("footer", foot)):
+        gap = html.rfind('<div class="v2-gap" style="padding:0 16px', 0, pos)
+        if pos == -1 or gap == -1 or pos - gap > 80:
+            problems.append(f"the {name} is not in the cards' gap, so its edges differ from the cards'")
+    pw = html[html.find('name="kcna"'):]
+    pw = pw[:pw.find('class="v2-gap"', 50)]
+    if f"background:{render._V2_PW_BG}" not in pw or f"color:{render._V2_INK}" in pw:
+        problems.append("Pyongyang Watch is not on its charcoal ground with light type")
+    if render._V2_PW_BG not in render._V2_DARK_BG or render._check_dark_coverage(html):
+        problems.append(f"dark coverage: {render._check_dark_coverage(html)}")
+    if f'class="v2-date" style="background:{render.TAEGUK_BLUE};"' not in html:
+        problems.append("Upcoming lacks classic's blue date box")
+    if f"background:{render._V2_ROK_FILL}" not in html or 'class="v2-rcb"' not in html:
+        problems.append("ROK cards lack classic's grey fill or the pinned source row")
+    if f'class="v2-pst" style="padding:10px 12px 11px;background:{render._V2_TINT};' not in html:
+        problems.append("the approval block is not tinted")
+    saved = (render.DESIGN, render.FULL_TEXT, render.PRINT)
+    try:
+        render.DESIGN, render.FULL_TEXT, render.PRINT = "v2", True, True
+        paper = render.render(copy.deepcopy(d))
+    finally:
+        render.DESIGN, render.FULL_TEXT, render.PRINT = saved
+    if f"background:{render._V2_PW_PRINT_BG}" not in paper:
+        problems.append("the PDF's Pyongyang Watch is not the light grey")
+    return problems
+
+
+def check_v2_shortened_email():
+    """In v2 only top stories run in full; other items keep their lead and link to the web page."""
+    import copy, render
+    problems = []
+    long_body = ("Seoul announced a new measure on Monday. Officials gave no start date for it. "
+                 "The closing sentence is detail that the web page carries in full for anyone who wants it.")
     d = {"digest_date": "Monday, October 19, 2026", "date_slug": "2026-10-19", "issue_no": 12,
          "web_url": "https://example.org/brief/latest.html",
          "top_stories": [{"headline": "Lead story", "body": long_body, "category_tag": "DPRK"}],
@@ -1646,7 +1801,7 @@ def check_v2_shortened_email():
         classic = render.render(copy.deepcopy(before))
     finally:
         render.DESIGN = saved
-    if html.count("The second sentence is detail") != 1:
+    if html.count("The closing sentence is detail") != 1:
         problems.append("v2: expected the long body in full exactly once (the top story)")
     if html.count("Some sections are shortened here.") != 1 or 'href="https://example.org/brief/digest_2026-10-19.html"' not in html:
         problems.append("v2: not exactly one shortened-note under the contents, linking the issue page")
@@ -1658,7 +1813,7 @@ def check_v2_shortened_email():
         problems.append("v2: sign-off missing, or without tomorrow's calendar item")
     if "border-left:5px solid" in html or "v2-edge" in html:
         problems.append("v2: a section bar still carries a coloured family edge")
-    if classic.count("The second sentence is detail") != 2:
+    if classic.count("The closing sentence is detail") != 2:
         problems.append("classic was shortened")
     if d != {**before, "_word_count": d.get("_word_count")}:
         problems.append("v2 shortening changed the caller's digest")
@@ -1668,7 +1823,7 @@ def check_v2_shortened_email():
         web = render.render(copy.deepcopy(before))
     finally:
         render.DESIGN, render.FULL_TEXT = saved, saved_full
-    if (web.count("The second sentence is detail") != 2 or "Shortened for email" in web
+    if (web.count("The closing sentence is detail") != 2 or "Shortened for email" in web
             or "Some sections are shortened" in web):
         problems.append("v2 with FULL_TEXT set still shortened the bodies")
     return problems
@@ -1719,7 +1874,7 @@ def check_v2_kicker_outlets():
 
 
 def check_v2_print_layout():
-    """The preview PDF's v2 render (PRINT) carries web fonts and none of the inbox furniture; the email is unchanged."""
+    """The preview PDF's v2 render (PRINT) carries embedded Synthese and none of the inbox furniture; the email is unchanged."""
     import copy, render
     problems = []
     d = {"digest_date": "Wednesday, October 21, 2026", "date_slug": "2026-10-21", "issue_no": 210,
@@ -1737,8 +1892,8 @@ def check_v2_print_layout():
         email = render.render(copy.deepcopy(d))
     finally:
         render.DESIGN, render.FULL_TEXT, render.PRINT = saved
-    if "fonts.googleapis.com/css2?family=Source+Sans+3" not in paper or "Liberation Sans" not in paper:
-        problems.append("paper render lacks the web fonts or their Liberation fallback")
+    if "font-family:Synthese" not in paper or "Liberation Sans" not in paper or "googleapis" in paper:
+        problems.append("paper render lacks embedded Synthese, its Liberation fallback, or still loads Google Fonts")
     if "break-inside:avoid" not in paper or "break-after:avoid" not in paper:
         problems.append("paper render lacks its page-break rules")
     for t in ("listen-bar", "In this issue", "Past issues", "Back to top", "For internal use only"):
@@ -1759,67 +1914,30 @@ def _v2_render(d: dict) -> str:
         render.DESIGN = saved
 
 
-def check_v2_leaders_words():
-    """Leaders' words quotes Lee, Trump and Kim only, one each, verbatim, and is absent without a quote."""
-    import render
+def check_v2_no_leaders_card():
+    """No Leaders' words card: a leader's quote runs under Statements or Officials on X, unfiltered."""
     problems = []
     d = {"digest_date": "Wednesday, October 21, 2026",
+         "top_stories": [{"headline": "Lead", "body": "Body."}],
          "social_statements": [
-             {"who": "Kim Yo Jong", "handle_context": "Kim Jong Un's sister", "quote_text": "Decoy sister quote."},
-             {"who": "Spokesperson for President Lee", "quote_text": "Decoy spokesperson quote."},
-             {"who": "President Lee Jae-myung", "handle_context": "President, ROK",
-              "quote_text": "AI should bridge healthcare gaps.", "url": "https://en.yna.co.kr/view/AEN1"},
-             {"who": "Lee Jae-myung", "quote_text": "A second Lee quote."},
-             {"who": "Trump administration official", "quote_text": "Decoy administration quote."},
+             {"who": "President Lee Jae-myung", "quote_text": "AI should bridge healthcare gaps.",
+              "context": "At a cabinet meeting", "url": "https://en.yna.co.kr/view/AEN1"},
              {"who": "Chung Dong-young", "quote_text": "Unification minister quote."}],
          "official_x_posts": [{"who": "Donald J. Trump", "handle_context": "@realDonaldTrump",
                                "platform_date": "@realDonaldTrump, Oct 21", "quote_text": "Korea will pay.",
                                "url": "https://x.com/realDonaldTrump/status/1"}],
-         "kcna_delta": {"key_quotes": [{"speaker": "General Secretary Kim Jong Un", "quote": "Strength is peace.",
-                                        "source_article": "Rodong Sinmun"}],
-                        "senior_officials": [{"name": "Kim Yo Jong", "activity": "Inspected the border."}]},
-         "rok_government": [{"official": "President Lee Jae-myung", "ministry": "Presidential Office",
-                             "action": "Lee urges reform", "detail": "He urged reform.", "quote": "Reform now."}]}
-    qs = render._v2_leader_quotes(d)
-    if [q["key"] for q in qs] != ["lee", "trump", "kim"]:
-        problems.append(f"expected Lee, Trump, Kim once each, got {[q['key'] for q in qs]}")
-    texts = {q["key"]: q["text"] for q in qs}
-    if texts != {"lee": "AI should bridge healthcare gaps.", "trump": "Korea will pay.", "kim": "Strength is peace."}:
-        problems.append(f"quotes not taken verbatim from the first source: {texts}")
-    for decoy, who in (("Kim Yo Jong", "lee"), ("Spokesperson for President Lee", ""),
-                       ("Kim Jong Un's sister", ""), ("Trump administration official", ""),
-                       ("Lee Jae-yong", ""), ("Kim Yo Jong", "")):
-        got = render._v2_leader_of(decoy)
-        if decoy != "Kim Yo Jong" and got:
-            problems.append(f"{decoy!r} matched as {got}")
-    if render._v2_leader_of("Kim Yo Jong"):
-        problems.append("Kim Yo Jong matched as a leader")
-    for name, want in (("President Trump", "trump"), ("Kim Jong-un", "kim"), ("President Lee", "lee"),
-                       ("Lee Jae-myung, President", "lee"), ("North Korean leader Kim Jong Un", "kim")):
-        if render._v2_leader_of(name) != want:
-            problems.append(f"{name!r} not matched as {want}")
-    html = _v2_render({**d, "top_stories": [{"headline": "Lead", "body": "Body."}]})
-    card = html[html.find('name="leaders"'):]
-    card = card[:card.find('class="v2-gap"', 50)]
-    for t in ("AI should bridge healthcare gaps.", "Korea will pay.", "Strength is peace."):
-        if t not in card:
-            problems.append(f"card lacks {t!r}")
-    for t in ("Decoy", "A second Lee quote", "Unification minister quote", "Reform now."):
-        if t in card:
-            problems.append(f"card shows {t!r}")
-    if card.count('class="v2-it"') != 3:
-        problems.append("card does not hold exactly three quotes")
-    if "AI should bridge healthcare gaps." in html[html.find('name="analysis"'):]:
-        problems.append("a quote in Leaders' words is repeated under Statements")
-    if "Unification minister quote." not in html:
-        problems.append("a non-leader statement was dropped from Analysis")
-    none = _v2_render({"digest_date": "Wednesday, October 21, 2026",
-                       "top_stories": [{"headline": "Lead", "body": "Body."}],
-                       "social_statements": [{"who": "Kim Yo Jong", "quote_text": "Sister."}],
-                       "rok_government": [{"official": "President Lee Jae-myung", "ministry": "Presidential Office",
-                                           "action": "Lee acts", "detail": "Lee said things."}]})
-    if 'name="leaders"' in none:
-        problems.append("Leaders' words drawn without a leader's quote (a detail is not a quote)")
+         "kcna_delta": {"key_quotes": [{"speaker": "Kim Jong Un", "quote": "Strength is peace."}]}}
+    html = _v2_render(d)
+    if 'name="leaders"' in html or "Leaders" in html:
+        problems.append("the Leaders' words card (or its contents entry) is still drawn")
+    analysis = html[html.find('name="analysis"'):]
+    for t in ("AI should bridge healthcare gaps.", "Unification minister quote.", "Korea will pay."):
+        if t not in analysis:
+            problems.append(f"Analysis lacks {t!r}: Statements still filters leaders' quotes")
+    import render
+    for gone in ("_v2_leaders", "_v2_leader_quotes", "_v2_leader_row"):
+        if hasattr(render, gone):
+            problems.append(f"render.{gone} still defined")
     return problems
 
 
@@ -2958,14 +3076,18 @@ CHECKS = [
     ("design preview goes only to the preview list", check_design_preview_goes_only_to_preview_list),
     ("v2 status line drops missing facts", check_v2_status_line),
     ("v2 shortening cuts at real sentence ends", check_v2_first_sentence),
+    ("v2 email keeps two sentences or about fifty words", check_v2_lead),
+    ("The Wire's headings keep their acronyms", check_wire_labels),
+    ("v2 one width, charcoal Pyongyang Watch, date boxes, grey ROK cards", check_v2_round6_layout),
+    ("v2 brand: lockup image with alt text, Synthese, assets published", check_v2_brand_assets),
+    ("v2 contents line plain; Public Sentiment approval, party boxes, trend", check_v2_contents_and_sentiment),
     ("v2 email runs top stories in full, the rest shortened", check_v2_shortened_email),
-    ("v2 Leaders' words: Lee, Trump, Kim only, one each", check_v2_leaders_words),
+    ("v2 no Leaders' words card; its quotes stay under Statements", check_v2_no_leaders_card),
     ("v2 ROK government card grid", check_v2_rok_cards),
     ("v2 hidden inbox preview line", check_v2_preheader),
     ("v2 kickers name publishers, not feeds", check_v2_kicker_outlets),
     ("v2 paper layout for the preview PDF", check_v2_print_layout),
     ("v2 stat of the day: navy bar over the blue card", check_v2_stat_bar),
-    ("v2 Leaders' words: a context line under every quote", check_v2_leader_context),
     ("v2 Upcoming: events, observances and hearings, once each", check_v2_upcoming_merge),
     ("preview PDF: running header and page footer", check_preview_pdf_running_header),
     ("audio is formatted for the ear", check_audio_formatting),
