@@ -1587,12 +1587,42 @@ def check_v2_first_sentence():
     return problems
 
 
+def check_v2_lead():
+    """The email keeps two sentences or about fifty words, whichever comes first, cut at a real sentence end."""
+    import render
+    f = render._v2_lead
+    problems = []
+    s1 = "U.S. officials met Gen. Kim Myung-soo in Seoul on Monday to discuss the alliance."   # 15 words
+    s2 = " The ministry said it was 'gravely concerned. Very much so.' and asked for calm."       # 14
+    s3 = " A third sentence carries on for long enough to be worth a link to the page."          # 16
+    long2 = (" The second sentence is very long indeed, running on and on with clause after clause"
+             " about the budget, the Assembly, the ministry, the markets and the alliance, so that"
+             " with the first it passes fifty words by some way.")
+    cases = [
+        (s1 + s2 + s3, s1 + s2, "two sentences, the quote kept whole"),
+        (s1 + long2 + s3, s1, "the second sentence would pass fifty words"),
+        (s1 + s2, s1 + s2, "two sentences and nothing more: whole"),
+        ("Talks resumed at 9 a.m. Seoul time with both sides present. Officials said very little. "
+         "Nothing more was said on the record by either delegation at the talks today.",
+         "Talks resumed at 9 a.m. Seoul time with both sides present. Officials said very little.",
+         "no cut after a.m."),
+        (s1 + s2 + " Short tail.", s1 + s2 + " Short tail.", "a tail under eight words stays"),
+    ]
+    for text, want, why in cases:
+        got = f(text)
+        if got != want.strip():
+            problems.append(f"{why}: {text[:40]!r} -> {got!r}")
+        if not text.startswith(got):
+            problems.append(f"shortening reworded {text[:40]!r}")
+    return problems
+
+
 def check_v2_shortened_email():
-    """In v2 only top stories run in full; other items keep their first sentence and link to the web page."""
+    """In v2 only top stories run in full; other items keep their lead and link to the web page."""
     import copy, render
     problems = []
-    long_body = ("Seoul announced a new measure on Monday. The second sentence is detail that the web "
-                 "page carries in full for anyone who wants it.")
+    long_body = ("Seoul announced a new measure on Monday. Officials gave no start date for it. "
+                 "The closing sentence is detail that the web page carries in full for anyone who wants it.")
     d = {"digest_date": "Monday, October 19, 2026", "date_slug": "2026-10-19", "issue_no": 12,
          "web_url": "https://example.org/brief/latest.html",
          "top_stories": [{"headline": "Lead story", "body": long_body, "category_tag": "DPRK"}],
@@ -1608,7 +1638,7 @@ def check_v2_shortened_email():
         classic = render.render(copy.deepcopy(before))
     finally:
         render.DESIGN = saved
-    if html.count("The second sentence is detail") != 1:
+    if html.count("The closing sentence is detail") != 1:
         problems.append("v2: expected the long body in full exactly once (the top story)")
     if html.count("Some sections are shortened here.") != 1 or 'href="https://example.org/brief/digest_2026-10-19.html"' not in html:
         problems.append("v2: not exactly one shortened-note under the contents, linking the issue page")
@@ -1620,7 +1650,7 @@ def check_v2_shortened_email():
         problems.append("v2: sign-off missing, or without tomorrow's calendar item")
     if "border-left:5px solid" in html or "v2-edge" in html:
         problems.append("v2: a section bar still carries a coloured family edge")
-    if classic.count("The second sentence is detail") != 2:
+    if classic.count("The closing sentence is detail") != 2:
         problems.append("classic was shortened")
     if d != {**before, "_word_count": d.get("_word_count")}:
         problems.append("v2 shortening changed the caller's digest")
@@ -1630,7 +1660,7 @@ def check_v2_shortened_email():
         web = render.render(copy.deepcopy(before))
     finally:
         render.DESIGN, render.FULL_TEXT = saved, saved_full
-    if (web.count("The second sentence is detail") != 2 or "Shortened for email" in web
+    if (web.count("The closing sentence is detail") != 2 or "Shortened for email" in web
             or "Some sections are shortened" in web):
         problems.append("v2 with FULL_TEXT set still shortened the bodies")
     return problems
@@ -2837,6 +2867,7 @@ CHECKS = [
     ("design preview goes only to the preview list", check_design_preview_goes_only_to_preview_list),
     ("v2 status line drops missing facts", check_v2_status_line),
     ("v2 shortening cuts at real sentence ends", check_v2_first_sentence),
+    ("v2 email keeps two sentences or about fifty words", check_v2_lead),
     ("v2 email runs top stories in full, the rest shortened", check_v2_shortened_email),
     ("v2 no Leaders' words card; its quotes stay under Statements", check_v2_no_leaders_card),
     ("v2 ROK government card grid", check_v2_rok_cards),

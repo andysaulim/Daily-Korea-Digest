@@ -744,8 +744,9 @@ def _status_line(digest: dict) -> str:
 def render(digest: dict) -> str:
     from zoneinfo import ZoneInfo
     if DESIGN == "v2":
-        # The email shows top stories in full and the first sentence of
-        # everything else; the issue's web page carries the rest.
+        # The email shows top stories in full and the first two sentences
+        # (about fifty words at most) of everything else; the issue's web
+        # page carries the rest.
         _v2_src = digest
         digest, _v2_more = _v2_shorten(digest)
     now = datetime.now(ZoneInfo("America/New_York"))
@@ -2926,9 +2927,10 @@ def render(digest: dict) -> str:
 #     Pyongyang Watch (_v2_status_facts); the sites with new reporting are
 #     Satellite & location watch's. The sign-off card closes the brief with
 #     tomorrow's scheduled items and the reply address.
-#   * Only top stories run in full. Every other item keeps its first
-#     sentence (_v2_shorten, cut at a real sentence end) and the section
-#     links to the issue's web page; FULL_TEXT turns this off for the web.
+#   * Only top stories run in full. Every other item keeps up to two
+#     sentences or about fifty words, whichever comes first (_v2_lead, cut
+#     at a real sentence end), and the contents card links to the issue's
+#     web page; FULL_TEXT turns this off for the web.
 #   * Sections run in reading priority, not in the order they were added to
 #     the code (_V2_ORDER).
 #   * Nothing depends on the stylesheet. Gmail drops <style> for some accounts
@@ -4204,26 +4206,48 @@ def _v2_top_stories(stories: list) -> str:
             f'{_sec_label("Top Stories")}{out}</div>')
 
 
-def _v2_first_sentence(text: str, min_words: int = 4, min_rest: int = 8) -> str:
-    """The text's first sentence, or the text itself when there is nothing worth cutting.
+def _v2_lead(text: str, sentences: int = 2, words: int = 50, min_words: int = 4, min_rest: int = 8) -> str:
+    """The text's first `sentences` sentences, or as many of them as fit in `words` words.
 
-    The cut is made at a real sentence end only (_v2_sentence_ends), so
-    nothing is reworded: what is kept is the text up to that point. A first
-    "sentence" under `min_words` words is taken as a mis-split and the next
-    end is tried; when what would be cut is under `min_rest` words, the text
-    stays whole, since a link to read a few more words costs more than it saves.
+    The owner found one sentence per story too short. What is kept is the
+    first sentence, then the second as well when the two together are no
+    more than `words` words: two sentences or about fifty words, whichever
+    comes first. A first sentence longer than that is kept whole, since
+    nothing is cut mid-sentence.
+
+    The cut is made at a real sentence end only (_v2_sentence_ends): never
+    after an abbreviation or an initial, nor inside a quotation or the
+    model's emphasis marks. Nothing is reworded: what is kept is the text up
+    to that point. A "sentence" under `min_words` words is taken as a
+    mis-split and the next end is tried; when what would be cut is under
+    `min_rest` words, the text stays whole, since a link to read a few more
+    words costs more than it saves.
     """
     text = str(text or "")
     total = len(text.split())
+    keep, count = None, 0
     for left in _v2_sentence_ends(text):
         n = len(left.split())
-        if n < min_words:
+        if n < min_words or (keep is not None and n - len(keep.split()) < min_words):
             continue
-        return left.strip() if total - n >= min_rest else text
-    return text
+        if keep is not None and n > words:
+            break
+        keep, count = left, count + 1
+        if count >= sentences:
+            break
+    # The text's own end is a sentence end too, though _v2_sentence_ends
+    # never yields it: a text of two sentences within the limit stays whole.
+    if keep is None or total - len(keep.split()) < min_rest or (count < sentences and total <= words):
+        return text
+    return keep.strip()
 
 
-# What the email shortens to its first sentence, by section anchor: each list
+def _v2_first_sentence(text: str, min_words: int = 4, min_rest: int = 8) -> str:
+    """The text's first sentence alone (_v2_lead with one sentence and no word limit)."""
+    return _v2_lead(text, 1, 10 ** 6, min_words, min_rest)
+
+
+# What the email shortens to its lead (_v2_lead), by section anchor: each list
 # in the digest and the fields of its items that carry running text.
 # Untouched: top stories (full text), the glance, Overnight and The Wire
 # (already one line), the calendars, the numbers strip, Pyongyang Watch's
@@ -4245,7 +4269,7 @@ _V2_SHORTEN = (
 
 
 def _v2_shorten(digest: dict) -> tuple:
-    """A copy of the digest with every item outside the top stories cut to its first sentence.
+    """A copy of the digest with every item outside the top stories cut to its lead (_v2_lead).
 
     Returns (copy, {anchor: url}), the url being that section on the issue's
     web page, digest_{date}.html, which carries the full text. Only the
@@ -4264,7 +4288,7 @@ def _v2_shorten(digest: dict) -> tuple:
 
     def shorten(obj, field, anchor):
         if isinstance(obj, dict) and isinstance(obj.get(field), str):
-            short = _v2_first_sentence(obj[field])
+            short = _v2_lead(obj[field])
             if short != obj[field]:
                 obj[field] = short
                 cut.add(anchor)
