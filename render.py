@@ -2907,7 +2907,7 @@ def render(digest: dict) -> str:
   </table>
 </body>
 </html>"""
-    return _v2_page(html, _v2_preheader(_v2_src)) if DESIGN == "v2" else html
+    return _v2_page(html, _v2_preheader(_v2_src), _v2_base(_v2_src)) if DESIGN == "v2" else html
 
 
 # ── Design v2 ──────────────────────────────────────────────────────────────
@@ -2922,8 +2922,9 @@ def render(digest: dict) -> str:
 #     classic section into one). Every bar is plain navy and every card
 #     white but the glance's tint and the stat's blue body.
 #   * The top is an internal-use strip with the issue links, a navy band
-#     with the CSIS lockup, the brief's name in an outlined box (text, not an
-#     image, since Gmail blocks images) and the date, number and read time,
+#     with the official Korea Chair lockup (an image with alt text; HTML
+#     text when there is no web URL), the brief's name in an outlined box as
+#     live text, and the date, number and read time,
 #     the Listen card, then a card with a plain two-line row of contents
 #     links (no numbers, one face). A hidden preheader opens the body (_v2_preheader).
 #   * Stat of the day follows Overnight: the navy bar over a blue body. ROK Government is a
@@ -2941,8 +2942,11 @@ def render(digest: dict) -> str:
 #     company chips under business items, the red alert kicker, the
 #     "Bottom line" callout and the Stat of the Day's serif figure.
 #     Pyongyang Watch is a card like the rest, not classic's navy panel.
-#   * Two faces: the platform sans for body and furniture, Georgia for
-#     headlines, the stat figure and the CSIS letters. No size is larger than classic's: top
+#   * Two faces where the client has no web fonts (Gmail, Outlook): the
+#     platform sans for body and furniture, Georgia for headlines and the
+#     figures. Where it loads them (Apple Mail, the web page, the PDF), all
+#     of it is Synthese, the CSIS brand face (_v2_font_css, _v2_print_head).
+#     No size is larger than classic's: top
 #     stories 16px, other headlines 15px at most. No arrows, dots or emoji.
 #   * The tracker facts (KCNA watch flag trend, provocations logged) sit in
 #     Pyongyang Watch (_v2_status_facts); the sites with new reporting are
@@ -3741,8 +3745,11 @@ def _v2_sentiment_card(sentiment: dict, delta, spark: str, stale: str) -> str:
         change = (f'<div style="font-size:12px;line-height:1.45;color:{_V2_META};margin-top:2px;">'
                   f'<span style="color:{colour};font-weight:700;">{sign}{abs(pts):g} pts</span>'
                   + (f" vs {_esc(prior)}" if prior else "") + '</div>')
-    survey = ", ".join(x for x in (_esc(str(ap.get("source") or "")).strip(),
-                                   _esc(str(ap.get("last_updated") or "")).strip()) if x)
+    # The pollster and the survey dates on lines of their own: as one line
+    # ("Gallup Korea, October 13-15, 2026") it broke after the day in
+    # Synthèse, wider than the fallback sans.
+    survey = "<br>".join(x for x in (_esc(str(ap.get("source") or "")).strip(),
+                                     _esc(str(ap.get("last_updated") or "")).strip()) if x)
     hero = (f'<div style="{lab}">Lee approval</div>'
             f'<div style="font-family:{_V2_SERIF};font-size:34px;font-weight:700;line-height:1.05;margin-top:2px;'
             f'color:{_V2_NAVY if approval else _V2_META};">{approval or "--"}</div>'
@@ -3962,12 +3969,77 @@ def _v2_trade(us_korea: dict, digest: dict, base: str) -> str:
     return f'<!--v2--><div><a name="trade" id="trade"></a>{_v2_bar("US-Korea Trade &amp; Investment")}{out}</div>'
 
 
+# ── Brand assets ────────────────────────────────────────────────────────────
+# The official Korea Chair lockup (CSIS | Geopolitics and Foreign Policy
+# Department | Korea Chair, white, for the navy bands) and the CSIS brand
+# typeface, Synthèse, live in assets/ and run.publish_assets copies them to
+# public/assets/ each run. That is a static copy of checked-in files, never
+# an index built from history, so it is safe under the archive rule.
+#
+# The email names them by absolute URL (WEB_URL + "/assets/..."): a mail
+# client resolves nothing relative. The PDF embeds them as data URIs, so the
+# runner needs no network for them. Without a web URL (a local render, the
+# tests) the lockup is the HTML text it used to be.
+#
+# The PNG is the lockup at twice the size it is shown (680 by 80 for 340 by
+# 40), cut to 32 colours: 6KB. Images do not count toward Gmail's clip.
+_V2_ASSET_DIR = __import__("pathlib").Path(__file__).resolve().parent / "assets"
+_V2_LOGO = "korea_chair_lockup_white.png"
+_V2_LOGO_RATIO = 80 / 680
+_V2_FONTS = ("synthese-400.woff2", "synthese-700.woff2")
+_V2_BRAND_ALT = "CSIS Korea Chair"
+
+
+def _v2_base(digest: dict) -> str:
+    """The published site's root, with a trailing slash, or '' when there is none."""
+    web_url = str(digest.get("web_url") or "")
+    return web_url[:-len("latest.html")] if web_url.endswith("latest.html") else ""
+
+
+def _v2_data_uri(name: str, mime: str) -> str:
+    import base64
+    try:
+        raw = (_V2_ASSET_DIR / name).read_bytes()
+    except OSError:
+        return ""
+    return f"data:{mime};base64," + base64.b64encode(raw).decode("ascii")
+
+
+def _v2_asset(digest: dict, name: str, mime: str = "image/png") -> str:
+    """Where the page finds an asset: a data URI on paper, the published copy in the inbox, else ''."""
+    if PRINT:
+        return _v2_data_uri(name, mime)
+    base = _v2_base(digest)
+    return f"{base}assets/{name}" if base else ""
+
+
+def _v2_logo(digest: dict, width: int) -> str:
+    """The official lockup as an image, or '' when there is nowhere to load it from.
+
+    Explicit width and height, so the layout holds while it loads and in
+    Outlook, which reads the attributes. Fluid below that width, so a 320px
+    phone never scrolls. When images are blocked the alt text stands in its
+    place, set in white bold on the navy band, so the band still reads
+    "CSIS Korea Chair".
+    """
+    src = _v2_asset(digest, _V2_LOGO)
+    if not src:
+        return ""
+    h = round(width * _V2_LOGO_RATIO)
+    return (f'<img src="{_esc(src)}" width="{width}" height="{h}" alt="{_V2_BRAND_ALT}" class="v2-logo" '
+            f'style="display:block;margin:0 auto;width:100%;max-width:{width}px;height:auto;border:0;outline:none;'
+            f'text-decoration:none;font-family:{_V2_SANS};font-size:18px;font-weight:700;line-height:{h}px;'
+            f'letter-spacing:1px;color:#FFFFFF;text-align:center;">')
+
+
 def _v2_masthead(digest: dict, now, listen_bar: str) -> str:
     """The internal-use strip, the navy band with the CSIS lockup, the Listen card, the date card.
 
-    All text, no image: Gmail blocks images until the reader allows them, and
-    the reference's banner is an image. The date card's contents grid is
-    resolved in _v2_finish, once it is known which sections rendered.
+    The lockup is the official image (_v2_logo), its alt text standing in
+    when images are blocked; with no web URL to load it from, it is the HTML
+    text it used to be. The brief's name stays live text. The date card's
+    contents line is resolved in _v2_finish, once it is known which
+    sections rendered.
     """
     issue = digest.get("issue_no")
     web_url = digest.get("web_url", "")
@@ -4001,6 +4073,13 @@ def _v2_masthead(digest: dict, now, listen_bar: str) -> str:
         '<td style="border-left:1px solid #FFFFFF;padding:2px 0 2px 14px;'
         f'font-family:{_V2_SANS};font-size:12px;line-height:1.4;letter-spacing:1px;color:#FFFFFF;text-align:left;">'
         'CENTER FOR STRATEGIC &amp;<br>INTERNATIONAL STUDIES</td>'))
+    logo = _v2_logo(digest, 340)
+    if logo:
+        # The official lockup in place of the HTML text. The band keeps the
+        # brief's name as live text under it.
+        band = _re.sub(r'<table role="presentation"[^>]*style="margin:0 auto;"><tr>.*?</tr></table>',
+                       lambda m: logo, band, count=1, flags=_re.S)
+        band = band.replace('style="margin:16px auto 0;"', 'style="margin:14px auto 0;"', 1)
     if PRINT:
         strip = ""          # links and a notice for the inbox; nothing to click on paper
     listen = ""
@@ -4650,6 +4729,11 @@ def _v2_footer(digest: dict, now) -> str:
               f'<td style="{rule}padding:2px 12px;{cell}">Geopolitics and Foreign<br>Policy Department</td>'
               f'<td style="{rule}padding:2px 0 2px 12px;{cell}">Korea<br>Chair</td>'
               '</tr></table></div></div>')
+    logo = _v2_logo(digest, 280)
+    if logo:
+        # The official lockup, as in the masthead, in place of the HTML text.
+        lockup = ('<div class="v2-lockup" style="padding-bottom:16px;margin-bottom:16px;'
+                  f'border-bottom:1px solid #33497A;">{logo}</div>')
     return (f'<!--v2--><div class="v2-foot" style="background:{_V2_NAVY};padding:22px 22px 24px;margin-top:8px;'
             f'font-family:{_V2_SANS};">{lockup}{otd}'
             f'<div style="font-size:13px;line-height:1.6;color:{_V2_FOOT};">This newsletter is automatically '
@@ -4786,7 +4870,7 @@ def _v2_finish(body: str, more_url: str = "") -> str:
     if len(links) >= 4:
         toc_html = (f'<!--c--><div class="v2-toc no-print" style="font-size:13px;line-height:1.7;color:{_V2_NAVY};">'
                     f'<span style="font-size:11px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;'
-                    f'color:{_V2_META};">In this issue</span>&emsp; ' + "&emsp; ".join(links) + '</div><!--/c-->')
+                    f'color:{_V2_META};">In this issue</span>&emsp;' + "&ensp; ".join(links) + '</div><!--/c-->')
     if more_url and not PRINT:
         toc_html += (f'<!--c--><div class="v2-more no-print" style="margin-top:3px;font-size:12px;line-height:1.5;'
                      f'color:{_V2_META};">Some sections are shortened here. Full text:&ensp;'
@@ -5023,9 +5107,10 @@ def _v2_preheader(digest: dict, low: int = 90, high: int = 110) -> str:
 # The preview PDF (run.write_preview_pdf) is v2 printed, with PRINT set. It is
 # made on a GitHub runner, which has neither Georgia nor the platform sans, so
 # Chromium fell back to Liberation Serif and DejaVu Sans. On paper the brief
-# loads web fonts, which an email never could: Source Sans 3 for the sans and
-# Source Serif 4 for Georgia's part, with Liberation behind each should Google
-# Fonts not answer. make_pdf waits for document.fonts.ready before printing.
+# is set in the CSIS brand face, Synthèse, embedded from assets/ as data
+# URIs (no Google Fonts, no network), with Liberation Sans behind it for the
+# few characters it lacks (the minus sign, the won sign). make_pdf waits for
+# document.fonts.ready before printing. The lockup is a data URI too.
 #
 # The layout is for a page, not an inbox: white, no grey ground or tints but
 # the glance's, the column the page's full width, each card a navy bar over
@@ -5037,14 +5122,35 @@ def _v2_preheader(digest: dict, low: int = 90, high: int = 110) -> str:
 # the margins Chromium is given, and left the header on top of the first
 # bar of every page.
 _V2_PRINT_MARGIN = {"top": "15mm", "bottom": "13mm", "left": "13mm", "right": "13mm"}
-_V2_PRINT_SANS = "'Source Sans 3','Liberation Sans',Arial,sans-serif"
-_V2_PRINT_SERIF = "'Source Serif 4','Liberation Serif',Georgia,serif"
+# Synthèse sets wider and with a taller x-height than the Liberation and
+# Source faces it replaced: at the old 0.9 the Oct 21 issue ran to a tenth
+# page holding only the sign-off. 0.86 brings it back to the old length.
+_V2_PRINT_SCALE = 0.86
+_V2_PRINT_SANS = "Synthese,'Liberation Sans',Arial,sans-serif"
+# Headlines and figures in Synthèse too, at their own weights: one brand
+# family on paper, nothing fetched. The runner has no Georgia, which is why
+# the paper layout used to load Source Serif from Google Fonts.
+_V2_PRINT_SERIF = _V2_PRINT_SANS
+
+
+def _v2_print_fonts() -> str:
+    """Synthèse 400 and 700 as data URIs: the PDF runner loads nothing from the network for type."""
+    out = ""
+    for w, name in (("400", _V2_FONTS[0]), ("700", _V2_FONTS[1])):
+        uri = _v2_data_uri(name, "font/woff2")
+        if uri:
+            out += (f'@font-face {{ font-family:Synthese; font-style:normal; font-weight:{w}; '
+                    f'src:url({uri}) format("woff2"); }}\n')
+    return out
+
+
+def _v2_print_head() -> str:
+    return _V2_PRINT_HEAD.replace("/*FONTS*/", _v2_print_fonts(), 1)
+
+
 _V2_PRINT_HEAD = (
-    '<link rel="preconnect" href="https://fonts.googleapis.com">'
-    '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
-    '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,700;'
-    '1,400;1,700&amp;family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,700;1,8..60,400&amp;display=swap">'
     """<style type="text/css">
+  /*FONTS*/
   @page { size: Letter; margin: %(mt)s %(mr)s %(mb)s %(ml)s; }
   html, body { background:#FFFFFF !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
   body, body * { font-family:%(sans)s !important; }
@@ -5073,6 +5179,11 @@ _V2_PRINT_HEAD = (
   /* The ROK agency cards one to a row, each whole. Two to a row, a pair
      that did not fit left a third of a page empty; a flex row split a card
      from its own heading. */
+  /* Public Sentiment across the page's wider column: the approval block
+     wide enough for its survey dates on one line, the party boxes a little
+     wider, so the row ends nearer the right margin. */
+  .v2-ps { max-width:240px !important; }
+  .v2-pp { max-width:430px !important; }
   .v2-rg { display:block !important; }
   .v2-rg > .v2-rc { display:block !important; width:auto !important; max-width:none !important; padding:0 0 8px !important; }
   /* What opens a card (a dateline, a group label) stays with what follows. */
@@ -5089,7 +5200,27 @@ _V2_PRINT_HEAD = (
                      "mr": _V2_PRINT_MARGIN["right"], "mb": _V2_PRINT_MARGIN["bottom"], "ml": _V2_PRINT_MARGIN["left"]})
 
 
-def _v2_page(html: str, preheader: str = "") -> str:
+def _v2_font_css(base: str) -> str:
+    """Synthèse for the email, where the client loads web fonts (Apple Mail, iOS Mail).
+
+    Gmail and Outlook ignore @font-face and keep the system stack and
+    Georgia: the rules below name Synthèse first and the face each element
+    already had after it, at the same sizes. The overrides sit in the
+    stylesheet, not in eighty inline styles, so they cost a few hundred
+    bytes, and where the stylesheet is stripped nothing changes.
+    """
+    if not base:
+        return ""
+    faces = "".join(
+        f'@font-face {{ font-family:Synthese; font-style:normal; font-weight:{w}; font-display:swap; '
+        f'src:url({base}assets/{name}) format("woff2"); }}\n'
+        for w, name in (("400", _V2_FONTS[0]), ("700", _V2_FONTS[1])))
+    return (faces
+            + f'    .wrapper, .wrapper [style*="font-family:-apple-system"] {{ font-family:Synthese,{_V2_SANS} !important; }}\n'
+            + f'    .wrapper [style*="font-family:Georgia"] {{ font-family:Synthese,{_V2_SERIF} !important; }}\n')
+
+
+def _v2_page(html: str, preheader: str = "", base: str = "") -> str:
     """Page-level v2: its stylesheet, the narrower column, and a leaner file.
 
     Gmail clips a message at about 102KB, and classic already reaches it on a
@@ -5097,9 +5228,9 @@ def _v2_page(html: str, preheader: str = "") -> str:
     for Outlook are kept), and repeated font stacks go, which more than pays
     for v2's additions.
     """
-    html = html.replace("</style>", _V2_CSS + "  </style>", 1)
+    html = html.replace("</style>", _V2_CSS + ("" if PRINT else _v2_font_css(base)) + "  </style>", 1)
     if PRINT:
-        html = html.replace("</head>", _V2_PRINT_HEAD + "</head>", 1)
+        html = html.replace("</head>", _v2_print_head() + "</head>", 1)
         preheader = ""
     if preheader:
         # Hidden, first in the body: the line Gmail shows after the subject.

@@ -344,6 +344,39 @@ def build_web_html(digest: dict, email_html: str, date_slug: str,
         return email_html
 
 
+# The brand files the brief loads from the site: the Korea Chair lockup
+# (masthead and footer) and Synthèse (web page and Apple Mail). The email
+# names them by absolute URL, WEB_URL + "/assets/...".
+BRAND_ASSETS = ("korea_chair_lockup_white.png", "synthese-400.woff2", "synthese-700.woff2")
+
+
+def publish_assets(public_dir: Path, src_dir: Path = Path("assets")) -> list[str]:
+    """Copy the checked-in brand assets to public/assets/ for the Pages deploy. Never raises.
+
+    A static copy of files in the repository, overwritten whole each run:
+    nothing here accumulates across runs, so the archive rule (read the
+    published index first, never write a stub) does not apply. Returns the
+    names copied; a missing source is reported on the run page, since the
+    email's logo would then show its alt text.
+    """
+    import shutil
+    done = []
+    try:
+        out = Path(public_dir) / "assets"
+        out.mkdir(parents=True, exist_ok=True)
+        for name in BRAND_ASSETS:
+            src = Path(src_dir) / name
+            if src.is_file():
+                shutil.copyfile(src, out / name)
+                done.append(name)
+        missing = [n for n in BRAND_ASSETS if n not in done]
+        if missing:
+            warn("Brand assets missing", f"not published: {', '.join(missing)}")
+    except Exception as e:                                      # noqa: BLE001
+        warn("Brand assets not published", str(e))
+    return done
+
+
 def gallup_baseline_age_days(today=None) -> int | None:
     """Days since the stored Gallup baseline's survey began, or None.
 
@@ -2261,7 +2294,8 @@ def write_preview_pdf(digest_data: dict, out_dir: Path, date_slug: str) -> str:
         # a footer with the page count; both in make_pdf.
         html_to_pdf(html, out_dir / name, footer="For internal use only",
                     header=("Korea Daily Brief", f"CSIS Korea Chair {when}"),
-                    margin=_render_mod._V2_PRINT_MARGIN, wait_for_fonts=True, scale=0.9)
+                    margin=_render_mod._V2_PRINT_MARGIN, wait_for_fonts=True,
+                    scale=_render_mod._V2_PRINT_SCALE)
         return name
     except Exception as e:                                      # noqa: BLE001
         warn("Preview PDF skipped", f"the design preview's PDF link will open the list's PDF: {e}")
@@ -2915,6 +2949,7 @@ def main():
     # Read online link lands on the same page whichever file it names.
     archive_dir = Path("public")
     archive_dir.mkdir(exist_ok=True)
+    publish_assets(archive_dir)
     _web_src = _web_digest if _web_digest is not None else digest_data
     if _web_src is not digest_data:
         # Set after the copy was taken: the Listen links and the issue facts.

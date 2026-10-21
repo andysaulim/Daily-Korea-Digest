@@ -1643,7 +1643,7 @@ def check_v2_contents_and_sentiment():
         problems.append("the contents line still carries numbers or a second face")
     card = html[html.find('name="sentiment"'):]
     card = card[:card.find('class="v2-gap"', 50)]
-    for t in ("Lee approval", "39%", "Gallup Korea, October 13-15, 2026", "Democratic", "People Power",
+    for t in ("Lee approval", "39%", "Gallup Korea<br>October 13-15, 2026", "Democratic", "People Power",
               "36%", "27%", "29%"):
         if t not in card:
             problems.append(f"Public Sentiment lacks {t!r}")
@@ -1673,6 +1673,61 @@ def check_wire_labels():
                 problems.append(f"{design}: Wire headings title-cased")
     finally:
         render.DESIGN = saved
+    return problems
+
+
+def check_v2_brand_assets():
+    """The official lockup and Synthèse: published each run, an <img> with alt text in the email, embedded in the PDF."""
+    import copy, re as _r, tempfile, pathlib, render, run, web_page
+    problems = []
+    with tempfile.TemporaryDirectory() as tmp:
+        done = run.publish_assets(pathlib.Path(tmp))
+        for name in run.BRAND_ASSETS:
+            f = pathlib.Path(tmp) / "assets" / name
+            if name not in done or not f.is_file() or f.stat().st_size == 0:
+                problems.append(f"publish_assets did not copy {name}")
+    logo = pathlib.Path("assets") / render._V2_LOGO
+    if logo.is_file() and logo.stat().st_size > 30_000:
+        problems.append(f"the lockup PNG is {logo.stat().st_size:,} bytes; resize it")
+    base = "https://example.org/brief/"
+    d = {"digest_date": "Wednesday, October 21, 2026", "date_slug": "2026-10-21", "web_url": base + "latest.html",
+         "top_stories": [{"headline": "Lead", "body": "Body."}],
+         "overnight_items": [{"headline": "O", "body_text": "B."}]}
+    html = _v2_render(d)
+    imgs = _r.findall(r"<img\b[^>]*>", html)
+    if len(imgs) < 2:
+        problems.append("the masthead and footer do not both carry the lockup image")
+    for tag in imgs:
+        for need in (f'src="{base}assets/{render._V2_LOGO}"', 'alt="CSIS Korea Chair"', 'width="', 'height="',
+                     "color:#FFFFFF"):
+            if need not in tag:
+                problems.append(f"lockup <img> lacks {need!r}")
+    if "CENTER FOR STRATEGIC" in html or ">CSIS</td>" in html:
+        problems.append("the masthead still fakes the lockup in HTML text")
+    if "KOREA DAILY BRIEF</h1>" not in html:
+        problems.append("the brief's name is no longer live text under the logo")
+    if f"src:url({base}assets/synthese-400.woff2)" not in html or "font-family:Synthese," not in html:
+        problems.append("the email lacks the Synthèse @font-face enhancement")
+    plain = _v2_render({k: v for k, v in d.items() if k != "web_url"})
+    if "<img" in plain or "CSIS" not in plain:
+        problems.append("without a web URL the lockup should fall back to HTML text")
+    page = web_page.build(copy.deepcopy(d), html, "2026-10-21", archive_entries=[])
+    if "@font-face" not in page or "Synthese" not in page or 'alt="CSIS Korea Chair"' not in page:
+        problems.append("the web page lacks Synthèse or the lockup")
+    saved = (render.DESIGN, render.FULL_TEXT, render.PRINT)
+    try:
+        render.DESIGN, render.FULL_TEXT, render.PRINT = "v2", True, True
+        paper = render.render(copy.deepcopy(d))
+    finally:
+        render.DESIGN, render.FULL_TEXT, render.PRINT = saved
+    if "googleapis" in paper:
+        problems.append("the PDF still loads Google Fonts")
+    if "src:url(data:font/woff2;base64," not in paper:
+        problems.append("the PDF does not embed Synthèse as a data URI")
+    if 'src="data:image/png;base64,' not in paper:
+        problems.append("the PDF's lockup is not embedded")
+    if base + "assets/" in paper:
+        problems.append("the PDF depends on the network for an asset")
     return problems
 
 
@@ -1770,7 +1825,7 @@ def check_v2_kicker_outlets():
 
 
 def check_v2_print_layout():
-    """The preview PDF's v2 render (PRINT) carries web fonts and none of the inbox furniture; the email is unchanged."""
+    """The preview PDF's v2 render (PRINT) carries embedded Synthese and none of the inbox furniture; the email is unchanged."""
     import copy, render
     problems = []
     d = {"digest_date": "Wednesday, October 21, 2026", "date_slug": "2026-10-21", "issue_no": 210,
@@ -1788,8 +1843,8 @@ def check_v2_print_layout():
         email = render.render(copy.deepcopy(d))
     finally:
         render.DESIGN, render.FULL_TEXT, render.PRINT = saved
-    if "fonts.googleapis.com/css2?family=Source+Sans+3" not in paper or "Liberation Sans" not in paper:
-        problems.append("paper render lacks the web fonts or their Liberation fallback")
+    if "font-family:Synthese" not in paper or "Liberation Sans" not in paper or "googleapis" in paper:
+        problems.append("paper render lacks embedded Synthese, its Liberation fallback, or still loads Google Fonts")
     if "break-inside:avoid" not in paper or "break-after:avoid" not in paper:
         problems.append("paper render lacks its page-break rules")
     for t in ("listen-bar", "In this issue", "Past issues", "Back to top", "For internal use only"):
@@ -2928,6 +2983,7 @@ CHECKS = [
     ("v2 shortening cuts at real sentence ends", check_v2_first_sentence),
     ("v2 email keeps two sentences or about fifty words", check_v2_lead),
     ("The Wire's headings keep their acronyms", check_wire_labels),
+    ("v2 brand: lockup image with alt text, Synthese, assets published", check_v2_brand_assets),
     ("v2 contents line plain; Public Sentiment approval, party boxes, trend", check_v2_contents_and_sentiment),
     ("v2 email runs top stories in full, the rest shortened", check_v2_shortened_email),
     ("v2 no Leaders' words card; its quotes stay under Statements", check_v2_no_leaders_card),
