@@ -1311,9 +1311,28 @@ def write_script(digest: dict) -> tuple[str | None, list[str]]:
               f"the fact check could not match to the brief")
         text = repaired
     text = re.sub(r"^\s*-{3,}\s*$", f"\n{SEGMENT}\n", text, flags=re.M)
+    text = _drop_empty_sections(text, digest)
     paras = [x.strip() if x.strip() == SEGMENT else speakable(x)
              for x in re.split(r"\n\s*\n", text) if x.strip()]
     return "\n\n".join(paras), []
+
+
+def _drop_empty_sections(text: str, digest: dict) -> str:
+    """Remove a cued segment whose section the brief does not carry today.
+
+    The prompt says Capitol Hill and Korea and the World are read only when
+    they have items; on 21 Oct the writer filled "On Capitol Hill." with an
+    executive-branch envoy and the National Assembly's audit. Every word was
+    in the brief, so the fact check passed, but the label was wrong.
+    """
+    hill = bool(digest.get("capitol_hill")) or bool(digest.get("hill_calendar"))
+    world = bool(digest.get("korea_world"))
+    drop = [cue for cue, keep in ((CUE_HILL, hill), (CUE_WORLD, world)) if not keep]
+    if not drop:
+        return text
+    parts = re.split(rf"\n\s*{re.escape(SEGMENT)}\s*\n", text)
+    kept = [p for p in parts if not any(p.strip().startswith(c) for c in drop)]
+    return f"\n\n{SEGMENT}\n\n".join(kept)
 
 
 LAST_REPAIR: list[str] = []

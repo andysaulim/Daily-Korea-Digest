@@ -2267,7 +2267,8 @@ def write_preview_pdf(digest_data: dict, out_dir: Path, date_slug: str) -> str:
         return ""
 
 
-def send_design_preview(digest_data: dict, send_fn, lead: str = "", pdf_url: str = "") -> list:
+def send_design_preview(digest_data: dict, send_fn, lead: str = "", pdf_url: str = "",
+                        to: list | None = None) -> list:
     """Send the same issue in the candidate design to DESIGN_PREVIEW_TO only.
 
     A trial of a new layout against real issues, read side by side with the
@@ -2275,7 +2276,9 @@ def send_design_preview(digest_data: dict, send_fn, lead: str = "", pdf_url: str
     render.DESIGN differs. Returns the addresses it went to; empty when the
     variable is unset or the candidate is already live. Never raises.
     """
-    to = [a.strip() for a in re.split(r"[,;\s]+", os.environ.get("DESIGN_PREVIEW_TO", "")) if "@" in a]
+    # A test send passes its own addresses, so the person testing sees the
+    # candidate design too; otherwise the preview list.
+    to = list(to) if to else [a.strip() for a in re.split(r"[,;\s]+", os.environ.get("DESIGN_PREVIEW_TO", "")) if "@" in a]
     if not to:
         return []
     try:
@@ -3066,6 +3069,9 @@ def main():
         if _test_to:
             print(f"\n🧪  TEST SEND — {', '.join(_test_to)} only, not the list.")
             send(html, re_line=re_line, lead=_lead, recipients=_test_to)
+            # The candidate design as well, to the same addresses. Nothing is
+            # deployed on a test send, so its PDF link is left on the default.
+            send_design_preview(digest_data, send, _lead, to=_test_to)
         else:
             send(html, re_line=re_line, lead=_lead)
             _wb = os.environ.get("WEB_URL", "").rstrip("/")

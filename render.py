@@ -2893,7 +2893,29 @@ def render(digest: dict) -> str:
   </table>
 </body>
 </html>"""
-    return _v2_page(html, _v2_preheader(_v2_src)) if DESIGN == "v2" else html
+    if DESIGN == "v2":
+        return _v2_page(html, _v2_preheader(_v2_src))
+    return _with_preheader(html, _v2_preheader(digest)) if not PRINT else html
+
+
+def _with_preheader(html: str, preheader: str) -> str:
+    """Put the inbox preview line first in the body, hidden.
+
+    Without it Gmail previews the first text it finds, which was the utility
+    bar: "For Internal Use Only Read online Download PDF Past issues". The run
+    of joiners after the line keeps the client from padding the preview with
+    the masthead's text.
+    """
+    if not preheader:
+        return html
+    b = html.find("<body")
+    b = html.find(">", b) + 1
+    if b <= 0:
+        return html
+    # Georgia and the body's own colour, so the hidden line adds no typeface
+    # and no contrast failure to what the visual checks measure.
+    return (html[:b] + '<div style="display:none;max-height:0;overflow:hidden;mso-hide:all;'
+            f'font-family:Georgia,serif;">{_esc(preheader)}' + "&zwnj;&nbsp;" * 24 + '</div>' + html[b:])
 
 
 # ── Design v2 ──────────────────────────────────────────────────────────────

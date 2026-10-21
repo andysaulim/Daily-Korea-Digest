@@ -4,8 +4,12 @@ on:
   schedule:
     # Safety-net fallback only — primary trigger is external (cron-job.org)
     # If external trigger already succeeded today, these skip automatically.
-    - cron: '30 11 * * *'  # 7:30 AM ET — fallback if external cron missed
-    - cron: '0 13 * * *'   # 9:00 AM ET — last resort
+    # GitHub cron is UTC with no daylight saving, so each fallback is listed
+    # for both offsets: 11:30 and 12:30 UTC are 7:30 AM ET in EDT and EST,
+    # 13:00 and 14:00 UTC are 9:00 AM. The send guard skips whichever finds
+    # the brief already out, and the 7 AM floor skips the one that lands early.
+    - cron: '30 11,12 * * *'  # 7:30 AM ET fallback (EDT, EST)
+    - cron: '0 13,14 * * *'   # 9:00 AM ET last resort (EDT, EST)
   workflow_dispatch: # Primary trigger via external cron (cron-job.org)
     inputs:
       force_send:

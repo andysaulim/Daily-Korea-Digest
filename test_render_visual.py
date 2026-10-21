@@ -107,9 +107,18 @@ with sync_playwright() as p:
 # whole table and every section scrolls sideways.
 OVERFLOW_JS = """(vw) => {
   let ov = 0;
+  // Content inside a deliberate sideways scroller (the web edition's
+  // section menu) may extend past the viewport; the scroller itself may not.
+  const inScroller = el => {
+    for (let a = el.parentElement; a; a = a.parentElement) {
+      const o = getComputedStyle(a).overflowX;
+      if (o === 'auto' || o === 'scroll') return true;
+    }
+    return false;
+  };
   document.querySelectorAll('*').forEach(el => {
     const r = el.getBoundingClientRect();
-    if (r.width > 0 && r.right > vw + 1) ov++;
+    if (r.width > 0 && r.right > vw + 1 && !inScroller(el)) ov++;
   });
   const tiny = [];
   const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
