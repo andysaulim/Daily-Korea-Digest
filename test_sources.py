@@ -2899,7 +2899,36 @@ def check_validation_does_not_hold_a_real_brief():
     return problems
 
 
+def check_inbox_preview_and_test_send_preview():
+    """The list's email opens with a hidden preview line; a test send also gets the design preview."""
+    import os, run, render
+    problems, sent = [], []
+    d = {"digest_date": "Wednesday, October 21, 2026", "re_line": "A line for the subject",
+         "morning_memo": ["Kim Yo Jong ordered loudspeakers along the border.", "Exports surged.", "Seoul pulled staff."],
+         "top_stories": [{"headline": "Lead", "body": "Body.", "category_tag": "DPRK"}]}
+    saved = render.DESIGN
+    try:
+        render.DESIGN = "classic"
+        h = render.render(dict(d))
+        b = h.find(">", h.find("<body")) + 1
+        head = h[b:b + 400]
+        if "display:none" not in head or "Kim Yo Jong ordered loudspeakers" not in head:
+            problems.append("the classic email does not open with a hidden preview line")
+    finally:
+        render.DESIGN = saved
+    env = os.environ.pop("DESIGN_PREVIEW_TO", None)
+    try:
+        got = run.send_design_preview(d, lambda html, **k: sent.append(k), "Lead", to=["tester@example.org"])
+        if got != ["tester@example.org"] or not sent or sent[0].get("recipients") != ["tester@example.org"]:
+            problems.append(f"a test send did not get the design preview: {got}")
+    finally:
+        if env is not None:
+            os.environ["DESIGN_PREVIEW_TO"] = env
+    return problems
+
+
 CHECKS = [
+    ("inbox preview line; test send gets the design preview", check_inbox_preview_and_test_send_preview),
     ("validation does not hold a real brief", check_validation_does_not_hold_a_real_brief),
     ("design preview links its own PDF", check_preview_pdf_link),
     ("banned words named; headline outlet linked once", check_banned_prose_and_single_headline_link),
