@@ -213,7 +213,7 @@ def happening_on(items: list | None, day: date) -> list[dict]:
 
 
 def merge(model_items: list | None, today: date | None = None,
-          days: int = 30, limit: int = 5) -> list[dict]:
+          days: int = 30, limit: int = 6) -> list[dict]:
     """Combine the model's dated events with the computed observances.
 
     The model's items come first: an event it found in today's reporting is

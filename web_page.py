@@ -30,7 +30,7 @@ import re
 from datetime import datetime
 from html import escape
 
-_SANS = "-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica Neue,Arial,sans-serif"   # render._V2_SANS
+_SANS = "-apple-system,BlinkMacSystemFont,Segoe UI,Arial,sans-serif"   # render._V2_SANS
 _NAVY = "#001F59"
 
 # The card _v2_card builds: a white table whose first row holds the navy bar.
@@ -186,7 +186,7 @@ details.wsec > summary::after { content:"Hide"; flex:none; font-size:12px; font-
   letter-spacing:0; text-transform:none; }
 details.wsec:not([open]) > summary::after { content:"Show"; }
 details.wsec > summary:focus-visible { outline:2px solid #5CBDE6; outline-offset:-2px; }
-.wrapper .v2-toc { display:none !important; }
+.wrapper .v2-toc, .wrapper .v2-tocc { display:none !important; }
 .wnav-in { display:flex; flex-wrap:wrap; gap:6px 18px; background:#FFFFFF; padding:10px 20px;
   font-family:%(sans)s; font-size:13px; line-height:1.4; }
 .wnav-in a { color:%(navy)s; font-weight:700; text-decoration:underline;
