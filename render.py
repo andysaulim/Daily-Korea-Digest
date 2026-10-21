@@ -5059,10 +5059,12 @@ _V2_CSS = """
     /* Where the stylesheet survives, the ROK cards pair up at equal heights. */
     .v2-rg { display:flex !important; flex-wrap:wrap; justify-content:space-between; }
     .v2-rg > .v2-rc { display:flex !important; width:49% !important; max-width:none !important; padding:0 0 10px !important; }
-    /* Public Sentiment, where the stylesheet survives: the party boxes as
-       tall as the approval block beside them, their figures centred, so the
-       row has no empty band above and below the boxes. */
-    .v2-psr { display:flex !important; flex-wrap:wrap; justify-content:space-between; align-items:stretch; }
+    /* An odd last ministry card takes the full row rather than leaving a gap. */
+    .v2-rg > .v2-rc:last-child:nth-child(odd) { width:100% !important; }
+    /* Public Sentiment, where the stylesheet survives: the party boxes at
+       their own height, centred beside the approval block. Stretched to its
+       height they left an empty band under each figure. */
+    .v2-psr { display:flex !important; flex-wrap:wrap; justify-content:space-between; align-items:center; }
     .v2-ps, .v2-pp { display:flex !important; }
     .v2-pst { flex:1; }
     .v2-pp > div { display:flex !important; width:100%; }

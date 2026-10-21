@@ -2261,14 +2261,15 @@ def _build_index_html() -> str:
 
 
 
-def write_preview_pdf(digest_data: dict, out_dir: Path, date_slug: str) -> str:
+def write_preview_pdf(digest_data: dict, out_dir: Path, date_slug: str, name: str = "",
+                      force: bool = False) -> str:
     """The issue in the candidate design, full text, as digest_{date}-preview.pdf.
 
     Written only when a design preview goes out (DESIGN_PREVIEW_TO), so the
     preview's PDF link opens the design it was sent in. Returns the file name,
     or '' when there is no preview or the PDF could not be made. Never raises.
     """
-    if not os.environ.get("DESIGN_PREVIEW_TO", "").strip():
+    if not force and not os.environ.get("DESIGN_PREVIEW_TO", "").strip():
         return ""
     try:
         import copy
@@ -2287,7 +2288,7 @@ def write_preview_pdf(digest_data: dict, out_dir: Path, date_slug: str) -> str:
             when = f"{day:%A, %B} {day.day}, {day.year}"
         except ValueError:
             when = date_slug
-        name = f"digest_{date_slug}-preview.pdf"
+        name = name or f"digest_{date_slug}-preview.pdf"
         # Not make_pdf.html_from_input: its print CSS lets everything break
         # anywhere, which would undo the paper layout's rule that an item
         # never splits across pages.
@@ -2301,6 +2302,33 @@ def write_preview_pdf(digest_data: dict, out_dir: Path, date_slug: str) -> str:
     except Exception as e:                                      # noqa: BLE001
         warn("Preview PDF skipped", f"the design preview's PDF link will open the list's PDF: {e}")
         return ""
+
+
+def borrow_latest_episode(digest: dict) -> list[str]:
+    """Give a test send the Listen card of the most recent published episode.
+
+    Reads podcast.json from the deploy branch; sets audio_url, audio_minutes
+    and listen_url when an episode and WEB_URL exist. Never raises.
+    """
+    try:
+        web = os.environ.get("WEB_URL", "").rstrip("/")
+        if not web:
+            return []
+        from shared.published import read_from_branch
+        text, _ok = read_from_branch("podcast.json")
+        data = json.loads(text) if text else None
+        eps = data if isinstance(data, list) else (data or {}).get("episodes") or []
+        eps = [e for e in eps if isinstance(e, dict) and e.get("file")]
+        if not eps:
+            return []
+        ep = max(eps, key=lambda e: str(e.get("date") or ""))
+        digest["audio_url"] = f"{web}/{ep['file']}"
+        digest["audio_minutes"] = max(1, round(int(ep.get("seconds") or 600) / 60))
+        if ep.get("page"):
+            digest["listen_url"] = f"{web}/{ep['page']}"
+        return [f"test send: Listen card points at the {ep.get('date')} episode"]
+    except Exception as e:                                      # noqa: BLE001
+        return [f"test send: no published episode to borrow ({e})"]
 
 
 def send_design_preview(digest_data: dict, send_fn, lead: str = "", pdf_url: str = "",
@@ -2355,6 +2383,16 @@ def main():
     parser.add_argument("--dry-run",    action="store_true", help="Collect only, don't call Claude")
     parser.add_argument("--no-push",    action="store_true", help="Skip pushing new entries to NK-Russia/provocations databases")
     args = parser.parse_args()
+
+    # The design the list receives: BRIEF_DESIGN (a repository variable) set
+    # to "v2" switches it with no code change; unset or anything else keeps
+    # render.DESIGN. When it equals PREVIEW_DESIGN the separate preview send
+    # stops on its own (send_design_preview skips a design already live).
+    _design = os.environ.get("BRIEF_DESIGN", "").strip().lower()
+    if _design in ("classic", "v2"):
+        import render as _render_mod
+        _render_mod.DESIGN = _design
+        print(f"  🎨  Design for the list: {_design}")
 
     print("=" * 60)
     print("  Korea Daily Brief")
@@ -2887,6 +2925,13 @@ def main():
             warn("Audio skipped", str(_e))
             _audio = None
 
+    if _is_test_send and not digest_data.get("audio_url"):
+        # A test send makes no audio, and without it the email drops its
+        # Listen card, so the copy shown for approval was not the issue
+        # readers get. Point the card at the latest published episode.
+        for _line in borrow_latest_episode(digest_data):
+            print(f"  🎧  {_line}")
+
     html = render(digest_data)
     # Minify before measuring, because the measurement that matters is of the
     # bytes that actually reach a mailbox. About a seventh of this brief is
@@ -2979,8 +3024,13 @@ def main():
     try:
         import shutil
         from make_pdf import html_from_input, html_to_pdf
-        pdf_html = html_from_input(Path("latest.html"))
-        html_to_pdf(pdf_html, archive_dir / "latest.pdf")
+        import render as _render_mod
+        if _render_mod.DESIGN == PREVIEW_DESIGN and write_preview_pdf(
+                digest_data, archive_dir, date_slug, name="latest.pdf", force=True):
+            pass    # the list has the new design: its PDF is the paper layout
+        else:
+            pdf_html = html_from_input(Path("latest.html"))
+            html_to_pdf(pdf_html, archive_dir / "latest.pdf")
         shutil.copy(archive_dir / "latest.pdf", archive_dir / f"digest_{date_slug}.pdf")
         print(f"  🖨  PDF written: public/latest.pdf + public/digest_{date_slug}.pdf")
         _preview_pdf = write_preview_pdf(digest_data, archive_dir, date_slug)
