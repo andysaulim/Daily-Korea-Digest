@@ -63,24 +63,52 @@ def _token() -> str:
     return os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_PAT") or ""
 
 
-def _headers() -> dict:
+def _headers(auth: bool = True) -> dict:
     h = {"Accept": "application/vnd.github+json", "User-Agent": "cost-weekly"}
-    tok = _token()
+    tok = _token() if auth else ""
     if tok:
         h["Authorization"] = f"Bearer {tok}"
     return h
 
 
+def _open(url: str) -> bytes:
+    """GET with the token if there is one, and anonymously if the token fails.
+
+    Every edition is public, so the token is only ever an optimisation. A stale
+    or wrongly scoped one is not harmless, though: raw.githubusercontent answers
+    a bad token with 404, which fetch_metrics reads as "no runs recorded yet",
+    and every edition then reports a clean zero. Retrying without it turns that
+    back into the real numbers.
+    """
+    try:
+        with urllib.request.urlopen(urllib.request.Request(url, headers=_headers()),
+                                    timeout=20) as r:
+            return r.read()
+    except urllib.error.HTTPError as e:
+        if not _token() or e.code not in (401, 403, 404):
+            raise
+    with urllib.request.urlopen(urllib.request.Request(url, headers=_headers(auth=False)),
+                                timeout=20) as r:
+        return r.read()
+
+
 def _get(url: str):
-    req = urllib.request.Request(url, headers=_headers())
-    with urllib.request.urlopen(req, timeout=20) as r:
-        return json.loads(r.read().decode())
+    return json.loads(_open(url).decode())
 
 
 def _get_raw(url: str) -> str:
-    req = urllib.request.Request(url, headers=_headers())
-    with urllib.request.urlopen(req, timeout=20) as r:
-        return r.read().decode("utf-8", "replace")
+    return _open(url).decode("utf-8", "replace")
+
+
+def _addresses(raw: str) -> list[str]:
+    """Addresses from a comma, semicolon or newline separated list, lowercased."""
+    import re
+    return [a.strip().lower() for a in re.split(r"[,;\s]+", raw or "") if "@" in a]
+
+
+def _annotate(level: str, title: str, message: str) -> None:
+    """A GitHub Actions annotation, so the reason shows on the run page."""
+    print(f"::{level} title={title}::{message}")
 
 
 def fetch_metrics(repo: str, path: str) -> tuple[list[dict], str | None]:
@@ -234,22 +262,35 @@ def main() -> int:
     print(as_text(per_edition, errors, args.days))
 
     if args.send:
-        to = os.environ.get("COST_REPORT_TO", "").strip()
+        to = _addresses(os.environ.get("COST_REPORT_TO", ""))
         if not to:
-            print("\nCOST_REPORT_TO is not set; not sending.")
+            # This is why the workflow failed every Monday from at least
+            # 21 September: neither repository variable it reads was set, so
+            # the sheet was built and printed and then exited 1 here, with a
+            # line in the log and nothing on the run page saying why.
+            _annotate("error", "COST_REPORT_TO is not set",
+                      "The cost sheet was built but has no recipient. Set a repository "
+                      "variable named COST_REPORT_TO (Settings > Secrets and variables > "
+                      "Actions > Variables) to the operator address(es), comma-separated. "
+                      "A secret of that name also works. Do not use the reader list.")
             return 1
         # Guard: this is an operator's report. Mailing it to the reader list
-        # would put internal spend in front of the distribution.
-        dist = os.environ.get("DIGEST_TO", "")
-        if dist and any(a.strip() and a.strip() in dist for a in to.split(",")):
-            print("\nCOST_REPORT_TO overlaps DIGEST_TO; refusing to send.")
+        # would put internal spend in front of the distribution. The operator's
+        # own address may well be on that list, so one shared address is fine;
+        # several mean the list itself was pasted in, and that is refused.
+        dist = set(_addresses(os.environ.get("DIGEST_TO", "")))
+        shared = [a for a in to if a in dist]
+        if len(shared) > 1 or (dist and set(to) >= dist and len(dist) > 1):
+            _annotate("error", "COST_REPORT_TO looks like the reader list",
+                      f"{len(shared)} of its addresses are on DIGEST_TO. The cost sheet is an "
+                      f"operator report; set COST_REPORT_TO to the operator address only.")
             return 1
         from send_email import send
         stamp = datetime.now(ZoneInfo("America/New_York")).strftime("%A, %B %-d, %Y")
         send(as_html(per_edition, errors, args.days),
              subject=f"Digest API cost | {stamp}",
-             recipients=[a.strip() for a in to.split(",") if a.strip()])
-        print(f"\nSent to {to}")
+             recipients=to)
+        print(f"\nSent to {', '.join(to)}")
     return 0
 
 

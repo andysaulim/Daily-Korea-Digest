@@ -24,6 +24,17 @@ on:
 permissions:
   contents: write
   pages: write
+  # The duplicate-send guard reads this workflow's own runs and their steps.
+  actions: read
+
+# One run at a time. The guard below decides from what earlier runs did, so two
+# runs deciding at once could both conclude nothing was sent (the old count
+# treated two in-progress fallbacks as "dispatch is running" and skipped both).
+# Queued, never cancelled mid-run: a newer trigger replaces only a pending one,
+# and that one would have skipped anyway.
+concurrency:
+  group: daily-korea-digest
+  cancel-in-progress: false
 
 jobs:
   send-digest:
@@ -34,7 +45,11 @@ jobs:
       - name: Check if already sent today
         id: guard
         env:
-          GH_TOKEN: ${{ secrets.GH_PAT }}
+          # The job's own token, scoped by the permissions block above. GH_PAT
+          # was used here, and an expired or mis-scoped PAT made every query
+          # fail, the count read 0, and the fallback sent a second copy.
+          GH_TOKEN: ${{ github.token }}
+          WEB_URL: https://andysaulim.github.io/Daily-Korea-Digest
         run: |
           # Earliest hour this brief may reach the list, in ET. The Japan
           # edition mailed its list at 00:44 and the Australia one at 00:00
@@ -53,34 +68,71 @@ jobs:
             echo "should_run=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          if [ "${{ github.event_name }}" != "schedule" ]; then
-            echo "Dispatch trigger — running"
+          # A test send never reaches the list, and force_send is the operator
+          # asking for a second copy on purpose. Neither consults the history.
+          if [ "${{ inputs.force_send }}" = "true" ] || [ -n "${{ inputs.send_to }}" ]; then
+            echo "Forced or test send — running"
             echo "should_run=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          today=$(date -u +%Y-%m-%d)
-          success_count=$(gh run list --repo ${{ github.repository }} \
-            --workflow "Daily Korea News Digest" \
-            --status success --created "$today" \
-            --json conclusion -q 'length' 2>/dev/null || echo "0")
-          inprogress_count=$(gh run list --repo ${{ github.repository }} \
-            --workflow "Daily Korea News Digest" \
-            --status in_progress --created "$today" \
-            --json conclusion -q 'length' 2>/dev/null || echo "0")
-          total=$((success_count + inprogress_count))
-          if [ "$total" -gt "1" ]; then
-            echo "Dispatch already succeeded or is running — skipping cron fallback"
-            echo "should_run=false" >> "$GITHUB_OUTPUT"
-          elif [ "$success_count" -gt "0" ]; then
-            echo "Dispatch already succeeded today — skipping cron fallback"
-            echo "should_run=false" >> "$GITHUB_OUTPUT"
+          # Has today's brief already gone to the list? Asked of every trigger,
+          # the external dispatch included: cron-job.org retrying a dispatch it
+          # thought had timed out would otherwise mail the list twice.
+          #
+          # A run counts only if its "Generate and send digest" step succeeded.
+          # The old check counted runs whose CONCLUSION was success, and a run
+          # that skipped (this guard, or the delivery-hour floor) concludes
+          # success too. After DST ends the 7:30 fallback fires at 6:30 EST, is
+          # skipped by the hour floor, and that skip then stopped the 9:00
+          # fallback: no brief at all on a day the external cron missed. It
+          # also missed the opposite case, a run that sent and then failed in
+          # a later step, which the fallback would send again.
+          REPO="${{ github.repository }}"
+          day_et=$(TZ=America/New_York date +%F)
+          since=$(date -u -d "TZ=\"America/New_York\" $day_et 00:00" +%FT%TZ)
+          sent=""; unknown=""
+          if ids=$(gh api "repos/$REPO/actions/workflows/daily-digest.yml/runs?created=%3E%3D$since&per_page=100" \
+                     --jq '.workflow_runs[] | select(.id != ${{ github.run_id }}) | .id'); then
+            for id in $ids; do
+              if n=$(gh api "repos/$REPO/actions/runs/$id/jobs" \
+                       --jq '[.jobs[].steps[]? | select(.name == "Generate and send digest" and (.conclusion == "success" or .status == "in_progress"))] | length'); then
+                if [ "${n:-0}" -gt 0 ]; then sent="$id"; break; fi
+              else
+                unknown="yes"
+              fi
+            done
           else
-            echo "No successful run yet today — running cron fallback"
-            echo "should_run=true" >> "$GITHUB_OUTPUT"
+            unknown="yes"
           fi
+          if [ -n "$sent" ]; then
+            echo "Today's brief already went out in run $sent — skipping"
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ -n "$unknown" ]; then
+            # Could not read the run history. Today's page is the second
+            # witness: only a run that sent deploys it. Read from the deploy
+            # branch as well as the site, since Pages has been switched off
+            # before (3 October) while the branch kept every file.
+            if curl -sfI -o /dev/null "$WEB_URL/digest_$day_et.html" \
+               || curl -sfI -o /dev/null "https://raw.githubusercontent.com/$REPO/gh-pages/digest_$day_et.html"; then
+              echo "::warning title=Send guard degraded::run history unreadable; digest_$day_et.html is published, so treating today as sent"
+              echo "should_run=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "::warning title=Send guard degraded::run history unreadable and no page for $day_et on the site; sending"
+          fi
+          echo "Nothing sent yet today — running"
+          echo "should_run=true" >> "$GITHUB_OUTPUT"
 
       - uses: actions/checkout@v4
         if: steps.guard.outputs.should_run == 'true'
+
+      # The committed trackers, kept aside before the cache restore overwrites
+      # them, so the newer copy can be chosen afterwards (restore_state.py).
+      - name: Keep the committed tracker state
+        if: steps.guard.outputs.should_run == 'true'
+        run: python3 restore_state.py stash
 
       - name: Restore tracker data from cache
         if: steps.guard.outputs.should_run == 'true'
@@ -96,6 +148,13 @@ jobs:
           key: tracker-data-v1
           restore-keys: |
             tracker-data-
+
+      # A cache miss used to reset every tracker to an empty baseline, which
+      # was then saved and carried forward. Picks the newer of cache and
+      # repository for each, merges metrics.jsonl, and annotates a cold start.
+      - name: Reconcile tracker state
+        if: steps.guard.outputs.should_run == 'true'
+        run: python3 restore_state.py reconcile
 
       - name: Set up Python
         if: steps.guard.outputs.should_run == 'true'
@@ -130,6 +189,7 @@ jobs:
       # fail with the calendar. This runs it a year out. continue-on-error:
       # a time bomb a year away is worth a red run, never a held brief.
       - name: Suite is time-independent
+        if: steps.guard.outputs.should_run == 'true'
         continue-on-error: true
         run: python3 timetravel.py 365 test_sources.py
 
@@ -160,8 +220,10 @@ jobs:
           python3 preview.py
           BRIEF_HTML=preview.html python3 test_render_visual.py
 
+      # The guard identifies a sent brief by this step's name succeeding, so a
+      # test send runs as a separate step (below) and is never mistaken for it.
       - name: Generate and send digest
-        if: steps.guard.outputs.should_run == 'true'
+        if: steps.guard.outputs.should_run == 'true' && inputs.send_to == ''
         id: send
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -202,24 +264,44 @@ jobs:
           WEB_URL: https://andysaulim.github.io/Daily-Korea-Digest
         run: |
           set -o pipefail
-          if [ -n "${{ inputs.send_to }}" ]; then
-            echo "::notice::TEST SEND to ${{ inputs.send_to }} — the distribution list is not used."
-            python run.py --send-to "${{ inputs.send_to }}" 2>&1 | tee /tmp/run.log
-          else
-            python run.py 2>&1 | tee /tmp/run.log
-          fi
+          python run.py 2>&1 | tee /tmp/run.log
           echo "success=true" >> "$GITHUB_OUTPUT"
+
+      # Test send: named addresses only, no audio, no archive, no deploy. Its
+      # own step so that the guard above never counts it as today's brief.
+      - name: Test send (not the list)
+        if: steps.guard.outputs.should_run == 'true' && inputs.send_to != ''
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASS: ${{ secrets.GMAIL_APP_PASS }}
+          GMAIL_FROM: ${{ secrets.GMAIL_FROM }}
+          DIGEST_REPLY_TO: ${{ secrets.DIGEST_REPLY_TO }}
+          DIGEST_VISIBLE_TO: ${{ secrets.DIGEST_VISIBLE_TO }}
+          DIGEST_FROM_NAME: ${{ secrets.DIGEST_FROM_NAME }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          X_SCRAPER_KEY: ${{ secrets.X_SCRAPER_KEY }}
+          WEB_URL: https://andysaulim.github.io/Daily-Korea-Digest
+        run: |
+          set -o pipefail
+          echo "::notice::TEST SEND to ${{ inputs.send_to }} — the distribution list is not used."
+          python run.py --no-push --send-to "${{ inputs.send_to }}" 2>&1 | tee /tmp/run.log
 
       # Post-email steps use continue-on-error so a Pages/README failure
       # doesn't mark the workflow as "failed" and trigger a duplicate
       # from the cron fallback.
       - name: Update README with run stats
-        if: steps.guard.outputs.should_run == 'true'
+        if: steps.guard.outputs.should_run == 'true' && inputs.send_to == ''
         continue-on-error: true
         run: python update_readme.py
 
+      # Not on a test send: it rendered over today's latest.html and
+      # digest_DATE.html locally, and deploying those would replace the
+      # published issue with the test.
       - name: Deploy to GitHub Pages
-        if: steps.guard.outputs.should_run == 'true'
+        if: steps.guard.outputs.should_run == 'true' && inputs.send_to == ''
         continue-on-error: true
         uses: peaceiris/actions-gh-pages@v4
         with:
@@ -232,7 +314,7 @@ jobs:
       # daily MP3s alone would pass GitHub Pages' 1 GB site limit. Keep the 30
       # newest — the number podcast.py's feed advertises — and drop the rest.
       - name: Prune old audio from the published site
-        if: steps.guard.outputs.should_run == 'true'
+        if: steps.guard.outputs.should_run == 'true' && inputs.send_to == ''
         continue-on-error: true
         run: |
           git fetch -q origin gh-pages || exit 0
@@ -253,7 +335,7 @@ jobs:
           git push -q origin HEAD:gh-pages && echo "Pruned: $(echo "$old" | wc -l) episode(s)"
 
       - name: Commit updated README + Gallup baseline
-        if: steps.guard.outputs.should_run == 'true'
+        if: steps.guard.outputs.should_run == 'true' && inputs.send_to == ''
         continue-on-error: true
         run: |
           git config user.name "github-actions[bot]"
@@ -274,11 +356,16 @@ jobs:
           # written one, so on any run that did not, README and the Gallup
           # baseline were not committed either. Staged one at a time, a file
           # that is not there costs only itself.
-          for f in README.md gallup_baseline.json metrics.jsonl; do
+          # The trackers are committed for the same reason as metrics.jsonl:
+          # the cache is evicted after seven idle days, and a miss used to
+          # restart each one from an empty baseline. restore_state.py picks
+          # the newer of the two copies at the start of the next run.
+          for f in README.md gallup_baseline.json metrics.jsonl \
+                   kim_tracker.json kcna_tracker.json bp_tracker.json feed_health.json; do
             [ -e "$f" ] && git add "$f" || echo "  (no $f this run)"
           done
           if ! git diff --cached --quiet; then
-            git commit -m "Update README stats, Gallup baseline, run metrics [skip ci]"
+            git commit -m "Update README stats, Gallup baseline, run metrics, trackers [skip ci]"
             git pull --rebase origin main || true
             git push
           fi
