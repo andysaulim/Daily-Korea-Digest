@@ -1698,14 +1698,17 @@ def check_stale_native_candidate_falls_through() -> list[str]:
     its last file would otherwise win, be emptied by the recency filter, and
     keep the press search from ever running.
     """
-    import time as _time
     import feedparser
+    from datetime import datetime as _dt, timedelta as _td, timezone as _tz
 
     def entry(days_old: int, title: str):
+        # Dated from the same clock the collector reads (datetime.now), not
+        # time.time(): run under timetravel.py the two disagree, and a "1 day
+        # old" item became a year old and lost to the fallback.
         e = feedparser.FeedParserDict()
         e["title"] = title
         e["link"] = f"https://example.invalid/{title}"
-        e["published_parsed"] = _time.gmtime(_time.time() - days_old * 86400)
+        e["published_parsed"] = (_dt.now(_tz.utc) - _td(days=days_old)).utctimetuple()
         return e
 
     pages = {"https://native.invalid/rss": [entry(40, "old1"), entry(30, "old2")],
@@ -1726,6 +1729,390 @@ def check_stale_native_candidate_falls_through() -> list[str]:
             problems.append("the last candidate's items were discarded for being old")
     finally:
         collect._parse_one = saved
+    return problems
+
+
+# ── Capitol Hill stream: what gets through ──────────────────────────────────
+
+# Headlines as the outlets write them. Each is (title, summary, feed, kept?).
+_HILL_HEADLINES = [
+    # Should pass: what Congress does on Korea.
+    ("Senators introduce bill to keep 28,500 US troops in South Korea", "", "US Congress Korea", True),
+    ("House passes NDAA with USFK troop floor and Korea shipbuilding provisions", "", "Congress USFK troops", True),
+    ("House panel advances North Korea sanctions bill targeting crypto laundering", "", "Congress Korea sanctions", True),
+    ("Bipartisan lawmakers urge visas for Korean workers after Georgia plant raid", "", "Korean worker visa bill", True),
+    ("Rep. Young Kim introduces North Korean Human Rights Reauthorization Act", "", "US Congress Korea", True),
+    ("US lawmakers press Pentagon on OPCON transfer to South Korea", "", "Congress Korea letter", True),
+    ("MASGA: shipbuilding provisions added to Senate defense bill", "Hanwha Philly Shipyard", "Congress Shipbuilding Korea", True),
+    ("Korea Caucus co-chairs welcome South Korean foreign minister to Capitol Hill", "", "Korea Caucus", True),
+    ("CRS: U.S.-South Korea Relations", "Congressional Research Service report", "CRS Reports", True),
+    ("Senate Foreign Relations hearing examines North Korea policy", "", "Congress Korea hearing", True),
+    ("S. 2296, Partner with Korea Act, referred to committee", "", "Congress.gov Bills", True),
+    # Should not: the National Assembly, the Party Congress, trade shows,
+    # entertainment, and Hill feeds' items that are not about Korea.
+    ("Korean lawmakers clash at National Assembly audit", "lawmakers", "US Congress Korea", False),
+    ("Ruling party lawmaker says U.S. intelligence 'not omniscient'", "DP lawmaker", "US Congress Korea", False),
+    ("North Korea sets date for Ninth Party Congress", "Workers' Party congress", "US Congress Korea", False),
+    ("Ettifos showcases V2X platform at South Korea ITS congress", "", "US Congress Korea", False),
+    ("PPP lawmakers demand Lee explain tariff deal with Washington", "senators in Seoul", "Congress Korea letter", False),
+    ("Senate confirms new Fed governor", "", "The Hill Defense", False),
+    ("Pentagon budget fight continues", "", "The Hill Defense", False),
+    ("BTS member meets senators on Capitol Hill", "K-pop", "US Congress Korea", False),
+]
+
+
+def check_hill_relevance_headlines() -> list[str]:
+    """Real Korea-on-the-Hill headlines pass; the look-alikes do not."""
+    class _E(dict):
+        def get(self, key, default=None):
+            return dict.get(self, key, default)
+
+    problems = []
+    for title, summary, feed, want in _HILL_HEADLINES:
+        if feed not in collect.CAPITOL_HILL_FEEDS:
+            problems.append(f"test names {feed!r}, which is not a Capitol Hill feed")
+            continue
+        got = collect._is_hill_relevant(_E(title=title, summary=summary), feed)
+        if got != want:
+            problems.append(f"{'drops' if want else 'admits'} {title!r} ({feed})")
+    return problems
+
+
+def check_hill_stream_delivers() -> list[str]:
+    """A firehose native feed with no Korea item must give way to its search.
+
+    On 19-21 October 2026 every Capitol Hill feed answered and the stream
+    delivered nothing: The Hill, Roll Call, Politico and congress.gov publish
+    daily, so their native feeds won, the Korea filter removed every item, and
+    the `Korea site:` search behind each never ran. The searches are also
+    date-limited first, because a relevance-ranked search returns last
+    month's items and a 48-hour window keeps none of them.
+    """
+    import feedparser
+    import links
+    from datetime import datetime as _dt, timedelta as _td, timezone as _tz
+
+    def entry(title: str, link: str, hours: int = 3):
+        e = feedparser.FeedParserDict()
+        e["title"] = title
+        e["link"] = link
+        e["summary"] = ""
+        e["published_parsed"] = (_dt.now(_tz.utc) - _td(hours=hours)).utctimetuple()
+        return e
+
+    problems = []
+    for name, cands in collect.CAPITOL_HILL_FEEDS.items():
+        cands = [cands] if isinstance(cands, str) else list(cands)
+        searches = [c for c in cands if "news.google.com" in c]
+        if not searches or "news.google.com" not in cands[-1]:
+            problems.append(f"{name}: no search behind the native feed")
+            continue
+        if not any("when%3A" in c for c in searches):
+            problems.append(f"{name}: no date-limited search")
+        if "when%3A" in cands[-1]:
+            problems.append(f"{name}: the last candidate is date-limited, so nothing backs it up")
+    q = links.build_gnews_query('"South Korea" OR "North Korea" Congress OR senator when:3d')
+    if not q.endswith(") when:3d"):
+        problems.append(f"when: does not bind to the whole search: {q!r}")
+
+    def fake(url, retries=3):
+        if "news.google.com" in url:
+            return [entry("Senators introduce bill to keep US troops in South Korea - The Hill",
+                          "https://news.google.com/rss/articles/CBMi-hill-" + str(abs(hash(url)) % 10**6))]
+        return [entry("Senate confirms new Fed governor", url + "#fed"),
+                entry("House GOP unveils farm bill", url + "#farm")]
+
+    saved = collect._parse_one
+    collect._parse_one = fake
+    try:
+        got = collect._collect_capitol_hill()
+    finally:
+        collect._parse_one = saved
+    feeds = {a["feed"] for a in got}
+    for name in ("The Hill Defense", "Roll Call", "Congress.gov House Floor"):
+        if name not in feeds:
+            problems.append(f"{name}: a native feed with no Korea item still blocked its search")
+    if any("Fed governor" in a["title"] or "farm bill" in a["title"] for a in got):
+        problems.append("non-Korea Hill items reached the stream")
+    # And a native feed that does carry a Korea item still wins.
+    pages = {"https://native.invalid/hill": [entry("NDAA keeps USFK troop floor in South Korea",
+                                                   "https://native.invalid/a")],
+             "https://news.google.com/rss/search?q=x": [entry("search hit", "https://news.google.com/x")]}
+    collect._parse_one = lambda url, retries=3: list(pages.get(url, []))
+    try:
+        won = collect._parse_feed(list(pages), accept=lambda e: collect._is_hill_relevant(e, "The Hill Defense"))
+    finally:
+        collect._parse_one = saved
+    if [e["title"] for e in won] != ["NDAA keeps USFK troop floor in South Korea"]:
+        problems.append("a native feed with a Korea item did not win")
+    return problems
+
+
+def check_rok_press_searches_are_windowed() -> list[str]:
+    """Each ROK press search asks for the last two days first, then the plain search."""
+    problems = []
+    for name in collect.ROK_GOVERNMENT_FEEDS:
+        cands = collect.TIER1_FEEDS.get(name)
+        cands = [cands] if isinstance(cands, str) else list(cands or [])
+        searches = [c for c in cands if "news.google.com" in c and "site%3A" not in c]
+        if not searches:
+            continue
+        if not any("when%3A" in c for c in searches) or "when%3A" in cands[-1]:
+            problems.append(f"{name}: press search is not windowed-then-plain")
+    if "vietnam.vn" not in " ".join(collect.TIER1_FEEDS["ROK MOTIE"]):
+        problems.append("ROK MOTIE no longer excludes vietnam.vn's machine-translated ministry")
+    return problems
+def check_yonhap_is_not_a_prestige_outlet() -> list[str]:
+    """Band 1 is for the outlets a rule names, matched as whole words.
+
+    "ap " was matched as a substring and is the end of "Yonhap ": all three
+    Yonhap feeds ranked as prestige, and on 21 October 2026 they took 130 of
+    the 140 tier-1 slots, so no Korean daily and neither the Korea Herald nor
+    the Korea Times reached the model.
+    """
+    problems = []
+    for feed, want in (("Yonhap English", 4), ("Yonhap Politics", 4), ("Korea Herald", 4),
+                       ("AP Korea", 1), ("FT Korea", 1), ("WSJ Korea", 1), ("38 North", 1),
+                       ("Microsoft Korea", 5)):
+        got = digest._prompt_band({"feed": feed, "lang": "KO" if feed == "Yonhap Politics" else "EN"})
+        if got != want:
+            problems.append(f"{feed} ranks in band {got}, expected {want}")
+    arts = []
+    for src, n in (("Yonhap English", 90), ("Yonhap Politics", 110), ("Yonhap North Korea", 20),
+                   ("Korea Herald", 20), ("Korea Times", 60), ("조선일보", 60), ("Reuters Korea", 3)):
+        arts += [{"feed": src, "source": src, "title": f"{src} item {i}", "url": f"https://x/{src}/{i}",
+                  "lang": "KO" if src in ("조선일보", "Yonhap Politics") else "EN"} for i in range(n)]
+    cut = digest.rank_for_prompt(arts)[:140]
+    have = {a["feed"] for a in cut}
+    for need in ("Korea Herald", "Korea Times", "조선일보", "Reuters Korea"):
+        if need not in have:
+            problems.append(f"{need} does not reach the 140-article cut")
+    yonhap = sum(1 for a in cut if a["feed"].startswith("Yonhap"))
+    if yonhap > 70:
+        problems.append(f"Yonhap feeds take {yonhap} of 140 slots")
+    return problems
+
+
+def check_widely_covered_stories_reach_the_model() -> list[str]:
+    """A policy story three outlets ran reaches the cut, marked; golf does not get the boost."""
+    filler = [{"feed": "Korea Times", "source": "Korea Times", "lang": "EN",
+               "title": f"Local item number {i} about roads {i}", "url": f"https://kt/{i}"} for i in range(300)]
+    story = [{"feed": f, "source": f, "lang": "EN", "url": f"https://{f[:3]}/opcon",
+              "title": "US cites evolving threat environment amid debate over OPCON transition"}
+             for f in ("Yonhap English", "Korea Herald", "Korea Times")]
+    golf = [{"feed": f, "source": f, "lang": "EN", "url": f"https://{f[:3]}/golf",
+             "title": "PGA Tour goes to Bermuda and South Korea hosts the LPGA"}
+            for f in ("Yonhap English", "Korea Herald", "Korea Times")]
+    arts = filler[:150] + story + golf + filler[150:]
+    cut = digest.rank_for_prompt(arts)[:20]
+    problems = []
+    marked = [a for a in cut if a.get("carried_by")]
+    if not any("OPCON" in a["title"] for a in marked):
+        problems.append("a three-outlet policy story was not moved into the cut")
+    if any("PGA" in a["title"] for a in marked):
+        problems.append("a three-outlet golf story was boosted")
+    if "carried_by" not in digest.SYSTEM_PROMPT + _prompt_text():
+        problems.append("the prompt does not tell the model what carried_by means")
+    import coverage_audit as ca
+    miss = ca.missed({"tier1": golf + [
+        {"feed": f, "source": f, "title": "Busan tries again to guide canal-trapped shark back to sea"}
+        for f in ("Yonhap English", "Korea Herald", "Korea Times")]}, {})
+    if miss:
+        problems.append(f"coverage audit reports noise: {[m['headline'] for m in miss]}")
+    if ca.outlet_name({"source": "The Korea Times"}) != ca.outlet_name({"source": "Korea Times"}):
+        problems.append("'The Korea Times' and 'Korea Times' count as two outlets")
+    if ca.outlet_name({"source": "The Korea Herald"}) == ca.outlet_name({"source": "The Korea Times"}):
+        problems.append("the Korea Herald and the Korea Times count as one outlet")
+    return problems
+
+
+def _prompt_text() -> str:
+    payload = {"tier1": [{"title": "t", "url": "https://x/1", "source": "Korea Times", "lang": "EN"}],
+               "tier2": [], "tier3": [], "tier4": []}
+    try:
+        return digest.build_user_prompt(payload, "Wednesday, October 21, 2026")
+    except Exception:                                           # noqa: BLE001
+        import inspect
+        return inspect.getsource(digest.build_user_prompt)
+
+
+def check_analysis_section() -> list[str]:
+    """Think-tank reports first, 3-5 pieces, never a news story, never a repeat."""
+    import run
+    problems = []
+    lo, hi = run.SECTION_CAPS["opeds_today"]
+    if hi + run.SECTION_CAPS["academic_today"][1] < run.ANALYSIS_MAX or run.ANALYSIS_MAX > 5:
+        problems.append("Analysis caps cannot deliver 3-5 pieces")
+    # Sourcing: native first, a search last, a general think tank filtered.
+    for tier in (collect.TIER2_FEEDS, collect.TIER3_FEEDS):
+        for name, (cands, _rating) in tier.items():
+            cands = [cands] if isinstance(cands, str) else list(cands)
+            if "news.google.com" not in cands[-1]:
+                problems.append(f"{name}: no search fallback")
+            first_search = next(i for i, c in enumerate(cands) if "news.google.com" in c)
+            if any("news.google.com" not in c for c in cands[first_search:]):
+                problems.append(f"{name}: a native feed after a search")
+    for name in ("CSIS", "Brookings", "CFR", "Carnegie", "RAND", "Stimson", "CNAS", "Heritage", "AEI",
+                 "Hudson Institute", "Wilson Center", "KEIA", "Atlantic Council", "Hoover",
+                 "Quincy Institute", "Pacific Forum", "ASAN Institute", "EAI", "KINU", "Sejong Institute",
+                 "KIDA", "KDI", "IFANS", "Lowy Interpreter", "IISS", "Chatham House", "SIPRI", "RUSI",
+                 "Foreign Affairs", "Foreign Policy", "War on the Rocks", "Texas National Security Review",
+                 "NYT Opinion", "WSJ Opinion", "WaPo Opinion", "FT Opinion", "Bloomberg Opinion",
+                 "Korea Herald Opinion", "JoongAng Opinion", "Chosun English Opinion"):
+        if name not in collect.TIER2_FEEDS:
+            problems.append(f"no tier-2 feed for {name}")
+    for name in ("Int'l Security", "Asian Survey", "Pacific Affairs", "Washington Quarterly", "Survival",
+                 "J. East Asian Studies", "Korean J. Def. Analysis", "Asia Policy"):
+        if name not in collect.TIER3_FEEDS:
+            problems.append(f"no tier-3 feed for {name}")
+
+    class _E(dict):
+        def get(self, key, default=None):
+            return dict.get(self, key, default)
+    if collect._analysis_relevant("Brookings", _E(title="The Fed and inflation", summary="")):
+        problems.append("a general think tank's non-Korea piece passes")
+    if not collect._analysis_relevant("KINU", _E(title="2027 unification budget priorities", summary="")):
+        problems.append("a Korea-only institute's piece is filtered out")
+    if collect.ANALYSIS_KIND.get("NKPro") != "news" or collect.ANALYSIS_KIND.get("CSIS") != "report":
+        problems.append("ANALYSIS_KIND mislabels NK Pro or CSIS")
+    if not collect.TIER2_OPED_HOURS < collect.TIER2_HOURS <= collect.TIER3_HOURS:
+        problems.append("analysis windows are out of order")
+    # Ordering: a B-rated report outranks an A-rated op-ed.
+    order = digest.rank_analysis([
+        {"feed": "NYT Opinion", "kind": "oped", "prestige": "A", "title": "op"},
+        {"feed": "NKPro", "kind": "news", "prestige": "A", "title": "news"},
+        {"feed": "Heritage", "kind": "report", "prestige": "B", "title": "report"}])
+    if [a["title"] for a in order] != ["report", "op", "news"]:
+        problems.append(f"Analysis ranking is {[a['title'] for a in order]}")
+    # Validation: a news story is dropped, the total is capped at five.
+    payload = {"tier1": [{"url": "https://yna/1", "title": "news"}],
+               "tier2": [{"url": f"https://tt/{i}", "kind": "report"} for i in range(6)]
+                        + [{"url": "https://nkpro/1", "kind": "news"}], "tier3": []}
+    d = {"opeds_today": [{"url": "https://yna/1", "headline": "a wire story"},
+                         {"url": "https://nkpro/1", "headline": "NK Pro scoop"}]
+                        + [{"url": f"https://tt/{i}", "headline": f"r{i}"} for i in range(4)],
+         "academic_today": [{"url": "https://j/1"}, {"url": "https://j/2"}]}
+    run._drop_news_from_analysis(d, payload)
+    if any(i["url"] in ("https://yna/1", "https://nkpro/1") for i in d["opeds_today"]):
+        problems.append("a news story stayed in the Analysis section")
+    run.validate_digest(d, None)
+    if len(d["opeds_today"]) + len(d["academic_today"]) > run.ANALYSIS_MAX:
+        problems.append("the Analysis section is not capped at five")
+    # A piece a brief already ran this week is not offered again.
+    p2 = {"tier2": [{"url": "https://tt/old", "title": "Old report"}, {"url": "https://tt/new", "title": "New"}],
+          "tier3": [], "capitol_hill_articles": [{"url": "https://crs/x", "title": "CRS: Korea"}]}
+    rows = [{"date": "2026-10-19", "url": "https://tt/old", "title": "Old report", "used": True},
+            {"date": "2026-10-20", "url": "https://tt/new", "title": "New", "used": False},
+            {"date": "2026-10-20", "url": "https://crs/x", "title": "CRS: Korea", "used": True}]
+    n = run.drop_recently_used_analysis(p2, rows, "2026-10-21")
+    if n != 2 or [a["url"] for a in p2["tier2"]] != ["https://tt/new"]:
+        problems.append(f"recently used analysis not dropped correctly ({n})")
+    if "ANALYSIS" not in _prompt_text() or "best 3-5 pieces" not in _prompt_text():
+        problems.append("the prompt does not define the Analysis section's 3-5 pieces")
+    return problems
+
+
+def check_leaders_words() -> list[str]:
+    """Lee, Trump and Kim: one verbatim quote each at most, never a paraphrase."""
+    import run
+    problems = []
+    text = _prompt_text()
+    for need in ("LEADERS' WORDS", "VERBATIM", "Lee Jae-myung", "Donald Trump", "paraphrase"):
+        if need not in text:
+            problems.append(f"the prompt's leaders rule lacks {need!r}")
+    if "AT MOST 1 direct quote from Kim Jong Un" not in digest._KCNA_FULL_INSTRUCTIONS:
+        problems.append("Kim's key_quotes are not limited to one")
+    d = {"social_statements": [{"who": "President Lee Jae-myung", "quote_text": "a"},
+                               {"who": "Lee Jae-myung", "quote_text": "b"},
+                               {"who": "Donald Trump", "quote_text": "c"},
+                               {"who": "FM Cho Hyun", "quote_text": "d"}],
+         "kcna_delta": {"key_quotes": [{"quote": "x"}, {"quote": "y"}]}}
+    run._cap_leader_quotes(d)
+    if [s["quote_text"] for s in d["social_statements"]] != ["a", "c", "d"]:
+        problems.append(f"leader cap kept {[s['quote_text'] for s in d['social_statements']]}")
+    if len(d["kcna_delta"]["key_quotes"]) != 1:
+        problems.append("more than one Kim quote kept")
+    return problems
+def check_nk_russia_timeline_sheet() -> list[str]:
+    """The NK-Russia timeline is read from its Google Sheet (TimelineJS layout).
+
+    The GitHub page the brief used to read returned 404 and the brief ran
+    without the timeline. The fixture covers the title slide, HTML in cells,
+    and rows with no day or no month.
+    """
+    import databases as db
+    from datetime import datetime as _dt, timezone as _tz
+    from pathlib import Path as _P
+    problems = []
+    text = (_P(__file__).parent / "fixtures" / "nk_russia" / "timeline_sheet.csv").read_text(encoding="utf-8")
+    ev = db.parse_timeline_csv(text)
+    heads = [e["headline"] for e in ev]
+    if any("Timeline of North Korea-Russia" in h for h in heads):
+        problems.append("the title slide was read as an event")
+    if len(ev) != 4:
+        problems.append(f"expected 4 events, got {len(ev)}: {heads}")
+    by = {e["headline"][:12]: e for e in ev}
+    treaty = by.get("Putin and Ki")
+    if not treaty or treaty["date"] != "2024-06-19" or "<" in treaty["headline"] + treaty["text"] \
+            or "&amp;" in treaty["text"] or treaty["tag"] != "diplomatic":
+        problems.append(f"HTML row parsed wrongly: {treaty}")
+    month_only = next((e for e in ev if e["headline"].startswith("Russian tourists")), None)
+    if not month_only or month_only["day"] is not None or month_only["date"] != "2025-11":
+        problems.append(f"month-only row parsed wrongly: {month_only}")
+    year_only = next((e for e in ev if e["headline"] == "Year-only entry"), None)
+    if not year_only or year_only["month"] is not None or year_only["date"] != "2023":
+        problems.append(f"year-only row parsed wrongly: {year_only}")
+    # The rest of databases.py reads these events without choking, and an
+    # event with no day never becomes an "on this day".
+    otd = db.get_on_this_day([], ev, today=_dt(2027, 6, 19, tzinfo=_tz.utc))
+    if [o["event"][:12] for o in otd] != ["Putin and Ki"]:
+        problems.append(f"on-this-day from the sheet: {otd}")
+    if db.get_on_this_day([], ev, today=_dt(2026, 11, 1, tzinfo=_tz.utc)):
+        problems.append("a month-only event was matched to the 1st of the month")
+    db.get_recent_timeline_entries(ev, days=100000)
+    if "docs.google.com/spreadsheets/d/" + db.NKR_SHEET_ID not in db.NKR_SHEET_CSV_URL \
+            or "format=csv" not in db.NKR_SHEET_CSV_URL:
+        problems.append("NKR_SHEET_CSV_URL is not the sheet's CSV export")
+    # The fetcher tries the sheet first, and a sign-in page is not CSV.
+    calls = []
+
+    class _R:
+        def __init__(self, body, ctype):
+            self.text, self.content, self.headers = body, body.encode(), {"Content-Type": ctype}
+        def raise_for_status(self):
+            return None
+    saved = db.requests.get
+    db.requests.get = lambda url, **k: (calls.append(url), _R(text, "text/csv"))[1]
+    try:
+        got = db.fetch_nk_russia_timeline()
+        if calls[:1] != [db.NKR_SHEET_CSV_URL] or len(got) != 4:
+            problems.append(f"the sheet is not the first candidate: {calls}")
+        calls.clear()
+        db.requests.get = lambda url, **k: (calls.append(url),
+                                            _R("<html>Sign in</html>", "text/html"))[1]
+        db.fetch_nk_russia_timeline()
+        if len(calls) != 2:
+            problems.append("a sign-in page from the sheet did not fall back to the old page")
+    finally:
+        db.requests.get = saved
+    # The push cannot write to a Sheet: it is skipped, not attempted.
+    import os
+    saved_tok = os.environ.get("GITHUB_TOKEN")
+    os.environ["GITHUB_TOKEN"] = "test-token-not-used"
+    saved_push = db.push_nk_russia_entry
+    pushed = []
+    db.push_nk_russia_entry = lambda e: pushed.append(e) or True
+    try:
+        out = db.process_digest_entries({"timeline_candidates": ["https://x/1"],
+                                         "top_stories": [{"url": "https://x/1", "headline": "h"}]})
+    finally:
+        db.push_nk_russia_entry = saved_push
+        if saved_tok is None:
+            os.environ.pop("GITHUB_TOKEN", None)
+        else:
+            os.environ["GITHUB_TOKEN"] = saved_tok
+    if pushed or out.get("nk_russia_added"):
+        problems.append("the NK-Russia push was attempted against the Sheet")
     return problems
 
 
@@ -2196,6 +2583,14 @@ CHECKS = [
     ("a stale native feed falls through to its fallback", check_stale_native_candidate_falls_through),
     ("Hill calendar parsers read the documented formats", check_hill_calendar_parsers),
     ("corpus records carry their feed", check_corpus_records_feed),
+    ("Hill relevance passes Congress on Korea, not look-alikes", check_hill_relevance_headlines),
+    ("Hill native feeds give way to their searches", check_hill_stream_delivers),
+    ("ROK press searches are date-limited first", check_rok_press_searches_are_windowed),
+    ("Yonhap is not ranked as a prestige outlet", check_yonhap_is_not_a_prestige_outlet),
+    ("widely covered stories reach the model; noise does not", check_widely_covered_stories_reach_the_model),
+    ("Analysis section: reports first, 3-5 pieces, no news", check_analysis_section),
+    ("leaders' words: one verbatim quote each", check_leaders_words),
+    ("NK-Russia timeline reads its Google Sheet", check_nk_russia_timeline_sheet),
 ]
 
 

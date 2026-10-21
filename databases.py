@@ -17,9 +17,21 @@ from typing import Optional
 
 GITHUB_TOKEN_ENV = "GITHUB_TOKEN"  # PAT with repo write access
 
+# The live NK-Russia timeline is a Google Sheet in TimelineJS layout, shared
+# "anyone with the link: reader", so its CSV export needs no credentials. The
+# GitHub page it replaced (NKR_REPO) returned 404 from 19 October 2026 and the
+# brief was written without the timeline. That URL stays as a second
+# candidate: a dead one costs a single request.
+NKR_SHEET_ID = "10XZCpGPwokuLVFd-Mj_zt5A4bK7TD99AL-cHgQBY3Mc"
+NKR_SHEET_GID = "0"
+NKR_SHEET_CSV_URL = (f"https://docs.google.com/spreadsheets/d/{NKR_SHEET_ID}"
+                     f"/export?format=csv&gid={NKR_SHEET_GID}")
 NKR_REPO = "andysaulim/Timeline-of-North-Korea-Russia-Cooperation-since-2022"
 NKR_FILE = "index.html"
 NKR_RAW_URL = f"https://raw.githubusercontent.com/{NKR_REPO}/main/{NKR_FILE}"
+# Entries can be appended to the GitHub page through the API; a Sheet needs
+# Google credentials the workflow does not have, so the push is skipped.
+NKR_PUSH_ENABLED = False
 
 PROV_REPO = "andysaulim/North-Korean-Provocations-since-1958"
 PROV_FILE = "index.html"
@@ -239,13 +251,92 @@ def _extract_js_array(html: str, var_name: str) -> list:
 # FETCH DATABASES
 # ─────────────────────────────────────────────────────────────────────────────
 
+_TAG_RE = re.compile(r"<[^>]+>")
+
+
+def _cell_text(value) -> str:
+    """A sheet cell as plain text: HTML tags stripped, entities decoded."""
+    import html as _html
+    text = _TAG_RE.sub(" ", str(value or ""))
+    return re.sub(r"\s+", " ", _html.unescape(text)).strip()
+
+
+def _int_or_none(value):
+    try:
+        v = int(float(str(value).strip()))
+        return v if v > 0 else None
+    except (TypeError, ValueError):
+        return None
+
+
+def parse_timeline_csv(text: str) -> list:
+    """TimelineJS sheet rows as timeline events.
+
+    Columns: Year, Month, Day, Time, End Year, End Month, End Day, End Time,
+    Display Date, Headline, Text, Media, Media Credit, Media Caption, Media
+    Thumbnail, Alt Text, Type, Group, Background. The title slide (Type
+    "title") and rows without a year are skipped. Headline and Text may hold
+    HTML, which is stripped.
+
+    Each event has the shape the GitHub page's EVENTS array had, which is
+    what get_on_this_day and get_recent_timeline_entries read: year, month,
+    day (None when the sheet gives no month or day, so no exact-date match
+    is invented), headline, text, tag (the Group column), media, credit and
+    an ISO `date` at whatever precision the row has ("2026-10-15", "2026-10",
+    "2026").
+    """
+    import csv
+    import io
+    events = []
+    reader = csv.DictReader(io.StringIO(text.lstrip("\ufeff")))
+    for i, row in enumerate(reader, start=1):
+        row = {str(k or "").strip().lower(): v for k, v in row.items()}
+        if str(row.get("type") or "").strip().lower() == "title":
+            continue
+        year = _int_or_none(row.get("year"))
+        headline = _cell_text(row.get("headline"))
+        if not year or not (headline or _cell_text(row.get("text"))):
+            continue
+        month = _int_or_none(row.get("month"))
+        month = month if month and month <= 12 else None
+        day = _int_or_none(row.get("day")) if month else None
+        day = day if day and day <= 31 else None
+        date = f"{year:04d}" + (f"-{month:02d}" if month else "") + (f"-{day:02d}" if day else "")
+        events.append({
+            "id": i,
+            "year": year, "month": month, "day": day, "date": date,
+            "display_date": _cell_text(row.get("display date")),
+            "headline": headline,
+            "text": _cell_text(row.get("text")),
+            "media": str(row.get("media") or "").strip(),
+            "credit": _cell_text(row.get("media credit")),
+            "caption": _cell_text(row.get("media caption")),
+            "tag": _cell_text(row.get("group")).lower(),
+            "is_landmark": False,
+        })
+    return events
+
+
 def fetch_nk_russia_timeline() -> list:
-    """Fetch the NK-Russia cooperation timeline from GitHub."""
+    """Fetch the NK-Russia cooperation timeline: the Google Sheet, then the old GitHub page."""
+    try:
+        resp = requests.get(NKR_SHEET_CSV_URL, timeout=TIMEOUT, headers=HEADERS)
+        resp.raise_for_status()
+        # A sheet that is no longer shared answers with a sign-in page, not CSV.
+        if "text/html" in resp.headers.get("Content-Type", "") or resp.text.lstrip().startswith("<"):
+            raise ValueError("the sheet export returned a web page, not CSV (sharing changed?)")
+        events = parse_timeline_csv(resp.content.decode("utf-8-sig", "replace"))
+        if events:
+            print(f"    NK-Russia timeline: {len(events)} events loaded from the Google Sheet")
+            return events
+        print("    ⚠  NK-Russia timeline: the Google Sheet had no event rows")
+    except Exception as e:
+        print(f"    ⚠  NK-Russia timeline (Google Sheet) fetch error: {e}")
     try:
         resp = requests.get(NKR_RAW_URL, timeout=TIMEOUT, headers=HEADERS)
         resp.raise_for_status()
         events = _extract_js_array(resp.text, "EVENTS")
-        print(f"    NK-Russia timeline: {len(events)} events loaded")
+        print(f"    NK-Russia timeline: {len(events)} events loaded from GitHub")
         return events
     except Exception as e:
         print(f"    ⚠  NK-Russia timeline fetch error: {e}")
@@ -319,13 +410,14 @@ def get_on_this_day(provocations: list, timeline: list,
                 "severity": rec.get("sev", 0),
             })
 
-    # Check NK-Russia timeline
+    # Check NK-Russia timeline. An event without a day (the sheet allows a
+    # month or a year alone) has no "on this day".
     for evt in timeline:
         try:
-            y = int(evt.get("year", 0))
-            m = int(evt.get("month", 0))
-            d = int(evt.get("day", 1))
-            if not (y and m):
+            y = int(evt.get("year") or 0)
+            m = int(evt.get("month") or 0)
+            d = int(evt.get("day") or 0)
+            if not (y and m and d):
                 continue
             dt = datetime(y, m, d)
         except (ValueError, TypeError):
@@ -356,15 +448,16 @@ def get_recent_timeline_entries(timeline: list, days: int = 30) -> list:
     recent = []
     for evt in timeline:
         try:
-            y = int(evt.get("year", 0))
-            m = int(evt.get("month", 0))
-            d = int(evt.get("day", 1))
-            dt = datetime(y, m, d, tzinfo=timezone.utc)
+            y = int(evt.get("year") or 0)
+            m = int(evt.get("month") or 0)
+            d = int(evt.get("day") or 0)
+            # A month-only entry is dated to its first day for the window.
+            dt = datetime(y, m, d or 1, tzinfo=timezone.utc)
         except (ValueError, TypeError):
             continue
         if dt >= cutoff:
             recent.append({
-                "date": f"{y}-{m:02d}-{d:02d}",
+                "date": f"{y}-{m:02d}-{d:02d}" if d else f"{y}-{m:02d}",
                 "headline": evt.get("headline", ""),
                 "tag": evt.get("tag", ""),
                 "is_landmark": evt.get("is_landmark", False),
@@ -620,8 +713,14 @@ def process_digest_entries(digest: dict) -> dict:
 
     story_by_url = {s.get("url", ""): s for s in all_stories if s.get("url")}
 
-    # NK-Russia timeline candidates
+    # NK-Russia timeline candidates. The live timeline is a Google Sheet, which
+    # cannot be written without Google credentials: the candidates stay listed
+    # in the digest (timeline_candidates) for the editor to add by hand.
     candidates = digest.get("timeline_candidates") or []
+    if candidates and not NKR_PUSH_ENABLED:
+        print(f"     NK-Russia timeline push skipped: the timeline is a Google Sheet "
+              f"(no write access); {len(candidates)} candidate(s) left in timeline_candidates")
+        candidates = []
     for url in candidates:
         story = story_by_url.get(url, {})
         if not story:

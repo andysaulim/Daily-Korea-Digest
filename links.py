@@ -260,21 +260,26 @@ def build_gnews_query(query: str) -> str:
     toks = _TOKEN_RE.findall(q)
     if "(" in toks or ")" in toks:
         return q.strip()                  # already explicit
-    site_terms, topic = [], []
+    # A `when:3d` window is a filter on the whole search, like site:, and is
+    # pulled out and bound the same way: left inside an OR chain it would
+    # attach to the last alternative only.
+    site_terms, window_terms, topic = [], [], []
     for i, t in enumerate(toks):
         prev_or = i > 0 and toks[i - 1] == "OR"
         next_or = i + 1 < len(toks) and toks[i + 1] == "OR"
         bare = t.lstrip("-")
         if bare.startswith("site:") and not prev_or and not next_or:
             site_terms.append(t)
+        elif t.startswith("when:") and not prev_or and not next_or:
+            window_terms.append(t)
         else:
             topic.append(t)
-    if not site_terms:
+    if not site_terms and not window_terms:
         return " ".join(toks)
     head = " ".join(topic)
     if " OR " in f" {head} " and len(topic) > 1:
         head = f"({head})"
-    return " ".join([p for p in (head, *site_terms) if p])
+    return " ".join([p for p in (head, *site_terms, *window_terms) if p])
 
 
 _GNEWS_LOCALES = {

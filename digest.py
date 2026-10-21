@@ -384,9 +384,9 @@ _KCNA_FULL_INSTRUCTIONS = (
     "RANKING RULE: any article containing a Kim Jong Un statement, order, message, or attributed activity MUST rank first. "
     "Then rank by policy significance (nuclear/missile > diplomacy > military > economy > ideology/culture). "
     "Each object: headline (English, translated if needed), summary (1 sentence — the key fact), url (from the input data — REQUIRED, omit the article if no real URL exists), source, kim_related (boolean — true if Kim Jong Un is the actor or speaker).\n"
-    "- key_quotes: Up to 2 direct quotes from Kim Jong Un ONLY, today. "
-    "Each object: speaker (\"Kim Jong Un\"), quote (exact text translated to English), source_article (KCNA article title or wire source). "
-    "Only direct, attributed quotes — no paraphrases, no other officials. Empty array if Kim said nothing quotable today.\n"
+    "- key_quotes: AT MOST 1 direct quote from Kim Jong Un ONLY, today — the most policy-relevant one (nuclear, military, the US, the ROK, Russia). "
+    "Each object: speaker (\"Kim Jong Un\"), quote (exact text translated to English, verbatim from the article: nothing added, nothing paraphrased), source_article (KCNA article title or wire source), url (the article's URL from the input, when there is one). "
+    "Only direct, attributed quotes — words the article puts in quotation marks as Kim's; no paraphrases, no other officials. Empty array if Kim said nothing quotable today.\n"
     "- senior_officials: array of notable non-Kim official appearances/activities mentioned in KCNA (e.g. Choe Son Hui, Kim Yo Jong, Ri Pyong Chol). Each: name, role (title), activity (1 sentence). Max 3.\n"
     "- silence_today: boolean (complete KCNA blackout)\n"
     "- watch_flag: boolean — true only for a nuclear or ICBM-class test or explicit threat of one, Kim absent 14+ days, KCNA silence, or a named official threatening force. Otherwise false.\n"
@@ -448,7 +448,7 @@ def _build_kcna_summary_block(payload: dict) -> str:
 _PROMPT_PRESTIGE = {
     "wsj", "wall street journal", "washington post", "wapo", "new york times",
     "nyt", "bloomberg", "financial times", "ft", "economist", "cnn", "reuters",
-    "cnbc", "ap ", "associated press", "nikkei",
+    "cnbc", "ap", "associated press", "nikkei",
 }
 _PROMPT_SPECIALIST = {
     "38 north", "38north", "beyond parallel", "nk news", "nk pro", "daily nk",
@@ -462,6 +462,25 @@ _PROMPT_CONGRESS = ("congress.gov", "govinfo", "crs ", "hfac", "hasc", "sfrc", "
 
 
 _ROK_PRESS_PER_FEED = 3
+
+# Whole words only. This was a substring test with "ap " standing for AP,
+# and "ap " is the end of "Yonhap ": every Yonhap feed ranked as a prestige
+# outlet. On 21 October 2026 the 140-article cut was ten primary documents
+# and 130 items from Yonhap English, Yonhap Politics and Yonhap North Korea
+# taken one per feed in turn; the Korea Herald, the Korea Times and every
+# Korean daily ranked below it and never reached the model.
+_PRESTIGE_RE = re.compile(r"\b(?:" + "|".join(sorted(map(re.escape, _PROMPT_PRESTIGE), key=len, reverse=True))
+                          + r")\b")
+_SPECIALIST_RE = re.compile(r"\b(?:" + "|".join(sorted(map(re.escape, _PROMPT_SPECIALIST), key=len, reverse=True))
+                            + r")\b")
+
+# Korea desks: outlets whose whole output is Korea, English or Korean. They
+# share one band so that, one item per outlet in turn, the Korea Herald and
+# Yonhap English get their slots beside the Korean dailies rather than after
+# all of them.
+_KOREA_DESKS = {"yonhap english", "yonhap english national", "korea herald", "korea times",
+                "korea joongang daily", "dong-a english", "chosun english", "hankyoreh english",
+                "korea economic daily", "arirang news", "korea.net", "nk news", "pressian"}
 
 _ROK_BODIES = {"bank of korea", "statistics korea", "korea customs", "korea.net",
                "dart disclosures"}
@@ -508,12 +527,10 @@ def _prompt_band(article: dict) -> int:
         return 0
     # 1 — outlets a prompt rule declares mandatory. If these are not in the
     #     prompt the rule silently does nothing.
-    if any(p in source for p in _PROMPT_PRESTIGE):
+    if _PRESTIGE_RE.search(source) or _SPECIALIST_RE.search(source):
         return 1
-    if any(p in source for p in _PROMPT_SPECIALIST):
-        return 1
-    if publisher and any(p in publisher for p in _PROMPT_PRESTIGE | _PROMPT_SPECIALIST
-                         if len(p) > 3):
+    if publisher and (_PRESTIGE_RE.search(publisher) or _SPECIALIST_RE.search(publisher)) \
+            and not publisher.startswith(("yonhap", "korea")):
         return 1
     # 2 — a flagged Korea correspondent's byline.
     if article.get("flagged_journalist"):
@@ -523,13 +540,38 @@ def _prompt_band(article: dict) -> int:
     #     them, so they should not be competing for scraps at the bottom.
     if article.get("fulltext"):
         return 3
-    if str(article.get("lang", "")).upper() == "KO":
+    if str(article.get("lang", "")).upper() == "KO" or source in _KOREA_DESKS:
         return 4
     return 5
 
 
+def _widely_covered(articles: list) -> dict[int, int]:
+    """{id(article): outlet count} for one article of each story 3+ outlets ran.
+
+    The representative is the member the bands already favour, so a primary
+    document or a prestige outlet's version is the one shown when there is
+    one. Sports and human-interest stories are left out (coverage_audit).
+    """
+    try:
+        import coverage_audit
+        out = {}
+        for n, members in coverage_audit.widely_covered(articles):
+            rep = min(members, key=_prompt_band)
+            out[id(rep)] = n
+        return out
+    except Exception:                                           # noqa: BLE001
+        return {}
+
+
 def rank_for_prompt(articles: list) -> list:
-    """Order articles so the truncation that follows is editorial, not random."""
+    """Order articles so the truncation that follows is editorial, not random.
+
+    A story that three or more outlets carried has its best article moved
+    into band 1 and marked with `carried_by`, so a story the press broadly
+    treated as news cannot fall past the cut because its outlet publishes a
+    hundred items a day (both real misses on 21 October 2026).
+    """
+    wide = _widely_covered(articles)
     seen: dict[str, int] = {}
     keyed = []
     for i, a in enumerate(articles):
@@ -542,7 +584,35 @@ def rank_for_prompt(articles: list) -> list:
         # would otherwise fill the whole tier-1 cut on their own.
         if band == 2 and nth >= _ROK_PRESS_PER_FEED and not a.get("flagged_journalist"):
             band = 5
+        if id(a) in wide:
+            a["carried_by"] = wide[id(a)]
+            band, nth = min(band, 1), 0
         keyed.append(((band, nth, i), a))
+    keyed.sort(key=lambda kv: kv[0])
+    return [a for _, a in keyed]
+
+
+_KIND_ORDER = {"report": 0, "journal": 0, "oped": 1, "news": 2}
+_RATING_ORDER = {"A+": 0, "A": 1, "B": 2, "C": 3}
+
+
+def rank_analysis(articles: list) -> list:
+    """Order tier-2/3 pieces for the Analysis section: reports and research
+    first, then op-eds, then reporting; within each, by the outlet's rating,
+    one per outlet before any outlet gets a second.
+
+    rank_for_prompt's bands are for news: they put the NYT and WSJ opinion
+    pages (prestige outlets) ahead of every think-tank report, which is the
+    wrong way round for this section.
+    """
+    seen: dict[str, int] = {}
+    keyed = []
+    for i, a in enumerate(articles):
+        src = str(a.get("feed") or a.get("source", ""))
+        nth = seen.get(src, 0)
+        seen[src] = nth + 1
+        rating = str(a.get("prestige") or a.get("journal_tier") or "")
+        keyed.append(((_KIND_ORDER.get(a.get("kind"), 1), nth, _RATING_ORDER.get(rating, 4), i), a))
     keyed.sort(key=lambda kv: kv[0])
     return [a for _, a in keyed]
 
@@ -550,7 +620,8 @@ def rank_for_prompt(articles: list) -> list:
 def build_user_prompt(payload: dict, date_str: str, db_context: str = "",
                       recent_coverage: str = "") -> str:
     def tier_json(articles: list, max_items: int = 140) -> str:
-        trimmed = rank_for_prompt(articles)[:max_items]
+        analysis = bool(articles) and all(a.get("kind") in _KIND_ORDER for a in articles)
+        trimmed = (rank_analysis(articles) if analysis else rank_for_prompt(articles))[:max_items]
         result = []
         for a in trimmed:
             item = {
@@ -562,6 +633,10 @@ def build_user_prompt(payload: dict, date_str: str, db_context: str = "",
                 "prestige":    a.get("prestige"),
                 "journal_tier": a.get("journal_tier"),
             }
+            if a.get("kind"):
+                item["kind"] = a["kind"]
+            if a.get("carried_by"):
+                item["carried_by"] = a["carried_by"]
             if a.get("tags"):
                 item["tags"] = a["tags"]
             result.append(item)
@@ -800,11 +875,13 @@ TIER 1: NEWS ARTICLES (last 24h)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 {tier_json([a for a in payload.get("tier1", []) if not a.get("stream")])}
 Use these articles for the digest sections below. Translate Korean titles to English. Categories: DPRK, US-Korea, NK-Russia-China, ROK Politics, ROK Economy, Technology, Business, Energy, Japan-Korea, China-Korea, Trilateral (never "Security", "ROK Policy", "K-pop" or "Entertainment"). An NK-Russia or NK-China cooperation story that a Korea policy analyst needs today is a timeline candidate (see timeline_candidates).
+WIDELY COVERED — an article marked carried_by: N is the representative of a story N separate outlets ran today. When it is policy-relevant (security and the alliance, the DPRK, ROK politics and the courts, the economy and trade, diplomacy), it MUST appear somewhere in the brief: top_stories, overnight_items, also_today, rok_government or its own section, from that article or another article in the input on the same story. Leave it out only when RECENT COVERAGE already carried it and today's articles add no new fact. Sports, entertainment and human-interest stories carry no such obligation, however many outlets ran them.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-TIER 2: OP-EDS & PRESTIGE COMMENTARY
+TIER 2: ANALYSIS — THINK-TANK REPORTS, RESEARCH AND OP-EDS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 {tier_json(payload.get("tier2", []), max_items=45)}
-IMPORTANT: NK News / NK Pro is a NEWS source, not an op-ed outlet. NK News / NK Pro articles belong in top_stories or overnight_items, NOT in opeds_today.
+Each item carries kind: "report" (a think-tank report, brief, commentary or research paper), "oped" (an opinion column, editorial or essay on an op-ed page or in a policy magazine) or "news" (reporting, not analysis). Tier-2 windows are longer than tier 1's (four days for reports, two for op-eds), so check RECENT COVERAGE and skip a piece a brief has already carried.
+IMPORTANT: NK News / NK Pro is a NEWS source, not an op-ed outlet. NK News / NK Pro articles (kind "news") belong in top_stories or overnight_items, NOT in opeds_today. A straight news report is never analysis, whatever feed it came from.
 ANTI-HALLUCINATION — OP-EDS: Only include op-eds/commentary that appear as actual articles in the input data above with a real URL. Do NOT fabricate generic think tank entries (e.g. "CFR analysis examines South Korea's security challenges" or "Brookings paper argues for alliance modernization") when no such article exists in today's feed. If no qualifying Tier 2 articles are in today's batch, return an empty opeds_today array. An empty section is always better than a fabricated entry.
 For EACH piece: url, source, headline (the EXACT title of the article as published — do NOT paraphrase or summarize), authors, central_argument, summary.
 The central_argument should be a single sentence stating the piece's core thesis — not a description of the piece ("This article argues...") but the argument itself stated directly.
@@ -903,12 +980,14 @@ Return a digest object with:
 - rok_personnel: array of ROK government personnel changes from today's news — ministerial appointments, cabinet reshuffles, ambassador nominations, military command changes, senior civil service appointments, resignations, dismissals. Also include US personnel changes directly relevant to Korea policy (e.g. US Ambassador to Seoul, State Dept Korea desk, USFK command). Each: position (title being filled/vacated), name (person appointed/departing), action (appointed/resigned/dismissed/nominated/confirmed), detail (1-2 sentences on context and significance), predecessor (name of previous holder, if relevant). Empty array if no personnel changes today.
   ACTUAL CHANGE ONLY — NOT ROUTINE ACTIVITY: This section is EXCLUSIVELY for a personnel MOVE that HAPPENED (was announced) in today's articles — someone newly appointed, nominated, confirmed, resigned, or dismissed TODAY. A sitting official making a statement, announcing a policy, giving a speech, attending a meeting, or otherwise doing their existing job is NOT a personnel change and MUST NOT appear here (that belongs in social_statements or the relevant news section). Before adding an entry, verify today's article explicitly reports the appointment/departure event itself — not merely that the person holds the office. Example of what to EXCLUDE: "Unification Minister Chung Dong-young announced a new North Korea policy" — Chung already holds the post; his statement is not an appointment. Only include him here if today's article reports he was just appointed/replaced. When the person has held the role since before today, do NOT list them with action "appointed."
   NAME EXTRACTION — READ THE ARTICLE CAREFULLY: The appointee's name is almost always in the source article — often in the headline itself. Extract it. Placeholder values like "Not named in source", "Unnamed", "Unknown", or "TBD" are FORBIDDEN in the name field. If, after carefully re-reading the article title and summary, the name genuinely does not appear anywhere, OMIT the entire entry — a personnel entry without a name is useless to readers and will be stripped by validation anyway. The same applies to predecessor: if unknown, set it to null, never a placeholder string.
-- social_statements: 0-3 notable statements from TODAY's ARTICLES (MAX 3) by government officials, senior policymakers, or military leaders. Prioritize: ROK President, PPP leader Jang Dong-hyuk, ROK FM/DM, US SecState/SecDef/NSA, USFK Commander, UN officials, Japan PM/FM, DPRK officials (via KCNA). Pull direct quotes from today's articles. These are statements quoted in NEWS ARTICLES, separate from official_x_posts. Never repeat a quote that appears in official_x_posts or a rok_government card. Skip anniversaries, commemorations, condolences and courtesy visits. An empty array is correct when nothing qualifies.
+- social_statements: 0-3 notable statements from TODAY's ARTICLES (MAX 3) by government officials, senior policymakers, or military leaders.
+  LEADERS' WORDS — FIRST CLAIM ON THIS SECTION: when today's articles carry a direct, policy-relevant quote by President Lee Jae-myung or President Donald Trump about Korea, the alliance, the DPRK, trade or the region, include it here: at most ONE per leader, the strongest one, with who ("Lee Jae-myung" / "Donald Trump"), quote_text copied VERBATIM from the source article (an English article's words exactly; a Korean article's quoted words translated faithfully, nothing added), source (the outlet) and url (that article). Kim Jong Un's words go in kcna_delta.key_quotes, not here. Only words inside quotation marks in the source count: a paraphrase ("Lee said he would...") is NOT a quote and must not be turned into one. If no article quotes a leader directly, leave the leader out; an empty section is correct. The remaining slots follow the priority below.
+  Prioritize: ROK President, PPP leader Jang Dong-hyuk, ROK FM/DM, US SecState/SecDef/NSA, USFK Commander, UN officials, Japan PM/FM, DPRK officials (via KCNA). Pull direct quotes from today's articles. These are statements quoted in NEWS ARTICLES, separate from official_x_posts. Never repeat a quote that appears in official_x_posts or a rok_government card. Skip anniversaries, commemorations, condolences and courtesy visits. An empty array is correct when nothing qualifies.
   ATTRIBUTION RULE: The quote MUST be a statement made BY the named person in their OFFICIAL CAPACITY on a policy-relevant topic. Do NOT attribute quotes to officials merely because they are mentioned in an article — the person must be the SPEAKER of the quote. A quote about drinking habits, personal anecdotes, or lifestyle topics does NOT qualify unless it has direct policy implications. If an article mentions a leader in passing but the quote is from someone else or is about a non-policy topic, do NOT include it.
-  Each: avatar_initials (2 letters), who (name), handle_context (title/role),  quote_text (the direct quote), analyst_note (1 sentence — factual context ONLY from today's source articles or the reference data in this prompt. State what decision/meeting this precedes ONLY if that event is mentioned in today's articles or the calendar_watch data. Do NOT claim "last time this language was used was [date]" from memory — if no sourced precedent exists, provide context from today's articles instead. No interpretation of what the speaker "signals" or "suggests"), badge_class (sb-p=policy, sb-r=security/red, sb-s=specialist/purple), url (link to source article where the statement was reported)
+  Each: avatar_initials (2 letters), who (name), handle_context (title/role),  quote_text (the direct quote, verbatim), source (the outlet that reported it, e.g. "Yonhap"), analyst_note (1 sentence — factual context ONLY from today's source articles or the reference data in this prompt. State what decision/meeting this precedes ONLY if that event is mentioned in today's articles or the calendar_watch data. Do NOT claim "last time this language was used was [date]" from memory — if no sourced precedent exists, provide context from today's articles instead. No interpretation of what the speaker "signals" or "suggests"), badge_class (sb-p=policy, sb-r=security/red, sb-s=specialist/purple), url (link to source article where the statement was reported)
 - official_x_posts: 0-5 noteworthy DIRECT posts drawn ONLY from the X SIGNALS block above, and ONLY from official/government/military accounts (the account IS the primary source for its own post). This is SEPARATE FROM and ADDITIONAL TO social_statements — populate BOTH: an official's X post goes here; a statement quoted in a news article goes in social_statements. If the same statement appears both as a news quote and an X post, put it in whichever is its actual source, not both. Each entry uses the SAME item shape as social_statements: avatar_initials (2 letters), who (the account's display name from the signal), handle_context (the @handle, e.g. "@FMChoHyun"), platform_date (@handle · date), quote_text (a faithful 1-2 sentence rendering of the post's actual text — do NOT embellish or infer beyond it), analyst_note (1 sentence factual context from today's articles / reference data only), badge_class (sb-p/sb-r/sb-s), url (the x.com post URL from the signal). STRICT RULES: (1) policy/security/diplomacy relevant only — skip routine/ceremonial/personal posts. (2) Do NOT include any signal flagged [UNVERIFIED HANDLE]. (3) An official's OWN statement only — if a post makes a factual claim about external events, do NOT present it as fact; that needs an article (SOURCE-OR-SKIP). (4) Empty array if nothing qualifies. (5) Do NOT invent posts — every entry must map to an actual signal in the X SIGNALS block.
-- opeds_today: qualifying Tier 2 pieces, ordered by prestige then score. RECENCY — HARD RULE: include ONLY pieces published in the last few days. Think-tank/analysis feeds (AEI, Brookings, CFR, etc.) surface evergreen back-catalog essays; if a piece reads as a general historical/thematic analysis with no recent news hook, or you cannot confirm it is recent, SKIP it. Never present an old think-tank essay (e.g. a 2008 AEI piece) as today's commentary — a stale analysis in a daily brief is an obvious credibility error.
-- academic_today: qualifying Tier 3 pieces, ordered by journal_tier then score. Same RECENCY rule as opeds_today — only recently published papers; skip anything that may be an old back-catalog article.
+- opeds_today: the Analysis section — 0-4 Tier 2 pieces (MAX 4). Together with academic_today the section carries the best 3-5 pieces of the day, never more than 5 in total and fewer only when fewer qualify. Choose in this order: (1) think-tank reports and research (kind "report") that are primarily about Korea or that a Korea policy analyst needs today, by institution prestige (prestige A before B before C); (2) op-eds and essays (kind "oped") by notable authors: former officials, named scholars at a research institution, columnists of record at the NYT, WSJ, Washington Post, FT or Bloomberg, or the Korean dailies' senior columnists; an unsigned editorial counts only from a major paper. Never a news story mislabelled as analysis: kind "news", and any tier-1 article, does not go here. Fill the section from the reports first; an op-ed takes a slot only when it argues something today's reports do not. RECENCY — HARD RULE: include ONLY pieces published in the last few days. Think-tank/analysis feeds (AEI, Brookings, CFR, etc.) surface evergreen back-catalog essays; if a piece reads as a general historical/thematic analysis with no recent news hook, or you cannot confirm it is recent, SKIP it. Never present an old think-tank essay (e.g. a 2008 AEI piece) as today's commentary — a stale analysis in a daily brief is an obvious credibility error.
+- academic_today: 0-2 Tier 3 journal articles (MAX 2), ordered by journal_tier then score; they count toward the Analysis section's 5. Same RECENCY rule as opeds_today — only recently published papers; skip anything that may be an old back-catalog article.
 - kcna_delta: the Tier 4 object
 - timeline_candidates: list of urls, each the url of an NK-Russia cooperation story you placed in top_stories, overnight_items or also_today that belongs on the CSIS NK-Russia timeline. Empty array if none.
 - capitol_hill: array of 0-4 items (MAX 4) — the US Congress on Korea, drawn ONLY from the CAPITOL HILL block above or a tier-1 article about Congress. Covers: bills and resolutions that mention Korea or the DPRK (sanctions, the alliance, the USFK troop floor in the NDAA, shipbuilding and MASGA, trade and tariffs, visas for Korean workers, North Korean human rights); committee hearings (House Foreign Affairs, Senate Foreign Relations, House and Senate Armed Services, Appropriations); CRS reports; letters and statements by members of Congress; Korea caucus news.
