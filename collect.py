@@ -19,26 +19,46 @@ import links
 # FEED CONFIGURATION
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _gnews(query: str) -> str:
+def _gnews(query: str, locale: str = "en") -> str:
     """Build a Google News RSS search URL.
 
     The query is normalised so a site: limit binds to the whole search:
     `Korea+OR+DPRK+site:x` becomes `(Korea OR DPRK) site:x`, properly encoded.
     Written flat, results came back from anywhere ("CRS Korea" delivered PM
-    News Nigeria). See links.build_gnews_query.
+    News Nigeria). See links.build_gnews_query. locale="ko" searches the
+    Korean edition, which is where a Korean-language query belongs.
     """
-    return links.gnews_url(query)
+    return links.gnews_url(query, locale)
 
 
-def _native(native_url: str, gnews_query: str) -> list:
+def _native(native_url: str, gnews_query: str, also: tuple | list = (),
+            locale: str = "en") -> list:
     """A feed defined as: try the outlet's own RSS, fall back to Google News.
 
     The fallback is what makes this safe to write for a URL nobody could
     verify. If the native path is wrong or the outlet moves it, that candidate
     returns nothing and the Google News search still answers, which is exactly
     what the feed did before.
+
+    `also` holds further candidates tried between the two, in order (a second
+    native board, a site: search for the body's own pages).
     """
-    return [native_url, _gnews(gnews_query)]
+    return [native_url, *also, _gnews(gnews_query, locale)]
+
+
+def _press(query: str) -> str:
+    """Korean-edition Google News search for how the press reports a body.
+
+    The ROK government feeds used to be `site:xxx.go.kr` searches, and Google
+    News indexes almost no .go.kr pages: across 12-18 October 2026 the whole
+    block delivered 15 items, and the Presidential Office, MND, Unification,
+    the Joint Chiefs, DAPA and the Assembly delivered none. The Korean press
+    reports these bodies' briefings every day, by name, so the fallback asks
+    for that instead. Items found this way are reporting, not documents: they
+    carry the outlet as their source and rank below a primary URL
+    (digest._prompt_band).
+    """
+    return _gnews(query, locale="ko")
 
 
 def _resolve_gnews_url(url: str) -> str:
@@ -163,43 +183,88 @@ TIER1_FEEDS = {
     "Stars and Stripes":  _native("https://www.stripes.com/rss/pacific.rss", "Korea+site:stripes.com"),
     # ── ROK/Japan Government ─────────────────────────────────────────────
     "USFK":               _gnews("site:usfk.mil"),
-    "ROK MOFA":           _gnews("site:mofa.go.kr"),
-    "ROK MOTIE":          _gnews("Korea+site:motie.go.kr"),
-    "ROK MND":            _gnews("site:mnd.go.kr"),
-    # ── Primary ROK government sources. The brief previously carried only
-    #    MOFA, MOTIE and MND, so the Presidential Office, the Unification
-    #    Ministry, the finance ministry, defence acquisition and the National
-    #    Assembly were reaching it secondhand through the press or not at all.
-    "ROK Presidential Office": _gnews("site:president.go.kr"),
-    "ROK Unification Ministry": _gnews("site:unikorea.go.kr"),
-    "ROK MOEF":           _gnews("site:moef.go.kr"),
-    "ROK DAPA":           _gnews("site:dapa.go.kr"),
-    "ROK National Assembly": _gnews("site:assembly.go.kr"),
-    # Prosecution and the courts drive the ROK political cycle; indictments and
-    # rulings were previously picked up only after the dailies wrote them up.
-    "ROK Prosecution Service": _gnews("site:spo.go.kr"),
-    "ROK Courts":         _gnews("site:scourt.go.kr"),
+    # ── ROK government ───────────────────────────────────────────────────
+    # These were `site:xxx.go.kr` Google News searches, and Google News
+    # indexes very few .go.kr pages. Measured against the published corpus
+    # for 12-18 October 2026, the twenty feeds below delivered 15 items in
+    # seven days between them, most of them page furniture ("PRESS RELEASES -
+    # 재정경제부", "Photos - 재정경제부"). The Presidential Office, MND,
+    # Unification, the Joint Chiefs, DAPA and the Assembly delivered nothing.
+    #
+    # Each feed is now: the body's own board RSS where one is published, then
+    # a Korean-edition search for how the press reports that body (its
+    # spokesperson, its briefing, the way a Korean headline names it). The
+    # press reports these bodies daily, so the search always answers; items
+    # it finds are reporting about the body, carry the outlet as their source,
+    # and rank below a document on a government domain (digest._prompt_band).
+    #
+    # Names follow the 2025 reorganisation: MOEF is now 재정경제부 plus
+    # 기획예산처, MOTIE is 산업통상부, Statistics Korea is 국가데이터처, and
+    # the Presidential Office is back at 청와대. Old names stay in the queries
+    # because the press still uses both.
+    "ROK MOFA":           _native("https://www.mofa.go.kr/www/brd/rss.do?brdId=235",
+                                  '"외교부 대변인" OR "외교부 정례브리핑" OR "외교부는"', locale="ko"),
+    # MOFA's English board: press releases (302), then spokesperson briefings (303).
+    "ROK MOFA English":   _native("https://www.mofa.go.kr/www/brd/rss.do?brdId=302",
+                                  '"South Korean foreign ministry" OR "Seoul\'s foreign ministry" '
+                                  'OR "South Korea\'s foreign ministry"',
+                                  also=["https://www.mofa.go.kr/www/brd/rss.do?brdId=303"]),
+    "ROK MOTIE":          [_press('"산업통상부" OR "산업통상자원부" OR "통상교섭본부장" OR "산업부 장관"')],
+    "ROK MND":            _native("https://www.mnd.go.kr/bbs/mnd/13000005/rssList.do?row=50",
+                                  '"국방부 대변인" OR "국방부 정례브리핑" OR "국방부는"', locale="ko"),
+    "ROK Presidential Office": [_press('"청와대 대변인" OR "청와대 브리핑" OR "대통령실 대변인" '
+                                       'OR "대통령실 브리핑" OR "청와대 관계자"')],
+    "ROK Unification Ministry": _native("https://www.unikorea.go.kr/web/unikorea/rss/bbs_0000000000000004",
+                                        '"통일부 대변인" OR "통일부 정례브리핑" OR "통일부는"', locale="ko"),
+    "ROK MOEF":           [_press('"재정경제부" OR "기획예산처" OR "재경부 장관" OR "기재부"')],
+    "ROK DAPA":           [_press('"방위사업청" OR "방사청은"')],
+    # October is 국정감사, the Assembly's annual audit of every ministry.
+    "ROK National Assembly": [_press('"국회 본회의" OR "국정감사" OR "국회의장" OR "상임위원회 전체회의"')],
+    # Prosecution and the courts drive the ROK political cycle. The
+    # prosecution service is being replaced by 공소청 and 중대범죄수사청, and
+    # the special counsels carry the cases that matter, so all are named.
+    "ROK Prosecution Service": [_press('"공소청" OR "중대범죄수사청" OR "대검찰청" OR "특검팀은"')],
+    "ROK Courts":         [_press('"대법원은" OR "대법원 선고" OR "헌법재판소는" OR "헌재 선고"')],
     # DART is the financial supervisory disclosure system. Samsung, Hyundai and
     # SK file there before they announce, so this is corporate news at source
     # rather than through the business dailies.
-    "DART disclosures":   _gnews("%EC%A0%84%EC%9E%90%EA%B3%B5%EC%8B%9C+OR+site:dart.fss.or.kr"),
-    # korea.kr (정책브리핑) is the whole-of-government aggregator: every
-    # ministry's press release lands there, same day, in one native feed.
-    # Its absence was why eleven ROK bodies had to be scraped through Google.
-    "ROK Policy Briefing": _native("https://www.korea.kr/rss/policy.xml", "site:korea.kr"),
-    "Korea.net":          _gnews("site:korea.net"),
+    "DART disclosures":   _gnews("%EC%A0%84%EC%9E%90%EA%B3%B5%EC%8B%9C+OR+site:dart.fss.or.kr",
+                                 locale="ko"),
+    # korea.kr (정책브리핑) was the whole-of-government aggregator, publishing
+    # /rss/pressrelease.xml, /rss/policy.xml and one /rss/dept_<code>.xml per
+    # ministry. It announced the end of its RSS service on 1 July 2026, and
+    # the native feed delivered nothing in October: both of its items that
+    # week came through the search behind it. The URLs stay first because a
+    # dead native candidate costs one fast request; no other feed relies on
+    # korea.kr any longer.
+    "ROK Policy Briefing": ["https://www.korea.kr/rss/pressrelease.xml",
+                            "https://www.korea.kr/rss/policy.xml",
+                            _gnews("site:korea.kr")],
+    # Korea.net's Policies feed (news/3) rather than "All" (news/2), which is
+    # mostly culture and travel.
+    "Korea.net":          _native("https://www.korea.net/koreanet/rss/news/3", "site:korea.net"),
     # The Joint Chiefs are the originating source for every DPRK launch
-    # detection. The brief was getting those secondhand from Yonhap.
-    "ROK Joint Chiefs":   _gnews("site:jcs.mil.kr"),
+    # detection. They publish no RSS; the press quotes them within minutes.
+    "ROK Joint Chiefs":   [_press('"합참은" OR "합동참모본부는" OR "합참 관계자" OR "합참 공보실장"')],
     # BOK press releases and MPC statements. The ECOS statistics API is
     # already called for the rate itself; this is the accompanying language.
-    "Bank of Korea":      _gnews("%ED%95%9C%EA%B5%AD%EC%9D%80%ED%96%89+site:bok.or.kr"),
-    "Statistics Korea":   _gnews("site:kostat.go.kr"),
+    "Bank of Korea":      [_press('"한국은행은" OR "한은 총재" OR "금융통화위원회"')],
+    "Statistics Korea":   [_press('"국가데이터처" OR "통계청은" OR "통계청에 따르면"')],
     # Customs publishes the ten-day export figures — the earliest read on what
     # the tariff regime is actually doing to trade.
-    "Korea Customs":      _gnews("site:customs.go.kr"),
-    "ROK Justice Ministry": _gnews("site:moj.go.kr"),
-    "ROK FSC":            _gnews("site:fsc.go.kr"),
+    "Korea Customs":      [_press('"관세청은" OR "관세청에 따르면"')],
+    "ROK Justice Ministry": [_press('"법무부는" OR "법무부 장관"')],
+    "ROK FSC":            [_press('"금융위원회는" OR "금융위원장"')],
+    # Yonhap's own politics and North Korea desks. The all-news feeds above
+    # carry the latest items across every desk; these keep the ministry,
+    # defence and inter-Korean wire copy from being pushed out by volume.
+    "Yonhap Politics":    _native("https://www.yna.co.kr/rss/politics.xml",
+                                  "국방 OR 외교 OR 통일 site:yna.co.kr", locale="ko"),
+    "Yonhap North Korea": _native("https://www.yna.co.kr/rss/northkorea.xml",
+                                  "북한 site:yna.co.kr", locale="ko"),
+    "Yonhap English National": _native("https://en.yna.co.kr/RSS/national.xml",
+                                       'defense OR military OR unification OR "foreign ministry" '
+                                       'site:en.yna.co.kr'),
     "Japan MOFA":         _gnews("Korea+site:mofa.go.jp"),
     # ── US Economic agencies ────────────────────────────────────────────
     "USTR":               _gnews("Korea+OR+trade+site:ustr.gov"),
@@ -500,21 +565,28 @@ KOREA_KEYWORDS = re.compile(
 # The brief was telling the model it had primary sources while the collector
 # was throwing most of them away. These feeds are exempt: relevance is already
 # guaranteed by the feed itself.
-KOREA_NATIVE_FEEDS = {
-    # ROK government and state bodies
-    "ROK MOFA", "ROK MOTIE", "ROK MND", "ROK Presidential Office",
+# ROK government and state bodies: primary sources. Ranking puts their own
+# documents first (digest._prompt_band), and test_sources checks that none of
+# them rests on a bare site:*.go.kr search again.
+ROK_GOVERNMENT_FEEDS = {
+    "ROK MOFA", "ROK MOFA English", "ROK MOTIE", "ROK MND", "ROK Presidential Office",
     "ROK Unification Ministry", "ROK MOEF", "ROK DAPA",
     "ROK National Assembly", "ROK Prosecution Service", "ROK Courts",
-    "DART disclosures", "USFK",
+    "DART disclosures",
     "ROK Policy Briefing", "Korea.net", "ROK Joint Chiefs", "Bank of Korea",
     "Statistics Korea", "Korea Customs", "ROK Justice Ministry", "ROK FSC",
+}
+
+KOREA_NATIVE_FEEDS = ROK_GOVERNMENT_FEEDS | {
+    "USFK",
     # Korean-language outlets
     "조선일보", "한겨레", "동아일보", "경향신문", "뉴스1", "연합뉴스",
     "중앙일보", "한국일보", "뉴시스", "서울신문",
     "MBN", "JTBC", "KBS", "MBC", "SBS", "SBS 경제", "YTN", "Channel A", "Arirang News",
     "매일경제", "한국경제", "서울경제", "머니투데이",
     # English-language Korea desks whose entire output is Korea
-    "Yonhap English", "Korea Herald", "Korea Times", "Korea JoongAng Daily",
+    "Yonhap English", "Yonhap English National", "Yonhap Politics", "Yonhap North Korea",
+    "Korea Herald", "Korea Times", "Korea JoongAng Daily",
     "Korea Economic Daily", "Dong-A English", "Chosun English",
     "Hankyoreh English", "Pressian",
 }
@@ -532,6 +604,7 @@ KOREAN_LANGUAGE_FEEDS = {
     "ROK Courts", "ROK MOFA", "ROK MND", "ROK MOTIE", "DART disclosures",
     "ROK Policy Briefing", "ROK Joint Chiefs", "Bank of Korea",
     "Statistics Korea", "Korea Customs", "ROK Justice Ministry", "ROK FSC",
+    "Yonhap Politics", "Yonhap North Korea",
 }
 
 
@@ -611,18 +684,36 @@ def _parse_feed(url) -> list:
     The first candidate to return items wins. `_feed_source_used` records
     which one, so the run log can show how much of the brief still rests on
     Google News.
+
+    A candidate whose every item is more than a week old has not answered: a
+    frozen board (a ministry that stopped posting to its RSS, a service that
+    was switched off but still serves its last file) would otherwise win, be
+    emptied by the recency filter, and keep the search behind it from ever
+    running. No tier's window is longer than a week, so this drops nothing
+    the collector would have kept.
     """
     candidates = [url] if isinstance(url, str) else list(url)
     for i, candidate in enumerate(candidates):
+        last = i == len(candidates) - 1
         # Only the last candidate is worth three attempts; earlier ones should
         # fail fast so a dead native URL does not add six seconds per feed.
-        entries = _parse_one(candidate, retries=3 if i == len(candidates) - 1 else 1)
+        entries = _parse_one(candidate, retries=3 if last else 1)
         entries = _keep_site_matches(entries, candidate)
+        if entries and not last and not _any_live(entries):
+            continue
         if entries:
             _feed_source_used[candidate] = ("native" if "news.google.com" not in candidate
                                             else "google-news")
             return entries
     return []
+
+
+_CANDIDATE_STALE_DAYS = 7
+
+
+def _any_live(entries: list) -> bool:
+    """True if any entry is undated or dated within the last week."""
+    return any(_is_recent(e, hours=24 * _CANDIDATE_STALE_DAYS) for e in entries)
 
 
 def _entry_publisher(entry) -> tuple[str, str]:
@@ -941,6 +1032,24 @@ def _add_fulltext(articles: list) -> list:
     return articles
 
 
+# A ROK government feed's press search returns up to a hundred items, and in
+# October (국정감사) most are within the day. A ministry posts far fewer
+# documents than that, so the cap costs no primary source; it keeps fifteen
+# press searches from adding over a thousand items to tier 1.
+ROK_FEED_MAX_ITEMS = 12
+
+
+def _newest(entries: list, n: int) -> list:
+    """The n most recent entries; undated ones after the dated."""
+    def key(e):
+        for attr in ("published_parsed", "updated_parsed"):
+            parsed = getattr(e, attr, None)
+            if parsed:
+                return (1, tuple(parsed[:6]))
+        return (0, ())
+    return sorted(entries, key=key, reverse=True)[:n]
+
+
 def _collect_tier1() -> list:
     articles = []
     results = _fetch_feeds_parallel(TIER1_FEEDS)
@@ -948,9 +1057,10 @@ def _collect_tier1() -> list:
         # Korean-language feeds get lang="KO"
         lang = "KO" if source in KOREAN_LANGUAGE_FEEDS else "EN"
         native = source in KOREA_NATIVE_FEEDS
+        entries = [e for e in entries if _is_recent(e, hours=24)]
+        if source in ROK_GOVERNMENT_FEEDS:
+            entries = _newest(entries, ROK_FEED_MAX_ITEMS)
         for entry in entries:
-            if not _is_recent(entry, hours=24):
-                continue
             # A primary ROK source needs no relevance test; see KOREA_NATIVE_FEEDS.
             if not native and not _is_korea_related(entry):
                 continue
