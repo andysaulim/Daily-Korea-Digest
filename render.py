@@ -2875,7 +2875,7 @@ def render(digest: dict) -> str:
 #     stories 16px, other headlines 15px at most. No arrows, dots or emoji.
 #   * Identity and wayfinding: each bar carries a 5px family edge (flag red
 #     for the North, flag blue for the South, a light blue for the US and the
-#     world; _V2_FAMILY) and its reading time at the right. The date card
+#     world; _V2_FAMILY). The date card
 #     has a Peninsula status line built from tracker data only
 #     (_v2_status_facts), and a sign-off card closes the brief with
 #     tomorrow's scheduled items and the reply address.
@@ -2972,10 +2972,7 @@ _V2_FAMILY = {
     "us-korea trade & investment": _V2_FAM_WORLD, "capitol hill": _V2_FAM_WORLD,
     "northeast asia watch": _V2_FAM_WORLD, "korea and the world": _V2_FAM_WORLD,
 }
-# The reading time at the right of a bar: muted white, 8.6:1 on the navy.
-_V2_BAR_META = "#B9C6DD"
-_V2_DARK_EXEMPT |= {_V2_FAM_NK, _V2_FAM_ROK, _V2_FAM_WORLD, _V2_BAR_META}
-_V2_WPM = 230
+_V2_DARK_EXEMPT |= {_V2_FAM_NK, _V2_FAM_ROK, _V2_FAM_WORLD}
 
 # Reading order. A policymaker at 6 a.m. wants what happened, then the two
 # Koreas, then Washington, then the region; the forward look and the analysis
@@ -3030,27 +3027,6 @@ def _v2_bar(label: str, numbered: bool = True) -> str:
     return ('<table width="100%" cellpadding="0" cellspacing="0" border="0" class="sec-bar" '
             f'style="background:{_V2_NAVY};"><tr><td{edge}font-family:{_V2_SANS};'
             f'font-size:15px;font-weight:700;line-height:1.25;color:#FFFFFF;">{mark}{_v2_label(label)}</td></tr></table>')
-
-
-def _v2_read_minutes(words: int):
-    """Minutes to read `words` at _V2_WPM, at least one; None under forty words, where a label is noise."""
-    if words < 40:
-        return None
-    return max(1, int(words / _V2_WPM + 0.5))
-
-
-def _v2_bar_time(bar: str, content: str) -> str:
-    """The bar with the section's reading time in a cell at its right end, when it has one."""
-    words = _count_rendered_words(_v2_unchrome(content))
-    mins = _v2_read_minutes(words)
-    if mins is None or not bar.endswith("</td></tr></table>"):
-        return bar
-    # Every byte counts against Gmail's clip and this repeats on each bar:
-    # the align attribute does text-align's work, and the family is kept
-    # only because Outlook does not carry one into a new cell.
-    cell = (f'<td class="v2-rt" align="right" style="padding:9px 20px 9px 8px;font-family:{_V2_SANS};'
-            f'font-size:11px;color:{_V2_BAR_META};white-space:nowrap;"><!--c-->{mins} min<!--/c--></td>')
-    return bar[:-len("</tr></table>")] + cell + "</tr></table>"
 
 
 def _v2_srctype(src: str) -> str:
@@ -3383,7 +3359,7 @@ def _v2_card(section: str, more: dict | None = None) -> str:
     content. The box goes; the bar becomes the card's first row and the
     content its second. A section in any other shape is left as it is.
 
-    The bar takes the section's reading time at its right end. `more` maps a
+    `more` maps a
     section anchor to the web page's copy of that section; a section in it
     was shortened for the email (_v2_shorten) and ends with a link there.
     """
@@ -3406,7 +3382,7 @@ def _v2_card(section: str, more: dict | None = None) -> str:
              f'border-left:3px solid {_V2_ACCENT};font-family:{_V2_SANS};"'
              if 'class="v2-glance"' in rest[:200] else
              f'class="v2-in" style="padding:4px 20px 12px;font-family:{_V2_SANS};"')
-    bar = _v2_bar_time(m.group(0), rest)
+    bar = m.group(0)
     anchors = _re.findall(r'<a name="([\w-]+)"', p.group(1) + p.group(2))
     href = next((more[a] for a in anchors if more and a in more), "")
     if href:
@@ -3803,8 +3779,10 @@ def _v2_status_facts(digest: dict) -> list:
 
     Kim Jong Un's last appearance and the KCNA watch flag come from
     kcna_delta (the same fields the numbers strip and the glance's tracker
-    row read); the monitored sites from bp_locations and run.py's
-    _bp_changes. A fact whose data is missing is left out, never guessed.
+    row read), the flag's change from run.py's _kcna_trend, the provocation
+    count from _provocations (the CSIS provocations database), and the
+    monitored sites from bp_locations and _bp_changes. A fact whose data is
+    missing is left out, never guessed.
     """
     facts = []
     kc = digest.get("kcna_delta") if isinstance(digest.get("kcna_delta"), dict) else {}
@@ -3813,13 +3791,31 @@ def _v2_status_facts(digest: dict) -> list:
         facts.append("Kim seen in public today.")
     elif isinstance(days, int) and not isinstance(days, bool) and days > 0:
         facts.append(f"Kim last seen {days} day{'s' if days != 1 else ''} ago.")
+    trend = digest.get("_kcna_trend") if isinstance(digest.get("_kcna_trend"), dict) else {}
     if kc and not kc.get("data_unavailable"):
         if kc.get("silence_today") is True:
             facts.append("KCNA silent today.")
-        elif kc.get("watch_flag") is True:
-            facts.append("KCNA watch flag up.")
-        elif kc.get("watch_flag") is False:
-            facts.append("No KCNA watch flag.")
+        elif isinstance(kc.get("watch_flag"), bool):
+            up, prev = kc["watch_flag"], trend.get("prev_watch_flag")
+            if up and prev is False:
+                fact = "KCNA watch flag up, from none yesterday."
+            elif not up and prev is True:
+                fact = "KCNA watch flag down from yesterday."
+            elif up and prev is True:
+                fact = "KCNA watch flag up for a second day."
+            else:
+                fact = "KCNA watch flag up." if up else "No KCNA watch flag."
+            wk, of = trend.get("watch_days_week"), trend.get("week_days")
+            if isinstance(wk, int) and isinstance(of, int) and wk > 1:
+                fact = fact[:-1] + f"; {wk} of the last {of} days."
+            facts.append(fact)
+    prov = digest.get("_provocations") if isinstance(digest.get("_provocations"), dict) else {}
+    if isinstance(prov.get("count"), int):
+        n, span = prov["count"], prov.get("days", 7)
+        # A zero is left unsaid: a day whose database push failed would read
+        # as calm, and false reassurance is the worse error.
+        if n:
+            facts.append(f"{n} provocation{'s' if n != 1 else ''} logged in the last {span} days.")
     locs = [x for x in digest.get("bp_locations") or [] if isinstance(x, dict) and x.get("name")]
     changes = digest.get("_bp_changes")
     if locs and isinstance(changes, list):
@@ -4203,7 +4199,6 @@ _V2_CSS = """
       .wrapper .v2-in { padding-left:14px !important; padding-right:14px !important; }
       .wrapper .sec-bar td { padding:9px 14px !important; }
       .wrapper .sec-bar td.v2-edge { padding-left:9px !important; }
-      .wrapper .sec-bar td.v2-rt { padding-left:6px !important; }
       .wrapper .v2-name { font-size:18px !important; }
       .wrapper .mast-meta { padding-top:2px !important; }
       .v2-cell div[style*="font-size:16px"] { font-size:15px !important; }

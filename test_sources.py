@@ -1410,17 +1410,6 @@ def check_v2_first_sentence():
     return problems
 
 
-def check_v2_reading_time():
-    """Bar reading time: 230 words a minute, rounded half up, at least one, none under forty words."""
-    import render
-    problems = []
-    for words, want in ((0, None), (39, None), (40, 1), (344, 1), (345, 2), (574, 2), (575, 3), (690, 3)):
-        got = render._v2_read_minutes(words)
-        if got != want:
-            problems.append(f"{words} words gave {got}, expected {want}")
-    return problems
-
-
 def check_v2_shortened_email():
     """In v2 only top stories run in full; other items keep their first sentence and link to the web page."""
     import copy, render
@@ -1998,7 +1987,38 @@ def check_archive_search() -> list[str]:
     return problems
 
 
+def check_status_line_kcna_trend_and_provocations():
+    """The status line's KCNA trend and provocation count come from data, and drop out without it."""
+    import run, render
+    problems = []
+    today = {"date_slug": "2026-10-28", "kcna_delta": {"watch_flag": True}}
+    prev = {"kcna_delta": {"watch_flag": False}}
+    hist = [{"date": "2026-10-28", "watch_flag": True}] + [
+        {"date": f"2026-10-{d}", "watch_flag": d in (25, 26)} for d in range(27, 21, -1)]
+    t = run.kcna_trend(today, prev, hist)
+    if not t or t.get("prev_watch_flag") is not False or t.get("watch_days_week") != 3 or t.get("week_days") != 7:
+        problems.append(f"kcna_trend wrong: {t}")
+    if run.kcna_trend({"kcna_delta": {"data_unavailable": True}}, prev, hist) is not None:
+        problems.append("kcna_trend invented a trend without KCNA data")
+    recs = [{"date": "2026-10-27"}, {"date": "2026-10-20"}, {"date": "2026-10-28"}]
+    w = run.provocation_window(recs, "2026-10-28")
+    if not w or w["count"] != 2 or w["latest"] != "2026-10-28":
+        problems.append(f"provocation_window wrong: {w}")
+    if run.provocation_window(recs, "2026-10-21") is not None:
+        problems.append("provocation_window counted across the database's gap")
+    facts = render._v2_status_facts({**today, "_kcna_trend": t, "_provocations": w})
+    joined = " ".join(facts)
+    if "from none yesterday" not in joined or "3 of the last 7 days" not in joined:
+        problems.append(f"status line lacks the KCNA trend: {facts}")
+    if "2 provocations logged in the last 7 days" not in joined:
+        problems.append(f"status line lacks the provocation count: {facts}")
+    if "provocation" in " ".join(render._v2_status_facts({**today, "_provocations": {"count": 0, "days": 7}})):
+        problems.append("status line claimed a quiet week from a zero count")
+    return problems
+
+
 CHECKS = [
+    ("status line: KCNA trend and provocations", check_status_line_kcna_trend_and_provocations),
     ("web edition: folding sections, menu, full text, fallback", check_web_edition),
     ("run.py falls back to the email page", check_run_falls_back_to_the_email_page),
     ("archive page searches past headlines", check_archive_search),
@@ -2007,7 +2027,6 @@ CHECKS = [
     ("design preview goes only to the preview list", check_design_preview_goes_only_to_preview_list),
     ("v2 status line drops missing facts", check_v2_status_line),
     ("v2 shortening cuts at real sentence ends", check_v2_first_sentence),
-    ("v2 reading time rounds as stated", check_v2_reading_time),
     ("v2 email runs top stories in full, the rest shortened", check_v2_shortened_email),
     ("audio is formatted for the ear", check_audio_formatting),
     ("no Korean script on the page", check_english_only),

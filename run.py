@@ -1742,6 +1742,59 @@ def _ensure_pledge_projects(digest: dict) -> list[str]:
     return log
 
 
+# The provocations database (databases.fetch_nk_provocations) gained entries
+# from the brief itself only once the push read category_tag, on Oct 19 2026;
+# between Jul 3 and Oct 19 it recorded nothing, though North Korea tested
+# weapons in that span. A count over a window that reaches back before this
+# date would understate, so provocation_window reports none for it.
+PROVOCATIONS_COMPLETE_SINCE = "2026-10-19"
+
+
+def kcna_trend(digest: dict, previous: dict | None, history: list | None) -> dict | None:
+    """Today's KCNA watch flag against yesterday's issue and the last week.
+
+    `previous` is the prior issue's digest; `history` the kcna_tracker day
+    records, newest first. Returns None when today has no KCNA data, so the
+    status line says nothing rather than something invented.
+    """
+    kc = digest.get("kcna_delta") if isinstance(digest.get("kcna_delta"), dict) else {}
+    if not kc or kc.get("data_unavailable") or not isinstance(kc.get("watch_flag"), bool):
+        return None
+    out = {"watch_flag": kc["watch_flag"]}
+    pk = (previous or {}).get("kcna_delta")
+    if isinstance(pk, dict) and isinstance(pk.get("watch_flag"), bool) and not pk.get("data_unavailable"):
+        out["prev_watch_flag"] = pk["watch_flag"]
+    today = str(digest.get("date_slug") or "")[:10]
+    days = [d for d in (history or []) if isinstance(d, dict) and d.get("date") and d.get("date") != today]
+    if len(days) >= 6:
+        week = days[:6]
+        out["watch_days_week"] = sum(1 for d in week if d.get("watch_flag")) + int(kc["watch_flag"])
+        out["week_days"] = len(week) + 1
+    return out
+
+
+def provocation_window(records: list, date_slug: str, days: int = 7) -> dict | None:
+    """Provocations recorded in the `days` days ending on `date_slug`, and the latest one.
+
+    None when the window reaches back before PROVOCATIONS_COMPLETE_SINCE or
+    the database could not be read: a count from a database with a gap is
+    worse than no count.
+    """
+    if not records or not date_slug:
+        return None
+    try:
+        end = datetime.strptime(date_slug[:10], "%Y-%m-%d").date()
+    except ValueError:
+        return None
+    start = end - timedelta(days=days - 1)
+    if start.isoformat() < PROVOCATIONS_COMPLETE_SINCE:
+        return None
+    inside = [r for r in records if isinstance(r, dict)
+              and start.isoformat() <= str(r.get("date", ""))[:10] <= end.isoformat()]
+    return {"count": len(inside), "days": days,
+            "latest": max((str(r.get("date"))[:10] for r in inside), default=None)}
+
+
 def bp_changes(digest: dict, previous: dict | None) -> list[str] | None:
     """Monitored sites whose status or latest report date differs from the previous issue."""
     if not previous or not previous.get("bp_locations"):
@@ -2393,6 +2446,23 @@ def main():
     except Exception as _e:                                     # noqa: BLE001
         digest_data["_bp_changes"] = None
         print(f"  ⚠  Location change check skipped: {_e}")
+    # The Peninsula status line's KCNA trend and provocation count, from the
+    # previous issue, the KCNA tracker and the provocations database: data the
+    # pipeline holds, never the model's reading.
+    try:
+        from podcast import _previous_issue as _prev_issue
+        from kcna_tracker import get_recent_days
+        digest_data["_kcna_trend"] = kcna_trend(
+            {**digest_data, "date_slug": _date_slug}, _prev_issue(_date_slug), get_recent_days(8))
+    except Exception as _e:                                     # noqa: BLE001
+        digest_data["_kcna_trend"] = None
+        print(f"  ⚠  KCNA trend skipped: {_e}")
+    try:
+        digest_data["_provocations"] = provocation_window(
+            (databases or {}).get("nk_provocations") or [], _date_slug)
+    except Exception as _e:                                     # noqa: BLE001
+        digest_data["_provocations"] = None
+        print(f"  ⚠  Provocation count skipped: {_e}")
     # Which sector tariff rates changed since the last issue. The brief shows
     # only those; the full table lives on the trade page. None means the
     # previous issue could not be read, and then nothing is shown inline.
