@@ -1209,7 +1209,7 @@ def render(digest: dict) -> str:
         </div>
         """)
         if DESIGN == "v2":
-            sections[-1] = _v2_kcna(kcna)
+            sections[-1] = _v2_kcna(kcna, digest)
 
     # ── 9. ROK Government (merged: Gov + Personnel + Assembly + Calendar) ─
     rok_gov = digest.get("rok_government") or []
@@ -1857,10 +1857,12 @@ def render(digest: dict) -> str:
                          f'<span style="font-family:Arial,sans-serif;font-size:11px;font-weight:700;'
                          f'color:{MUTE};white-space:nowrap;">{_esc(when)}</span> &nbsp;'
                          f'{_link_or_text(_esc(hill_event_text(ev)), str(ev.get("url") or ""))}</div>')
-            if DESIGN == "v2":
-                rows = _v2_hill_rows(_hill_ahead[:4], _today)
-            hill_html += _subhead("Coming up on the Hill") + rows
-        sections.append(f"""
+            if DESIGN != "v2":
+                hill_html += _subhead("Coming up on the Hill") + rows
+            # v2 lists the week's hearings in Upcoming, with the rest of the
+            # forward look (_v2_upcoming), not twice.
+        if hill_html:
+            sections.append(f"""
         <div {_SEC}>
           <a name="hill" id="hill"></a>{_sec_label("Capitol Hill")}
           {hill_html}
@@ -2170,7 +2172,14 @@ def render(digest: dict) -> str:
         </div>
         """)
         if DESIGN == "v2":
-            sections[-1] = _v2_upcoming(calendar_watch)
+            sections.pop()
+    if DESIGN == "v2":
+        # The forward look in one place: the model's dated events and the
+        # fixed observances (korea_calendar.merge, above) with the week's
+        # committee hearings, in date order, each once.
+        _up = _v2_upcoming(calendar_watch, hill_events(digest)[1], _issue_day(digest))
+        if _up:
+            sections.append(_up)
 
     # ── 13. The Wire (Also Today — secondary news) ────────────────────
     combined_also = digest.get("also_today") or []
@@ -2406,6 +2415,16 @@ def render(digest: dict) -> str:
             _keys = set(_changes)
             _fresh = [l for l in locations if l.get("name") in _keys]
             _quiet = [l for l in locations if l.get("name") not in _keys]
+            if DESIGN == "v2":
+                # By name with the punctuation ignored: english.apply turns
+                # "THAAD Site — Seongju County" into "THAAD Site, Seongju
+                # County" after the change list is taken, and a site with new
+                # reporting then fell out of the watch. (Classic keeps its
+                # exact match, so its bytes do not change.)
+                _nk = lambda n: " ".join(_re.sub(r"[^a-z0-9]+", " ", str(n or "").lower()).split())
+                _keys = {_nk(c) for c in _changes}
+                _fresh = [l for l in locations if _nk(l.get("name")) in _keys]
+                _quiet = [l for l in locations if _nk(l.get("name")) not in _keys]
         for _loc in ([] if isinstance(_changes, list) else locations):
             _age = _age_days(_loc)
             if _age is not None and _age <= _FRESH_DAYS:
@@ -2470,6 +2489,13 @@ def render(digest: dict) -> str:
             summary_html = f'<div style="font-size:11px;color:#6B7280;margin-top:6px;margin-bottom:12px;">{elevated_count} of {len(_all_locs)} sites at elevated or alert status</div>'
         else:
             summary_html = f'<div style="font-size:11px;color:#6B7280;margin-top:6px;margin-bottom:12px;">{len(_all_locs)} monitored sites</div>'
+        if DESIGN == "v2" and elevated_count:
+            # Name them: "2 of 11 sites at elevated or alert status" over a
+            # single site at "Activity" read as if the count were wrong.
+            _hot = [_esc(_re.sub(r"\s*[–—]\s*", "-", str(l.get("name") or "")))
+                    for l in _all_locs if l.get("status", "normal") in ("elevated", "alert")]
+            summary_html = (f'<div style="font-size:12px;line-height:1.5;color:#6B7280;margin-top:6px;margin-bottom:12px;">'
+                            f'Elevated or alert, {elevated_count} of {len(_all_locs)} sites: {"; ".join(_hot)}.</div>')
 
         def _loc_grid(locations):
             loc_cards = ""
@@ -2879,17 +2905,16 @@ def render(digest: dict) -> str:
 #   * A grey ground with each section a card; the gaps are the dividers.
 #     Each card opens with a full-width navy bar: a muted blue Georgia
 #     section number, a hairline, then the name in white capitals (_v2_card turns a
-#     classic section into one). Family cards are faintly tinted to match
-#     their bar edge (_V2_FAM_TINT); general sections stay white.
+#     classic section into one). Every bar is plain navy and every card
+#     white but the glance's tint and the stat's blue body.
 #   * The top is an internal-use strip with the issue links, a navy band
 #     with the CSIS lockup, the brief's name in an outlined box (text, not an
 #     image, since Gmail blocks images) and the date, number and read time,
-#     the Listen card, then a card with the Peninsula status line and a
-#     wrapping line of numbered contents links. A hidden preheader opens the
-#     body (_v2_preheader).
+#     the Listen card, then a card with a wrapping line of numbered contents
+#     links. A hidden preheader opens the body (_v2_preheader).
 #   * Leaders' words follows the top stories: one verbatim quote each from
 #     Lee, Trump and Kim where the digest carries one (_v2_leader_quotes).
-#     Stat of the day follows Overnight as a blue card. ROK Government is a
+#     Stat of the day follows Overnight: the navy bar over a blue body. ROK Government is a
 #     grid of agency cards; Public Sentiment four figures in a row; trade a
 #     tracker table. The sign-off card is black, the footer navy with the
 #     Korea Chair lockup.
@@ -2906,10 +2931,9 @@ def render(digest: dict) -> str:
 #   * Two faces: the platform sans for body and furniture, Georgia for
 #     headlines, the stat figure and the CSIS letters. No size is larger than classic's: top
 #     stories 16px, other headlines 15px at most. No arrows, dots or emoji.
-#   * Identity and wayfinding: each bar carries a 5px family edge (flag red
-#     for the North, flag blue for the South, a light blue for the US and the
-#     world; _V2_FAMILY). The status line is built from tracker data only
-#     (_v2_status_facts), and the sign-off card closes the brief with
+#   * The tracker facts (KCNA watch flag trend, provocations logged) sit in
+#     Pyongyang Watch (_v2_status_facts); the sites with new reporting are
+#     Satellite & location watch's. The sign-off card closes the brief with
 #     tomorrow's scheduled items and the reply address.
 #   * Only top stories run in full. Every other item keeps its first
 #     sentence (_v2_shorten, cut at a real sentence end) and the section
@@ -2930,8 +2954,8 @@ def render(digest: dict) -> str:
 #
 # The sans is the platform's own UI face, which reads best at 13-14px on a
 # screen: San Francisco on Apple devices (-apple-system, BlinkMacSystemFont),
-# Segoe UI on Windows and in Outlook, Roboto on Android, then Helvetica Neue
-# and Arial. The names are unquoted, which CSS allows, because a quote would
+# Segoe UI on Windows and in Outlook, Roboto on Android (as sans-serif), then
+# Arial. The names are unquoted, which CSS allows, because a quote would
 # break the double- and single-quoted style attributes it is written into.
 # v2 used to carry three sans stacks (classic's body stack, its own, and one
 # with Korean faces on the wrapper); the brief has no Korean text outside a
@@ -2942,7 +2966,12 @@ def render(digest: dict) -> str:
 # resolved to Times New Roman's clone. The space after the comma is
 # deliberate: it keeps v2's own serif distinct from classic's
 # "Georgia,serif", which _v2_style turns into the sans.
-_V2_SANS = "-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica Neue,Arial,sans-serif"
+#
+# Roboto and Helvetica Neue are not named: Android resolves sans-serif to
+# Roboto anyway, and every Mac reader reaches San Francisco through the
+# first two names. The stack is written about eighty times per issue, and
+# the two names were 1.8KB of an email held under Gmail's clip.
+_V2_SANS = "-apple-system,BlinkMacSystemFont,Segoe UI,Arial,sans-serif"
 _V2_SERIF = "Georgia, serif"      # headlines, figures and the CSIS letters
 _V2_KO = _V2_SANS                 # kept for callers; the Korean faces are gone
 
@@ -2997,46 +3026,25 @@ _V2_DARK_BG = {_V2_GROUND: "#121212"}
 # Already light on navy in both schemes.
 _V2_DARK_EXEMPT = {_V2_NAVY, _V2_FOOT}
 
-# Section families, as a thin edge on the left of each navy bar: the flag's
-# red for the North, its blue for the South, a lighter blue for Washington
-# and the wider world. A working code for finding one's way, not decoration;
-# general sections (top stories, the forward look, the reference panels)
-# carry no edge. The flag blue sits close to the navy bar, but the edge also
-# meets the grey ground (or black, in dark mode) on its outer side, where it
-# reads. Same colours in both schemes, since the bar stays navy in both.
-_V2_FAM_NK = TAEGUK_RED
-_V2_FAM_ROK = TAEGUK_BLUE
-_V2_FAM_WORLD = "#6B8FC7"     # 4.8:1 against the navy bar
-# Each family's card is tinted to match its edge, faintly: a reader who has
-# found the red edge once sees the warm ground in every North Korea card.
-# General sections stay white. Every v2 text colour clears 4.5:1 on all three
-# (teal 5.2:1, meta grey 5.4:1, alert red 4.8:1).
-_V2_TINT_NK = "#FBF5F5"
-_V2_TINT_ROK = "#F3F7FC"
-_V2_TINT_WORLD = "#F4F6F9"
-_V2_FAM_TINT = {_V2_FAM_NK: _V2_TINT_NK, _V2_FAM_ROK: _V2_TINT_ROK, _V2_FAM_WORLD: _V2_TINT_WORLD}
-_V2_FAMILY = {
-    "pyongyang watch": _V2_FAM_NK, "satellite & location watch": _V2_FAM_NK,
-    "rok government": _V2_FAM_ROK, "election tracker": _V2_FAM_ROK,
-    "business & economy": _V2_FAM_ROK, "public sentiment": _V2_FAM_ROK,
-    "us-korea trade & investment": _V2_FAM_WORLD, "capitol hill": _V2_FAM_WORLD,
-    "northeast asia watch": _V2_FAM_WORLD, "korea and the world": _V2_FAM_WORLD,
-}
-_V2_DARK_EXEMPT |= {_V2_FAM_NK, _V2_FAM_ROK, _V2_FAM_WORLD}
-# The tints in dark mode: the dark card's grey (#262A30) leaning the same way.
-_V2_DARK_BG.update({_V2_TINT_NK: "#2C2427", _V2_TINT_ROK: "#212A36", _V2_TINT_WORLD: "#252B33",
-                    "#D6DFEA": "#3A4048"})      # the pledge bar's unfilled part
+# No family code. Each bar used to carry a 5px edge on its left (flag red for
+# the North, flag blue for the South, a light blue for Washington and the
+# world) and each family's card a faint matching tint. The owner asked for
+# plain navy bars; without the edge a tint had no key and read as an
+# off-white card rather than a code, so the cards are white again too.
+# Flag red and blue stay exempt from the dark map: they are the leaders'
+# cues and the ROK card rule, drawn as borders with their own dark rules.
+_V2_DARK_EXEMPT |= {TAEGUK_RED, TAEGUK_BLUE}
+_V2_DARK_BG.update({"#D6DFEA": "#3A4048"})      # the pledge bar's unfilled part
 # The section numerals on the navy bar: a muted light blue (7.3:1), quiet
 # beside the white name. They were red, which read as an alert on every bar;
-# red is kept for alerts. The stat card's numeral is the same idea on its blue
-# ground (5.7:1). Both keep their colours in dark mode, as the bars do.
+# red is kept for alerts. They keep their colour in dark mode, as the bars do.
 _V2_NUM = "#9FB3CC"
-_V2_NUM_ON_BLUE = "#C3D2E6"
+# The stat's body under its navy bar: the flag blue, white type, both schemes.
 _V2_STAT_BG = TAEGUK_BLUE
 # The sign-off card: black in both schemes, with light type.
 _V2_BLACK = "#14181F"
 _V2_ON_BLACK = "#B8C4D6"      # 9.7:1 on the black card
-_V2_DARK_EXEMPT |= {_V2_NUM, _V2_NUM_ON_BLUE, _V2_STAT_BG, _V2_BLACK, _V2_ON_BLACK}
+_V2_DARK_EXEMPT |= {_V2_NUM, _V2_STAT_BG, _V2_BLACK, _V2_ON_BLACK}
 
 # Reading order. A policymaker at 6 a.m. wants what happened, then the two
 # Koreas, then Washington, then the region; the forward look and the analysis
@@ -3086,13 +3094,8 @@ def _v2_bar(label: str, numbered: bool = True) -> str:
     markers so the word count is classic's.
     """
     mark = _v2_num_mark(label) if numbered else ""
-    # The family edge is a border on the cell, which Outlook draws; the
-    # padding gives back its width so the name still lines up with the text.
-    fam = _V2_FAMILY.get(_v2_key(label))
-    edge = (f' class="v2-edge" style="border-left:5px solid {fam};padding:9px 20px 9px 15px;'
-            if fam else ' style="padding:9px 20px;')
     return ('<table width="100%" cellpadding="0" cellspacing="0" border="0" class="sec-bar" '
-            f'style="background:{_V2_NAVY};"><tr><td{edge}font-family:{_V2_SANS};'
+            f'style="background:{_V2_NAVY};"><tr><td style="padding:9px 20px;font-family:{_V2_SANS};'
             f'font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;line-height:1.35;'
             f'color:#FFFFFF;">{mark}{_v2_label(label)}</td></tr></table>')
 
@@ -3305,13 +3308,44 @@ def _v2_cal_row(month: str, day: str, label: str, title: str, why: str = "", whe
             + '</td></tr></table>')
 
 
-def _v2_upcoming(calendar_watch: list) -> str:
-    rows = ""
-    for cal in calendar_watch:
-        if not isinstance(cal, dict):
+_V2_UP_LIMIT = 8
+_V2_STOP = {"the", "a", "an", "of", "on", "and", "to", "for", "in", "with", "at", "by", "hearing",
+            "hearings", "markup", "committee", "house", "senate", "us", "u", "s"}
+
+
+def _v2_words(text: str) -> set:
+    return {w for w in _re.findall(r"[a-z0-9]+", str(text or "").lower()) if w not in _V2_STOP and len(w) > 2}
+
+
+def _v2_upcoming(calendar_watch: list, hill: list | None = None, today=None) -> str:
+    """Upcoming: the dated events and observances (calendar_watch, already merged) and the
+    week's committee hearings, in date order, at most _V2_UP_LIMIT rows.
+
+    A hearing the model also listed (same day, two words of the title in
+    common) appears once, as the model's entry. Nothing here is dated by the
+    renderer: each row's date is the article's, the schedule's or the
+    computed observance's. Empty when there is nothing to list.
+    """
+    entries = []
+    for cal in calendar_watch or []:
+        if not isinstance(cal, dict) or not cal.get("headline"):
             continue
-        rows += _v2_cal_row(_esc(str(cal.get("month", ""))).upper(), _esc(str(cal.get("day", ""))), "",
-                            _emphasis(_esc(cal.get("headline", ""))), _emphasis(_esc(cal.get("detail", ""))))
+        row = _v2_cal_row(_esc(str(cal.get("month", ""))).upper(), _esc(str(cal.get("day", ""))), "",
+                          _emphasis(_esc(cal.get("headline", ""))), _emphasis(_esc(cal.get("detail", ""))))
+        entries.append((str(cal.get("_date") or "9999"), _v2_words(f'{cal.get("headline")} {cal.get("detail")}'), row))
+    model_days = [(d, w) for d, w, _r in entries]
+    for ev in hill or []:
+        if not isinstance(ev, dict) or not ev.get("title"):
+            continue
+        day = str(ev.get("date") or "")[:10]
+        words = _v2_words(hill_event_text(ev))
+        if any(d == day and len(words & w) >= 2 for d, w in model_days):
+            continue
+        entries.append((day or "9999", words, _v2_hill_rows([ev], today)))
+    if not entries:
+        return ""
+    entries.sort(key=lambda e: e[0])       # stable: the model's order within a day
+    rows = "".join(r for _d, _w, r in entries[:_V2_UP_LIMIT])
     return (f'<!--v2--><div><a name="upcoming" id="upcoming"></a>{_v2_bar("Upcoming")}{rows}</div>')
 
 
@@ -3459,6 +3493,10 @@ def _v2_lists(section: str) -> str:
     section = _re.sub(r'<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;[^"]*'
                       r'padding-bottom:4px;border-bottom:1px solid #E8E8E8;">([^<]*)</div>',
                       lambda m: _v2_subhead(m.group(1)), section)
+    # The location watch's "other monitored sites" line: the house hairline,
+    # which dark mode darkens (its #EAEAEA rule showed as a white line there).
+    section = section.replace('margin-top:10px;padding-top:9px;border-top:1px solid #EAEAEA;">',
+                              f'margin-top:10px;padding-top:9px;border-top:1px solid {_V2_HAIR};" class="v2-rule">')
     # A ministry card's source line: no second rule inside the item.
     section = section.replace('<div style="margin-top:8px;padding-top:7px;border-top:1px solid #E1E6ED;',
                               '<div style="margin-top:6px;')
@@ -3541,12 +3579,10 @@ def _v2_card(section: str, more: dict | None = None) -> str:
     rest = _re.sub(r'(class="v2-sub"[^>]*>[^<]*</div>\s*<(?:div|table)\b[^>]*?class="v2-it" style="[^"]*?)'
                    rf'border-top:1px solid {_V2_HAIR};', r"\1", rest)
     head = section.lstrip()[:9] if section.lstrip().startswith("<!--v2-->") else ""
-    edge = _re.search(r"border-left:5px solid (#[0-9A-Fa-f]{6});", m.group(0))
-    tint = _V2_FAM_TINT.get(edge.group(1)) if edge else None
     inner = (f'class="v2-in v2-tint" style="padding:6px 20px 10px 17px;background:{_V2_TINT};'
              f'border-left:3px solid {_V2_ACCENT};font-family:{_V2_SANS};"'
              if 'class="v2-glance"' in rest[:200] else
-             f'class="v2-in" style="padding:4px 20px 12px;{f"background:{tint};" if tint else ""}font-family:{_V2_SANS};"')
+             f'class="v2-in" style="padding:4px 20px 12px;font-family:{_V2_SANS};"')
     bar = m.group(0)
     return (f'{head}<div class="v2-gap" style="padding:0 16px 12px;">{p.group(1)}{p.group(2)}'
             '<table width="100%" cellpadding="0" cellspacing="0" border="0" class="v2-card" style="background:#FFFFFF;">'
@@ -3609,24 +3645,38 @@ def _v2_leader_quotes(digest: dict) -> list:
         if len(text) > 1 and text[0] in "\"'“‘" and text[-1] in "\"'”’":
             text = text[1:-1].strip()
         if key and text and key not in found:
+            # Where and when it was said, on what: the model's own `context`
+            # field, taken from the source article (digest.py asks for it).
+            ctx = _re.sub(r"\s+", " ", str(obj.get("context") or "")).strip().rstrip(".")
             found[key] = {"key": key, "text": text, "source": source, "url": str(url or ""),
-                          "when": when or issue_day, "obj": obj}
+                          "when": when or issue_day, "context": ctx, "obj": obj}
+
+    def outlet(s, url):
+        """The outlet that carried a statement: its source field, the link's publisher, or
+        the "per Yonhap English" an analyst note ends on. Empty when none says."""
+        if str(s.get("source") or "").strip():
+            return str(s["source"]).strip()
+        if url.startswith("http"):
+            return _linkq.publisher_name(url)
+        mon = r"(?!(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\b)"
+        m = _re.search(rf"\bper (?:the )?({mon}[A-Z][\w&'-]*(?: {mon}[A-Z][\w&'-]*){{0,3}})",
+                       str(s.get("analyst_note") or ""))
+        return m.group(1) if m else ""
 
     for s in digest.get("social_statements") or []:
         if isinstance(s, dict):
             url = str(s.get("url") or "")
             add(_v2_leader_of(s.get("who"), s.get("name")), s.get("quote_text"),
-                _linkq.publisher_name(url) if url.startswith("http") else "",
-                url, _v2_when(s.get("handle_context")), s)
+                outlet(s, url), url, _v2_when(s.get("handle_context")), s)
     for x in digest.get("official_x_posts") or []:
         if isinstance(x, dict):
             handle = str(x.get("handle") or "").strip().lstrip("@")
             if not handle:
                 m = _re.search(r"@(\w+)", str(x.get("handle_context") or x.get("platform_date") or ""))
                 handle = m.group(1) if m else ""
+            # The name is above the quote; the account adds nothing to "Post on X".
             add(_v2_leader_of(x.get("who"), x.get("name"), "@" + handle if handle else ""),
-                x.get("post") or x.get("quote_text"),
-                "Post on X" + (f", @{handle}" if handle else ""), x.get("url"),
+                x.get("post") or x.get("quote_text"), "Post on X", x.get("url"),
                 _v2_when(x.get("platform_date")), x)
     kc = digest.get("kcna_delta") if isinstance(digest.get("kcna_delta"), dict) else {}
     for q in kc.get("key_quotes") or []:
@@ -3660,21 +3710,61 @@ def _v2_leaders(quotes: list) -> str:
     """The Leaders' words card: name in bold, the quote, its source and date. Nothing without a quote."""
     if not quotes:
         return ""
-    rows = ""
-    for q in quotes[:3]:
-        src = _esc(_v2_outlet(q["source"]))
-        if q["url"].startswith("http"):
-            src = (f'<a href="{_esc(q["url"])}" style="color:{_V2_TEAL};font-weight:700;text-decoration:none;">'
-                   f'{src or "Source"}</a>')
-        meta = ", ".join(x for x in (src, _esc(q["when"])) if x)
-        rows += (f'<div class="v2-it" style="padding:11px 0 12px;border-top:1px solid {_V2_HAIR};">'
-                 f'<div class="v2-lw-{q["key"]}" style="padding-left:12px;border-left:3px solid {q["colour"]};">'
-                 f'<div style="font-size:13px;font-weight:700;color:{q["colour"]};">{q["name"]}</div>'
-                 f'<div style="font-family:{_V2_SERIF};font-size:14px;line-height:1.5;color:{_V2_INK};margin-top:2px;">'
-                 f'&ldquo;{_esc(q["text"])}&rdquo;</div>'
-                 + (f'<div style="font-size:12px;color:{_V2_META};margin-top:3px;">{meta}</div>' if meta else "")
-                 + '</div></div>')
+    names = [q["name"] for q in quotes[:3]]
+    who = names[0] if len(names) == 1 else ", ".join(names[:-1]) + " and " + names[-1]
+    # What the card is, in one line: these are the leaders' own words, not a summary.
+    rows = (f'<div class="v2-lw-intro" style="font-size:12px;line-height:1.5;color:{_V2_META};padding:9px 0 1px;">'
+            f'Direct quotes from {who} in today&#8217;s reporting.</div>')
+    for n, q in enumerate(quotes[:3]):
+        row = _v2_leader_row(q)
+        rows += row.replace(f"border-top:1px solid {_V2_HAIR};", "", 1) if n == 0 else row
     return f'<!--v2--><div><a name="leaders" id="leaders"></a>{_v2_bar("Leaders&#8217; words")}{rows}</div>'
+
+
+def _v2_short_day(when: str) -> str:
+    """"October 21" as "Oct 21"; anything else as it came."""
+    try:
+        return datetime.strptime(str(when).strip(), "%B %d").strftime("%b %-d")
+    except ValueError:
+        return str(when or "").strip()
+
+
+def _v2_leader_meta(q: dict) -> str:
+    """The line under a quote: "Context, Outlet, Oct 21".
+
+    The context is the model's, from the source article: where and when it
+    was said, on what. Without one the line is the platform or outlet and the
+    date ("Post on X, Oct 21"; "Yonhap, Oct 21"). A date the context already
+    gives is not repeated. The outlet links to the article when there is one.
+    """
+    day = _v2_short_day(q.get("when", ""))
+    ctx = q.get("context") or ""
+    name = _v2_outlet(q.get("source") or "")
+    src = _esc(name)
+    if str(q.get("url") or "").startswith("http"):
+        src = (f'<a href="{_esc(q["url"])}" style="color:{_V2_TEAL};font-weight:700;text-decoration:none;">'
+               f'{src or "Source"}</a>')
+    if ctx and name and _re.search(r"\b%s\b" % _re.escape(name.lower()), ctx.lower()):
+        src = ""        # "Post on X, Oct 21" as the context leaves nothing to add
+    if ctx and day:
+        m, _, d = day.partition(" ")
+        if _re.search(r"\b%s[a-z]*\.? %s\b" % (_re.escape(m), _re.escape(d)), ctx):
+            day = ""
+    parts = [_esc(ctx[:1].upper() + ctx[1:]) if ctx else "", src, _esc(day)]
+    return ", ".join(x for x in parts if x)
+
+
+def _v2_leader_row(q: dict) -> str:
+    """One leader's quote: the name in their colour, the words in the serif, the meta line."""
+    meta = _v2_leader_meta(q)
+    return (f'<div class="v2-it" style="padding:11px 0 12px;border-top:1px solid {_V2_HAIR};">'
+            f'<div class="v2-lw-{q["key"]}" style="padding-left:12px;border-left:3px solid {q["colour"]};">'
+            f'<div style="font-size:13px;font-weight:700;color:{q["colour"]};">{q["name"]}</div>'
+            f'<div style="font-family:{_V2_SERIF};font-size:14px;line-height:1.5;color:{_V2_INK};margin-top:2px;">'
+            f'&ldquo;{_esc(q["text"])}&rdquo;</div>'
+            + (f'<div class="v2-lw-meta" style="font-size:12px;line-height:1.45;color:{_V2_META};margin-top:3px;">{meta}</div>'
+               if meta else "")
+            + '</div></div>')
 
 
 # ── ROK government cards ────────────────────────────────────────────────────
@@ -3749,7 +3839,7 @@ def _v2_rok_cards(items: list) -> str:
             'box-sizing:border-box;padding:0 8px 10px 0;">'
             '<table width="100%" cellpadding="0" cellspacing="0" border="0" class="v2-rct" '
             'style="background:#FFFFFF;border:1px solid #D6DFEA;"><tr>'
-            f'<td style="padding:8px 12px 7px;border-bottom:2px solid {_V2_FAM_ROK};font-family:{_V2_SANS};font-size:11px;font-weight:700;'
+            f'<td style="padding:8px 12px 7px;border-bottom:2px solid {TAEGUK_BLUE};font-family:{_V2_SANS};font-size:11px;font-weight:700;'
             f'letter-spacing:0.5px;text-transform:uppercase;line-height:1.35;color:{_V2_NAVY};">{_esc(agency)}</td></tr>'
             f'<tr><td style="padding:8px 12px 10px;vertical-align:top;font-family:{_V2_SANS};">'
             + (f'<div style="font-size:12px;line-height:1.4;color:{_V2_META};">{_esc(official)}</div>' if official else "")
@@ -3837,7 +3927,12 @@ def _v2_sentiment_card(sentiment: dict, delta, spark: str, stale: str) -> str:
 # ── Stat of the day ─────────────────────────────────────────────────────────
 
 def _v2_stat(key_stat: dict, href: str = "") -> str:
-    """The stat as a blue card with white type: the one panel in the brief set in colour.
+    """The stat as a card like the others, the navy bar over a blue body with white type.
+
+    The bar is every section's (number, hairline, name in capitals), so the
+    stat reads as section 04 rather than as a panel with its label inside the
+    blue. The body is the one block in the brief set in colour. The card's
+    markup is _v2_card's, so the web page folds it like the rest.
 
     `href` is unused: a shortened stat is covered by the one line under the
     contents, like every other section. Kept so callers need not change.
@@ -3848,16 +3943,14 @@ def _v2_stat(key_stat: dict, href: str = "") -> str:
     label = _esc(key_stat.get("label", ""))
     ctx = _emphasis(_esc(key_stat.get("context", "")))
     src = _esc(key_stat.get("source", ""))
-    inner = (f'<div style="font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;line-height:1.35;'
-             f'color:#FFFFFF;">{_v2_num_mark("Stat of the day", _V2_NUM_ON_BLUE, "#6F93C6")}Stat of the day</div>'
-             f'<div style="font-family:{_V2_SERIF};font-size:26px;font-weight:700;line-height:1.1;color:#FFFFFF;'
-             f'margin-top:10px;">{num}</div>'
+    inner = (f'<div style="font-family:{_V2_SERIF};font-size:26px;font-weight:700;line-height:1.1;color:#FFFFFF;">{num}</div>'
              + (f'<div style="font-size:14px;font-weight:700;line-height:1.4;color:#FFFFFF;margin-top:4px;">{label}</div>' if label else "")
              + (f'<div style="font-size:13px;line-height:1.5;color:{_V2_FOOT};margin-top:4px;">{ctx}</div>' if ctx else "")
              + (f'<div style="font-size:12px;line-height:1.4;color:{_V2_FOOT};margin-top:6px;">{src}</div>' if src else ""))
-    return ('<!--v2--><a name="key-stat" id="key-stat"></a><div class="v2-gap" style="padding:0 16px 12px;">'
-            '<table width="100%" cellpadding="0" cellspacing="0" border="0" class="v2-card" '
-            f'style="background:{_V2_STAT_BG};"><tr><td class="v2-in" style="padding:13px 20px 16px;font-family:{_V2_SANS};">'
+    return ('<!--v2--><div class="v2-gap" style="padding:0 16px 12px;"><a name="key-stat" id="key-stat"></a>'
+            '<table width="100%" cellpadding="0" cellspacing="0" border="0" class="v2-card" style="background:#FFFFFF;">'
+            f'<tr><td style="padding:0;">{_v2_bar("Stat of the day")}</td></tr>'
+            f'<tr><td class="v2-in v2-stat" style="padding:14px 20px 16px;background:{_V2_STAT_BG};font-family:{_V2_SANS};">'
             f'{inner}</td></tr></table></div>')
 
 
@@ -3865,6 +3958,7 @@ def _v2_stat(key_stat: dict, href: str = "") -> str:
 
 _V2_TARIFF_COLOUR = {"ACTIVE": TAEGUK_RED, "ESCALATION": TAEGUK_RED, "REDUCED": UP_GREEN,
                      "NEGOTIATING": _V2_TEAL}
+_V2_AMBER = "#9A5B00"      # pending, not in force: 5.9:1 on white (classic's "elevated" amber)
 
 
 def _v2_trade(us_korea: dict, digest: dict, base: str) -> str:
@@ -3922,6 +4016,11 @@ def _v2_trade(us_korea: dict, digest: dict, base: str) -> str:
         trs = ""
         for n, (name, note, value, word, colour) in enumerate(rows):
             line = "" if n == 0 else f"border-top:1px solid {_V2_HAIR};"
+            # Red is for a tariff in force: a rate. A status with no rate (a
+            # Section 301 investigation, "Active" beside "determination
+            # pending") is amber when pending and neutral otherwise.
+            if colour == TAEGUK_RED and "%" not in value:
+                colour = _V2_AMBER if _re.search(r"pending|under review|investigat", note, _re.I) else _V2_META
             trs += (f'<tr><td class="v2-rule" style="padding:8px 8px 8px 12px;{line}vertical-align:top;font-family:{_V2_SANS};">'
                     f'<div style="font-size:13px;font-weight:700;line-height:1.35;color:{_V2_INK};">{name}</div>'
                     + (f'<div style="font-size:12px;line-height:1.4;color:{_V2_META};margin-top:1px;">{note}</div>' if note else "")
@@ -4071,7 +4170,11 @@ def _v2_masthead(digest: dict, now, listen_bar: str) -> str:
         f'<div class="v2-mdate" style="margin-top:12px;font-family:{_V2_SANS};font-size:13px;line-height:1.6;'
         f'color:{_V2_FOOT};"><b style="white-space:nowrap;color:#FFFFFF;">{now:%A, %B} {now.day}, {now.year}</b>'
         '<!--c-->' + "".join(f"&emsp; {nw}{f}</span>" for f in facts) + '<!--/c--></div>'))
-    date_card = _v2_gap(_v2_cardbox(f'{_v2_status(digest)}%%TOC%%', "14px 20px 12px"), top=12)
+    # The contents card: the contents line and the shortened-sections note,
+    # nothing else (the Peninsula status line is gone; its facts live in
+    # Pyongyang Watch and the location watch). Built in _v2_finish, which
+    # leaves it out when it would be empty, as on paper.
+    date_card = "%%TOCCARD%%"
     return f'<!--v2--><a name="top" id="top"></a>{strip}{band}{listen}{date_card}'
 
 
@@ -4104,10 +4207,16 @@ def _v2_numbers(digest: dict) -> str:
             missing.append(label)
             value = f'<span style="font-size:13px;font-weight:400;color:{_V2_META};">No data</span>'
             sub = ""
+        # A hairline between cells, on the left of every cell but the first.
+        # On a phone the six wrap three to a row and the fourth cell opens the
+        # second row, so the stylesheet takes its hairline off (v2-c4).
+        n = len(cells)
+        rule = "border-left:1px solid #E2E6EC;" if n else ""
+        cls = "v2-cell v2-c4" if n == 3 else "v2-cell"
         cells.append(
             '<!--[if mso]><td width="94" valign="top"><![endif]-->'
-            f'<div class="v2-cell" style="display:inline-block;vertical-align:top;width:94px;padding:10px 0 9px;'
-            f'text-align:center;font-family:{_V2_SANS};">'
+            f'<div class="{cls}" style="display:inline-block;vertical-align:top;width:94px;box-sizing:border-box;'
+            f'padding:10px 0 9px;{rule}text-align:center;font-family:{_V2_SANS};">'
             f'<div style="font-size:11px;font-weight:700;'
             f'text-transform:uppercase;color:{_V2_META};white-space:nowrap;">{label}</div>'
             f'<div style="font-size:16px;font-weight:700;color:{_V2_NAVY};'
@@ -4140,7 +4249,10 @@ def _v2_numbers(digest: dict) -> str:
                 when = datetime(*map(int, _iso.groups())).strftime("%b %-d")
             except ValueError:
                 pass
-        sub = " ".join(x for x in (sub, _esc(when) if when else "") if x)
+        # Each part whole on its line: "+2 pts" may sit over "Oct 13-15", but
+        # the date never breaks at its hyphen.
+        sub = " ".join(f'<span style="white-space:nowrap;">{x}</span>'
+                       for x in (sub, _esc(when) if when else "") if x)
         cell("Lee approval", _esc(str(ap["value"])), sub)
     kc = digest.get("kcna_delta") or {}
     days = kc.get("days_since_last_appearance")
@@ -4159,8 +4271,12 @@ def _v2_numbers(digest: dict) -> str:
                     continue
         except Exception:                                       # noqa: BLE001
             seen = ""
-        cell("Kim last seen", f"{days} day{'s' if days != 1 else ''}",
-             (f'<span style="color:{DOWN_RED};">' if days >= 7 else "<span>") + (f"ago, {seen}" if seen else "ago") + "</span>")
+        # The date as the figure, how long ago under it: "Oct 20" over "1 day
+        # ago" reads as one fact where "1 day" over "ago, Oct 20" split it.
+        # Red from a week.
+        ago = f"{days} day{'s' if days != 1 else ''} ago"
+        ago = f'<span style="color:{DOWN_RED};">{ago}</span>' if days >= 7 else ago
+        cell("Kim last seen", seen or ago, ago if seen else "")
     else:
         cell("Kim last seen", "", "")
     cell("BOK rate", _esc(str(r.get("value", ""))), _esc(str(r.get("last_change", ""))))
@@ -4414,28 +4530,21 @@ def _v2_status_facts(digest: dict) -> list:
 
 
 def _v2_status(digest: dict) -> str:
-    """The Peninsula status line under the date: three or four facts as sentences, or nothing."""
-    facts = _v2_status_facts(digest)
+    """The tracker facts no other part of the brief states, as one meta line in Pyongyang Watch.
+
+    This was the Peninsula status line at the top, which the owner removed.
+    Its other facts are shown where they belong: Kim's last appearance in the
+    numbers strip and Pyongyang Watch, the sites with new reporting and the
+    elevated count in the location watch, a changed tariff rate in the trade
+    tracker. What is left is the KCNA watch flag with its trend and the
+    provocations logged; nothing when the trackers hold neither.
+    """
+    facts = [f for f in _v2_status_facts(digest)
+             if f.startswith(("KCNA", "No KCNA")) or "provocation" in f]
     if not facts:
         return ""
-    # What the glance's old Trackers row added, folded in so no fact is said
-    # twice: the sites with new reporting by name, a link to the section
-    # behind a KCNA flag, and a changed tariff rate.
-    sites = [str(x) for x in digest.get("_bp_changes") or [] if x] if isinstance(digest.get("_bp_changes"), list) else []
-    names = "; ".join(_esc(_re.sub(r"\s*[\u2013\u2014]\s*", ", ", x)) for x in sites[:3])
-    if len(sites) > 3:
-        names += f" and {len(sites) - 3} more"
-    for n, f in enumerate(facts):
-        if f.startswith("New reporting at ") and names:
-            facts[n] = f[:-1] + f": {names} %%V2REF:satellite%%."
-        elif f.startswith("KCNA watch flag up") or f == "KCNA silent today.":
-            facts[n] = f[:-1] + " %%V2REF:kcna%%."
-    tc = digest.get("_tariff_changes")
-    deals = digest.get("us_korea_deals") if isinstance(digest.get("us_korea_deals"), dict) else {}
-    if isinstance(tc, list) and tc and deals.get("tariff_tracker"):
-        facts.append("Tariff rate changed: " + ", ".join(_esc(str(x)) for x in tc[:3]) + " %%V2REF:trade%%.")
-    return (f'<!--c--><div class="v2-status" style="font-size:13px;line-height:1.55;color:{_V2_BODY};">'
-            f'<b style="color:{_V2_NAVY};">Peninsula status</b>&emsp;' + "&ensp; ".join(facts) + '</div><!--/c-->')
+    return (f'<!--c--><div class="v2-trk-line" style="font-size:12px;line-height:1.5;color:{_V2_META};margin-top:4px;">'
+            + " ".join(facts) + '</div><!--/c-->')
 
 
 def _v2_tomorrow(digest: dict, limit: int = 3) -> list:
@@ -4509,7 +4618,7 @@ def _v2_signoff(digest: dict) -> str:
         f'{inner}</td></tr></table>') + '<!--/c-->')
 
 
-def _v2_kcna(kc: dict) -> str:
+def _v2_kcna(kc: dict, digest: dict | None = None) -> str:
     """Pyongyang Watch as a white card like every other: Kim's status, any quotes, the top
     KCNA articles, the senior officials around him and the bottom line.
 
@@ -4539,7 +4648,8 @@ def _v2_kcna(kc: dict) -> str:
     out = (f'<div class="v2-it" style="padding:12px 0;border-top:1px solid {_V2_HAIR};">{note}'
            f'<div style="font-size:12px;font-weight:700;line-height:1.35;color:{_V2_TEAL};margin-bottom:2px;">'
            f'Kim Jong Un{flag}</div>'
-           f'<div style="font-size:14px;line-height:1.5;color:{_V2_INK};"><b>{status}</b> {activity}</div></div>')
+           f'<div style="font-size:14px;line-height:1.5;color:{_V2_INK};"><b>{status}</b> {activity}</div>'
+           f'{_v2_status(digest or {})}</div>')
     for q in (kc.get("key_quotes") or [])[:2]:
         qt = _esc(q.get("quote", ""))
         if not qt:
@@ -4790,12 +4900,9 @@ def _v2_finish(body: str, more_url: str = "") -> str:
              for i, (text, name) in enumerate(toc, 1)]
     toc_html = ""
     if len(links) >= 4:
-        toc_html = (f'<!--c--><div class="v2-rule v2-toc no-print" style="margin-top:10px;padding-top:7px;'
-                    f'border-top:1px solid {_V2_HAIR};font-size:13px;font-weight:700;line-height:1.9;">'
+        toc_html = (f'<!--c--><div class="v2-toc no-print" style="font-size:13px;font-weight:700;line-height:1.9;">'
                     f'<span style="font-size:11px;letter-spacing:0.5px;text-transform:uppercase;color:{_V2_META};">'
                     'In this issue</span>&emsp; ' + "&emsp; ".join(links) + '</div><!--/c-->')
-        if 'class="v2-status"' not in body:
-            toc_html = toc_html.replace("margin-top:10px;padding-top:7px;border-top:1px solid", "border-top:0 solid", 1)
     if more_url and not PRINT:
         toc_html += (f'<!--c--><div class="v2-more no-print" style="margin-top:4px;font-size:12px;line-height:1.5;'
                      f'color:{_V2_META};">Some sections are shortened here. Full text:&ensp;'
@@ -4803,7 +4910,10 @@ def _v2_finish(body: str, more_url: str = "") -> str:
     if PRINT:
         toc_html = ""       # links do nothing on paper
     body = body.replace("%%NAV%%", "")
-    return body.replace("%%TOC%%", toc_html)
+    # v2-tocc: the web page, which has its own menu, hides the whole card.
+    card = (f'<div class="v2-gap v2-tocc" style="padding:12px 16px 12px;">'
+            f'{_v2_cardbox(toc_html, "12px 20px 11px")}</div>' if toc_html else "")
+    return body.replace("%%TOCCARD%%", card)
 
 
 def _v2_unchrome(body: str) -> str:
@@ -4825,7 +4935,6 @@ _V2_CSS = """
       .wrapper .v2-gap { padding-left:8px !important; padding-right:8px !important; }
       .wrapper .v2-in { padding-left:14px !important; padding-right:14px !important; }
       .wrapper .sec-bar td { padding:9px 14px !important; }
-      .wrapper .sec-bar td.v2-edge { padding-left:9px !important; }
       .wrapper .v2-name { font-size:18px !important; }
       .wrapper .mast-meta { padding-top:2px !important; }
       .v2-cell div[style*="font-size:16px"] { font-size:15px !important; }
@@ -4834,6 +4943,7 @@ _V2_CSS = """
       .wrapper .v2-toc { font-size:12px !important; line-height:1.8 !important; }
       .v2-hn > tbody > tr > td { padding:2px 0 !important; }
       .v2-cell { width:32% !important; min-width:96px; }
+      .wrapper .v2-c4 { border-left:0 !important; }
       /* The first screen: everything above the first story a little tighter,
          nothing removed. With these and the wrapping contents line, the first
          top story's headline at 375px moved from 1,278/1,327/1,408px to
@@ -4871,7 +4981,7 @@ _V2_CSS = """
       .wrapper .v2-lw-lee { border-left-color:#5C8FD6 !important; }
       .wrapper .v2-lw-trump { border-left-color:#8FB6E8 !important; }
       .wrapper .v2-lw-kim { border-left-color:#F08A94 !important; }
-      .wrapper .v2-rct, .wrapper .v2-trk { border-color:#3A4048 !important; }
+      .wrapper .v2-rct, .wrapper .v2-trk, .wrapper .v2-cell { border-color:#3A4048 !important; }
       .wrapper .v2-signoff { border:1px solid #3A4048 !important; }
       .v2-pre { color:#E8E6E1 !important; }
 """ + _v2_dark_css() + """
@@ -5039,8 +5149,13 @@ def _v2_preheader(digest: dict, low: int = 90, high: int = 110) -> str:
 # The layout is for a page, not an inbox: white, no grey ground or tints but
 # the glance's, the column the page's full width, each card a navy bar over
 # its items. A long section breaks across pages; an item never does, and a
-# bar or group label never ends a page without the item under it. Margins
-# and the running footer are make_pdf's, so they are not set here.
+# bar or group label never ends a page without the item under it. The
+# running header and footer are make_pdf's. The margins are set here as
+# well as passed to it (run.write_preview_pdf passes _V2_PRINT_MARGIN):
+# classic's stylesheet carries "@page { margin: 12mm }", which overrides
+# the margins Chromium is given, and left the header on top of the first
+# bar of every page.
+_V2_PRINT_MARGIN = {"top": "15mm", "bottom": "13mm", "left": "13mm", "right": "13mm"}
 _V2_PRINT_SANS = "'Source Sans 3','Liberation Sans',Arial,sans-serif"
 _V2_PRINT_SERIF = "'Source Serif 4','Liberation Serif',Georgia,serif"
 _V2_PRINT_HEAD = (
@@ -5049,7 +5164,7 @@ _V2_PRINT_HEAD = (
     '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,700;'
     '1,400;1,700&amp;family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,700;1,8..60,400&amp;display=swap">'
     """<style type="text/css">
-  @page { size: Letter; }
+  @page { size: Letter; margin: %(mt)s %(mr)s %(mb)s %(ml)s; }
   html, body { background:#FFFFFF !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
   body, body * { font-family:%(sans)s !important; }
   [style*="font-family:Georgia"], [style*="font-family:Georgia"] * { font-family:%(serif)s !important; }
@@ -5066,9 +5181,10 @@ _V2_PRINT_HEAD = (
   .v2-card, .v2-card > tbody, .v2-card > tbody > tr, .v2-card > tbody > tr > td { display:block !important; }
   .v2-card[style*="background:#FFFFFF"] > tbody > tr > td.v2-in { padding:2px 2px 4px !important; }
   .v2-card[style*="background:#FFFFFF"] > tbody > tr > td.v2-in.v2-tint { padding:4px 14px 8px 12px !important; }
-  .v2-in:not(.v2-tint) { background:transparent !important; }
+  .v2-in:not(.v2-tint):not(.v2-stat) { background:transparent !important; }
+  .v2-card[style*="background:#FFFFFF"] > tbody > tr > td.v2-in.v2-stat { padding:10px 14px 12px !important; }
   .sec-bar, .v2-card > tbody > tr:first-child, .v2-sub { break-after:avoid !important; page-break-after:avoid !important; }
-  .v2-it, .v2-rc, .v2-bl, .v2-ps, .v2-glance tr, .v2-trk tr, .v2-status, .v2-foot, .v2-hn {
+  .v2-it, .v2-rc, .v2-bl, .v2-ps, .v2-glance tr, .v2-trk tr, .v2-foot, .v2-hn, .v2-stat, .v2-lw-intro {
     break-inside:avoid !important; page-break-inside:avoid !important; }
   /* The stat and sign-off cards, whole. Its own rule: a selector Chromium
      cannot parse would take the rest of the list down with it. */
@@ -5079,7 +5195,7 @@ _V2_PRINT_HEAD = (
   .v2-rg { display:block !important; }
   .v2-rg > .v2-rc { display:block !important; width:auto !important; max-width:none !important; padding:0 0 8px !important; }
   /* What opens a card (a dateline, a group label) stays with what follows. */
-  .v2-card > tbody > tr > td.v2-in > :first-child { break-after:avoid !important; page-break-after:avoid !important; }
+  .v2-card > tbody > tr > td.v2-in > :first-child:not(.v2-it) { break-after:avoid !important; page-break-after:avoid !important; }
   /* Restyled classic sections hold their items in one-column tables, where
      break-inside:avoid is ignored; as blocks they behave like v2's own. A
      table with cells side by side (the tariff tracker, a calendar row)
@@ -5088,7 +5204,8 @@ _V2_PRINT_HEAD = (
   .v2-in table:not(:has(> tbody > tr > td + td)) > tbody > tr,
   .v2-in table:not(:has(> tbody > tr > td + td)) > tbody > tr > td { display:block !important; }
   a {text-decoration:none !important; }
-</style>""" % {"sans": _V2_PRINT_SANS, "serif": _V2_PRINT_SERIF})
+</style>""" % {"sans": _V2_PRINT_SANS, "serif": _V2_PRINT_SERIF, "mt": _V2_PRINT_MARGIN["top"],
+                     "mr": _V2_PRINT_MARGIN["right"], "mb": _V2_PRINT_MARGIN["bottom"], "ml": _V2_PRINT_MARGIN["left"]})
 
 
 def _v2_page(html: str, preheader: str = "") -> str:
