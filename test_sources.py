@@ -1652,6 +1652,30 @@ def check_v2_contents_and_sentiment():
     return problems
 
 
+def check_wire_labels():
+    """The Wire's group headings keep their acronyms: DPRK, ROK Economy, US-Korea, not Dprk or Us-Korea."""
+    import copy, render
+    problems = []
+    for key, want in (("DPRK", "DPRK"), ("dprk", "DPRK"), ("ROK Economy", "ROK Economy"), ("rok politics", "ROK Politics"),
+                      ("US-Korea", "US-Korea"), ("nk-russia-china", "NK-Russia-China"), ("Japan-Korea", "Japan-Korea"),
+                      ("Semiconductors", "Semiconductors"), ("energy security", "Energy security"), ("", "Other")):
+        if render._wire_label(key) != want:
+            problems.append(f"_wire_label({key!r}) gave {render._wire_label(key)!r}, want {want!r}")
+    d = {"digest_date": "Wednesday, October 21, 2026", "top_stories": [{"headline": "L", "body": "B."}],
+         "also_today": [{"headline": "A", "body_text": "B.", "category": "DPRK"},
+                        {"headline": "C", "body_text": "D.", "category": "US-Korea"}]}
+    saved = render.DESIGN
+    try:
+        for design in ("classic", "v2"):
+            render.DESIGN = design
+            html = render.render(copy.deepcopy(d))
+            if ">Dprk<" in html or ">Us-Korea<" in html or ">DPRK<" not in html:
+                problems.append(f"{design}: Wire headings title-cased")
+    finally:
+        render.DESIGN = saved
+    return problems
+
+
 def check_v2_shortened_email():
     """In v2 only top stories run in full; other items keep their lead and link to the web page."""
     import copy, render
@@ -2903,6 +2927,7 @@ CHECKS = [
     ("v2 status line drops missing facts", check_v2_status_line),
     ("v2 shortening cuts at real sentence ends", check_v2_first_sentence),
     ("v2 email keeps two sentences or about fifty words", check_v2_lead),
+    ("The Wire's headings keep their acronyms", check_wire_labels),
     ("v2 contents line plain; Public Sentiment approval, party boxes, trend", check_v2_contents_and_sentiment),
     ("v2 email runs top stories in full, the rest shortened", check_v2_shortened_email),
     ("v2 no Leaders' words card; its quotes stay under Statements", check_v2_no_leaders_card),

@@ -547,6 +547,26 @@ _CHROME_WORDS = _re.compile(
     r"Center for Strategic and International Studies", _re.I)
 
 
+# The Wire's group headings. The model writes its categories already cased
+# ("DPRK", "ROK Economy", "US-Korea"); str.title() turned them into "Dprk",
+# "Rok Economy" and "Us-Korea". Known categories in any case map to their
+# display form; anything else is shown as written (a lower-case slug gets a
+# capital first letter).
+_WIRE_LABELS = {k.lower(): k for k in (
+    "DPRK", "ROK", "ROK Economy", "ROK Politics", "ROK Society", "ROK Defense", "ROK Diplomacy",
+    "US-Korea", "US-ROK", "NK-Russia", "NK-China", "NK-Russia-China", "Japan-Korea", "China-Korea",
+    "Russia-Korea", "Inter-Korean", "Business", "Technology", "Economy", "Politics", "Defense",
+    "Diplomacy", "Society", "Trade", "Markets", "Energy", "Other")}
+
+
+def _wire_label(key: str) -> str:
+    k = str(key or "").strip() or "Other"
+    hit = _WIRE_LABELS.get(k.lower()) or _WIRE_LABELS.get(k.lower().replace("_", " "))
+    if hit:
+        return hit
+    return k[:1].upper() + k[1:] if k == k.lower() else k
+
+
 def _count_rendered_words(html_body: str) -> int:
     """Count the words a reader actually sees.
 
@@ -2183,7 +2203,7 @@ def render(digest: dict) -> str:
         _groups = {}
         for item in combined_also:
             key = _str(item.get("category", "")).strip() or "Other"
-            _groups.setdefault(key.title(), []).append(item)
+            _groups.setdefault(_wire_label(key), []).append(item)
         wire_html = ""
         # One group heading beats a category badge repeated on every row.
         _multi = len(_groups) > 1
