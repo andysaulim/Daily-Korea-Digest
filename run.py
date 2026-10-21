@@ -2374,6 +2374,12 @@ def main():
     # and then the brief simply has no Hill calendar line.
     digest_data["hill_calendar"] = list((payload or {}).get("hill_calendar") or [])
     print("  " + hill_calendar_log_line(payload))
+    # Raw logs are not kept, so an empty calendar was unexplained for days.
+    # Say why on the run page when no schedule produced a single meeting.
+    _hstats = (payload or {}).get("hill_calendar_stats") or {}
+    if _hstats and not _hstats.get("fetched"):
+        warn("Hill calendar empty", hill_calendar_log_line(payload) +
+             " (no meetings parsed: a recess, or a schedule format change)")
     from render import render
 
     # Inject web URL for "Read Online" link (set via env or GitHub Pages)

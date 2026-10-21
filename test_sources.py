@@ -1604,6 +1604,136 @@ def check_stale_native_candidate_falls_through() -> list[str]:
     return problems
 
 
+# ── Capitol Hill stream: what gets through ──────────────────────────────────
+
+# Headlines as the outlets write them. Each is (title, summary, feed, kept?).
+_HILL_HEADLINES = [
+    # Should pass: what Congress does on Korea.
+    ("Senators introduce bill to keep 28,500 US troops in South Korea", "", "US Congress Korea", True),
+    ("House passes NDAA with USFK troop floor and Korea shipbuilding provisions", "", "Congress USFK troops", True),
+    ("House panel advances North Korea sanctions bill targeting crypto laundering", "", "Congress Korea sanctions", True),
+    ("Bipartisan lawmakers urge visas for Korean workers after Georgia plant raid", "", "Korean worker visa bill", True),
+    ("Rep. Young Kim introduces North Korean Human Rights Reauthorization Act", "", "US Congress Korea", True),
+    ("US lawmakers press Pentagon on OPCON transfer to South Korea", "", "Congress Korea letter", True),
+    ("MASGA: shipbuilding provisions added to Senate defense bill", "Hanwha Philly Shipyard", "Congress Shipbuilding Korea", True),
+    ("Korea Caucus co-chairs welcome South Korean foreign minister to Capitol Hill", "", "Korea Caucus", True),
+    ("CRS: U.S.-South Korea Relations", "Congressional Research Service report", "CRS Reports", True),
+    ("Senate Foreign Relations hearing examines North Korea policy", "", "Congress Korea hearing", True),
+    ("S. 2296, Partner with Korea Act, referred to committee", "", "Congress.gov Bills", True),
+    # Should not: the National Assembly, the Party Congress, trade shows,
+    # entertainment, and Hill feeds' items that are not about Korea.
+    ("Korean lawmakers clash at National Assembly audit", "lawmakers", "US Congress Korea", False),
+    ("Ruling party lawmaker says U.S. intelligence 'not omniscient'", "DP lawmaker", "US Congress Korea", False),
+    ("North Korea sets date for Ninth Party Congress", "Workers' Party congress", "US Congress Korea", False),
+    ("Ettifos showcases V2X platform at South Korea ITS congress", "", "US Congress Korea", False),
+    ("PPP lawmakers demand Lee explain tariff deal with Washington", "senators in Seoul", "Congress Korea letter", False),
+    ("Senate confirms new Fed governor", "", "The Hill Defense", False),
+    ("Pentagon budget fight continues", "", "The Hill Defense", False),
+    ("BTS member meets senators on Capitol Hill", "K-pop", "US Congress Korea", False),
+]
+
+
+def check_hill_relevance_headlines() -> list[str]:
+    """Real Korea-on-the-Hill headlines pass; the look-alikes do not."""
+    class _E(dict):
+        def get(self, key, default=None):
+            return dict.get(self, key, default)
+
+    problems = []
+    for title, summary, feed, want in _HILL_HEADLINES:
+        if feed not in collect.CAPITOL_HILL_FEEDS:
+            problems.append(f"test names {feed!r}, which is not a Capitol Hill feed")
+            continue
+        got = collect._is_hill_relevant(_E(title=title, summary=summary), feed)
+        if got != want:
+            problems.append(f"{'drops' if want else 'admits'} {title!r} ({feed})")
+    return problems
+
+
+def check_hill_stream_delivers() -> list[str]:
+    """A firehose native feed with no Korea item must give way to its search.
+
+    On 19-21 October 2026 every Capitol Hill feed answered and the stream
+    delivered nothing: The Hill, Roll Call, Politico and congress.gov publish
+    daily, so their native feeds won, the Korea filter removed every item, and
+    the `Korea site:` search behind each never ran. The searches are also
+    date-limited first, because a relevance-ranked search returns last
+    month's items and a 48-hour window keeps none of them.
+    """
+    import feedparser
+    import links
+    from datetime import datetime as _dt, timedelta as _td, timezone as _tz
+
+    def entry(title: str, link: str, hours: int = 3):
+        e = feedparser.FeedParserDict()
+        e["title"] = title
+        e["link"] = link
+        e["summary"] = ""
+        e["published_parsed"] = (_dt.now(_tz.utc) - _td(hours=hours)).utctimetuple()
+        return e
+
+    problems = []
+    for name, cands in collect.CAPITOL_HILL_FEEDS.items():
+        cands = [cands] if isinstance(cands, str) else list(cands)
+        searches = [c for c in cands if "news.google.com" in c]
+        if not searches or "news.google.com" not in cands[-1]:
+            problems.append(f"{name}: no search behind the native feed")
+            continue
+        if not any("when%3A" in c for c in searches):
+            problems.append(f"{name}: no date-limited search")
+        if "when%3A" in cands[-1]:
+            problems.append(f"{name}: the last candidate is date-limited, so nothing backs it up")
+    q = links.build_gnews_query('"South Korea" OR "North Korea" Congress OR senator when:3d')
+    if not q.endswith(") when:3d"):
+        problems.append(f"when: does not bind to the whole search: {q!r}")
+
+    def fake(url, retries=3):
+        if "news.google.com" in url:
+            return [entry("Senators introduce bill to keep US troops in South Korea - The Hill",
+                          "https://news.google.com/rss/articles/CBMi-hill-" + str(abs(hash(url)) % 10**6))]
+        return [entry("Senate confirms new Fed governor", url + "#fed"),
+                entry("House GOP unveils farm bill", url + "#farm")]
+
+    saved = collect._parse_one
+    collect._parse_one = fake
+    try:
+        got = collect._collect_capitol_hill()
+    finally:
+        collect._parse_one = saved
+    feeds = {a["feed"] for a in got}
+    for name in ("The Hill Defense", "Roll Call", "Congress.gov House Floor"):
+        if name not in feeds:
+            problems.append(f"{name}: a native feed with no Korea item still blocked its search")
+    if any("Fed governor" in a["title"] or "farm bill" in a["title"] for a in got):
+        problems.append("non-Korea Hill items reached the stream")
+    # And a native feed that does carry a Korea item still wins.
+    pages = {"https://native.invalid/hill": [entry("NDAA keeps USFK troop floor in South Korea",
+                                                   "https://native.invalid/a")],
+             "https://news.google.com/rss/search?q=x": [entry("search hit", "https://news.google.com/x")]}
+    collect._parse_one = lambda url, retries=3: list(pages.get(url, []))
+    try:
+        won = collect._parse_feed(list(pages), accept=lambda e: collect._is_hill_relevant(e, "The Hill Defense"))
+    finally:
+        collect._parse_one = saved
+    if [e["title"] for e in won] != ["NDAA keeps USFK troop floor in South Korea"]:
+        problems.append("a native feed with a Korea item did not win")
+    return problems
+
+
+def check_rok_press_searches_are_windowed() -> list[str]:
+    """Each ROK press search asks for the last two days first, then the plain search."""
+    problems = []
+    for name in collect.ROK_GOVERNMENT_FEEDS:
+        cands = collect.TIER1_FEEDS.get(name)
+        cands = [cands] if isinstance(cands, str) else list(cands or [])
+        searches = [c for c in cands if "news.google.com" in c and "site%3A" not in c]
+        if not searches:
+            continue
+        if not any("when%3A" in c for c in searches) or "when%3A" in cands[-1]:
+            problems.append(f"{name}: press search is not windowed-then-plain")
+    if "vietnam.vn" not in " ".join(collect.TIER1_FEEDS["ROK MOTIE"]):
+        problems.append("ROK MOTIE no longer excludes vietnam.vn's machine-translated ministry")
+    return problems
 # ── Congressional calendar parsers ──────────────────────────────────────────
 
 # senate.gov/general/committee_schedules/hearings.xml, in its documented shape:
@@ -2068,6 +2198,9 @@ CHECKS = [
     ("a stale native feed falls through to its fallback", check_stale_native_candidate_falls_through),
     ("Hill calendar parsers read the documented formats", check_hill_calendar_parsers),
     ("corpus records carry their feed", check_corpus_records_feed),
+    ("Hill relevance passes Congress on Korea, not look-alikes", check_hill_relevance_headlines),
+    ("Hill native feeds give way to their searches", check_hill_stream_delivers),
+    ("ROK press searches are date-limited first", check_rok_press_searches_are_windowed),
 ]
 
 
