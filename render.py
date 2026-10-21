@@ -1005,11 +1005,6 @@ def render(digest: dict) -> str:
         """)
         if DESIGN == "v2":
             sections[-1] = _v2_top_stories(top_stories)
-    if DESIGN == "v2":
-        # The three leaders' own words, where today's digest quotes them.
-        _v2_lq = _v2_leader_quotes(digest)
-        if _v2_lq:
-            sections.append(_v2_leaders(_v2_lq))
 
     # ── 4b. Overnight Flash (high-priority overnight items) ────────────
     overnight = digest.get("overnight_items") or []
@@ -2330,9 +2325,7 @@ def render(digest: dict) -> str:
         </div>
         """)
             if DESIGN == "v2":
-                _shown = {id(q["obj"]) for q in _v2_lq}
-                sections[-1] = _v2_analysis([x for x in social if id(x) not in _shown], opeds, academic,
-                                            [x for x in x_posts if id(x) not in _shown])
+                sections[-1] = _v2_analysis(social, opeds, academic, x_posts)
 
     # ── 14b. Satellite & Location Watch (moved to end — slow-moving section) ─
     locations = digest.get("bp_locations") or []
@@ -2912,9 +2905,7 @@ def render(digest: dict) -> str:
 #     image, since Gmail blocks images) and the date, number and read time,
 #     the Listen card, then a card with a wrapping line of numbered contents
 #     links. A hidden preheader opens the body (_v2_preheader).
-#   * Leaders' words follows the top stories: one verbatim quote each from
-#     Lee, Trump and Kim where the digest carries one (_v2_leader_quotes).
-#     Stat of the day follows Overnight: the navy bar over a blue body. ROK Government is a
+#   * Stat of the day follows Overnight: the navy bar over a blue body. ROK Government is a
 #     grid of agency cards; Public Sentiment four figures in a row; trade a
 #     tracker table. The sign-off card is black, the footer navy with the
 #     Korea Chair lockup.
@@ -3031,8 +3022,8 @@ _V2_DARK_EXEMPT = {_V2_NAVY, _V2_FOOT}
 # world) and each family's card a faint matching tint. The owner asked for
 # plain navy bars; without the edge a tint had no key and read as an
 # off-white card rather than a code, so the cards are white again too.
-# Flag red and blue stay exempt from the dark map: they are the leaders'
-# cues and the ROK card rule, drawn as borders with their own dark rules.
+# Flag red and blue stay exempt from the dark map: they are the alert
+# kicker and the ROK card rule, drawn as borders with their own dark rules.
 _V2_DARK_EXEMPT |= {TAEGUK_RED, TAEGUK_BLUE}
 _V2_DARK_BG.update({"#D6DFEA": "#3A4048"})      # the pledge bar's unfilled part
 # The section numerals on the navy bar: a muted light blue (7.3:1), quiet
@@ -3048,16 +3039,16 @@ _V2_DARK_EXEMPT |= {_V2_NUM, _V2_STAT_BG, _V2_BLACK, _V2_ON_BLACK}
 
 # Reading order. A policymaker at 6 a.m. wants what happened, then the two
 # Koreas, then Washington, then the region; the forward look and the analysis
-# next; the location watch last. The leaders' own words follow the top
-# stories, and the stat of the day follows Overnight, on the first screens.
-_V2_ORDER = ("top-stories", "leaders", "overnight", "key-stat", "kcna", "rok-gov", "election",
+# next; the location watch last. The stat of the day follows Overnight, on
+# the first screens. (A Leaders' words card once followed the top stories;
+# the owner removed it, and its quotes are back under Statements.)
+_V2_ORDER = ("top-stories", "overnight", "key-stat", "kcna", "rok-gov", "election",
              "trade", "hill", "nea", "world", "business", "upcoming", "analysis", "sentiment",
              "wire", "satellite")
 
 # Bar labels in sentence case; the bar sets them in capitals, the contents line as written.
 _V2_LABELS = {
     "today at a glance": "Today at a glance", "top stories": "Top stories",
-    "leaders&#8217; words": "Leaders&#8217; words",
     "pyongyang watch": "Pyongyang watch", "rok government": "ROK government",
     "election tracker": "Election tracker",
     "us-korea trade & investment": "US-Korea trade &amp; investment",
@@ -3070,7 +3061,7 @@ _V2_LABELS = {
 # wraps to three or four lines on a phone where a grid of bar labels took
 # eight rows.
 _V2_TOC_SHORT = {
-    "top-stories": "Top stories", "leaders": "Leaders", "overnight": "Overnight", "kcna": "Pyongyang",
+    "top-stories": "Top stories", "overnight": "Overnight", "kcna": "Pyongyang",
     "rok-gov": "Seoul", "election": "Election", "trade": "Trade", "hill": "Congress",
     "nea": "Northeast Asia", "world": "World", "business": "Business", "upcoming": "Upcoming",
     "analysis": "Analysis", "sentiment": "Polling", "wire": "Wire", "key-stat": "Stat of the day",
@@ -3588,183 +3579,6 @@ def _v2_card(section: str, more: dict | None = None) -> str:
             '<table width="100%" cellpadding="0" cellspacing="0" border="0" class="v2-card" style="background:#FFFFFF;">'
             f'<tr><td style="padding:0;">{bar}</td></tr>'
             f'<tr><td {inner}>{rest}</td></tr></table></div>')
-
-
-# ── Leaders' words ──────────────────────────────────────────────────────────
-# The three leaders whose own words a reader looks for first, in a fixed order,
-# each with its colour cue: the flag blue for Lee, the CSIS navy for Trump,
-# the flag red for Kim. A name field matches only when it begins with the
-# leader's name (after a title such as "President" or "General Secretary"),
-# so "Kim Yo Jong", "Kim Jong Un's sister" or "spokesperson for President
-# Lee" never pass for the leader.
-_V2_LEADERS = (
-    ("lee", "Lee Jae-myung", TAEGUK_BLUE,
-     _re.compile(r"^(?:(?:south\s+korean|rok|korean)\s+)?(?:president\s+lee(?!\s+myung)(?:\s+jae[\s-]?myung)?"
-                 r"|lee\s+jae[\s-]?myung)\b(?!['’]s)")),
-    ("trump", "Donald Trump", _V2_NAVY,
-     _re.compile(r"^(?:(?:u\.?s\.?|united\s+states|american)\s+)?(?:president\s+)?(?:donald\s+(?:j\.?\s+)?)?trump\b"
-                 r"(?!['’]s|\s+(?:administration|official|aide|team|campaign|organization|tower))")),
-    ("kim", "Kim Jong Un", TAEGUK_RED,
-     _re.compile(r"^(?:(?:north\s+korean|dprk)\s+)?(?:(?:leader|general\s+secretary|chairman|supreme\s+leader|"
-                 r"president|marshal)\s+)*kim\s+jong[\s-]?un\b(?!['’]s)")),
-)
-_V2_LEADER_HANDLES = {"lee": ("jaemyung_lee", "jaemyunglee"), "trump": ("realdonaldtrump", "potus"), "kim": ()}
-# Dark-mode edges for the three cues: the light colours clear 3:1 on the dark card.
-_V2_LEADER_DARK = {"lee": "#5C8FD6", "trump": "#8FB6E8", "kim": "#F08A94"}
-
-
-def _v2_leader_of(*names) -> str:
-    """'lee', 'trump' or 'kim' when a name field (or an X handle) is that leader; '' otherwise."""
-    for raw in names:
-        s = _re.sub(r"[‐-―]", "-", str(raw or "")).strip().lower()
-        if not s:
-            continue
-        handle = _re.search(r"@(\w+)", s)
-        for key, _name, _colour, pat in _V2_LEADERS:
-            if pat.search(s) or (handle and handle.group(1) in _V2_LEADER_HANDLES[key]):
-                return key
-    return ""
-
-
-def _v2_leader_quotes(digest: dict) -> list:
-    """At most one direct quote per leader, Lee, Trump, Kim in that order.
-
-    Only text the digest carries as a quotation: a statement's quote_text, an
-    official post's text, a KCNA key quote, or a quote field on a senior
-    official or a ROK government item. A summary of what someone did (a
-    ministry item's detail, an official's activity) is never shown as their
-    words. Each entry: key, name, colour, the quote as it appears, a source
-    label, a link and a date, and the digest item it came from.
-    """
-    issue_day = _v2_when(digest.get("digest_date"))
-    found = {}
-
-    def add(key, text, source, url, when, obj):
-        text = str(text or "").strip()
-        # Quotation marks round the whole text are the card's to add.
-        if len(text) > 1 and text[0] in "\"'“‘" and text[-1] in "\"'”’":
-            text = text[1:-1].strip()
-        if key and text and key not in found:
-            # Where and when it was said, on what: the model's own `context`
-            # field, taken from the source article (digest.py asks for it).
-            ctx = _re.sub(r"\s+", " ", str(obj.get("context") or "")).strip().rstrip(".")
-            found[key] = {"key": key, "text": text, "source": source, "url": str(url or ""),
-                          "when": when or issue_day, "context": ctx, "obj": obj}
-
-    def outlet(s, url):
-        """The outlet that carried a statement: its source field, the link's publisher, or
-        the "per Yonhap English" an analyst note ends on. Empty when none says."""
-        if str(s.get("source") or "").strip():
-            return str(s["source"]).strip()
-        if url.startswith("http"):
-            return _linkq.publisher_name(url)
-        mon = r"(?!(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\b)"
-        m = _re.search(rf"\bper (?:the )?({mon}[A-Z][\w&'-]*(?: {mon}[A-Z][\w&'-]*){{0,3}})",
-                       str(s.get("analyst_note") or ""))
-        return m.group(1) if m else ""
-
-    for s in digest.get("social_statements") or []:
-        if isinstance(s, dict):
-            url = str(s.get("url") or "")
-            add(_v2_leader_of(s.get("who"), s.get("name")), s.get("quote_text"),
-                outlet(s, url), url, _v2_when(s.get("handle_context")), s)
-    for x in digest.get("official_x_posts") or []:
-        if isinstance(x, dict):
-            handle = str(x.get("handle") or "").strip().lstrip("@")
-            if not handle:
-                m = _re.search(r"@(\w+)", str(x.get("handle_context") or x.get("platform_date") or ""))
-                handle = m.group(1) if m else ""
-            # The name is above the quote; the account adds nothing to "Post on X".
-            add(_v2_leader_of(x.get("who"), x.get("name"), "@" + handle if handle else ""),
-                x.get("post") or x.get("quote_text"), "Post on X", x.get("url"),
-                _v2_when(x.get("platform_date")), x)
-    kc = digest.get("kcna_delta") if isinstance(digest.get("kcna_delta"), dict) else {}
-    for q in kc.get("key_quotes") or []:
-        if isinstance(q, dict):
-            art = str(q.get("source_article") or "").strip()
-            # The prompt asks for Kim's words only here; classic credits an
-            # unnamed speaker to him too.
-            add(_v2_leader_of(q.get("speaker") or "Kim Jong Un"), q.get("quote"),
-                "KCNA" + (f", {art}" if art and "kcna" not in art.lower() else (f" ({art})" if art and art.upper() != "KCNA" else "")),
-                q.get("url"), _v2_when(q.get("date")), q)
-    for o in kc.get("senior_officials") or []:
-        if isinstance(o, dict):
-            add(_v2_leader_of(o.get("name")), o.get("quote") or o.get("quote_text"), "KCNA", o.get("url"), "", o)
-    for it in digest.get("rok_government") or []:
-        if isinstance(it, dict):
-            url = str(it.get("url") or "")
-            label = str(it.get("source_label") or "").strip()
-            if url.startswith("http") and not (label and _linkq.label_matches_url(label, url)):
-                label = _linkq.publisher_name(url)
-            add(_v2_leader_of(it.get("official"), it.get("speaker")), it.get("quote") or it.get("quote_text"),
-                label, url, "", it)
-    order = [k for k, *_ in _V2_LEADERS]
-    out = []
-    for key, name, colour, _pat in _V2_LEADERS:
-        if key in found:
-            out.append(dict(found[key], name=name, colour=colour))
-    return sorted(out, key=lambda q: order.index(q["key"]))
-
-
-def _v2_leaders(quotes: list) -> str:
-    """The Leaders' words card: name in bold, the quote, its source and date. Nothing without a quote."""
-    if not quotes:
-        return ""
-    names = [q["name"] for q in quotes[:3]]
-    who = names[0] if len(names) == 1 else ", ".join(names[:-1]) + " and " + names[-1]
-    # What the card is, in one line: these are the leaders' own words, not a summary.
-    rows = (f'<div class="v2-lw-intro" style="font-size:12px;line-height:1.5;color:{_V2_META};padding:9px 0 1px;">'
-            f'Direct quotes from {who} in today&#8217;s reporting.</div>')
-    for n, q in enumerate(quotes[:3]):
-        row = _v2_leader_row(q)
-        rows += row.replace(f"border-top:1px solid {_V2_HAIR};", "", 1) if n == 0 else row
-    return f'<!--v2--><div><a name="leaders" id="leaders"></a>{_v2_bar("Leaders&#8217; words")}{rows}</div>'
-
-
-def _v2_short_day(when: str) -> str:
-    """"October 21" as "Oct 21"; anything else as it came."""
-    try:
-        return datetime.strptime(str(when).strip(), "%B %d").strftime("%b %-d")
-    except ValueError:
-        return str(when or "").strip()
-
-
-def _v2_leader_meta(q: dict) -> str:
-    """The line under a quote: "Context, Outlet, Oct 21".
-
-    The context is the model's, from the source article: where and when it
-    was said, on what. Without one the line is the platform or outlet and the
-    date ("Post on X, Oct 21"; "Yonhap, Oct 21"). A date the context already
-    gives is not repeated. The outlet links to the article when there is one.
-    """
-    day = _v2_short_day(q.get("when", ""))
-    ctx = q.get("context") or ""
-    name = _v2_outlet(q.get("source") or "")
-    src = _esc(name)
-    if str(q.get("url") or "").startswith("http"):
-        src = (f'<a href="{_esc(q["url"])}" style="color:{_V2_TEAL};font-weight:700;text-decoration:none;">'
-               f'{src or "Source"}</a>')
-    if ctx and name and _re.search(r"\b%s\b" % _re.escape(name.lower()), ctx.lower()):
-        src = ""        # "Post on X, Oct 21" as the context leaves nothing to add
-    if ctx and day:
-        m, _, d = day.partition(" ")
-        if _re.search(r"\b%s[a-z]*\.? %s\b" % (_re.escape(m), _re.escape(d)), ctx):
-            day = ""
-    parts = [_esc(ctx[:1].upper() + ctx[1:]) if ctx else "", src, _esc(day)]
-    return ", ".join(x for x in parts if x)
-
-
-def _v2_leader_row(q: dict) -> str:
-    """One leader's quote: the name in their colour, the words in the serif, the meta line."""
-    meta = _v2_leader_meta(q)
-    return (f'<div class="v2-it" style="padding:11px 0 12px;border-top:1px solid {_V2_HAIR};">'
-            f'<div class="v2-lw-{q["key"]}" style="padding-left:12px;border-left:3px solid {q["colour"]};">'
-            f'<div style="font-size:13px;font-weight:700;color:{q["colour"]};">{q["name"]}</div>'
-            f'<div style="font-family:{_V2_SERIF};font-size:14px;line-height:1.5;color:{_V2_INK};margin-top:2px;">'
-            f'&ldquo;{_esc(q["text"])}&rdquo;</div>'
-            + (f'<div class="v2-lw-meta" style="font-size:12px;line-height:1.45;color:{_V2_META};margin-top:3px;">{meta}</div>'
-               if meta else "")
-            + '</div></div>')
 
 
 # ── ROK government cards ────────────────────────────────────────────────────
@@ -4978,9 +4792,6 @@ _V2_CSS = """
       .wrapper .listen-bar .listen-title { color:#E8E6E1 !important; }
       .wrapper .listen-bar .listen-sub { color:#9AA3AE !important; }
       .wrapper .listen-bar .listen-btn { color:#8FB6E8 !important; border-color:#8FB6E8 !important; }
-      .wrapper .v2-lw-lee { border-left-color:#5C8FD6 !important; }
-      .wrapper .v2-lw-trump { border-left-color:#8FB6E8 !important; }
-      .wrapper .v2-lw-kim { border-left-color:#F08A94 !important; }
       .wrapper .v2-rct, .wrapper .v2-trk, .wrapper .v2-cell { border-color:#3A4048 !important; }
       .wrapper .v2-signoff { border:1px solid #3A4048 !important; }
       .v2-pre { color:#E8E6E1 !important; }
@@ -5184,7 +4995,7 @@ _V2_PRINT_HEAD = (
   .v2-in:not(.v2-tint):not(.v2-stat) { background:transparent !important; }
   .v2-card[style*="background:#FFFFFF"] > tbody > tr > td.v2-in.v2-stat { padding:10px 14px 12px !important; }
   .sec-bar, .v2-card > tbody > tr:first-child, .v2-sub { break-after:avoid !important; page-break-after:avoid !important; }
-  .v2-it, .v2-rc, .v2-bl, .v2-ps, .v2-glance tr, .v2-trk tr, .v2-foot, .v2-hn, .v2-stat, .v2-lw-intro {
+  .v2-it, .v2-rc, .v2-bl, .v2-ps, .v2-glance tr, .v2-trk tr, .v2-foot, .v2-hn, .v2-stat {
     break-inside:avoid !important; page-break-inside:avoid !important; }
   /* The stat and sign-off cards, whole. Its own rule: a selector Chromium
      cannot parse would take the rest of the list down with it. */

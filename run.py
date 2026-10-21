@@ -1467,8 +1467,9 @@ _PLACEHOLDER_NAME_RE = re.compile(
     r"unknown|n/?a$|tbd|placeholder|see\s+source", re.IGNORECASE)
 
 
-# The leaders whose words the brief highlights (the "Leaders' words" card):
-# at most one quote each. Kim Jong Un's go in kcna_delta.key_quotes.
+# The leaders whose words the prompt asks for: at most one quote each, so
+# Statements is not three of one leader's lines. (The v2 "Leaders' words"
+# card that once showed them is gone.) Kim Jong Un's go in kcna_delta.key_quotes.
 _LEADERS = {"lee": re.compile(r"\blee jae[- ]?myung\b|^president lee\b|\bpresident lee jae", re.I),
             "trump": re.compile(r"\btrump\b", re.I)}
 

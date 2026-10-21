@@ -1493,44 +1493,6 @@ def check_v2_stat_bar():
     return problems
 
 
-def check_v2_leader_context():
-    """Each leader's quote carries a line saying where it comes from: the context, else outlet or platform and date."""
-    import re as _r, render
-    problems = []
-    d = {"digest_date": "Wednesday, October 21, 2026",
-         "social_statements": [{"who": "Lee Jae-myung", "quote_text": "AI should bridge gaps.",
-                                "context": "At a cabinet meeting on Oct 21, on AI healthcare", "source": "Yonhap",
-                                "url": "https://en.yna.co.kr/view/AEN1"}],
-         "official_x_posts": [{"who": "Donald J. Trump", "handle_context": "@realDonaldTrump",
-                               "platform_date": "@realDonaldTrump, Oct 21", "quote_text": "Korea will pay.",
-                               "url": "https://x.com/realDonaldTrump/status/1"}],
-         "kcna_delta": {"key_quotes": [{"speaker": "Kim Jong Un", "quote": "Strength is peace.",
-                                        "source_article": "KCNA", "date": "2026-10-20"}]}}
-    metas = {q["key"]: _r.sub(r"<[^>]+>", "", render._v2_leader_meta(q)) for q in render._v2_leader_quotes(d)}
-    want = {"lee": "At a cabinet meeting on Oct 21, on AI healthcare, Yonhap",
-            "trump": "Post on X, Oct 21", "kim": "KCNA, Oct 20"}
-    if metas != want:
-        problems.append(f"meta lines {metas}, want {want}")
-    note = {"digest_date": "Wednesday, October 21, 2026",
-            "social_statements": [{"who": "Lee Jae-myung", "quote_text": "Q.", "url": "",
-                                   "analyst_note": "Lee spoke at the presidential office on October 21, per Yonhap English."}]}
-    m = _r.sub(r"<[^>]+>", "", render._v2_leader_meta(render._v2_leader_quotes(note)[0]))
-    if m != "Yonhap, Oct 21":
-        problems.append(f"no context and no link: meta {m!r}, want the outlet the note names and the date")
-    html = _v2_render({**d, "top_stories": [{"headline": "L", "body": "B."}]})
-    if "Direct quotes from Lee Jae-myung, Donald Trump and Kim Jong Un in today&#8217;s reporting." not in html:
-        problems.append("Leaders' words lacks its one-line intro")
-    if html.count('class="v2-lw-meta"') != 3:
-        problems.append("not every quote has its meta line")
-    text = _prompt_text()
-    if "context (REQUIRED, under 15 words" not in text.split("- social_statements:", 1)[-1][:4000]:
-        problems.append("the prompt does not ask social_statements for a context field")
-    import digest as _dg
-    if "context (REQUIRED, under 15 words" not in _dg._KCNA_FULL_INSTRUCTIONS:
-        problems.append("the prompt does not ask kcna key_quotes for a context field")
-    return problems
-
-
 def check_v2_upcoming_merge():
     """Upcoming holds the model's dated events, the fixed observances and the week's hearings, each once, in date order."""
     import render
@@ -1759,67 +1721,30 @@ def _v2_render(d: dict) -> str:
         render.DESIGN = saved
 
 
-def check_v2_leaders_words():
-    """Leaders' words quotes Lee, Trump and Kim only, one each, verbatim, and is absent without a quote."""
-    import render
+def check_v2_no_leaders_card():
+    """No Leaders' words card: a leader's quote runs under Statements or Officials on X, unfiltered."""
     problems = []
     d = {"digest_date": "Wednesday, October 21, 2026",
+         "top_stories": [{"headline": "Lead", "body": "Body."}],
          "social_statements": [
-             {"who": "Kim Yo Jong", "handle_context": "Kim Jong Un's sister", "quote_text": "Decoy sister quote."},
-             {"who": "Spokesperson for President Lee", "quote_text": "Decoy spokesperson quote."},
-             {"who": "President Lee Jae-myung", "handle_context": "President, ROK",
-              "quote_text": "AI should bridge healthcare gaps.", "url": "https://en.yna.co.kr/view/AEN1"},
-             {"who": "Lee Jae-myung", "quote_text": "A second Lee quote."},
-             {"who": "Trump administration official", "quote_text": "Decoy administration quote."},
+             {"who": "President Lee Jae-myung", "quote_text": "AI should bridge healthcare gaps.",
+              "context": "At a cabinet meeting", "url": "https://en.yna.co.kr/view/AEN1"},
              {"who": "Chung Dong-young", "quote_text": "Unification minister quote."}],
          "official_x_posts": [{"who": "Donald J. Trump", "handle_context": "@realDonaldTrump",
                                "platform_date": "@realDonaldTrump, Oct 21", "quote_text": "Korea will pay.",
                                "url": "https://x.com/realDonaldTrump/status/1"}],
-         "kcna_delta": {"key_quotes": [{"speaker": "General Secretary Kim Jong Un", "quote": "Strength is peace.",
-                                        "source_article": "Rodong Sinmun"}],
-                        "senior_officials": [{"name": "Kim Yo Jong", "activity": "Inspected the border."}]},
-         "rok_government": [{"official": "President Lee Jae-myung", "ministry": "Presidential Office",
-                             "action": "Lee urges reform", "detail": "He urged reform.", "quote": "Reform now."}]}
-    qs = render._v2_leader_quotes(d)
-    if [q["key"] for q in qs] != ["lee", "trump", "kim"]:
-        problems.append(f"expected Lee, Trump, Kim once each, got {[q['key'] for q in qs]}")
-    texts = {q["key"]: q["text"] for q in qs}
-    if texts != {"lee": "AI should bridge healthcare gaps.", "trump": "Korea will pay.", "kim": "Strength is peace."}:
-        problems.append(f"quotes not taken verbatim from the first source: {texts}")
-    for decoy, who in (("Kim Yo Jong", "lee"), ("Spokesperson for President Lee", ""),
-                       ("Kim Jong Un's sister", ""), ("Trump administration official", ""),
-                       ("Lee Jae-yong", ""), ("Kim Yo Jong", "")):
-        got = render._v2_leader_of(decoy)
-        if decoy != "Kim Yo Jong" and got:
-            problems.append(f"{decoy!r} matched as {got}")
-    if render._v2_leader_of("Kim Yo Jong"):
-        problems.append("Kim Yo Jong matched as a leader")
-    for name, want in (("President Trump", "trump"), ("Kim Jong-un", "kim"), ("President Lee", "lee"),
-                       ("Lee Jae-myung, President", "lee"), ("North Korean leader Kim Jong Un", "kim")):
-        if render._v2_leader_of(name) != want:
-            problems.append(f"{name!r} not matched as {want}")
-    html = _v2_render({**d, "top_stories": [{"headline": "Lead", "body": "Body."}]})
-    card = html[html.find('name="leaders"'):]
-    card = card[:card.find('class="v2-gap"', 50)]
-    for t in ("AI should bridge healthcare gaps.", "Korea will pay.", "Strength is peace."):
-        if t not in card:
-            problems.append(f"card lacks {t!r}")
-    for t in ("Decoy", "A second Lee quote", "Unification minister quote", "Reform now."):
-        if t in card:
-            problems.append(f"card shows {t!r}")
-    if card.count('class="v2-it"') != 3:
-        problems.append("card does not hold exactly three quotes")
-    if "AI should bridge healthcare gaps." in html[html.find('name="analysis"'):]:
-        problems.append("a quote in Leaders' words is repeated under Statements")
-    if "Unification minister quote." not in html:
-        problems.append("a non-leader statement was dropped from Analysis")
-    none = _v2_render({"digest_date": "Wednesday, October 21, 2026",
-                       "top_stories": [{"headline": "Lead", "body": "Body."}],
-                       "social_statements": [{"who": "Kim Yo Jong", "quote_text": "Sister."}],
-                       "rok_government": [{"official": "President Lee Jae-myung", "ministry": "Presidential Office",
-                                           "action": "Lee acts", "detail": "Lee said things."}]})
-    if 'name="leaders"' in none:
-        problems.append("Leaders' words drawn without a leader's quote (a detail is not a quote)")
+         "kcna_delta": {"key_quotes": [{"speaker": "Kim Jong Un", "quote": "Strength is peace."}]}}
+    html = _v2_render(d)
+    if 'name="leaders"' in html or "Leaders" in html:
+        problems.append("the Leaders' words card (or its contents entry) is still drawn")
+    analysis = html[html.find('name="analysis"'):]
+    for t in ("AI should bridge healthcare gaps.", "Unification minister quote.", "Korea will pay."):
+        if t not in analysis:
+            problems.append(f"Analysis lacks {t!r}: Statements still filters leaders' quotes")
+    import render
+    for gone in ("_v2_leaders", "_v2_leader_quotes", "_v2_leader_row"):
+        if hasattr(render, gone):
+            problems.append(f"render.{gone} still defined")
     return problems
 
 
@@ -2913,13 +2838,12 @@ CHECKS = [
     ("v2 status line drops missing facts", check_v2_status_line),
     ("v2 shortening cuts at real sentence ends", check_v2_first_sentence),
     ("v2 email runs top stories in full, the rest shortened", check_v2_shortened_email),
-    ("v2 Leaders' words: Lee, Trump, Kim only, one each", check_v2_leaders_words),
+    ("v2 no Leaders' words card; its quotes stay under Statements", check_v2_no_leaders_card),
     ("v2 ROK government card grid", check_v2_rok_cards),
     ("v2 hidden inbox preview line", check_v2_preheader),
     ("v2 kickers name publishers, not feeds", check_v2_kicker_outlets),
     ("v2 paper layout for the preview PDF", check_v2_print_layout),
     ("v2 stat of the day: navy bar over the blue card", check_v2_stat_bar),
-    ("v2 Leaders' words: a context line under every quote", check_v2_leader_context),
     ("v2 Upcoming: events, observances and hearings, once each", check_v2_upcoming_merge),
     ("preview PDF: running header and page footer", check_preview_pdf_running_header),
     ("audio is formatted for the ear", check_audio_formatting),
