@@ -383,7 +383,8 @@ SECTION_CAPS = {
     # No minimum: the prompt no longer forces four events, because the
     # verified-date list had been overtaken by time and a hard floor
     # against an empty list is what produces invented dates.
-    "calendar_watch":    (0, 5),
+    # Six: the prompt aims for four to six dated events in the next 14 days.
+    "calendar_watch":    (0, 6),
     "also_today":        (0, 6),
     "northeast_asia":    (0, 5),
     # Both may be empty, and on most days should be: they carry only what the
@@ -1984,14 +1985,21 @@ def bp_changes(digest: dict, previous: dict | None) -> list[str] | None:
     """Monitored sites whose status or latest report date differs from the previous issue."""
     if not previous or not previous.get("bp_locations"):
         return None
-    before = {l.get("name"): (l.get("status"), str(l.get("last_source_date", "")))
+
+    # Names compare with punctuation ignored. The previous issue was saved
+    # after english.apply, which turns "THAAD Site — Seongju County" into
+    # "THAAD Site, Seongju County"; today's draft is compared before it, so
+    # an exact match reported a site unchanged since March as new reporting.
+    def key(name):
+        return " ".join(re.sub(r"[^a-z0-9]+", " ", str(name or "").lower()).split())
+    before = {key(l.get("name")): (l.get("status"), str(l.get("last_source_date", "")))
               for l in previous.get("bp_locations") or [] if isinstance(l, dict)}
     out = []
     for l in digest.get("bp_locations") or []:
         if not isinstance(l, dict):
             continue
         now = (l.get("status"), str(l.get("last_source_date", "")))
-        if l.get("name") not in before or before[l.get("name")] != now:
+        if key(l.get("name")) not in before or before[key(l.get("name"))] != now:
             out.append(l.get("name"))
     return out
 
@@ -2248,9 +2256,11 @@ def write_preview_pdf(digest_data: dict, out_dir: Path, date_slug: str) -> str:
         # Not make_pdf.html_from_input: its print CSS lets everything break
         # anywhere, which would undo the paper layout's rule that an item
         # never splits across pages.
-        html_to_pdf(html, out_dir / name, footer=f"Korea Daily Brief, {when}",
-                    margin={"top": "12mm", "bottom": "15mm", "left": "13mm", "right": "13mm"},
-                    wait_for_fonts=True, scale=0.9)
+        # A running header from page 2 (the masthead says it on page 1) and
+        # a footer with the page count; both in make_pdf.
+        html_to_pdf(html, out_dir / name, footer="For internal use only",
+                    header=("Korea Daily Brief", f"CSIS Korea Chair {when}"),
+                    margin=_render_mod._V2_PRINT_MARGIN, wait_for_fonts=True, scale=0.9)
         return name
     except Exception as e:                                      # noqa: BLE001
         warn("Preview PDF skipped", f"the design preview's PDF link will open the list's PDF: {e}")

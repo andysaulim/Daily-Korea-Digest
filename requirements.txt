@@ -3,3 +3,4 @@ feedparser>=6.0.0
 requests>=2.31.0
 httpx>=0.24.0
 playwright>=1.40.0
+pypdf>=4.0  # make_pdf: the preview PDF's page 1 without the running header

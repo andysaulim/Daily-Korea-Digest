@@ -1441,6 +1441,158 @@ def check_v2_status_line():
     line = render._v2_status(full)
     if any(x in line for x in ("·", "&middot;", "→", "&rarr;", "—", "&mdash;")):
         problems.append("status line uses a dot, arrow or em dash as a separator")
+    # The Peninsula status line is gone from the top card; the KCNA flag line
+    # sits in Pyongyang Watch, and the site names are the location watch's.
+    if "KCNA watch flag up." not in line or "monitored sites" in line or "Kim last seen" in line:
+        problems.append(f"the Pyongyang tracker line repeats facts shown elsewhere: {line!r}")
+    html = _v2_render({**full, "digest_date": "Wednesday, October 21, 2026",
+                       "web_url": "https://example.org/b/latest.html",
+                       "top_stories": [{"headline": "Lead", "body": "Body."}],
+                       "overnight_items": [{"headline": f"Item {i}", "source": "Yonhap"} for i in range(4)],
+                       "bp_locations": [{"name": "THAAD Site, Seongju County", "status": "activity",
+                                         "note": "Drawdown.", "last_source_date": "2026-10-20"},
+                                        {"name": "Yongbyon", "status": "elevated", "note": "Up."}],
+                       "_bp_changes": ["THAAD Site — Seongju County"]})
+    if "Peninsula status" in html:
+        problems.append("the Peninsula status line is still drawn")
+    kc = html[html.find('name="kcna"'):]
+    if "KCNA watch flag up" not in kc[:3000]:
+        problems.append("the KCNA flag line is not in Pyongyang Watch")
+    sat = html[html.find('name="satellite"'):]
+    if "THAAD Site, Seongju County" not in sat or "Elevated or alert, 1 of 2 sites: Yongbyon" not in sat:
+        problems.append("the location watch lost a site with new reporting (dash vs comma) or the elevated names")
+    import run
+    if run.bp_changes({"bp_locations": [{"name": "THAAD Site — Seongju County", "status": "a", "last_source_date": "x"}]},
+                      {"bp_locations": [{"name": "THAAD Site, Seongju County", "status": "a", "last_source_date": "x"}]}):
+        problems.append("run.bp_changes reports a site as changed when only its dash became a comma")
+    return problems
+
+
+def check_v2_stat_bar():
+    """Stat of the day: the navy section bar (number, divider, capitals) over the blue body, a card like the rest."""
+    import re as _r, render
+    problems = []
+    html = _v2_render({"digest_date": "Wednesday, October 21, 2026", "top_stories": [{"headline": "L", "body": "B."}],
+                       "key_stat": {"number": "105%", "label": "Export growth", "context": "Chips.", "source": "Reuters"}})
+    i = html.find('name="key-stat"')
+    card = html[i:html.find("</table></div>", i)]
+    bar = _r.search(r'class="sec-bar" style="background:#001F59;"><tr><td[^>]*>(.*?)</td>', card, _r.S)
+    if not bar or "Stat of the day" not in bar.group(1) or not _r.search(r">\d\d</span>", bar.group(1)):
+        problems.append("the stat has no numbered navy bar")
+    if f'class="v2-in v2-stat" style="padding:14px 20px 16px;background:{render.TAEGUK_BLUE};' not in card:
+        problems.append("the stat's body is not the blue card under the bar")
+    if bar and card.find("105%") < card.find("sec-bar"):
+        problems.append("the figure sits above the bar")
+    import web_page
+    page = web_page.build({"digest_date": "Wednesday, October 21, 2026", "date_slug": "2026-10-21",
+                           "top_stories": [{"headline": "L", "body": "B."}],
+                           "key_stat": {"number": "105%", "label": "Export growth"}}, "", "2026-10-21",
+                          archive_entries=[])
+    if 'data-sec="key-stat"' not in page:
+        problems.append("the web page does not fold the stat like the other sections")
+    return problems
+
+
+def check_v2_leader_context():
+    """Each leader's quote carries a line saying where it comes from: the context, else outlet or platform and date."""
+    import re as _r, render
+    problems = []
+    d = {"digest_date": "Wednesday, October 21, 2026",
+         "social_statements": [{"who": "Lee Jae-myung", "quote_text": "AI should bridge gaps.",
+                                "context": "At a cabinet meeting on Oct 21, on AI healthcare", "source": "Yonhap",
+                                "url": "https://en.yna.co.kr/view/AEN1"}],
+         "official_x_posts": [{"who": "Donald J. Trump", "handle_context": "@realDonaldTrump",
+                               "platform_date": "@realDonaldTrump, Oct 21", "quote_text": "Korea will pay.",
+                               "url": "https://x.com/realDonaldTrump/status/1"}],
+         "kcna_delta": {"key_quotes": [{"speaker": "Kim Jong Un", "quote": "Strength is peace.",
+                                        "source_article": "KCNA", "date": "2026-10-20"}]}}
+    metas = {q["key"]: _r.sub(r"<[^>]+>", "", render._v2_leader_meta(q)) for q in render._v2_leader_quotes(d)}
+    want = {"lee": "At a cabinet meeting on Oct 21, on AI healthcare, Yonhap",
+            "trump": "Post on X, Oct 21", "kim": "KCNA, Oct 20"}
+    if metas != want:
+        problems.append(f"meta lines {metas}, want {want}")
+    note = {"digest_date": "Wednesday, October 21, 2026",
+            "social_statements": [{"who": "Lee Jae-myung", "quote_text": "Q.", "url": "",
+                                   "analyst_note": "Lee spoke at the presidential office on October 21, per Yonhap English."}]}
+    m = _r.sub(r"<[^>]+>", "", render._v2_leader_meta(render._v2_leader_quotes(note)[0]))
+    if m != "Yonhap, Oct 21":
+        problems.append(f"no context and no link: meta {m!r}, want the outlet the note names and the date")
+    html = _v2_render({**d, "top_stories": [{"headline": "L", "body": "B."}]})
+    if "Direct quotes from Lee Jae-myung, Donald Trump and Kim Jong Un in today&#8217;s reporting." not in html:
+        problems.append("Leaders' words lacks its one-line intro")
+    if html.count('class="v2-lw-meta"') != 3:
+        problems.append("not every quote has its meta line")
+    text = _prompt_text()
+    if "context (REQUIRED, under 15 words" not in text.split("- social_statements:", 1)[-1][:4000]:
+        problems.append("the prompt does not ask social_statements for a context field")
+    import digest as _dg
+    if "context (REQUIRED, under 15 words" not in _dg._KCNA_FULL_INSTRUCTIONS:
+        problems.append("the prompt does not ask kcna key_quotes for a context field")
+    return problems
+
+
+def check_v2_upcoming_merge():
+    """Upcoming holds the model's dated events, the fixed observances and the week's hearings, each once, in date order."""
+    import render
+    problems = []
+    d = {"digest_date": "Wednesday, October 21, 2026", "top_stories": [{"headline": "L", "body": "B."}],
+         "calendar_watch": [
+             {"month": "Oct", "day": 23, "headline": "BOK rate decision", "detail": "Board meets.", "source": "Yonhap"},
+             {"month": "Oct", "day": 22, "headline": "Senate Foreign Relations hearing on the alliance",
+              "source": "Yonhap"},
+             {"month": "Oct", "day": 24, "headline": "KBO playoff Game 3", "source": "Yonhap"},
+             {"month": "Oct", "day": 12, "headline": "Past audit", "source": "Yonhap"}],
+         "hill_calendar": [
+             {"date": "2026-10-22", "chamber": "Senate", "committee": "Foreign Relations",
+              "title": "Hearings to examine the alliance", "url": "https://www.senate.gov/x"},
+             {"date": "2026-10-27", "chamber": "House", "committee": "House Foreign Affairs",
+              "title": "Hearing: North Korea's Sanctions Evasion", "url": "https://foreignaffairs.house.gov/x"}],
+         "capitol_hill": []}
+    html = _v2_render(d)
+    up = html[html.find('name="upcoming"'):]
+    up = up[:up.find('class="v2-gap"', 50)]
+    for t in ("BOK rate decision", "Senate Foreign Relations hearing on the alliance", "Sanctions Evasion"):
+        if t not in up:
+            problems.append(f"Upcoming lacks {t!r}")
+    if "Hearings to examine the alliance" in up or up.count("the alliance") != 1:
+        problems.append("a hearing the model also listed appears twice")
+    for t in ("KBO", "Past audit"):
+        if t in up:
+            problems.append(f"Upcoming shows {t!r}")
+    if not (up.find("hearing on the alliance") < up.find("BOK rate decision") < up.find("Sanctions Evasion")):
+        problems.append("Upcoming is not in date order")
+    if 'name="hill"' in html:
+        problems.append("v2 drew a Capitol Hill section for hearings alone; they belong in Upcoming")
+    hill_only = _v2_render({**d, "calendar_watch": []})
+    if 'name="upcoming"' not in hill_only:
+        problems.append("Upcoming is absent when only hearings are scheduled")
+    import korea_calendar, run
+    from datetime import date
+    obs = korea_calendar.merge([], date(2026, 9, 28))
+    if not any("Armed Forces Day" in o["headline"] for o in obs):
+        problems.append("fixed observances do not reach the calendar")
+    if run.SECTION_CAPS["calendar_watch"][1] < 6 or len(korea_calendar.merge(
+            [{"month": "Oct", "day": 22 + i, "headline": f"Event {i}"} for i in range(7)], date(2026, 10, 21))) != 6:
+        problems.append("the calendar does not keep six dated events")
+    text = _prompt_text().split("- calendar_watch:", 1)[-1][:2500]
+    if "AIM FOR 4-6 ITEMS in the next 14 days" not in text or "BOK rate decision" not in text:
+        problems.append("the calendar prompt does not aim for 4-6 dated events")
+    return problems
+
+
+def check_preview_pdf_running_header():
+    """The preview PDF has a running header from page 2 and a footer with "Page N of M"."""
+    import make_pdf
+    problems = []
+    h = make_pdf.header_template("Korea Daily Brief", "CSIS Korea Chair Wednesday, October 21, 2026", "13mm")
+    f = make_pdf.footer_template("For internal use only", "13mm")
+    if "Korea Daily Brief" not in h or "border-bottom" not in h:
+        problems.append("header lacks its title or hairline")
+    if 'Page <span class="pageNumber"></span> of <span class="totalPages"></span>' not in f or "internal use" not in f:
+        problems.append("footer lacks Page N of M or the internal-use line")
+    import render
+    if "margin: 15mm" not in render._V2_PRINT_HEAD:
+        problems.append("the paper stylesheet does not set the margins the header needs")
     return problems
 
 
@@ -1504,8 +1656,8 @@ def check_v2_shortened_email():
         problems.append("v2: the business section lost its anchor, which the web page links to")
     if "That&#8217;s today&#8217;s brief." not in html or "Assembly votes on the budget" not in html:
         problems.append("v2: sign-off missing, or without tomorrow's calendar item")
-    if f"border-left:5px solid {render.TAEGUK_BLUE};" not in html:
-        problems.append("v2: Business bar lacks the South Korea edge")
+    if "border-left:5px solid" in html or "v2-edge" in html:
+        problems.append("v2: a section bar still carries a coloured family edge")
     if classic.count("The second sentence is detail") != 2:
         problems.append("classic was shortened")
     if d != {**before, "_word_count": d.get("_word_count")}:
@@ -2766,6 +2918,10 @@ CHECKS = [
     ("v2 hidden inbox preview line", check_v2_preheader),
     ("v2 kickers name publishers, not feeds", check_v2_kicker_outlets),
     ("v2 paper layout for the preview PDF", check_v2_print_layout),
+    ("v2 stat of the day: navy bar over the blue card", check_v2_stat_bar),
+    ("v2 Leaders' words: a context line under every quote", check_v2_leader_context),
+    ("v2 Upcoming: events, observances and hearings, once each", check_v2_upcoming_merge),
+    ("preview PDF: running header and page footer", check_preview_pdf_running_header),
     ("audio is formatted for the ear", check_audio_formatting),
     ("no Korean script on the page", check_english_only),
     ("API cost is recorded and kept", check_api_cost_is_recorded),
