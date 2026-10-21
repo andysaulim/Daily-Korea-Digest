@@ -4802,6 +4802,9 @@ def _v2_style(style: str) -> str:
 def _v2_restyle(section: str, more: dict | None = None) -> str:
     """Apply v2's type and palette to a classic section, then make any section with a bar a card."""
     if not section.lstrip().startswith("<!--v2-->"):
+        # Classic's stale-imagery flag opens with a space before its comma
+        # ("2026-03 , no recent reporting"); classic keeps its bytes.
+        section = section.replace(' <span style="color:#9A5B00;">, ', '<span style="color:#9A5B00;">, ')
         section = _v2_buttons(section)
         section = _v2_lists(section)
         section = _re.sub(r'style="([^"]*)"', lambda m: f'style="{_v2_style(m.group(1))}"', section)
