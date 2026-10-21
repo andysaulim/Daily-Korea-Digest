@@ -8,6 +8,7 @@ Usage:
   python run.py --from-cache # Skip collection, use existing collected.json
   python run.py --no-push    # Skip pushing new entries to databases
 """
+import copy
 import json
 import argparse
 import os
@@ -318,6 +319,29 @@ def warn(title: str, message) -> None:
         return str(v).replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
     t = _esc(title).replace(":", "%3A").replace(",", "%2C")
     print(f"::warning title={t}::{_esc(message)}", flush=True)
+
+
+def build_web_html(digest: dict, email_html: str, date_slug: str,
+                   archive_entries: list | None = None) -> str:
+    """The published page for digest_{date}.html and latest.html. Never raises.
+
+    The web edition (web_page.py) is the full reference: every item whole,
+    sections that fold, a section menu, prev/next. The email stays as it is.
+    If the web edition cannot be built, the page is the email HTML, as it
+    was before, and the run page says so. archive_entries is None when the
+    manifest could not be read; the page then leaves prev/next to its own
+    fetch of the published archive.json.
+    """
+    try:
+        import web_page
+        page = web_page.build(digest, email_html, date_slug, archive_entries=archive_entries)
+        if not isinstance(page, str) or "</html>" not in page:
+            raise ValueError("web_page.build returned no page")
+        return page
+    except Exception as e:                                      # noqa: BLE001
+        warn("Web page fell back to the email",
+             f"digest_{date_slug}.html is the email HTML today: {type(e).__name__}: {e}")
+        return email_html
 
 
 def gallup_baseline_age_days(today=None) -> int | None:
@@ -2416,6 +2440,15 @@ def main():
         print(f"  ⚠  English pass skipped (non-fatal): {_e}")
         warn("English pass skipped", f"Korean outlet names and labels may reach the reader: {_e}")
 
+    # The web page is not bound by Gmail's clip, so it keeps the items the
+    # byte guard below drops for the email alone. Copied here, after every
+    # editorial pass (length ceiling, links, English) and before the email-only
+    # one; the word ceiling still applies to both.
+    try:
+        _web_digest = copy.deepcopy(digest_data)
+    except Exception:                                           # noqa: BLE001
+        _web_digest = None
+
     # The byte guard, before the audio is built so the listener still hears
     # the issue the reader gets. Gmail clips past 102,400 bytes; the word
     # ceiling above is a proxy for that, and this is the bound itself.
@@ -2524,11 +2557,25 @@ def main():
     # Also write latest.html for convenience
     Path("latest.html").write_text(html, encoding="utf-8")
 
-    # Archive copy for GitHub Pages
+    # Archive copy for GitHub Pages. The published page is the web edition,
+    # the full reference "Read online" opens; the email above is unchanged,
+    # and digest_*.html / latest.html in the working directory stay the email
+    # for review. latest.html on the site is the web edition as well, so the
+    # Read online link lands on the same page whichever file it names.
     archive_dir = Path("public")
     archive_dir.mkdir(exist_ok=True)
-    (archive_dir / "latest.html").write_text(html, encoding="utf-8")
-    (archive_dir / f"digest_{date_slug}.html").write_text(html, encoding="utf-8")
+    _web_src = _web_digest if _web_digest is not None else digest_data
+    if _web_src is not digest_data:
+        # Set after the copy was taken: the Listen links and the issue facts.
+        for _k in ("audio_url", "audio_minutes", "listen_url", "issue_no", "web_url", "date_slug"):
+            if _k in digest_data:
+                _web_src[_k] = digest_data[_k]
+    web_html = build_web_html(_web_src, html, date_slug,
+                              _archive_entries if _archive_ok else None)
+    if web_html is not html:
+        print(f"  🌐  Web edition: {len(web_html):,} bytes")
+    (archive_dir / "latest.html").write_text(web_html, encoding="utf-8")
+    (archive_dir / f"digest_{date_slug}.html").write_text(web_html, encoding="utf-8")
 
     # ── Save digest JSON for weekly summaries ──────────────────────────────
     (archive_dir / f"digest_{date_slug}.json").write_text(
@@ -2536,10 +2583,12 @@ def main():
     )
 
     # ── Full-color PDF for print/download (best-effort; needs Playwright) ────
+    # From the email HTML (the working-directory latest.html), not the web
+    # edition: the PDF is the issue as sent.
     try:
         import shutil
         from make_pdf import html_from_input, html_to_pdf
-        pdf_html = html_from_input(archive_dir / "latest.html")
+        pdf_html = html_from_input(Path("latest.html"))
         html_to_pdf(pdf_html, archive_dir / "latest.pdf")
         shutil.copy(archive_dir / "latest.pdf", archive_dir / f"digest_{date_slug}.pdf")
         print(f"  🖨  PDF written: public/latest.pdf + public/digest_{date_slug}.pdf")
