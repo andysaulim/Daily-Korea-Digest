@@ -79,9 +79,15 @@ def _published(path: Path, fallback):
             data = resp.json()
             if isinstance(data, type(fallback)):
                 return data, True
-        # A 404 is normal the first time a month's shard is created.
+        # A 404 is normal the first time a month's shard is created, but it is
+        # also what a site that is not serving returns for everything. Only
+        # trust it when the site answers for a file every run publishes.
         if resp.status_code == 404:
-            return fallback, True
+            from shared.published import _site_is_serving
+            if _site_is_serving(base.rsplit("/corpus", 1)[0], 12):
+                return fallback, True
+            print(f"    ⚠  {path.name} 404 and the site is not serving; not rewriting it this run")
+            return fallback, False
     except Exception as exc:
         print(f"    ⚠  {path.name} unreachable ({exc}); not rewriting it this run")
         return fallback, False
