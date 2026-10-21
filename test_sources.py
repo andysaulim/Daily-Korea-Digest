@@ -3064,7 +3064,20 @@ def check_audio_drops_empty_cued_sections():
     return problems
 
 
+def check_content_farms_dropped():
+    """Aggregators and machine-translated mirrors never reach the model."""
+    import collect
+    kept = collect._drop_content_farms([
+        {"source": "BigGo Finance", "url": "https://finance.biggo.com/news/1"},
+        {"source": "Vietnam.vn", "url": "https://www.vietnam.vn/en/x"},
+        {"source": "Yonhap English", "url": "https://en.yna.co.kr/view/AEN1"},
+        {"source": "Reuters", "url": "https://www.reuters.com/world/asia-pacific/x"}])
+    names = [a["source"] for a in kept]
+    return [] if names == ["Yonhap English", "Reuters"] else [f"content-farm filter kept {names}"]
+
+
 CHECKS = [
+    ("content farms dropped", check_content_farms_dropped),
     ("audio drops empty cued sections", check_audio_drops_empty_cued_sections),
     ("inbox preview line; test send gets the design preview", check_inbox_preview_and_test_send_preview),
     ("validation does not hold a real brief", check_validation_does_not_hold_a_real_brief),

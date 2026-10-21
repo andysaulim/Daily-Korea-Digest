@@ -2631,6 +2631,31 @@ def _collect_sentiment() -> dict:
 # PUBLIC API
 # ─────────────────────────────────────────────────────────────────────────────
 
+# Publishers that are not news organisations: price-comparison and finance
+# aggregators, machine-translated government mirrors, syndication farms. On
+# 21 Oct "BigGo Finance" (a Taiwanese shopping and finance aggregator) and
+# vietnam.vn (machine-translated Vietnamese state media) reached the brief.
+CONTENT_FARM_DOMAINS = ("biggo.com", "vietnam.vn", "newscord", "devdiscourse.com", "latestly.com",
+                        "menafn.com", "newsbreak.com", "headtopics.com", "newsnow.co.uk", "inkl.com",
+                        "flipboard.com", "ground.news", "theinsiderstories", "big news network",
+                        "bignewsnetwork.com")
+CONTENT_FARM_NAMES = ("biggo", "vietnam.vn", "newscord", "devdiscourse", "latestly", "menafn",
+                      "newsbreak", "head topics", "big news network")
+
+
+def _drop_content_farms(articles: list) -> list:
+    """Remove items whose publisher or URL is a known aggregator or content farm."""
+    out = []
+    for a in articles or []:
+        if not isinstance(a, dict):
+            continue
+        hay = " ".join(str(a.get(k) or "") for k in ("url", "publisher_home", "source", "publisher")).lower()
+        if any(d in hay for d in CONTENT_FARM_DOMAINS) or any(n in hay for n in CONTENT_FARM_NAMES):
+            continue
+        out.append(a)
+    return out
+
+
 def collect() -> dict:
     """Run all tier collectors + market data and return combined payload."""
     _source_health.clear()  # Reset health tracking for this run
@@ -2734,6 +2759,12 @@ def collect() -> dict:
         x_signals = collect_x_signals()
     except Exception as e:
         print(f"  🐦  X scraper skipped (non-fatal): {e}")
+
+    # Content farms and aggregators that republish others' reporting, or
+    # machine-translate it, reach us through Google News searches. Dropped
+    # here so the outlet that did the reporting wins the slot.
+    tier1, tier2, tier3, tier4 = (_drop_content_farms(x) for x in (tier1, tier2, tier3, tier4))
+    capitol_hill, korea_world, satellite = (_drop_content_farms(x) for x in (capitol_hill, korea_world, satellite))
 
     return {
         "tier1": tier1,
