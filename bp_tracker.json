@@ -45,8 +45,8 @@
     "Sinuiju–Dandong (NK-China border)": {
       "name": "Sinuiju–Dandong (NK-China border)",
       "status": "activity",
-      "note": "38 North satellite imagery from October 16 confirms trucks traversing the New Yalu River (DPRK-Friendship) Bridge one day after the October 15 official opening, marking the start of commercial vehicle traffic. North Korea-China trade reached $299M in September 2026, the second-highest monthly total in 2026.",
-      "last_source_date": "2026-10-21",
+      "note": "38 North satellite imagery from October 16 confirms trucks traversing the New Yalu River (DPRK-Friendship) Bridge one day after the October 15 official opening, marking the start of commercial vehicle traffic. Daily NK reports customs delays leaving truck drivers waiting more than three hours. North Korea-China trade reached $299M in September 2026, the second-highest monthly total in 2026.",
+      "last_source_date": "2026-10-22",
       "direction": "up"
     },
     "Rason SEZ": {
@@ -78,5 +78,5 @@
       "direction": "up"
     }
   },
-  "last_updated": "2026-10-21T11:08:22.009082+00:00"
+  "last_updated": "2026-10-22T11:10:13.241292+00:00"
 }
