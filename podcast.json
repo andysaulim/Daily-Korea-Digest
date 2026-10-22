@@ -238,5 +238,40 @@
     "transcript": "digest_2026-10-21.vtt",
     "chapters": "digest_2026-10-21.chapters.json",
     "page": "listen/2026-10-21.html"
+  },
+  {
+    "date": "2026-10-22",
+    "title": "Korea Daily Brief | Thursday, October 22",
+    "summary": "Kim Yo Jong sets loudspeaker deadline, Bank of Korea holds at 3 percent, North Korea-Russia prosecutors pact, Seoul files U.N. Security Council letter on DMZ mines, wartime operational control friction.",
+    "file": "digest_2026-10-22.mp3",
+    "bytes": 4976623,
+    "seconds": 621,
+    "script": "written",
+    "transcript_text": "digest_2026-10-22.txt",
+    "notes": [
+      {
+        "headline": "Kim Yo Jong sets 'days' deadline for border loudspeakers, personally denounces ROK lawmaker",
+        "source": "NK News / Reuters / France 24",
+        "url": "https://www.nknews.org/2026/10/kim-yo-jong-denounces-south-korean-lawmaker-who-criticized-loudspeaker-plans/"
+      },
+      {
+        "headline": "Bank of Korea holds rate at 3.00% after back-to-back hikes, BOK governor warns on fiscal expansion",
+        "source": "WSJ / Reuters / CNBC",
+        "url": "https://www.wsj.com/economy/central-banking/bank-of-korea-holds-rate-steady-after-back-to-back-hikes-f25fc515"
+      },
+      {
+        "headline": "Seoul sends UNSC letter demanding North Korea account for DMZ land mine blast",
+        "source": "Yonhap English / Korea Herald",
+        "url": "https://en.yna.co.kr/view/AEN20261022007552315"
+      },
+      {
+        "headline": "Seoul and Washington spar over wartime operational control transfer",
+        "source": "Nikkei",
+        "url": "https://asia.nikkei.com/politics/defense/south-korea-us-spar-over-transfer-of-wartime-command"
+      }
+    ],
+    "transcript": "digest_2026-10-22.vtt",
+    "chapters": "digest_2026-10-22.chapters.json",
+    "page": "listen/2026-10-22.html"
   }
 ]

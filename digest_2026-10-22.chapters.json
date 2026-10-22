@@ -1,0 +1,48 @@
+{
+ "version": "1.2.0",
+ "chapters": [
+  {
+   "startTime": 0.0,
+   "title": "Today's headlines",
+   "endTime": 38.68
+  },
+  {
+   "startTime": 38.68,
+   "title": "Kim Yo Jong sets 'days' deadline for border loudspeakers, personally…",
+   "url": "https://www.nknews.org/2026/10/kim-yo-jong-denounces-south-korean-lawmaker-who-criticized-loudspeaker-plans/",
+   "endTime": 153.93
+  },
+  {
+   "startTime": 153.93,
+   "title": "Bank of Korea holds rate at 3.00% after back-to-back hikes, BOK…",
+   "url": "https://www.wsj.com/economy/central-banking/bank-of-korea-holds-rate-steady-after-back-to-back-hikes-f25fc515",
+   "endTime": 252.4
+  },
+  {
+   "startTime": 252.4,
+   "title": "Seoul sends UNSC letter demanding North Korea account for DMZ land…",
+   "url": "https://en.yna.co.kr/view/AEN20261022007552315",
+   "endTime": 354.69
+  },
+  {
+   "startTime": 354.69,
+   "title": "Pyongyang",
+   "endTime": 394.97
+  },
+  {
+   "startTime": 394.97,
+   "title": "The round-up",
+   "endTime": 551.25
+  },
+  {
+   "startTime": 551.25,
+   "title": "Korea and the World",
+   "endTime": 589.38
+  },
+  {
+   "startTime": 589.38,
+   "title": "Markets",
+   "endTime": 621.95
+  }
+ ]
+}
