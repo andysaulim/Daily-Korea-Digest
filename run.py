@@ -2698,6 +2698,13 @@ def main():
     else:
         print("  ⚠  Skipping tracker updates due to critical validation failures")
 
+    # A short Analysis section with notable pieces left unused is filled from
+    # those pieces only (digest.fill_analysis), before length and links.
+    if validation_passed:
+        from digest import fill_analysis
+        for _line in fill_analysis(payload or {}, digest_data):
+            print(f"  📚  {_line}")
+
     # ── Step 2b: Push flagged entries to databases ────────────────────────────
     if not args.no_push and validation_passed and not _is_test_send:
         try:

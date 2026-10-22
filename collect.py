@@ -617,12 +617,18 @@ CAPITOL_HILL_FEEDS = {
     "Congress Korea hearing": _windowed("hearing+Korea+%22Foreign+Affairs+Committee%22+OR+"
                                         "%22Armed+Services+Committee%22+OR+%22Foreign+Relations+Committee%22", 7),
     "Congress Korea letter": _windowed("Korea+lawmakers+OR+senators+letter+OR+resolution+Congress", 3),
+    # The Korean press reports every Korea move on the Hill (a tariff bill, a
+    # USFK floor, a shipbuilding act) and often first. On 22 Oct the English
+    # searches returned nothing Korean and the section was empty.
+    "Korean press on Congress": _windowed("%EB%AF%B8+%EC%83%81%EC%9B%90+OR+%EB%AF%B8+%ED%95%98%EC%9B%90+OR+"
+                                          "%EB%AF%B8%EA%B5%AD+%EC%9D%98%ED%9A%8C+%ED%95%9C%EA%B5%AD+OR+"
+                                          "%EB%B6%81%ED%95%9C", 3, locale="ko"),
 }
 
 # Search feeds that must show a US-Congress signal as well as a Korea one.
 HILL_SEARCH_FEEDS = {"Korea Caucus", "US Congress Korea", "Congress Shipbuilding Korea", "Punchbowl",
                      "Congress Korea sanctions", "Congress USFK troops", "Korean worker visa bill",
-                     "Congress Korea hearing", "Congress Korea letter"}
+                     "Congress Korea hearing", "Congress Korea letter", "Korean press on Congress"}
 # CRS and GovInfo publish in batches, and a committee's hearing record or a
 # bill's text arrives days after the event: a week, not two days.
 HILL_SLOW_FEEDS = ("CRS", "GovInfo", "Congress.gov Bills", "HFAC", "HASC", "SFRC", "SASC",
@@ -1623,7 +1629,9 @@ def _collect_kim_tracker() -> list:
 # the Korean firms building in the US, the worker visa.
 HILL_KOREA_KEYWORDS = re.compile(
     r"masga|make american shipbuilding great|hanwha|hyundai|samsung|sk hynix|sk on\b"
-    r"|lg energy|e-4 visa|partner with korea|lazarus|korean|usfk|opcon|korus",
+    r"|lg energy|e-4 visa|partner with korea|lazarus|korean|usfk|opcon|korus"
+    # Korean-language headlines, for the Korean press search on Congress.
+    r"|한국|한미|대북|북한|남북|주한미군|조선업|방위비|비자|관세",
     re.IGNORECASE,
 )
 # A US-Congress signal, required of the search feeds only.
@@ -1632,7 +1640,10 @@ HILL_US_SIGNAL = re.compile(
     r"|house of representatives|house (?:armed|foreign|committee|panel|vote|pass|bill"
     r"|republican|democrat|speaker|lawmaker|gop)|\bh\.\s?r\.\s?\d|\bh\.\s?res\.|\bs\.\s?res\."
     r"|(?<![.\w])s\.\s?\d{2,4}\b|national defense authorization|foreign (?:affairs|relations) committee"
-    r"|armed services committee|intelligence committee",
+    r"|armed services committee|intelligence committee"
+    # Korean press on the US Congress. Korea's legislature has one chamber,
+    # so 상원 and 하원 always mean the US one; 미 의회 / 연방의회 name it outright.
+    r"|미\s?의회|미국\s?의회|연방\s?의회|미\s?상원|미국\s?상원|미\s?하원|미국\s?하원|상원의원|하원의원",
     re.IGNORECASE,
 )
 # "Lawmakers" or "senators" is the US Congress only with a US qualifier; on
@@ -1724,6 +1735,9 @@ def _is_world_relevant(entry) -> bool:
     return bool(KOREA_KEYWORDS.search(text) and WORLD_KEYWORDS.search(text))
 
 
+HILL_LANG = {"Korean press on Congress": "KO"}
+
+
 def _collect_capitol_hill() -> list:
     """US Congress items about Korea. 48h window; CRS and GovInfo 72h, as they
     publish in batches rather than through the day."""
@@ -1733,7 +1747,8 @@ def _collect_capitol_hill() -> list:
         for entry in entries:
             if not _hill_keeps(source, entry):
                 continue
-            articles.append(_entry_to_article(entry, source, extra={"stream": "capitol_hill"}))
+            articles.append(_entry_to_article(entry, source, lang=HILL_LANG.get(source, "EN"),
+                                              extra={"stream": "capitol_hill"}))
     return _dedup(articles)
 
 

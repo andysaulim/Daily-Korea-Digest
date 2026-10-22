@@ -3079,7 +3079,45 @@ def check_content_farms_dropped():
     return [] if names == ["Yonhap English", "Reuters"] else [f"content-farm filter kept {names}"]
 
 
+def check_oct22_fixes():
+    """Korean Hill headlines kept; labels in English; no anniversaries; Analysis fill bounded."""
+    import collect, english, korea_calendar, digest
+    from datetime import date
+    problems = []
+    src = "Korean press on Congress"
+    if src not in collect.CAPITOL_HILL_FEEDS or src not in collect.HILL_SEARCH_FEEDS:
+        problems.append("Korean press search on Congress missing from the Hill feeds")
+    for t, want in (("미 하원, 대북 제재 강화 법안 통과", True), ("미국 의회, 한국 조선업 협력 법안 발의", True),
+                    ("국회 본회의 한미 관세 협정 비준", False), ("미 하원의원, 일본 방문", False)):
+        if collect._is_hill_relevant({"title": t, "summary": ""}, src) != want:
+            problems.append(f"Hill filter wrong on {t!r}")
+    for raw, want in (("新华网", "Xinhua"), ("Reuters (Korai Flix SPAC artic…", "Reuters"),
+                      ("Asahi (朝日新聞)", "Asahi"), ("ТАСС", "TASS"), ("Yonhap (op-ed)", "Yonhap (op-ed)")):
+        if english.outlet(raw) != want:
+            problems.append(f"label {raw!r} -> {english.outlet(raw)!r}, want {want!r}")
+    d = {"social_statements": [{"source": "Facebook", "url": "https://www.yna.co.kr/view/AKR1",
+                                "quote_text": "We will respond."}]}
+    english.apply(d)
+    if d["social_statements"][0]["source"] != "Yonhap":
+        problems.append(f"platform label not replaced: {d['social_statements'][0]['source']!r}")
+    items = korea_calendar.merge([{"month": "Oct", "day": 25, "headline": "80th anniversary of the UN"},
+                                  {"month": "Oct", "day": 28, "headline": "BOK rate decision"}],
+                                 date(2026, 10, 22))
+    if [i["headline"] for i in items] != ["BOK rate decision"]:
+        problems.append(f"calendar kept {[i['headline'] for i in items]}")
+    if any(korea_calendar.anniversary(i) for i in korea_calendar.merge([], date(2026, 12, 10))):
+        problems.append("a computed anniversary filled Upcoming")
+    full = {"opeds_today": [{"headline": "a"}, {"headline": "b"}, {"headline": "c"}]}
+    if digest.fill_analysis({}, full) != []:
+        problems.append("fill_analysis acted on a full section")
+    if "MINIMUM 3" not in digest.SYSTEM_PROMPT + digest.build_user_prompt({}, "Thursday") \
+            or "ENGLISH ONLY: quote_text" not in digest.SYSTEM_PROMPT + digest.build_user_prompt({}, "Thursday"):
+        problems.append("prompt lost the Analysis minimum or the quote translation rule")
+    return problems
+
+
 CHECKS = [
+    ("Oct 22 fixes: Korean Hill press, labels, anniversaries, Analysis", check_oct22_fixes),
     ("content farms dropped", check_content_farms_dropped),
     ("audio drops empty cued sections", check_audio_drops_empty_cued_sections),
     ("inbox preview line; test send gets the design preview", check_inbox_preview_and_test_send_preview),

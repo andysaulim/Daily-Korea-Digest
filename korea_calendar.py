@@ -197,9 +197,19 @@ _OFF_TOPIC = re.compile(
     r"provocation anniversar(?:y|ies))\b", re.I)
 
 
+# Anniversaries are not upcoming events: the owner asked for them out of the
+# section (22 October 2026, when one took half of a two-item Upcoming). Read
+# from the headline only, so an exercise "ahead of the anniversary" stays.
+_ANNIVERSARY = re.compile(r"\b(anniversar(?:y|ies)|commemorat\w*|death day)\b", re.I)
+
+
+def anniversary(item: dict) -> bool:
+    return bool(_ANNIVERSARY.search(str(item.get("headline") or item.get("event") or "")))
+
+
 def off_topic(item: dict) -> bool:
     text = f'{item.get("headline") or item.get("event") or ""} {item.get("detail") or ""}'
-    return bool(_OFF_TOPIC.search(text))
+    return bool(_OFF_TOPIC.search(text)) or anniversary(item)
 
 
 def happening_on(items: list | None, day: date) -> list[dict]:
@@ -236,7 +246,7 @@ def merge(model_items: list | None, today: date | None = None,
     for item in upcoming(today, days):
         if len(merged) >= limit:
             break
-        if (item["month"], item["day"]) in seen_days:
+        if (item["month"], item["day"]) in seen_days or anniversary(item):
             continue
         merged.append(item)
 
