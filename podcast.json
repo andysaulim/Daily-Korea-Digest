@@ -273,5 +273,35 @@
     "transcript": "digest_2026-10-22.vtt",
     "chapters": "digest_2026-10-22.chapters.json",
     "page": "listen/2026-10-22.html"
+  },
+  {
+    "date": "2026-10-23",
+    "title": "Korea Daily Brief | Friday, October 23",
+    "summary": "The Defense Ministry proposes inter-Korean military talks, Seoul appeals court acquits Oh Se-hoon, Reuters: Trump-Kim summit unlikely in 2026, National Intelligence Service dismisses Kim death rumors, 960K DMZ mines estimated.",
+    "file": "digest_2026-10-23.mp3",
+    "bytes": 4557689,
+    "seconds": 569,
+    "script": "written",
+    "transcript_text": "digest_2026-10-23.txt",
+    "notes": [
+      {
+        "headline": "Seoul proposes inter-Korean military talks on MDL as mine estimates reach 960,000",
+        "source": "NK News / AP News / Yonhap",
+        "url": "https://www.nknews.org/2026/10/seoul-again-proposes-talks-with-north-korea-on-border-lines-amid-rising-tensions/"
+      },
+      {
+        "headline": "US and ROK officials see little chance of Trump-Kim summit in 2026",
+        "source": "Reuters / Korea Times",
+        "url": "https://www.reuters.com/world/china/us-south-korean-officials-see-little-chance-trump-kim-meeting-this-year-2026-10-23/"
+      },
+      {
+        "headline": "Seoul appeals court acquits Oh Se-hoon of political funds violation",
+        "source": "Yonhap English",
+        "url": "https://en.yna.co.kr/view/AEN20261023001053315"
+      }
+    ],
+    "transcript": "digest_2026-10-23.vtt",
+    "chapters": "digest_2026-10-23.chapters.json",
+    "page": "listen/2026-10-23.html"
   }
 ]
