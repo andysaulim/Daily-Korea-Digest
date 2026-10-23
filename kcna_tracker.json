@@ -1,6 +1,12 @@
 {
   "days": [
     {
+      "date": "2026-10-23",
+      "silence_today": false,
+      "watch_flag": false,
+      "bottom_line": "Kim Yo Jong's border inspection and loudspeaker warning dominated KCNA output, with no Kim Jong Un public appearance; state media separately reported a Chinese veterans affairs delegation arrived in Pyongyang ahead of the Korean War anniversary."
+    },
+    {
       "date": "2026-10-22",
       "silence_today": false,
       "watch_flag": false,
@@ -25,5 +31,5 @@
       "bottom_line": "DPRK state media led with Kim Yo Jong's loudspeaker threat and a reaffirmation of Russia ties; no Kim Jong Un appearance or direct statement today."
     }
   ],
-  "last_updated": "2026-10-22T11:10:13.240598+00:00"
+  "last_updated": "2026-10-23T11:10:43.488501+00:00"
 }
