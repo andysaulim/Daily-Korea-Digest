@@ -3141,6 +3141,15 @@ def check_weekly_v2():
     for want in ("KOREA WEEK IN REVIEW", "sec-bar", "v2-card", "Week in Review as a member", "Lee approval"):
         if want not in html:
             problems.append(f"weekly v2 page lacks {want!r}")
+    pw = weekly.pyongyang_week([
+        {"_date": "2026-10-19", "kcna_delta": {"kim_appearance_today": False, "days_since_last_appearance": 4,
+                                               "bottom_line": "KCNA led with a loudspeaker threat; watch for more.",
+                                               "senior_officials": [{"name": "Kim Yo Jong", "activity": "Statement"}]}},
+        {"_date": "2026-10-20", "kcna_delta": {"kim_appearance_today": True, "kim_activity": "Kim Jong Un toured an expo",
+                                               "senior_officials": [{"name": "Kim Yo Jong", "activity": "Inspection"}]}}])
+    if (pw["kim_seen"] != [("Tue Oct 20", "toured an expo")] or pw["longest_gap"] != 4
+            or pw["days"][0][1] != "KCNA led with a loudspeaker threat." or pw["officials"][0][1] != ["Oct 19", "Oct 20"]):
+        problems.append(f"weekly Pyongyang Watch wrong: {pw}")
     if "%%" in html or "Daily Brief as a member" in html:
         problems.append("weekly page left a placeholder or the daily's footer line")
     return problems

@@ -262,6 +262,55 @@ def next_week_events(events: list, today) -> list[dict]:
     return sorted(out, key=lambda n: n["_date"])
 
 
+def pyongyang_week(digests: list[dict]) -> dict:
+    """The week's Pyongyang Watch from the dailies' kcna_delta, day by day.
+
+    The model's summary covered the week in three sentences and left most of
+    it out: which day Kim was seen and doing what, what KCNA led with each
+    day, and who around him appeared. All of that is in the dailies already.
+    """
+    import re
+    from render import _v2_first_sentence
+    out = {"days": [], "kim_seen": [], "officials": [], "watch_flags": 0, "silence_days": 0, "longest_gap": 0}
+    officials: dict[str, dict] = {}
+    gap = 0
+    for d in digests:
+        k = d.get("kcna_delta") or {}
+        if not k:
+            continue
+        try:
+            day = datetime.strptime(d.get("_date", ""), "%Y-%m-%d").strftime("%a %b %-d")
+        except ValueError:
+            day = d.get("_date", "")
+        lead = re.sub(r"\s*[—–]\s*", ", ", str(k.get("bottom_line") or "")).strip()
+        # The first clause of the first sentence: KCNA's lead that day. The
+        # daily's bottom lines run on through semicolons into what to watch.
+        first = _v2_first_sentence(lead).split("; ")[0].rstrip(" .;,") if lead else ""
+        out["days"].append((day, first + "." if first else ""))
+        if k.get("kim_appearance_today"):
+            act = re.sub(r"^Kim Jong Un\s+", "", str(k.get("kim_activity") or "")).strip().rstrip(".")
+            out["kim_seen"].append((day, act))
+            gap = 0
+        else:
+            gap += 1
+            since = k.get("days_since_last_appearance")
+            out["longest_gap"] = max(out["longest_gap"], gap, since if isinstance(since, int) else 0)
+        out["watch_flags"] += bool(k.get("watch_flag"))
+        out["silence_days"] += bool(k.get("silence_today"))
+        for o in k.get("senior_officials") or []:
+            name = str(o.get("name") or "").strip()
+            if not name or "unnamed" in name.lower():
+                continue
+            rec = officials.setdefault(name, {"days": [], "act": ""})
+            short = day.split(" ", 1)[1] if " " in day else day
+            if short not in rec["days"]:
+                rec["days"].append(short)
+            rec["act"] = str(o.get("activity") or rec["act"]).strip()
+    out["officials"] = sorted(((n, r["days"], r["act"]) for n, r in officials.items()),
+                              key=lambda t: -len(t[1]))[:4]
+    return out
+
+
 def render_weekly(weekly: dict, digests: list[dict] | None = None) -> str:
     """The Week in Review in the daily's v2 design.
 
@@ -332,63 +381,85 @@ def render_weekly(weekly: dict, digests: list[dict] | None = None) -> str:
             f'<td style="padding:8px 0 6px;font-family:{SANS};font-size:14px;line-height:1.55;color:{R._V2_INK};">'
             f'{R._emphasis(bottom)}</td></tr></table></div>')
 
-    # ── Top 10: the daily's numbered circles for 1 to 3 ───────────────────
+    # ── Top 10: one numbered circle per story, level with its headline ────
     rows = ""
     for i, st in enumerate(weekly.get("top_10") or []):
         rank = i + 1
-        bits = [_esc(str(st.get("category", "")))]
+        # Filled for the top three, outlined for the rest: one shape, so the
+        # column of numbers reads as a list.
+        fill = (f"background:{R._V2_ACCENT};color:#FFFFFF;border:1px solid {R._V2_ACCENT};" if rank <= 3 else
+                f"background:#FFFFFF;color:{R._V2_NAVY};border:1px solid {R._V2_NAVY};")
+        num = (f'<div style="width:24px;height:24px;box-sizing:border-box;border-radius:50%;{fill}'
+               f'text-align:center;line-height:22px;font-size:13px;font-weight:700;font-family:{SERIF};">{rank}</div>')
+        meta = [_esc(str(st.get("category", "")))]
         if st.get("first_reported"):
-            bits.append("first reported " + _esc(str(st["first_reported"])))
-        num = (f'<div style="width:24px;height:24px;border-radius:50%;background:{R._V2_ACCENT};color:#FFFFFF;'
-               f'text-align:center;line-height:24px;font-size:13px;font-weight:700;font-family:{SERIF};">{rank}</div>'
-               if rank <= 3 else
-               f'<div style="width:24px;text-align:center;font-family:{SERIF};font-size:16px;font-weight:700;'
-               f'line-height:24px;color:{R._V2_NAVY};">{rank}</div>')
+            meta.append("first reported " + _esc(str(st["first_reported"])))
         srcs = ", ".join(_esc(x) for x in (st.get("sources") or []) if x)
+        line = ", ".join(m for m in meta if m)
         rows += ('<table width="100%" cellpadding="0" cellspacing="0" border="0" class="v2-it" '
                  f'style="border-top:1px solid {R._V2_HAIR};"><tr>'
-                 f'<td width="36" valign="top" style="padding:12px 0 12px;vertical-align:top;">{num}</td>'
+                 f'<td width="36" valign="top" style="padding:13px 0 0;vertical-align:top;">{num}</td>'
                  f'<td valign="top" style="padding:12px 0 13px;vertical-align:top;font-family:{SANS};">'
-                 + kicker(", ".join(b for b in bits if b))
-                 + f'<h3 style="margin:0;{R._V2_HEAD.replace("15px", "16px")}">{R._emphasis(_esc(st.get("headline", "")))}</h3>'
+                 f'<h3 style="margin:0;{R._V2_HEAD.replace("15px", "16px")}">{R._emphasis(_esc(st.get("headline", "")))}</h3>'
                  f'<p style="margin:5px 0 0;font-size:14px;line-height:1.55;color:{R._V2_BODY};">'
                  f'{R._emphasis(_esc(st.get("body", "")))}</p>'
-                 + (f'<div style="font-size:12px;color:{R._V2_META};margin-top:5px;">{srcs}</div>' if srcs else "")
+                 + (f'<div style="font-size:12px;line-height:1.5;color:{R._V2_META};margin-top:6px;">'
+                    + (f'<b style="color:{R._V2_TEAL};">{line}</b>' if line else "")
+                    + (". " if line and srcs else "") + srcs + '</div>' if line or srcs else "")
                  + '</td></tr></table>')
     if rows:
         sections.append(card("top-stories", "Top 10 Stories", rows))
 
-    # ── Pyongyang Watch: the week's counts, posture and words ─────────────
+    # ── Pyongyang Watch: the week from the dailies' own record ────────────
+    pw = pyongyang_week(digests)
     dprk = weekly.get("dprk_statements") or {}
-    if dprk:
-        counts = []
-        for key, one, many in (("kim_appearances", "day Kim appeared", "days Kim appeared"),
-                               ("watch_flags", "watch flag", "watch flags"),
-                               ("silence_days", "day of KCNA silence", "days of KCNA silence")):
-            n = dprk.get(key)
-            if isinstance(n, int):
-                counts.append(f"<b>{n}</b> {one if n == 1 else many}")
-        inner = ""
-        if counts:
-            inner += (f'<div class="v2-it" style="padding:12px 0;border-top:1px solid {R._V2_HAIR};'
-                      f'font-size:14px;line-height:1.5;color:{R._V2_INK};">' + ";&ensp;".join(counts) + '</div>')
-        if dprk.get("summary"):
-            inner += (f'<div class="v2-it" style="padding:10px 0 12px;border-top:1px solid {R._V2_HAIR};'
-                      f'font-size:14px;line-height:1.55;color:{R._V2_BODY};">{R._emphasis(_esc(dprk["summary"]))}</div>')
-        quotes = ""
-        for q in (dprk.get("notable_quotes") or [])[:3]:
-            qt = _esc(q.get("quote") or q.get("text") or "")
-            if not qt:
-                continue
+    inner = ""
+    if pw["days"]:
+        seen = pw["kim_seen"]
+        n = len(pw["days"])
+        kim = (f"Seen on {len(seen)} of {n} days: " + "; ".join(
+                   f"<b>{_esc(day)}</b>" + (f", {_esc(act)}" if act else "") for day, act in seen)
+               if seen else f"No public appearance in {n} days")
+        if pw["longest_gap"] >= 3:
+            kim += f". Longest absence: {pw['longest_gap']} days"
+        extra = []
+        if pw["watch_flags"]:
+            extra.append(f"watch flag up on {pw['watch_flags']} day{'s' if pw['watch_flags'] != 1 else ''}")
+        if pw["silence_days"]:
+            extra.append(f"KCNA silent on {pw['silence_days']} day{'s' if pw['silence_days'] != 1 else ''}")
+        inner += (f'<div class="v2-it" style="padding:12px 0;border-top:1px solid {R._V2_HAIR};">'
+                  f'<div style="font-size:12px;font-weight:700;color:{R._V2_TEAL};margin-bottom:2px;">Kim Jong Un'
+                  + (f'<span style="color:{R.TAEGUK_RED};">, {", ".join(extra)}</span>' if extra else "")
+                  + f'</div><div style="font-size:14px;line-height:1.5;color:{R._V2_INK};">{kim}.</div></div>')
+    if dprk.get("summary"):
+        inner += (f'<div class="v2-it" style="padding:10px 0 12px;border-top:1px solid {R._V2_HAIR};'
+                  f'font-size:14px;line-height:1.55;color:{R._V2_BODY};">{R._emphasis(_esc(dprk["summary"]))}</div>')
+    quotes = ""
+    for q in (dprk.get("notable_quotes") or [])[:3]:
+        qt = _esc(q.get("quote") or q.get("text") or "")
+        if qt:
             quotes += (f'<div class="v2-it" style="padding:10px 0;border-top:1px solid {R._V2_HAIR};">'
                        f'<div style="padding-left:12px;border-left:3px solid {R.TAEGUK_RED};font-size:14px;line-height:1.5;'
                        f'font-style:italic;color:{R._V2_INK};">&ldquo;{qt}&rdquo;</div>'
                        f'<div style="font-size:12px;color:{R._V2_META};margin-top:4px;padding-left:15px;">'
                        f'<b style="color:{R._V2_INK};">{_esc(q.get("speaker", ""))}</b></div></div>')
-        if quotes:
-            inner += R._v2_subhead("In their words") + quotes
-        if inner:
-            sections.append(card("kcna", "Pyongyang Watch", inner))
+    if quotes:
+        inner += R._v2_subhead("In their words") + quotes
+    if pw["days"]:
+        inner += R._v2_subhead("Day by day") + "".join(
+            f'<div class="v2-it" style="padding:9px 0 10px;border-top:1px solid {R._V2_HAIR};font-size:14px;'
+            f'line-height:1.5;color:{R._V2_BODY};"><b style="color:{R._V2_INK};">{_esc(day)}</b>&ensp;'
+            f'{R._emphasis(_esc(lead))}</div>' for day, lead in pw["days"] if lead)
+    if pw["officials"]:
+        inner += R._v2_subhead("Senior officials") + "".join(
+            f'<div class="v2-it" style="padding:9px 0 10px;border-top:1px solid {R._V2_HAIR};">'
+            f'<div style="font-size:14px;font-weight:700;line-height:1.4;color:{R._V2_INK};">{_esc(name)}'
+            f'<span style="font-weight:400;color:{R._V2_META};">, in KCNA on {len(days)} day{"s" if len(days) != 1 else ""}'
+            f' ({_esc(", ".join(days))})</span></div>'
+            f'<div style="font-size:14px;line-height:1.5;color:{R._V2_BODY};margin-top:2px;">{_esc(act)}</div></div>'
+            for name, days, act in pw["officials"])
+    if inner:
+        sections.append(card("kcna", "Pyongyang Watch", inner))
 
     # ── Facilities that changed ───────────────────────────────────────────
     fac = ""
