@@ -3116,7 +3116,38 @@ def check_oct22_fixes():
     return problems
 
 
+def check_weekly_v2():
+    """The Week in Review in the daily's design, in English, with computed numbers."""
+    import weekly
+    from datetime import date
+    problems = []
+    ds = [{"_date": "2026-10-17", "market_indicators": {"kospi": {"value": "5,668.05"}, "usd_krw": {"value": "1,329.60"}}},
+          {"_date": "2026-10-23", "market_indicators": {"kospi": {"value": "5,550.30"}, "usd_krw": {"value": "1,325.22"}},
+           "public_sentiment": {"presidential_approval": {"value": "39%", "source": "Gallup Korea",
+                                                          "last_updated": "October 13-15, 2026"}}}]
+    mk = weekly.market_week(ds)
+    if round(mk["kospi"]["change_pct"], 1) != -2.1 or "krw" not in mk:
+        problems.append(f"weekly market figures wrong: {mk}")
+    if weekly._summarize_digest(ds[1])["market_indicators"].get("usd_krw") is None:
+        problems.append("weekly prompt reads the wrong won key")
+    evs = weekly.next_week_events([{"date": "2026-10-27", "headline": "Court hearing"},
+                                   {"date": "2026-10-23", "headline": "Today"},
+                                   {"date": "2026-10-28", "headline": "One-year anniversary of X"}], date(2026, 10, 23))
+    if [e["headline"] for e in evs] != ["Court hearing"]:
+        problems.append(f"next week kept {[e['headline'] for e in evs]}")
+    html = weekly.render_weekly({"week_label": "October 17-23, 2026", "re_line": "Lead.",
+                                 "top_10": [{"headline": "H", "body": "B.", "category": "DPRK", "sources": ["Reuters"]}],
+                                 "calendar_next_week": [], "bottom_line": "Bottom."}, ds)
+    for want in ("KOREA WEEK IN REVIEW", "sec-bar", "v2-card", "Week in Review as a member", "Lee approval"):
+        if want not in html:
+            problems.append(f"weekly v2 page lacks {want!r}")
+    if "%%" in html or "Daily Brief as a member" in html:
+        problems.append("weekly page left a placeholder or the daily's footer line")
+    return problems
+
+
 CHECKS = [
+    ("Week in Review in the v2 design", check_weekly_v2),
     ("Oct 22 fixes: Korean Hill press, labels, anniversaries, Analysis", check_oct22_fixes),
     ("content farms dropped", check_content_farms_dropped),
     ("audio drops empty cued sections", check_audio_drops_empty_cued_sections),
