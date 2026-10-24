@@ -1,6 +1,19 @@
 {
   "days": [
     {
+      "date": "2026-10-24",
+      "silence_today": false,
+      "watch_flag": false,
+      "bottom_line": "State media reported Kim's KPA commanders conference simultaneously with external confirmation of his surprise China visit, a dual signal combining domestic military mobilization messaging with an unannounced diplomatic move.",
+      "quotes": [
+        {
+          "speaker": "Kim Jong Un",
+          "quote": "military revolution",
+          "source": "Kim Jong Un rallies junior commanders to build 'world's strongest' army"
+        }
+      ]
+    },
+    {
       "date": "2026-10-23",
       "silence_today": false,
       "watch_flag": false,
@@ -31,5 +44,5 @@
       "bottom_line": "DPRK state media led with Kim Yo Jong's loudspeaker threat and a reaffirmation of Russia ties; no Kim Jong Un appearance or direct statement today."
     }
   ],
-  "last_updated": "2026-10-23T11:10:43.488501+00:00"
+  "last_updated": "2026-10-24T11:10:01.190418+00:00"
 }

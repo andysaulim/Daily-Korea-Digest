@@ -3,7 +3,7 @@
     "Yongbyon Nuclear Complex": {
       "name": "Yongbyon Nuclear Complex",
       "status": "elevated",
-      "note": "Apr 2026: Enrichment building expansion complete, new centrifuge hall operational. 5 MWe reactor and IRT-2000 both running. Thermal signatures consistent with increased plutonium/HEU production.",
+      "note": "As of April 2026: Enrichment building expansion complete, new centrifuge hall operational. 5 MWe reactor and IRT-2000 both running. Thermal signatures consistent with increased plutonium/HEU production.",
       "last_source_date": "2026-10-20",
       "direction": "up"
     },
@@ -45,8 +45,8 @@
     "Sinuiju–Dandong (NK-China border)": {
       "name": "Sinuiju–Dandong (NK-China border)",
       "status": "activity",
-      "note": "38 North satellite imagery from October 16 confirms trucks traversing the New Yalu River (DPRK-Friendship) Bridge one day after the October 15 official opening, marking the start of commercial vehicle traffic. Daily NK reports customs delays leaving truck drivers waiting more than three hours. North Korea-China trade reached $299M in September 2026, the second-highest monthly total in 2026.",
-      "last_source_date": "2026-10-22",
+      "note": "38 North satellite imagery from October 16 confirms trucks traversing the New Yalu River (DPRK-Friendship) Bridge one day after the October 15 official opening, marking the start of commercial vehicle traffic. Daily NK reports customs delays leaving truck drivers waiting more than three hours. North Korea-China trade reached $299M in September 2026, the second-highest monthly total in 2026. Kim Jong Un crossed the New Yalu River Bridge on October 24 during his unannounced visit to Dandong — the first use of the bridge by the North Korean leader, nine days after its official opening.",
+      "last_source_date": "2026-10-24",
       "direction": "up"
     },
     "Rason SEZ": {
@@ -78,5 +78,5 @@
       "direction": "up"
     }
   },
-  "last_updated": "2026-10-23T11:10:43.489731+00:00"
+  "last_updated": "2026-10-24T11:10:01.191251+00:00"
 }
