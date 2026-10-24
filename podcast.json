@@ -303,5 +303,35 @@
     "transcript": "digest_2026-10-23.vtt",
     "chapters": "digest_2026-10-23.chapters.json",
     "page": "listen/2026-10-23.html"
+  },
+  {
+    "date": "2026-10-24",
+    "title": "Korea Daily Brief | Saturday, October 24",
+    "summary": "Kim Jong Un makes surprise China visit via new Yalu bridge, Kim calls for 'military revolution' at KPA commanders meeting, Seoul proposes border talks, Bank of Korea holds rates.",
+    "file": "digest_2026-10-24.mp3",
+    "bytes": 4739071,
+    "seconds": 592,
+    "script": "written",
+    "transcript_text": "digest_2026-10-24.txt",
+    "notes": [
+      {
+        "headline": "Kim Jong Un makes unannounced visit to Dandong via new Yalu bridge, met Chinese Premier",
+        "source": "NK News / Reuters / Yonhap / Oct 24",
+        "url": "https://www.nknews.org/2026/10/north-koreas-kim-jong-un-visits-chinese-border-city-seoul/"
+      },
+      {
+        "headline": "Kim Jong Un calls for 'military revolution' at KPA company commanders conference",
+        "source": "NK News / Reuters / Korea JoongAng Daily / Yonhap / Oct 24",
+        "url": "https://www.nknews.org/2026/10/kim-jong-un-rallies-junior-commanders-to-build-worlds-strongest-army/"
+      },
+      {
+        "headline": "Seoul proposes military talks with Pyongyang to address border tensions; North Korea silent",
+        "source": "Washington Post / Yonhap / Oct 24",
+        "url": "https://www.washingtonpost.com/world/2026/10/23/south-north-korea-border-mines-military-talks/10d232fa-ceb0-11f1-ac04-9f58578a68b4_story.html"
+      }
+    ],
+    "transcript": "digest_2026-10-24.vtt",
+    "chapters": "digest_2026-10-24.chapters.json",
+    "page": "listen/2026-10-24.html"
   }
 ]
