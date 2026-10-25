@@ -1,6 +1,19 @@
 {
   "days": [
     {
+      "date": "2026-10-25",
+      "silence_today": false,
+      "watch_flag": false,
+      "bottom_line": "KCNA led with extensive coverage of Kim's Dandong visit, framing the 'blood alliance' with China around the 76th Korean War anniversary, while also reporting Kim's 'military revolution' address to company-level commanders — two tracks run simultaneously.",
+      "quotes": [
+        {
+          "speaker": "Kim Jong Un",
+          "quote": "North Korea is 'inspired' by China's success.",
+          "source": "Kim Jong Un says North Korea 'inspired' by China's success in border city visit"
+        }
+      ]
+    },
+    {
       "date": "2026-10-24",
       "silence_today": false,
       "watch_flag": false,
@@ -44,5 +57,5 @@
       "bottom_line": "DPRK state media led with Kim Yo Jong's loudspeaker threat and a reaffirmation of Russia ties; no Kim Jong Un appearance or direct statement today."
     }
   ],
-  "last_updated": "2026-10-24T11:10:01.190418+00:00"
+  "last_updated": "2026-10-25T11:08:45.436220+00:00"
 }
