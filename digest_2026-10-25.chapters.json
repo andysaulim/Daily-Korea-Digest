@@ -1,0 +1,53 @@
+{
+ "version": "1.2.0",
+ "chapters": [
+  {
+   "startTime": 0.0,
+   "title": "Today's headlines",
+   "endTime": 40.47
+  },
+  {
+   "startTime": 40.47,
+   "title": "Kim returns from Dandong after first China visit since September…",
+   "url": "https://www.nknews.org/2026/10/kim-jong-un-says-north-korea-inspired-by-chinas-success-in-border-city-visit/",
+   "endTime": 149.74
+  },
+  {
+   "startTime": 149.74,
+   "title": "Lee says South Korea's Q2 current account surplus surpassed Germany…",
+   "url": "https://en.yna.co.kr/view/AEN20261025005400320",
+   "endTime": 234.84
+  },
+  {
+   "startTime": 234.84,
+   "title": "Lee narrows Justice Ministry shortlist to two…",
+   "url": "https://www.koreatimes.co.kr/southkorea/politics/20261025/president-lee-mulls-picking-justice-minister-nominee-from-2-prosecutor-turned-lawmakers?utm_source=rss",
+   "endTime": 313.37
+  },
+  {
+   "startTime": 313.37,
+   "title": "Pyongyang",
+   "endTime": 361.76
+  },
+  {
+   "startTime": 361.76,
+   "title": "The round-up",
+   "endTime": 518.6
+  },
+  {
+   "startTime": 518.6,
+   "title": "Capitol Hill",
+   "endTime": 536.92
+  },
+  {
+   "startTime": 536.92,
+   "title": "Korea and the World",
+   "endTime": 572.34
+  },
+  {
+   "startTime": 572.34,
+   "title": "Markets",
+   "endTime": 613.17
+  }
+ ]
+}

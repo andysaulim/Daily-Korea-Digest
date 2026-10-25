@@ -333,5 +333,35 @@
     "transcript": "digest_2026-10-24.vtt",
     "chapters": "digest_2026-10-24.chapters.json",
     "page": "listen/2026-10-24.html"
+  },
+  {
+    "date": "2026-10-25",
+    "title": "Korea Daily Brief | Sunday, October 25",
+    "summary": "Kim Jong Un returns from Dandong after surprise China visit, KCNA touts 'blood alliance', Lee cites record current account surplus, Justice minister shortlist narrows.",
+    "file": "digest_2026-10-25.mp3",
+    "bytes": 4906419,
+    "seconds": 613,
+    "script": "written",
+    "transcript_text": "digest_2026-10-25.txt",
+    "notes": [
+      {
+        "headline": "Kim returns from Dandong after first China visit since September 2025, touts 'blood alliance'",
+        "source": "NK News / Korea Times / Yonhap / Reuters / WSJ / AP / Oct 25",
+        "url": "https://www.nknews.org/2026/10/kim-jong-un-says-north-korea-inspired-by-chinas-success-in-border-city-visit/"
+      },
+      {
+        "headline": "Lee says South Korea's Q2 current account surplus surpassed Germany and Japan combined",
+        "source": "Yonhap English / Maeil Business",
+        "url": "https://en.yna.co.kr/view/AEN20261025005400320"
+      },
+      {
+        "headline": "Lee narrows Justice Ministry shortlist to two prosecutor-turned-ruling-party lawmakers",
+        "source": "Korea Times / Chosun Ilbo",
+        "url": "https://www.koreatimes.co.kr/southkorea/politics/20261025/president-lee-mulls-picking-justice-minister-nominee-from-2-prosecutor-turned-lawmakers?utm_source=rss"
+      }
+    ],
+    "transcript": "digest_2026-10-25.vtt",
+    "chapters": "digest_2026-10-25.chapters.json",
+    "page": "listen/2026-10-25.html"
   }
 ]
