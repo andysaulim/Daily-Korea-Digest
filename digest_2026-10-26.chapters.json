@@ -1,0 +1,48 @@
+{
+ "version": "1.2.0",
+ "chapters": [
+  {
+   "startTime": 0.0,
+   "title": "Today's headlines",
+   "endTime": 42.94
+  },
+  {
+   "startTime": 42.94,
+   "title": "North Korean 122mm howitzers aimed south spotted at western border…",
+   "url": "https://www.newsis.com/view/NISX20261026_0003841859",
+   "endTime": 153.56
+  },
+  {
+   "startTime": 153.56,
+   "title": "North Korea sends UN Security Council letter claiming DMZ mine blast…",
+   "url": "https://www.nknews.org/2026/10/north-korea-accuses-south-of-fabricating-dmz-land-mine-blasts-in-letter-to-un/",
+   "endTime": 260.91
+  },
+  {
+   "startTime": 260.91,
+   "title": "Korea-US Strategic Investment Corporation receives Aa2 and AA…",
+   "url": "https://www.koreatimes.co.kr/economy/20261026/korea-us-investment-firm-gets-credit-ratings-with-stable-outlooks?utm_source=rss",
+   "endTime": 335.16
+  },
+  {
+   "startTime": 335.16,
+   "title": "Pyongyang",
+   "endTime": 370.06
+  },
+  {
+   "startTime": 370.06,
+   "title": "The round-up",
+   "endTime": 548.91
+  },
+  {
+   "startTime": 548.91,
+   "title": "Korea and the World",
+   "endTime": 585.71
+  },
+  {
+   "startTime": 585.71,
+   "title": "Markets",
+   "endTime": 622.81
+  }
+ ]
+}

@@ -363,5 +363,43 @@
     "transcript": "digest_2026-10-25.vtt",
     "chapters": "digest_2026-10-25.chapters.json",
     "page": "listen/2026-10-25.html"
+  },
+  {
+    "date": "2026-10-26",
+    "title": "Korea Daily Brief | Monday, October 26",
+    "summary": "Kim returns from Dandong, North Korea howitzers face south, KUIC earns sovereign credit ratings, Lee rules out CPTPP this term, wartime operational control coordination active.",
+    "file": "digest_2026-10-26.mp3",
+    "bytes": 4983513,
+    "seconds": 622,
+    "script": "written",
+    "script_repaired": [
+      "The border tension has a parallel track at the United Nations."
+    ],
+    "transcript_text": "digest_2026-10-26.txt",
+    "notes": [
+      {
+        "headline": "North Korean 122mm howitzers aimed south spotted at western border for second day",
+        "source": "Newsis",
+        "url": "https://www.newsis.com/view/NISX20261026_0003841859"
+      },
+      {
+        "headline": "North Korea sends UN Security Council letter claiming DMZ mine blast was Seoul fabrication",
+        "source": "NK News",
+        "url": "https://www.nknews.org/2026/10/north-korea-accuses-south-of-fabricating-dmz-land-mine-blasts-in-letter-to-un/"
+      },
+      {
+        "headline": "Korea-US Strategic Investment Corporation receives Aa2 and AA sovereign-linked credit ratings",
+        "source": "Korea Times",
+        "url": "https://www.koreatimes.co.kr/economy/20261026/korea-us-investment-firm-gets-credit-ratings-with-stable-outlooks?utm_source=rss"
+      },
+      {
+        "headline": "Lee says CPTPP membership unavoidable but rules out joining during his term",
+        "source": "Yonhap English",
+        "url": "https://en.yna.co.kr/view/AEN20261026006751315"
+      }
+    ],
+    "transcript": "digest_2026-10-26.vtt",
+    "chapters": "digest_2026-10-26.chapters.json",
+    "page": "listen/2026-10-26.html"
   }
 ]
