@@ -1,6 +1,19 @@
 {
   "days": [
     {
+      "date": "2026-10-26",
+      "silence_today": false,
+      "watch_flag": false,
+      "bottom_line": "State media led with aftermath coverage of Kim's Dandong visit — invoking the 'blood alliance' framing — and North Korea's letter to the UN Security Council claiming the DMZ mine blast was staged by Seoul.",
+      "quotes": [
+        {
+          "speaker": "Kim Jong Un",
+          "quote": "North Korea is 'inspired' by China's success.",
+          "source": "Kim Jong Un says North Korea 'inspired' by China's success in border city visit"
+        }
+      ]
+    },
+    {
       "date": "2026-10-25",
       "silence_today": false,
       "watch_flag": false,
@@ -57,5 +70,5 @@
       "bottom_line": "DPRK state media led with Kim Yo Jong's loudspeaker threat and a reaffirmation of Russia ties; no Kim Jong Un appearance or direct statement today."
     }
   ],
-  "last_updated": "2026-10-25T11:08:45.436220+00:00"
+  "last_updated": "2026-10-26T11:09:07.614364+00:00"
 }
