@@ -3100,6 +3100,10 @@ def check_oct22_fixes():
     english.apply(d)
     if d["social_statements"][0]["source"] != "Yonhap":
         problems.append(f"platform label not replaced: {d['social_statements'][0]['source']!r}")
+    q = {"social_statements": [{"quote_text": "대한민국 국가 전체를 위해선 해야 한다 / For the sake of the whole country, we must."}]}
+    english.apply(q)
+    if not q["social_statements"]:
+        problems.append("a Korean quote with its translation after a slash was dropped")
     items = korea_calendar.merge([{"month": "Oct", "day": 25, "headline": "80th anniversary of the UN"},
                                   {"month": "Oct", "day": 28, "headline": "BOK rate decision"}],
                                  date(2026, 10, 22))

@@ -133,7 +133,9 @@ def _translated_quote(text: str, start: int) -> bool:
     window = text[max(0, start - 160): start + 220]
     return bool(re.search(r"[\"'‘“][^\"'’”]*[ㄱ-ㆎ가-힣][^\"'’”]*[\"'’”]\s*\(\s*[\"'‘“]?[A-Za-z]",
                           window)
-                or re.search(r"[\"'‘“][A-Za-z][^\"'’”]{8,}[\"'’”]\s*\(\s*[ㄱ-ㆎ가-힣]", window))
+                or re.search(r"[\"'‘“][A-Za-z][^\"'’”]{8,}[\"'’”]\s*\(\s*[ㄱ-ㆎ가-힣]", window)
+                # "Korean / English": the original, a slash, then the translation.
+                or re.search(r"[ㄱ-ㆎ가-힣][^/]*\s/\s*[\"'‘“]?[A-Za-z][A-Za-z ,.'’-]{8,}", window))
 
 
 _QUOTE_SECTIONS = ("official_x_posts", "social_statements")
