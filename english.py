@@ -37,7 +37,32 @@ OUTLETS = {
     "갤럽": "Gallup Korea", "한국갤럽": "Gallup Korea", "노동신문": "Rodong Sinmun",
     "조선중앙통신": "KCNA", "조선중앙TV": "KCTV", "우리민족끼리": "Uriminzokkiri",
 }
+# Chinese, Japanese and Russian outlets reach labels the same way: Google
+# News gives a publisher in its own script ("新华网" on 22 October 2026).
+OUTLETS.update({
+    "新华网": "Xinhua", "新华社": "Xinhua", "新華社": "Xinhua", "人民网": "People's Daily",
+    "人民日报": "People's Daily", "环球时报": "Global Times", "环球网": "Global Times",
+    "中国日报": "China Daily", "中国新闻网": "China News Service", "中新网": "China News Service",
+    "央视新闻": "CCTV", "央视网": "CCTV", "中央电视台": "CCTV", "澎湃新闻": "The Paper",
+    "观察者网": "Guancha", "凤凰网": "Phoenix", "联合早报": "Lianhe Zaobao",
+    "聯合早報": "Lianhe Zaobao", "参考消息": "Reference News",
+    "朝日新聞": "Asahi Shimbun", "読売新聞": "Yomiuri Shimbun", "毎日新聞": "Mainichi",
+    "日本経済新聞": "Nikkei", "日経": "Nikkei", "産経新聞": "Sankei Shimbun",
+    "共同通信": "Kyodo", "時事通信": "Jiji Press", "東京新聞": "Tokyo Shimbun",
+    "ТАСС": "TASS", "РИА Новости": "RIA Novosti", "Интерфакс": "Interfax",
+    "Коммерсантъ": "Kommersant", "Известия": "Izvestia", "Российская газета": "Rossiyskaya Gazeta",
+})
 _BY_LENGTH = sorted(OUTLETS, key=len, reverse=True)
+# Script that is neither Latin nor Korean: Chinese, Japanese kana, Cyrillic.
+_FOREIGN = re.compile(r"[\u0400-\u04FF\u3040-\u30FF\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF]")
+# A platform is where something was posted, not the outlet that reported it.
+_PLATFORMS = {"facebook": "facebook.com", "youtube": "youtube.com", "instagram": "instagram.com",
+              "telegram": "t.me", "tiktok": "tiktok.com", "naver": "naver.com",
+              "daum": "daum.net", "google news": "news.google.com", "msn": "msn.com",
+              "yahoo": "yahoo.com", "yahoo news": "yahoo.com"}
+# "Reuters (Korai Flix SPAC artic…": a description pasted after the outlet,
+# closed or cut off. Short qualifiers ("(AP)", "(op-ed)") are kept.
+_DESCRIPTION = re.compile(r"\s*\((?:[^()]*\s){2,}[^()]*(?:\)|$)|\s*\([^()]*(?:…|\.\.\.)\)?\s*$|\s*\([^()]*$")
 
 # Fields that name a source or carry a label rather than prose.
 _LABEL_KEYS = {"source", "source_label", "src_line", "outlet", "publisher", "label",
@@ -50,7 +75,16 @@ _QUOTED = re.compile(r"""\s*[—–:-]?\s*['"‘“「『][^'"’”」』]*[ㄱ
 
 def outlet(name: str) -> str:
     """One label in English: known outlets mapped, other Korean words dropped."""
-    s = str(name or "")
+    s = _DESCRIPTION.sub("", str(name or "")).strip()
+    if _FOREIGN.search(s):
+        # A gloss in brackets beside an English name: "Asahi (朝日新聞)" -> "Asahi".
+        if re.search(r"[A-Za-z]", re.sub(r"\([^()]*\)", "", s)):
+            s = re.sub(r"\s*\([^()]*" + _FOREIGN.pattern + r"[^()]*\)", "", s)
+        for other in _BY_LENGTH:
+            s = s.replace(other, OUTLETS[other])
+        s = _FOREIGN.sub("", s)
+        s = re.sub(r"\s*\(\s*\)", "", re.sub(r"\s{2,}", " ", s)).strip(" ·—–-;,/")
+        s = re.sub(r"^(.+?)\s+\1$", r"\1", s)        # "Global Times 环球时报" mapped twice
     if not HANGUL.search(s):
         return s
     s = _QUOTED.sub("", s)
@@ -99,7 +133,9 @@ def _translated_quote(text: str, start: int) -> bool:
     window = text[max(0, start - 160): start + 220]
     return bool(re.search(r"[\"'‘“][^\"'’”]*[ㄱ-ㆎ가-힣][^\"'’”]*[\"'’”]\s*\(\s*[\"'‘“]?[A-Za-z]",
                           window)
-                or re.search(r"[\"'‘“][A-Za-z][^\"'’”]{8,}[\"'’”]\s*\(\s*[ㄱ-ㆎ가-힣]", window))
+                or re.search(r"[\"'‘“][A-Za-z][^\"'’”]{8,}[\"'’”]\s*\(\s*[ㄱ-ㆎ가-힣]", window)
+                # "Korean / English": the original, a slash, then the translation.
+                or re.search(r"[ㄱ-ㆎ가-힣][^/]*\s/\s*[\"'‘“]?[A-Za-z][A-Za-z ,.'’-]{8,}", window))
 
 
 _QUOTE_SECTIONS = ("official_x_posts", "social_statements")
@@ -122,6 +158,22 @@ def _drop_untranslated_quotes(digest: dict, warnings: list) -> None:
         digest[key] = kept
 
 
+def _label_for(item: dict, key: str, label: str) -> str:
+    """A label left empty, or naming a platform the link does not open, takes
+    the name of the outlet its URL does ("Facebook" on a Yonhap link)."""
+    url = item.get("secondary_url" if key == "secondary_label" else "url")
+    if not isinstance(url, str) or not url.startswith("http") or key == "name":
+        return label
+    platform = _PLATFORMS.get(label.strip().lower())
+    if label.strip() and not (platform and platform not in url.lower()):
+        return label
+    try:
+        import links
+        return links.publisher_name(url) or label
+    except Exception:                                           # noqa: BLE001
+        return label
+
+
 def apply(digest: dict) -> list[str]:
     """Rewrite labels to English in place; return warnings for Korean left in prose."""
     warnings: list[str] = []
@@ -135,7 +187,7 @@ def apply(digest: dict) -> list[str]:
                 elif str(k).startswith("_") or k in ("url", "secondary_url", "source_url"):
                     continue
                 elif k in _LABEL_KEYS and isinstance(x, str):
-                    v[k] = dashes(outlet(x))
+                    v[k] = _label_for(v, k, dashes(outlet(x)))
                 else:
                     walk(x, f"{path}.{k}")
         elif isinstance(v, list):
