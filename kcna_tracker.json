@@ -1,6 +1,12 @@
 {
   "days": [
     {
+      "date": "2026-10-27",
+      "silence_today": false,
+      "watch_flag": false,
+      "bottom_line": "KCNA led with Kim's reply to Vietnam and the Pyongyang trade fair opening, while North Korean officials continued CPV anniversary tributes following Kim's Dandong visit."
+    },
+    {
       "date": "2026-10-26",
       "silence_today": false,
       "watch_flag": false,
@@ -70,5 +76,5 @@
       "bottom_line": "DPRK state media led with Kim Yo Jong's loudspeaker threat and a reaffirmation of Russia ties; no Kim Jong Un appearance or direct statement today."
     }
   ],
-  "last_updated": "2026-10-26T11:09:07.614364+00:00"
+  "last_updated": "2026-10-27T11:09:29.182298+00:00"
 }

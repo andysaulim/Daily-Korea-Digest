@@ -1,43 +1,43 @@
 {
  "feeds": {
   "38 North": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "38N Imagery": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "AEI": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "AEI Imagery": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "AP Korea": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "ASAN Institute": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "AccessDPRK": {
    "last_ok": null,
-   "runs": 13,
-   "silent_runs": 13
+   "runs": 14,
+   "silent_runs": 14
   },
   "Al Jazeera Korea": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "American Pol. Sci. Review": {
@@ -46,318 +46,318 @@
    "silent_runs": 0
   },
   "Arab News Korea": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Arirang News": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "ArmsControlWonk": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Asahi Korea": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Asia Policy": {
-   "last_ok": "2026-10-26",
-   "runs": 10,
+   "last_ok": "2026-10-27",
+   "runs": 11,
    "silent_runs": 0
   },
   "Asian Security": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Asian Survey": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Atlantic Council": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "BBC Korea": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "BIS": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "BP Imagery": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Bank of Korea": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Beyond Parallel": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Bloomberg Korea": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Bloomberg Opinion": {
-   "last_ok": "2026-10-26",
-   "runs": 10,
+   "last_ok": "2026-10-27",
+   "runs": 11,
    "silent_runs": 0
   },
   "Breaking Defense Korea": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Brookings": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "CFR": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "CISA": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "CNA Korea": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "CNAS": {
-   "last_ok": "2026-10-26",
-   "runs": 10,
+   "last_ok": "2026-10-27",
+   "runs": 11,
    "silent_runs": 0
   },
   "CNBC Korea": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "CNN Korea": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "CRS Korea": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "CRS North Korea": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "CRS Reports": {
    "last_ok": "2026-10-21",
-   "runs": 13,
-   "silent_runs": 10
+   "runs": 14,
+   "silent_runs": 11
   },
   "CSIS": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "CSIS Korea Chair": {
-   "last_ok": "2026-10-26",
-   "runs": 10,
+   "last_ok": "2026-10-27",
+   "runs": 11,
    "silent_runs": 0
   },
   "Caixin Korea": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Carnegie": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Channel A": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Chatham House": {
-   "last_ok": "2026-10-26",
-   "runs": 10,
+   "last_ok": "2026-10-27",
+   "runs": 11,
    "silent_runs": 0
   },
   "China Daily Korea": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Chosun English": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Chosun English Opinion": {
-   "last_ok": "2026-10-26",
-   "runs": 10,
+   "last_ok": "2026-10-27",
+   "runs": 11,
    "silent_runs": 0
   },
   "Congress Korea hearing": {
-   "last_ok": "2026-10-26",
-   "runs": 10,
+   "last_ok": "2026-10-27",
+   "runs": 11,
    "silent_runs": 0
   },
   "Congress Korea letter": {
-   "last_ok": "2026-10-26",
-   "runs": 10,
+   "last_ok": "2026-10-27",
+   "runs": 11,
    "silent_runs": 0
   },
   "Congress Korea sanctions": {
-   "last_ok": "2026-10-26",
-   "runs": 10,
+   "last_ok": "2026-10-27",
+   "runs": 11,
    "silent_runs": 0
   },
   "Congress Shipbuilding Korea": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Congress USFK troops": {
-   "last_ok": "2026-10-26",
-   "runs": 10,
+   "last_ok": "2026-10-27",
+   "runs": 11,
    "silent_runs": 0
   },
   "Congress.gov Bills": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Congress.gov House Floor": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Congress.gov Senate Floor": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "DART disclosures": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Daily NK KJU": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Defense News Korea": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Dept of Commerce": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Dept of Treasury": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Diplomat": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Dong-A English": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "EAI": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Economist Korea": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Euractiv Korea": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "FT Korea": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "FT Opinion": {
-   "last_ok": "2026-10-26",
-   "runs": 10,
+   "last_ok": "2026-10-27",
+   "runs": 11,
    "silent_runs": 0
   },
   "Federal Register KR": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Foreign Affairs": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Foreign Policy": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Global Times Korea": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "GovInfo Bills": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "GovInfo Hearings": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Guardian Korea": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "HASC": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "HASC schedule": {
@@ -366,8 +366,8 @@
    "silent_runs": 4
   },
   "HFAC Hearings": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "HFAC schedule": {
@@ -376,53 +376,53 @@
    "silent_runs": 4
   },
   "Hankyoreh English": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Heritage": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Hoover": {
-   "last_ok": "2026-10-26",
-   "runs": 10,
+   "last_ok": "2026-10-27",
+   "runs": 11,
    "silent_runs": 0
   },
   "House Appropriations": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "House Appropriations schedule": {
-   "last_ok": "2026-10-26",
-   "runs": 11,
+   "last_ok": "2026-10-27",
+   "runs": 12,
    "silent_runs": 0
   },
   "House Armed Services schedule": {
-   "last_ok": "2026-10-26",
-   "runs": 11,
+   "last_ok": "2026-10-27",
+   "runs": 12,
    "silent_runs": 0
   },
   "House Foreign Affairs": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "House Foreign Affairs schedule": {
-   "last_ok": "2026-10-26",
-   "runs": 11,
+   "last_ok": "2026-10-27",
+   "runs": 12,
    "silent_runs": 0
   },
   "House Intelligence schedule": {
-   "last_ok": "2026-10-26",
-   "runs": 11,
+   "last_ok": "2026-10-27",
+   "runs": 12,
    "silent_runs": 0
   },
   "House Ways and Means schedule": {
-   "last_ok": "2026-10-26",
-   "runs": 11,
+   "last_ok": "2026-10-27",
+   "runs": 12,
    "silent_runs": 0
   },
   "House committee schedule": {
@@ -431,63 +431,63 @@
    "silent_runs": 2
   },
   "Hudson Institute": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "IAEA": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "IFANS": {
-   "last_ok": "2026-10-26",
-   "runs": 10,
+   "last_ok": "2026-10-27",
+   "runs": 11,
    "silent_runs": 0
   },
   "IISS": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "INDOPACOM": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Imagery AP": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Imagery BBC": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Imagery CNN": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Imagery NYT": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Imagery Reuters": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Imagery WSJ": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Imagery WaPo": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Int'l Organization": {
@@ -496,8 +496,8 @@
    "silent_runs": 0
   },
   "Int'l Security": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Int'l Studies Quarterly": {
@@ -506,13 +506,13 @@
    "silent_runs": 0
   },
   "J. Conflict Resolution": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "J. East Asian Studies": {
-   "last_ok": "2026-10-26",
-   "runs": 10,
+   "last_ok": "2026-10-27",
+   "runs": 11,
    "silent_runs": 0
   },
   "J. Peace Research": {
@@ -521,73 +521,73 @@
    "silent_runs": 0
   },
   "J. Strategic Studies": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "JTBC": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Japan MOFA": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Japan Times Korea": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "JoongAng Daily": {
    "last_ok": "2026-10-26",
-   "runs": 13,
-   "silent_runs": 0
+   "runs": 14,
+   "silent_runs": 1
   },
   "JoongAng Opinion": {
    "last_ok": "2026-10-26",
-   "runs": 10,
-   "silent_runs": 0
+   "runs": 11,
+   "silent_runs": 1
   },
   "KBS": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "KCNA (38 North)": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "KCNA (AFP)": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "KCNA (AP)": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "KCNA (BBC)": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "KCNA (Daily NK)": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "KCNA (KCBS)": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "KCNA (Kim stmt)": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "KCNA (Korea Risk)": {
@@ -596,178 +596,178 @@
    "silent_runs": 4
   },
   "KCNA (NK News)": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "KCNA (NYT)": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "KCNA (Reuters)": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "KCNA (WaPo)": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "KCNA (Yonhap)": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "KCNA (state media)": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "KCNA KJU": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "KCNA Watch": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "KDI": {
-   "last_ok": "2026-10-26",
-   "runs": 10,
+   "last_ok": "2026-10-27",
+   "runs": 11,
    "silent_runs": 0
   },
   "KEIA": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "KIDA": {
-   "last_ok": "2026-10-26",
-   "runs": 10,
+   "last_ok": "2026-10-27",
+   "runs": 11,
    "silent_runs": 0
   },
   "KINU": {
-   "last_ok": "2026-10-26",
-   "runs": 10,
+   "last_ok": "2026-10-27",
+   "runs": 11,
    "silent_runs": 0
   },
   "KJU Activity": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "KJU Appearance": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Korea Caucus": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Korea Customs": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Korea Economic Daily": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Korea Herald": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Korea Herald Opinion": {
-   "last_ok": "2026-10-26",
-   "runs": 10,
+   "last_ok": "2026-10-27",
+   "runs": 11,
    "silent_runs": 0
   },
   "Korea Journal": {
-   "last_ok": "2026-10-26",
-   "runs": 10,
+   "last_ok": "2026-10-27",
+   "runs": 11,
    "silent_runs": 0
   },
   "Korea Times": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Korea aid": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Korea defense exports": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Korea multilateral": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Korea nuclear exports": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Korea overseas construction": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Korea-Europe": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Korea-Global South": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Korea-India": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Korea-Middle East": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Korea-Poland": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Korea-Southeast Asia": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Korea-Ukraine": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Korea.net": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Korean J. Def. Analysis": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Korean Studies": {
@@ -775,254 +775,259 @@
    "runs": 3,
    "silent_runs": 0
   },
+  "Korean press on Congress": {
+   "last_ok": "2026-10-27",
+   "runs": 1,
+   "silent_runs": 0
+  },
   "Korean worker visa bill": {
-   "last_ok": "2026-10-26",
-   "runs": 10,
-   "silent_runs": 0
-  },
-  "Kyiv Independent Korea": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
-   "silent_runs": 0
-  },
-  "Kyodo Korea": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
-   "silent_runs": 0
-  },
-  "Lowy Interpreter": {
-   "last_ok": "2026-10-26",
-   "runs": 10,
-   "silent_runs": 0
-  },
-  "MBC": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
-   "silent_runs": 0
-  },
-  "MBN": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
-   "silent_runs": 0
-  },
-  "Mainichi Korea": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
-   "silent_runs": 0
-  },
-  "Middlebury MIIS": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
-   "silent_runs": 0
-  },
-  "NBR": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
-   "silent_runs": 0
-  },
-  "NK Facility": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
-   "silent_runs": 0
-  },
-  "NK Imagery": {
-   "last_ok": "2026-10-25",
-   "runs": 13,
-   "silent_runs": 1
-  },
-  "NK Leadership Watch": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
-   "silent_runs": 0
-  },
-  "NK News": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
-   "silent_runs": 0
-  },
-  "NKPro": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
-   "silent_runs": 0
-  },
-  "NYT Korea": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
-   "silent_runs": 0
-  },
-  "NYT Opinion": {
-   "last_ok": "2026-10-26",
-   "runs": 10,
-   "silent_runs": 0
-  },
-  "Nikkei Korea": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
-   "silent_runs": 0
-  },
-  "Nonproliferation Rev.": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
-   "silent_runs": 0
-  },
-  "North Korean Review": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
-   "silent_runs": 0
-  },
-  "Notes from Poland Korea": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
-   "silent_runs": 0
-  },
-  "OFAC": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
-   "silent_runs": 0
-  },
-  "PIIE": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
-   "silent_runs": 0
-  },
-  "Pacific Affairs": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
-   "silent_runs": 0
-  },
-  "Pacific Forum": {
-   "last_ok": "2026-10-26",
-   "runs": 10,
-   "silent_runs": 0
-  },
-  "Pacific Review": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
-   "silent_runs": 0
-  },
-  "Pentagon": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
-   "silent_runs": 0
-  },
-  "People's Daily Korea": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
-   "silent_runs": 0
-  },
-  "Politico Congress": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
-   "silent_runs": 0
-  },
-  "Punchbowl": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
-   "silent_runs": 0
-  },
-  "Quincy Institute": {
-   "last_ok": "2026-10-26",
-   "runs": 10,
-   "silent_runs": 0
-  },
-  "RAND": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
-   "silent_runs": 0
-  },
-  "ROK Courts": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
-   "silent_runs": 0
-  },
-  "ROK DAPA": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
-   "silent_runs": 0
-  },
-  "ROK FSC": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
-   "silent_runs": 0
-  },
-  "ROK Joint Chiefs": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
-   "silent_runs": 0
-  },
-  "ROK Justice Ministry": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
-   "silent_runs": 0
-  },
-  "ROK MND": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
-   "silent_runs": 0
-  },
-  "ROK MOEF": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
-   "silent_runs": 0
-  },
-  "ROK MOFA": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
-   "silent_runs": 0
-  },
-  "ROK MOFA English": {
-   "last_ok": "2026-10-26",
+   "last_ok": "2026-10-27",
    "runs": 11,
    "silent_runs": 0
   },
+  "Kyiv Independent Korea": {
+   "last_ok": "2026-10-27",
+   "runs": 14,
+   "silent_runs": 0
+  },
+  "Kyodo Korea": {
+   "last_ok": "2026-10-27",
+   "runs": 14,
+   "silent_runs": 0
+  },
+  "Lowy Interpreter": {
+   "last_ok": "2026-10-27",
+   "runs": 11,
+   "silent_runs": 0
+  },
+  "MBC": {
+   "last_ok": "2026-10-27",
+   "runs": 14,
+   "silent_runs": 0
+  },
+  "MBN": {
+   "last_ok": "2026-10-27",
+   "runs": 14,
+   "silent_runs": 0
+  },
+  "Mainichi Korea": {
+   "last_ok": "2026-10-27",
+   "runs": 14,
+   "silent_runs": 0
+  },
+  "Middlebury MIIS": {
+   "last_ok": "2026-10-27",
+   "runs": 14,
+   "silent_runs": 0
+  },
+  "NBR": {
+   "last_ok": "2026-10-27",
+   "runs": 14,
+   "silent_runs": 0
+  },
+  "NK Facility": {
+   "last_ok": "2026-10-27",
+   "runs": 14,
+   "silent_runs": 0
+  },
+  "NK Imagery": {
+   "last_ok": "2026-10-27",
+   "runs": 14,
+   "silent_runs": 0
+  },
+  "NK Leadership Watch": {
+   "last_ok": "2026-10-27",
+   "runs": 14,
+   "silent_runs": 0
+  },
+  "NK News": {
+   "last_ok": "2026-10-27",
+   "runs": 14,
+   "silent_runs": 0
+  },
+  "NKPro": {
+   "last_ok": "2026-10-27",
+   "runs": 14,
+   "silent_runs": 0
+  },
+  "NYT Korea": {
+   "last_ok": "2026-10-27",
+   "runs": 14,
+   "silent_runs": 0
+  },
+  "NYT Opinion": {
+   "last_ok": "2026-10-27",
+   "runs": 11,
+   "silent_runs": 0
+  },
+  "Nikkei Korea": {
+   "last_ok": "2026-10-27",
+   "runs": 14,
+   "silent_runs": 0
+  },
+  "Nonproliferation Rev.": {
+   "last_ok": "2026-10-27",
+   "runs": 14,
+   "silent_runs": 0
+  },
+  "North Korean Review": {
+   "last_ok": "2026-10-27",
+   "runs": 14,
+   "silent_runs": 0
+  },
+  "Notes from Poland Korea": {
+   "last_ok": "2026-10-27",
+   "runs": 14,
+   "silent_runs": 0
+  },
+  "OFAC": {
+   "last_ok": "2026-10-27",
+   "runs": 14,
+   "silent_runs": 0
+  },
+  "PIIE": {
+   "last_ok": "2026-10-27",
+   "runs": 14,
+   "silent_runs": 0
+  },
+  "Pacific Affairs": {
+   "last_ok": "2026-10-27",
+   "runs": 14,
+   "silent_runs": 0
+  },
+  "Pacific Forum": {
+   "last_ok": "2026-10-27",
+   "runs": 11,
+   "silent_runs": 0
+  },
+  "Pacific Review": {
+   "last_ok": "2026-10-27",
+   "runs": 14,
+   "silent_runs": 0
+  },
+  "Pentagon": {
+   "last_ok": "2026-10-27",
+   "runs": 14,
+   "silent_runs": 0
+  },
+  "People's Daily Korea": {
+   "last_ok": "2026-10-27",
+   "runs": 14,
+   "silent_runs": 0
+  },
+  "Politico Congress": {
+   "last_ok": "2026-10-27",
+   "runs": 14,
+   "silent_runs": 0
+  },
+  "Punchbowl": {
+   "last_ok": "2026-10-27",
+   "runs": 14,
+   "silent_runs": 0
+  },
+  "Quincy Institute": {
+   "last_ok": "2026-10-27",
+   "runs": 11,
+   "silent_runs": 0
+  },
+  "RAND": {
+   "last_ok": "2026-10-27",
+   "runs": 14,
+   "silent_runs": 0
+  },
+  "ROK Courts": {
+   "last_ok": "2026-10-27",
+   "runs": 14,
+   "silent_runs": 0
+  },
+  "ROK DAPA": {
+   "last_ok": "2026-10-27",
+   "runs": 14,
+   "silent_runs": 0
+  },
+  "ROK FSC": {
+   "last_ok": "2026-10-27",
+   "runs": 14,
+   "silent_runs": 0
+  },
+  "ROK Joint Chiefs": {
+   "last_ok": "2026-10-27",
+   "runs": 14,
+   "silent_runs": 0
+  },
+  "ROK Justice Ministry": {
+   "last_ok": "2026-10-27",
+   "runs": 14,
+   "silent_runs": 0
+  },
+  "ROK MND": {
+   "last_ok": "2026-10-27",
+   "runs": 14,
+   "silent_runs": 0
+  },
+  "ROK MOEF": {
+   "last_ok": "2026-10-27",
+   "runs": 14,
+   "silent_runs": 0
+  },
+  "ROK MOFA": {
+   "last_ok": "2026-10-27",
+   "runs": 14,
+   "silent_runs": 0
+  },
+  "ROK MOFA English": {
+   "last_ok": "2026-10-27",
+   "runs": 12,
+   "silent_runs": 0
+  },
   "ROK MOTIE": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "ROK National Assembly": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "ROK Policy Briefing": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "ROK Presidential Office": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "ROK Prosecution Service": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "ROK Unification Ministry": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "RUSI": {
-   "last_ok": "2026-10-26",
-   "runs": 10,
+   "last_ok": "2026-10-27",
+   "runs": 11,
    "silent_runs": 0
   },
   "Reuters Korea": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Roll Call": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "SASC Hearings": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "SASC schedule": {
@@ -1031,28 +1036,28 @@
    "silent_runs": 4
   },
   "SBS": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "SBS 경제": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "SBS 국제": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "SCMP Korea": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "SFRC Hearings": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "SFRC schedule": {
@@ -1061,258 +1066,258 @@
    "silent_runs": 4
   },
   "SIPRI": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Security Studies": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Sejong Institute": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Senate Appropriations": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Senate Armed Services": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Senate Foreign Relations": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Senate committee schedule": {
    "last_ok": "2026-10-22",
-   "runs": 13,
-   "silent_runs": 4
+   "runs": 14,
+   "silent_runs": 5
   },
   "Stars and Stripes": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "State Dept": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Statistics Korea": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Stimson": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Survival": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "TASS Korea": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Texas National Security Review": {
-   "last_ok": "2026-10-26",
-   "runs": 10,
+   "last_ok": "2026-10-27",
+   "runs": 11,
    "silent_runs": 0
   },
   "The Hill Defense": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "The Hill International": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "UN News Korea": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "UN Security Council": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "US Congress Korea": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "USFK": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "USIP": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "USTR": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "VnExpress Korea": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "WSJ Korea": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "WSJ Opinion": {
-   "last_ok": "2026-10-26",
-   "runs": 10,
+   "last_ok": "2026-10-27",
+   "runs": 11,
    "silent_runs": 0
   },
   "WaPo Korea": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "WaPo Opinion": {
-   "last_ok": "2026-10-26",
-   "runs": 10,
+   "last_ok": "2026-10-27",
+   "runs": 11,
    "silent_runs": 0
   },
   "War on the Rocks": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Washington Quarterly": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "White House": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Wilson Center": {
-   "last_ok": "2026-10-26",
-   "runs": 10,
+   "last_ok": "2026-10-27",
+   "runs": 11,
    "silent_runs": 0
   },
   "World Politics": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Xinhua Korea": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "YTN": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Yonhap English": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "Yonhap English National": {
-   "last_ok": "2026-10-26",
-   "runs": 11,
+   "last_ok": "2026-10-27",
+   "runs": 12,
    "silent_runs": 0
   },
   "Yonhap North Korea": {
-   "last_ok": "2026-10-26",
-   "runs": 11,
+   "last_ok": "2026-10-27",
+   "runs": 12,
    "silent_runs": 0
   },
   "Yonhap Politics": {
-   "last_ok": "2026-10-26",
-   "runs": 11,
+   "last_ok": "2026-10-27",
+   "runs": 12,
    "silent_runs": 0
   },
   "경향신문": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "뉴스1": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "뉴시스": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "동아일보": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "매일경제": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "서울신문": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "연합뉴스": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "조선일보": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "중앙일보": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "한겨레": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "한국경제": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   },
   "한국일보": {
-   "last_ok": "2026-10-26",
-   "runs": 13,
+   "last_ok": "2026-10-27",
+   "runs": 14,
    "silent_runs": 0
   }
  },
- "last_run": "2026-10-26",
+ "last_run": "2026-10-27",
  "last_run_google": 215,
- "last_run_native": 32,
- "total_runs": 13
+ "last_run_native": 31,
+ "total_runs": 14
 }
