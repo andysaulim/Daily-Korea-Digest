@@ -401,5 +401,38 @@
     "transcript": "digest_2026-10-26.vtt",
     "chapters": "digest_2026-10-26.chapters.json",
     "page": "listen/2026-10-26.html"
+  },
+  {
+    "date": "2026-10-27",
+    "title": "Korea Daily Brief | Tuesday, October 27",
+    "summary": "South Korean the third quarter GDP hits 1 percent on chip boom, North Korean artillery forward-deployed at western border, Swiss Foreign Minister to visit Pyongyang, Kim Gun-hee new warrant issued.",
+    "file": "digest_2026-10-27.mp3",
+    "bytes": 4458768,
+    "seconds": 557,
+    "script": "written",
+    "script_repaired": [
+      "Two hundred and thirty-two personnel and 70 pieces of equipment responded."
+    ],
+    "transcript_text": "digest_2026-10-27.txt",
+    "notes": [
+      {
+        "headline": "South Korea Q3 GDP grows 1.0%, triple Bank of Korea forecast, on AI chip surge",
+        "source": "Korea Times",
+        "url": "https://www.koreatimes.co.kr/economy/20261027/cover-story-chip-exports-drive-koreas-q3-growth-to-1-triple-bok-forecast?utm_source=rss"
+      },
+      {
+        "headline": "North Korea forward-deploys 122mm self-propelled artillery along western border, visible from Gimpo",
+        "source": "NK News / Korea Times",
+        "url": "https://www.nknews.org/2026/10/photos-capture-north-korean-artillery-deployed-on-south-koreas-doorstep/"
+      },
+      {
+        "headline": "Swiss foreign minister to visit Pyongyang Oct 29-30 to open first dedicated Swiss political office",
+        "source": "NK News",
+        "url": "https://www.nknews.org/2026/10/swiss-foreign-minister-to-visit-north-korea-this-week-to-open-political-office/"
+      }
+    ],
+    "transcript": "digest_2026-10-27.vtt",
+    "chapters": "digest_2026-10-27.chapters.json",
+    "page": "listen/2026-10-27.html"
   }
 ]
