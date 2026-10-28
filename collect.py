@@ -1196,26 +1196,89 @@ _SCRIPT_RE = re.compile(r"<(script|style|noscript)[^>]*>.*?</\1>", re.S | re.I)
 _TAG_RE = re.compile(r"<[^>]+>")
 
 
-def _extract_body(html: str) -> str:
-    """Pull readable text out of an article page.
+_P_RE = re.compile(r"<p\b[^>]*>(.*?)</p>", re.S | re.I)
+_ARTICLE_RE = re.compile(r"<article\b.*?</article>", re.S | re.I)
+_BODY_DIV_RE = re.compile(
+    r"<div\b[^>]*(?:id|class)=\"[^\"]*(?:article[-_]?(?:body|txt|text|content|view)|news[-_]?(?:body|text|content)"
+    r"|story[-_]?body|entry[-_]?content|post[-_]?content|view[-_]?(?:cont|text))[^\"]*\"[^>]*>", re.I)
+_META_DESC_RE = re.compile(
+    r"<meta[^>]+(?:property|name)=\"(?:og:description|description)\"[^>]+content=\"([^\"]{60,})\"", re.I)
+_PARA_JUNK = re.compile(
+    r"all rights reserved|copyright|©|subscribe|sign up|newsletter|cookie|advertis|related (?:articles|stories)"
+    r"|follow us|share this|click here|무단 ?전재|재배포 ?금지|기자 ?=|구독", re.I)
 
-    No dependency on a readability library: strip scripts and tags, collapse
-    whitespace, then keep the longest run of prose. Crude, but it only has to
-    beat a bare headline, and a bad extraction is discarded by the caller.
+
+def _clean_html_text(fragment: str) -> str:
+    text = _TAG_RE.sub(" ", fragment)
+    text = html_lib.unescape(re.sub(r"&nbsp;?", " ", text))
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _extract_body(html: str) -> str:
+    """The article's own text from its page, or '' when none can be told apart.
+
+    It used to strip every tag and keep the start of what was left, which on
+    most sites is the navigation menu: the "full text" the model was handed
+    was the site's header. Now, in order:
+      1. the paragraphs (<p>) inside <article>, or anywhere, that read as
+         prose (60+ characters, or 25+ in Korean) and are not boilerplate;
+      2. the article-body container Korean sites use (<div id="article_body">
+         with <br> breaks), its text up to the next big block;
+      3. the page's own description (og:description).
+    The longest of the first two wins; a poor result is discarded by the
+    caller, which keeps the feed's summary instead.
     """
     if not html:
         return ""
-    text = _SCRIPT_RE.sub(" ", html)
-    text = _TAG_RE.sub(" ", text)
-    text = re.sub(r"&nbsp;?", " ", text)
-    text = re.sub(r"\s+", " ", text).strip()
-    return text
+    page = _SCRIPT_RE.sub(" ", html)
+    def prose(region: str) -> list[str]:
+        out = []
+        for frag in _P_RE.findall(region):
+            t = _clean_html_text(frag)
+            korean = bool(re.search(r"[가-힣]", t))
+            if (len(t) >= 60 or (korean and len(t) >= 25)) and not _PARA_JUNK.search(t[:160]):
+                out.append(t)
+        return out
+    # The <article> element when it holds the story (two or more paragraphs
+    # of prose), so the menus and promos around it are left out.
+    m = _ARTICLE_RE.search(page)
+    paras = prose(m.group(0)) if m else []
+    if len(paras) < 2:
+        paras = prose(page)
+    by_p = " ".join(paras)
+    by_div = ""
+    d = _BODY_DIV_RE.search(page)
+    if d:
+        chunk = page[d.end():d.end() + 20000]
+        chunk = re.split(r"<(?:footer|aside)\b|<div\b[^>]*(?:class|id)=\"[^\"]*(?:related|reporter|copyright|footer)",
+                         chunk, maxsplit=1, flags=re.I)[0]
+        by_div = _clean_html_text(re.sub(r"<br\s*/?>", " ", chunk, flags=re.I))
+    body = max((by_p, by_div), key=len)
+    if len(body) < 300:
+        meta = _META_DESC_RE.search(page)
+        if meta:
+            body = html_lib.unescape(meta.group(1)).strip()
+    return body
 
 
 def _fetch_fulltext(article: dict) -> dict:
-    """Best-effort body fetch for one article. Never raises."""
+    """Best-effort body fetch for one article. Never raises.
+
+    A Google News link is decoded to the publisher's own first (two requests
+    to Google); the article then carries the real URL, with the Google one
+    kept as gnews_url.
+    """
     url = article.get("url") or ""
-    if not url.startswith("http") or "news.google.com" in url:
+    if "news.google.com" in url:
+        try:
+            real = links.decode_gnews(url, timeout=4.0)
+        except Exception:                                       # noqa: BLE001
+            real = ""
+        if not real:
+            return article
+        article = dict(article, url=real, gnews_url=url)
+        url = real
+    if not url.startswith("http") or links.base_domain(url) in PAYWALLED:
         return article
     try:
         resp = requests.get(url, timeout=_FULLTEXT_TIMEOUT, headers={
@@ -1235,6 +1298,74 @@ def _fetch_fulltext(article: dict) -> dict:
     return article
 
 
+# Sites whose pages hold a paywall, not the article: a fetch returns the
+# login prompt. Their summaries stay as the feed gave them.
+PAYWALLED = {"wsj.com", "ft.com", "bloomberg.com", "nytimes.com", "economist.com",
+             "washingtonpost.com", "nikkei.com", "barrons.com", "theinformation.com",
+             "foreignaffairs.com", "thetimes.co.uk", "theatlantic.com", "politico.com"}
+FULLTEXT_EN_MAX = 60          # tier-1 English articles, in the prompt's own order
+FULLTEXT_ANALYSIS_MAX = 20    # tier-2 analysis pieces
+_SHORT_SUMMARY = 400          # a summary shorter than this is little more than its headline
+
+
+def add_fulltext_en(tier1: list, tier2: list) -> tuple[list, list, dict]:
+    """Full text for the English articles the model will actually read.
+
+    Most items reach the collector from Google News, whose "summary" is the
+    headline again: on 28 October the median summary was 83 characters, so
+    the model wrote 2,500 words from headlines and filled the rest from
+    memory. The articles that will make the prompt (digest.rank_for_prompt,
+    the same order the prompt uses) and whose summary is short get their
+    page fetched, its text kept up to _FULLTEXT_CHARS. Paywalled sites are
+    skipped. Returns (tier1, tier2, stats); never raises.
+    """
+    stats = {"tried": 0, "fetched": 0}
+    try:
+        from digest import rank_for_prompt, rank_analysis
+    except Exception:                                           # noqa: BLE001
+        return tier1, tier2, stats
+
+    def pick(arts, ranked, limit):
+        out = []
+        for a in ranked:
+            if len(out) >= limit:
+                break
+            if (a.get("lang") == "EN" and not a.get("fulltext")
+                    and len(a.get("summary") or "") < _SHORT_SUMMARY
+                    and links.base_domain(a.get("url") or "") not in PAYWALLED
+                    and links.base_domain(a.get("publisher_home") or "") not in PAYWALLED):
+                out.append(a)
+        return out
+
+    try:
+        targets = (pick(tier1, rank_for_prompt(tier1)[:140], FULLTEXT_EN_MAX)
+                   + pick(tier2, rank_analysis(tier2)[:45], FULLTEXT_ANALYSIS_MAX))
+    except Exception:                                           # noqa: BLE001
+        return tier1, tier2, stats
+    stats["tried"] = len(targets)
+    if not targets:
+        return tier1, tier2, stats
+    done: dict[int, dict] = {}
+    try:
+        with ThreadPoolExecutor(max_workers=12) as pool:
+            futures = {pool.submit(_fetch_fulltext, a): id(a) for a in targets}
+            for fut in as_completed(futures, timeout=90):
+                try:
+                    got = fut.result()
+                    if got.get("fulltext"):
+                        done[futures[fut]] = got
+                except Exception:                               # noqa: BLE001
+                    continue
+    except Exception:                                           # noqa: BLE001
+        pass
+    stats["fetched"] = len(done)
+    tier1 = [done.get(id(a), a) for a in tier1]
+    tier2 = [done.get(id(a), a) for a in tier2]
+    print(f"    📄  Full text fetched for {len(done)}/{len(targets)} English articles "
+          f"(the rest keep the feed's summary)")
+    return tier1, tier2, stats
+
+
 def _add_fulltext(articles: list) -> list:
     """Fetch bodies for the newest Korean-language articles, in parallel."""
     targets = [a for a in articles if a.get("lang") == "KO"][:_FULLTEXT_MAX_ARTICLES]
@@ -1243,12 +1374,14 @@ def _add_fulltext(articles: list) -> list:
     by_url = {}
     try:
         with ThreadPoolExecutor(max_workers=8) as pool:
+            # Keyed by the URL as collected: a fetched article may come back
+            # under its decoded publisher URL.
             futures = {pool.submit(_fetch_fulltext, a): a.get("url") for a in targets}
-            for fut in as_completed(futures, timeout=_FULLTEXT_TIMEOUT * 4):
+            for fut in as_completed(futures, timeout=_FULLTEXT_TIMEOUT * 6):
                 try:
                     got = fut.result()
                     if got.get("fulltext"):
-                        by_url[got.get("url")] = got
+                        by_url[futures[fut]] = got
                 except Exception:
                     continue
     except Exception:
@@ -2916,6 +3049,7 @@ def collect() -> dict:
     # machine-translate it, reach us through Google News searches. Dropped
     # here so the outlet that did the reporting wins the slot.
     tier1, tier2, tier3, tier4 = (_drop_content_farms(x) for x in (tier1, tier2, tier3, tier4))
+    tier1, tier2, _ft_stats = add_fulltext_en(tier1, tier2)
     capitol_hill, korea_world, satellite = (_drop_content_farms(x) for x in (capitol_hill, korea_world, satellite))
 
     return {
@@ -2930,6 +3064,7 @@ def collect() -> dict:
         "korea_world_articles": korea_world,
         "hill_calendar": results.get("hill_calendar") or [],
         "think_tank_events": think_tank_events,
+        "fulltext_stats": _ft_stats,
         "hill_calendar_stats": dict(_hill_calendar_stats),
         "market_indicators": results["markets"],
         "sentiment_baseline": results["sentiment"],

@@ -3287,7 +3287,54 @@ def check_health_report():
     return problems
 
 
+def check_fulltext_for_english():
+    """The top English articles are read in full; the extractor keeps the article, not the menu."""
+    import collect
+    problems = []
+    page = ("<html><body><nav><p>Politics North Korea Economy Sports Entertainment World Opinion Video</p></nav>"
+            "<article><p>SEOUL, Oct. 28 (Yonhap) -- South Korea and the United States agreed to hold the 58th "
+            "Security Consultative Meeting in early 2027, the defense ministry said Wednesday.</p>"
+            "<p>Defense Minister Kang Shin-chul and U.S. Defense Secretary Pete Hegseth reached the agreement in "
+            "Cebu, on the sidelines of the 13th ADMM-Plus meeting of defense ministers.</p>"
+            "<p>The two sides also agreed that the transfer of wartime operational control should proceed on "
+            "schedule, and set a separate ministerial meeting in Washington.</p>"
+            "<p>Copyright Yonhap News Agency. All rights reserved.</p>" + "<p>.</p>" * 40 + "</article></body></html>")
+    body = collect._extract_body(page)
+    if "58th" not in body or "Politics North Korea" in body or "Copyright" in body:
+        problems.append(f"extractor kept the wrong text: {body[:120]!r}")
+    arts = [{"title": f"Story {n} about South Korea", "url": f"https://en.yna.co.kr/view/AEN{n}", "lang": "EN",
+             "summary": "short", "source": "Yonhap"} for n in range(3)]
+    arts.append({"title": "WSJ story", "url": "https://www.wsj.com/x", "lang": "EN", "summary": "short", "source": "WSJ"})
+    saved = collect.requests.get
+    calls = []
+
+    class R:
+        status_code = 200
+        text = page
+        apparent_encoding = "utf-8"
+        encoding = "utf-8"
+
+    def fake(url, *a, **k):
+        calls.append(url)
+        return R()
+    collect.requests.get = fake
+    try:
+        t1, _, stats = collect.add_fulltext_en(arts, [])
+    finally:
+        collect.requests.get = saved
+    if stats["fetched"] != 3 or any("wsj.com" in u for u in calls):
+        problems.append(f"full-text pass wrong: {stats}, fetched {calls}")
+    if not all(a.get("fulltext") and "58th" in a["summary"] for a in t1[:3]):
+        problems.append("fetched text did not replace the headline-only summary")
+    import digest
+    prompt = digest.build_user_prompt({"tier1": [dict(t1[0], summary="x" * 1700)]}, "Wednesday")
+    if "x" * 1700 not in prompt:
+        problems.append("the prompt still cuts a full-text article to 800 characters")
+    return problems
+
+
 CHECKS = [
+    ("English articles read in full", check_fulltext_for_english),
     ("fact check enforces sourced figures and dates", check_fact_check_enforces),
     ("owner's run report", check_health_report),
     ("BOK rate sourced; Upcoming dates verified", check_bok_rate_and_calendar_dates),

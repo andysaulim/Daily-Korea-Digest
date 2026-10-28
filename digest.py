@@ -632,7 +632,9 @@ def build_user_prompt(payload: dict, date_str: str, db_context: str = "",
             item = {
                 "title":   a.get("title", ""),
                 "url":     a.get("url", ""),
-                "summary": a.get("summary", "")[:800],
+                # A fetched article body gets more room than a feed's
+                # summary: it is the only place most figures and dates are.
+                "summary": a.get("summary", "")[:1800 if a.get("fulltext") else 800],
                 "source":  a.get("source", ""),
                 "lang":    a.get("lang", "EN"),
                 "prestige":    a.get("prestige"),

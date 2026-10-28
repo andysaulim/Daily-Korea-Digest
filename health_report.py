@@ -105,7 +105,7 @@ def build(lines: list[str] | None = None, facts: dict | None = None) -> tuple[st
                + (f", {len(groups['Fell back to stored data'])} fallback" if groups["Fell back to stored data"] else ""))
     stats = [f"<b>{html.escape(status.capitalize())}</b>"]
     for key, label in (("words", "words"), ("bytes", "bytes"), ("audio_minutes", "min audio"),
-                       ("cost", "model cost")):
+                       ("cost", "model cost"), ("fulltext", "English articles read in full")):
         v = facts.get(key)
         if v not in (None, "", 0):
             stats.append(f"{v:,} {label}" if isinstance(v, int) else f"{html.escape(str(v))} {label}")

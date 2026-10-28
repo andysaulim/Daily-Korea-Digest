@@ -2577,6 +2577,13 @@ def main():
         print("\n  --dry-run: stopping after collection. See collected.json")
         return
 
+    _ft = (payload or {}).get("fulltext_stats") or {}
+    if _ft.get("tried"):
+        _health_facts(fulltext=f'{_ft["fetched"]}/{_ft["tried"]}')
+        if _ft["fetched"] < _ft["tried"] / 3:
+            warn("Full text mostly unavailable", f'only {_ft["fetched"]} of {_ft["tried"]} English articles '
+                 "could be read in full; the brief is written largely from headlines today")
+
     # ── Step 1b: Fetch CSIS databases for context ─────────────────────────────
     from databases import fetch_all, build_context_block, process_digest_entries
     print("\n📚  Loading CSIS databases...")
