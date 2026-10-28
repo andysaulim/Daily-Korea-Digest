@@ -1,6 +1,12 @@
 {
   "days": [
     {
+      "date": "2026-10-28",
+      "silence_today": false,
+      "watch_flag": false,
+      "bottom_line": "State media led with Kim's combat readiness call to company commanders and the trade fair opening, while diplomatic messaging continued with a Kim-Vietnam reply letter — no new provocation or test activity reported."
+    },
+    {
       "date": "2026-10-27",
       "silence_today": false,
       "watch_flag": false,
@@ -76,5 +82,5 @@
       "bottom_line": "DPRK state media led with Kim Yo Jong's loudspeaker threat and a reaffirmation of Russia ties; no Kim Jong Un appearance or direct statement today."
     }
   ],
-  "last_updated": "2026-10-27T11:09:29.182298+00:00"
+  "last_updated": "2026-10-28T11:08:44.673111+00:00"
 }
