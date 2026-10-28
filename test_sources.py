@@ -3226,7 +3226,70 @@ def check_bok_rate_and_calendar_dates():
     return problems
 
 
+def check_fact_check_enforces():
+    """Unsourced figures and dates are removed; sourced ones, rounded or in Korean, stay."""
+    import factcheck
+    from datetime import date
+    problems = []
+    wsj = "https://www.wsj.com/economy/bok-holds"
+    yna = "https://en.yna.co.kr/view/AEN2"
+    payload = {"tier1": [
+        {"url": wsj, "title": "Bank of Korea Holds Rate Steady After Back-to-Back Hikes", "summary": "", "pub_date": "2026-10-28"},
+        {"url": "https://www.yna.co.kr/x", "title": "한은, 기준금리 연 3.00%로 동결", "summary": "", "pub_date": "2026-10-28"},
+        {"url": yna, "title": "Births up 13% in August", "summary": "Births rose 13.2 percent to 21,803; the fertility rate was 0.87.",
+         "pub_date": "2026-10-28"}],
+        "market_indicators": {"bok_rate": {"value": "2.50%"}, "kospi": {"value": "6,012.44", "change_pct": 2.47}}}
+    d = {"top_stories": [{"headline": "A", "url": yna, "body": "x"}, {"headline": "B", "url": yna, "body": "y"},
+                         {"headline": "Bank of Korea holds rate at 2.50%", "url": wsj, "body": "It held."}],
+         "overnight_items": [{"headline": "Births up 13%", "url": yna,
+                              "body_text": "Births rose 13.2% to about 21,800. The rate was 0.87. It was the 26th straight rise."}],
+         "business_economy": [{"headline": "Bank of Korea holds at 3.00%", "url": wsj, "body_text": "Held at 3.00%."}],
+         "morning_memo": ["The BOK held at 2.50%.", "Births up 13%."]}
+    log, _ = factcheck.apply(d, payload, date(2026, 10, 28))
+    heads = [t["headline"] for t in d["top_stories"]]
+    if "Bank of Korea holds rate at 2.50%" in heads:
+        problems.append("a lead with an unsourced figure survived")
+    body = d["overnight_items"][0]["body_text"]
+    if "13.2%" not in body or "0.87" not in body or "26th" in body:
+        problems.append(f"sentence cuts wrong: {body!r}")
+    if not d["business_economy"]:
+        problems.append("a figure sourced by a Korean report of the same decision was removed")
+    if d["morning_memo"] != ["Births up 13%."]:
+        problems.append(f"glance kept {d['morning_memo']}")
+    if not factcheck.date_supported(10, 27, "said on Tuesday", date(2026, 10, 28), date(2026, 10, 28)):
+        problems.append("a weekday in the source did not support its date")
+    if factcheck.date_supported(11, 1, "a ministerial next month", date(2026, 10, 28), date(2026, 10, 28)):
+        problems.append("'next month' supported November 1")
+    # A checker that would gut the brief changes nothing.
+    many = {"overnight_items": [{"headline": f"Item {n}", "url": yna, "body_text": f"It rose {40 + n}%."} for n in range(12)]}
+    log, found = factcheck.apply(many, payload, date(2026, 10, 28))
+    if len(many["overnight_items"]) != 12 or "nothing was removed" not in " ".join(log):
+        problems.append("the safety limit did not hold")
+    return problems
+
+
+def check_health_report():
+    """The owner's run report sorts what was removed, flagged and fell back."""
+    import health_report
+    lines = ["::notice title=Fact check::top_stories: removed 'Bank of Korea holds rate at 2.50%' (2.50% not in its source)",
+             "    ⚠  BOK rate: ECOS unavailable, using last known (3.00%)",
+             "::warning title=Analysis left out::the Analysis section ran 1 piece(s)",
+             "::warning title=::Node.js 20 is deprecated",
+             "  🚫  Skipping email due to critical validation failures."]
+    groups = health_report.grouped(lines)
+    if (len(groups["Removed by the checks"]) != 1 or len(groups["Fell back to stored data"]) != 1
+            or len(groups["Flagged"]) != 1 or len(groups["Problems"]) != 1):
+        return [f"report groups wrong: { {k: len(v) for k, v in groups.items()} }"]
+    subject, page = health_report.build(lines, {"sent": True, "words": 2500})
+    problems = []
+    if "1 removed" not in subject or "Analysis left out: the Analysis section" not in page:
+        problems.append(f"report subject or body wrong: {subject!r}")
+    return problems
+
+
 CHECKS = [
+    ("fact check enforces sourced figures and dates", check_fact_check_enforces),
+    ("owner's run report", check_health_report),
     ("BOK rate sourced; Upcoming dates verified", check_bok_rate_and_calendar_dates),
     ("think-tank events kept out of Analysis and audio", check_think_tank_events),
     ("Week in Review in the v2 design", check_weekly_v2),

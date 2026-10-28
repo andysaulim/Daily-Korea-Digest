@@ -304,6 +304,15 @@ def backfill_archive_entries(entries: list, web_base: str = "") -> list:
     return merged
 
 
+def _health_facts(**kw) -> None:
+    """Headline facts for the owner's run report (health_report.FACTS)."""
+    try:
+        import health_report
+        health_report.FACTS.update({k: v for k, v in kw.items() if v is not None})
+    except Exception:                                           # noqa: BLE001
+        pass
+
+
 def warn(title: str, message) -> None:
     """A GitHub Actions warning annotation, shown on the run page.
 
@@ -2473,6 +2482,12 @@ def main():
     parser.add_argument("--dry-run",    action="store_true", help="Collect only, don't call Claude")
     parser.add_argument("--no-push",    action="store_true", help="Skip pushing new entries to NK-Russia/provocations databases")
     args = parser.parse_args()
+    # The owner's run report (health_report.py): every line the run prints
+    # is kept, and a sorted summary is mailed when the run ends, sent or not.
+    # Not on a local --no-send or --dry-run run.
+    if not (args.no_send or args.dry_run):
+        import health_report
+        health_report.start()
 
     # The design the list receives: BRIEF_DESIGN (a repository variable) set
     # to "v2" switches it with no code change; unset or anything else keeps
@@ -2797,6 +2812,15 @@ def main():
             print(f"::notice title=Analysis fill::{_line}")
         for _line in verify_calendar(digest_data, payload):
             print(f"::notice title=Upcoming check::{_line}")
+        # Every number and date against the article its item cites
+        # (factcheck.py): unsupported sentences and items are removed.
+        try:
+            import factcheck
+            _fc_log, _fc_found = factcheck.apply(digest_data, payload or {})
+            for _line in _fc_log:
+                print(f"::notice title=Fact check::{_line}")
+        except Exception as _e:                                 # noqa: BLE001
+            warn("Fact check skipped", str(_e))
         for _line in add_think_tank_events(digest_data, payload):
             print(f"  📅  {_line}")
 
@@ -3238,6 +3262,7 @@ def main():
     # ── Step 4: Send email ───────────────────────────────────────────────────
     if not validation_passed:
         print("\n🚫  Skipping email due to critical validation failures. Review latest.html.")
+        _health_facts(sent=False, words=_count_digest_words(digest_data))
         import sys
         sys.exit(1)
     elif args.no_send:
@@ -3326,6 +3351,10 @@ def main():
                       f"{usage['output_tokens']:,} out)")
         except Exception:
             pass
+        _health_facts(sent=metrics.get("sent"), words=metrics.get("word_count"),
+                      bytes=metrics.get("html_bytes"),
+                      audio_minutes=round((metrics.get("audio_seconds") or 0) / 60, 1) or None,
+                      cost=f"${metrics['est_cost_usd']:.2f}" if metrics.get("est_cost_usd") else None)
         metrics_path = Path("metrics.jsonl")
         if _is_test_send:
             print("  🧪  Test send: no metrics row written.")
