@@ -434,5 +434,38 @@
     "transcript": "digest_2026-10-27.vtt",
     "chapters": "digest_2026-10-27.chapters.json",
     "page": "listen/2026-10-27.html"
+  },
+  {
+    "date": "2026-10-28",
+    "title": "Korea Daily Brief | Wednesday, October 28",
+    "summary": "Kang-Hegseth first face-to-face, SCM delayed to early 2027, Bank of Korea holds, Financial sector hacks, Kim's Dandong visit aftermath.",
+    "file": "digest_2026-10-28.mp3",
+    "bytes": 5721978,
+    "seconds": 715,
+    "script": "written",
+    "script_repaired": [
+      "The fertility rate for August was 0.87, with births rising for a twenty-sixth consecutive month."
+    ],
+    "transcript_text": "digest_2026-10-28.txt",
+    "notes": [
+      {
+        "headline": "Seoul and Washington agree to postpone Security Consultative Meeting to early 2027",
+        "source": "Yonhap English",
+        "url": "https://en.yna.co.kr/view/AEN20261028007652315"
+      },
+      {
+        "headline": "North Korean IPs attempt 4.4 million scans on Korean financial sector; breaches confirmed at Bithumb, securities firms",
+        "source": "Dong-A Ilbo / Yonhap Politics / Reuters",
+        "url": "https://www.donga.com/news/Economy/article/all/20261028/134927684/1"
+      },
+      {
+        "headline": "Bank of Korea holds rate steady at 2.50% after back-to-back hikes",
+        "source": "WSJ",
+        "url": "https://www.wsj.com/economy/central-banking/bank-of-korea-holds-rate-steady-after-back-to-back-hikes-f25fc515"
+      }
+    ],
+    "transcript": "digest_2026-10-28.vtt",
+    "chapters": "digest_2026-10-28.chapters.json",
+    "page": "listen/2026-10-28.html"
   }
 ]

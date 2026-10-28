@@ -1,0 +1,85 @@
+This is the Korea Daily Brief from the CSIS Korea Chair, read by an AI voice. It's Wednesday, October 28.
+
+Three things today: South Korea and the U.S. postpone a key defense meeting to 2027; North Korean hackers hit the financial sector with millions of probes; and the Bank of Korea holds rates steady.
+
+The defense meeting delay is the first major signal from the Kang-Hegseth relationship, and it lands with an open question about the alliance's direction. Tomorrow, the Unification Ministry's Global Korea Forum Japan seminar opens in Tokyo, and Prime Minister Han Seong-sook's national consumer festival launches across South Korea.
+
+First, the alliance checkpoint that Seoul and Washington just moved.
+
+Defense Minister Kang Shin-chul and U.S. Secretary of Defense Pete Hegseth met face to face for the first time today, on the margins of the thirteenth ASEAN Defence Ministers' Meeting Plus in Cebu, Philippines. The headline coming out of that meeting: the 58th Security Consultative Meeting, the annual flagship forum for the alliance's defense posture, will not be held in 2026. The two ministers agreed to push it to early 2027.
+
+The Security Consultative Meeting is where the two sides set their combined military strategy and hash out force posture. Moving it is not a procedural footnote. South Korea Defense Ministry's official post on the meeting said Kang emphasized the alliance's role as a cornerstone of regional peace over the past seventy years. The two ministers also pledged to cooperate for a timely and smooth wartime operational control transfer, saying it should proceed on schedule. A separate bilateral defense ministerial in Washington is planned for next month.
+
+That context matters, because a former U.S. Forces Korea commander said at an online symposium today that the combined command structure after wartime operational control transfer could be, in his words, "suboptimal," citing issues in the South Korean military that need to be addressed before Seoul takes on greater responsibility. His remarks land the same day the ministers agreed to keep the transfer on track.
+
+Separately at the same ASEAN gathering, Kang met Japan Defense Minister Koizumi Shinjiro. Kang briefed Koizumi on the September DMZ landmine incident and reaffirmed trilateral security cooperation against North Korea's nuclear and missile threats. The U.S. and South Korean air force chiefs also signed a letter of intent today to advance cooperation on autonomous operating platforms.
+
+The bottom line: the first Kang-Hegseth bilateral produced alignment on wartime operational control and a postponed Security Consultative Meeting. The bilateral defense ministerial in Washington next month becomes the next moment to watch.
+
+Second, the cyberattack wave hitting South Korea's financial system.
+
+On October 21, the Financial Security Institute alerted South Korean financial companies that more than 4.4 million probe-type access attempts from North Korean IP ranges had been detected in a single morning. That alert was not a false alarm. Confirmed breaches followed at Daishin Securities, crypto exchange Bithumb, and Mirae Asset Management, extending a wave that began earlier in October at commercial banks.
+
+The Presidential Office's National Security Council convened an emergency response meeting in response. It called for strengthened security measures and prevention of secondary damage to affected companies and customers. Bloomberg reported the attacks as part of a broader surge in financial-sector cyberattacks across Asia, with South Korean firms among the hardest hit.
+
+The scale is striking even by recent standards: 4.4 million scans in a single morning, followed by confirmed penetrations at three major institutions in a single week.
+
+The opposition People Power Party has separately criticized the government's posture, slamming the defense minister over remarks on reliance on U.S. forces in a wartime scenario. That political friction is running in the background as Seoul's security establishment manages a live cyber crisis.
+
+Watch for whether the National Security Council's emergency meeting produces new regulatory requirements for financial firms, and whether attribution leads to a formal government response toward Pyongyang.
+
+Third, the Bank of Korea holds, and the numbers around that decision are worth understanding.
+
+The Bank of Korea kept its base rate at 2.50 percent at its October meeting. This is a pause after consecutive hikes. Policymakers are weighing two competing signals: Seoul's main stock index, the KOSPI, has surged past 6,000, and the South Korean economy posted growth of 1.0 percent in the third quarter of 2026, driven by chip exports. At the same time, consumer spending is slowing. Korean financial media reported divergent views from the central bank and securities analysts over whether the KOSPI rally reflects sustainable fundamentals or speculative pressure.
+
+SK Hynix reported a record quarterly profit of 60 trillion won, driven by demand for high-bandwidth memory from AI customers. That result came one day after the third-quarter GDP figures showed chip exports leading growth. HD Hyundai posted a third-quarter net profit up 40 percent to 1.38 trillion won. Those corporate results sit alongside a Reuters Breakingviews commentary arguing that Chinese technology competition, specifically China's CXMT pushing toward high-bandwidth memory production potentially as early as 2028, is now translating into direct commercial pressure on Korean chipmakers.
+
+South Korea's regulator also fined Google and Apple today for unfair app market practices, following prior enforcement actions on in-app payment policies.
+
+The November Bank of Korea decision will be the next signal on the rate path, given the tension between strong exports and weaker domestic demand.
+
+Now to Pyongyang.
+
+State media's lead today was Kim Jong Un's appearance at a photo session with participants in the Third Conference of Company Commanders of the Korean People's Army. KCNA reported Kim urged intensified training and combat readiness. That call for readiness comes alongside a separate report that North Korea is exploiting the September DMZ landmine explosion as a propaganda tool to intensify military drills among students.
+
+Nikkei reports North Korea has forward-deployed self-propelled artillery near the demilitarized zone.
+
+On the diplomatic side, state media also covered the opening of the 18th Pyongyang International Autumn Trade Fair, opened by External Economic Relations Minister Yun Jong Ho. Goods from across Asia were on display, including a new foldable smartphone, but few if any foreign attendees were present.
+
+The bottom line from state media: Kim's combat readiness messaging to company commanders led the coverage, with no new provocation or test activity reported.
+
+The rest of the news, quickly.
+
+Kim Jong Un's October 24 visit to Dandong continues to generate international coverage. Global media are circulating Kim's remarks invoking the "blood alliance" framing tied to the Korean War anniversary. A new 38 North analysis argues that joint Korean War commemorations, including the opening of the first Tumen River road bridge in September, serve dual purposes: reinforcing the Russia-North Korea alliance narrative and strengthening Kim's domestic standing.
+
+On South Korean politics, the Supreme Court has extended former First Lady Kim Keon-hee's detention by two months. The ruling Democratic Party called it, in their words, the inevitable result of justice, and demanded the Supreme Court set a sentencing date for former President Yoon Suk Yeol's trial. President Lee Jae-myung posted on the day's political tensions, writing: "Whether you support the President or oppose him, all are sovereign citizens of the Republic of Korea. Good criticism is good criticism regardless of who makes it, and what needs to be corrected should be corrected."
+
+In the latest Gallup Korea poll, taken October 13 to 15, presidential approval stood at 39 percent, trending up. The Democratic Party rated at 36 percent, also up. The People Power Party stood at 27 percent, trending up. Independents came in at 29 percent, trending down.
+
+A new CSIS analysis previews President Trump's upcoming trip to Asia and its implications for U.S. alliances and regional policy.
+
+The Financial Times reports European allies are alarmed by what analysts describe as the Lee government prioritizing relations with Moscow amid strained ties with Ukraine.
+
+The Korea-Mekong Business Forum convened today in Bangkok, focused on AI cooperation, with more than 100 representatives from South Korea and five Mekong countries attending. The International Atomic Energy Agency held its first-ever ministerial conference on nuclear power in South Korea, with Deputy Prime Minister Bae Kyunghoon delivering the keynote. Seoul used the platform to promote small modular reactor exports under the "K-Nuclear" brand.
+
+South Korean births rose 13 percent in August, the highest monthly total in seven years.
+
+Iran has threatened legal action against vessels linked to South Korean shipper Sinokor over Hormuz transits. The South Korean shipowners denied any connection.
+
+Hanwha Defense USA will take control of Philly Shipyard through an internal group restructuring, consolidating a partnership announced in October 2025 under a U.S.-domiciled entity.
+
+The Presidential Office has appointed Jeong Yeon-guk, a former MBC broadcast journalist, as spokesperson.
+
+On Capitol Hill.
+
+South Korea's National Assembly Foreign Affairs Committee held an audit session today. Lawmakers clashed over what one side called turbulence in South Korea-U.S. alliance, with a replica of the North Korean landmine device introduced as an exhibit. The debate centered on diverging interpretations of North Korea's intent behind the September DMZ blast. Separately, National Assembly National Defense Committee Chair Jin Seong-jun was denied a U.S. visa for a planned bipartisan visit, following a prior visa delay for another Democratic Party representative. The Justice Party leader and other assembly members called on Washington to resolve the issue and on the Foreign Ministry to lodge a formal protest.
+
+Beyond the region.
+
+South Korea has pulled eight diplomatic personnel from Ukraine. Foreign Minister Cho Hyun confirmed the withdrawal, which stems from a dispute over North Korean prisoners of war captured in the Russia-Ukraine conflict. The recall marks a significant cooling in the Seoul-Kyiv relationship, and it lands alongside European concerns about Seoul's perceived tilt toward Moscow. India held shipbuilding cooperation talks in South Korea, focused on boosting India's shipbuilding capacity through Korean yards.
+
+Finally, the markets.
+
+The won traded at about 1,338 to the dollar, up about 1 percent on the day. Brent crude sat at about 111 dollars a barrel, down about 2 and a half percent. The KOSPI closed at about 6,012, up about 6 and a half percent, surging past the 6,000 mark that policymakers are watching closely.
+
+That's the Korea Daily Brief for Wednesday, October 28. The full text, with a link to every source, is in today's email.

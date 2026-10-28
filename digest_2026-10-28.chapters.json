@@ -1,0 +1,53 @@
+{
+ "version": "1.2.0",
+ "chapters": [
+  {
+   "startTime": 0.0,
+   "title": "Today's headlines",
+   "endTime": 46.1
+  },
+  {
+   "startTime": 46.1,
+   "title": "Seoul and Washington agree to postpone Security Consultative Meeting…",
+   "url": "https://en.yna.co.kr/view/AEN20261028007652315",
+   "endTime": 174.38
+  },
+  {
+   "startTime": 174.38,
+   "title": "North Korean IPs attempt 4.4 million scans on Korean financial sector",
+   "url": "https://www.donga.com/news/Economy/article/all/20261028/134927684/1",
+   "endTime": 268.17
+  },
+  {
+   "startTime": 268.17,
+   "title": "Bank of Korea holds rate steady at 2.50% after back-to-back hikes",
+   "url": "https://www.wsj.com/economy/central-banking/bank-of-korea-holds-rate-steady-after-back-to-back-hikes-f25fc515",
+   "endTime": 370.78
+  },
+  {
+   "startTime": 370.78,
+   "title": "Pyongyang",
+   "endTime": 434.11
+  },
+  {
+   "startTime": 434.11,
+   "title": "The round-up",
+   "endTime": 602.26
+  },
+  {
+   "startTime": 602.26,
+   "title": "Capitol Hill",
+   "endTime": 646.93
+  },
+  {
+   "startTime": 646.93,
+   "title": "Korea and the World",
+   "endTime": 679.93
+  },
+  {
+   "startTime": 679.93,
+   "title": "Markets",
+   "endTime": 715.13
+  }
+ ]
+}
