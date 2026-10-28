@@ -1555,6 +1555,10 @@ def _drop_news_from_analysis(digest: dict, payload: dict | None) -> list[str]:
     for item in digest.get("opeds_today") or []:
         url = str((item or {}).get("url") or "").strip()
         kind = analysis.get(url)
+        if re.search(r"/events?/", url):
+            log.append(f"  opeds_today: event listing dropped from Analysis: "
+                       f"{str(item.get('headline', ''))[:70]}")
+            continue
         if kind == "news" or (kind is None and url in news):
             log.append(f"  opeds_today: news story dropped from Analysis: "
                        f"{str(item.get('headline', ''))[:70]}")
@@ -1562,6 +1566,52 @@ def _drop_news_from_analysis(digest: dict, payload: dict | None) -> list[str]:
         kept.append(item)
     if log:
         digest["opeds_today"] = kept
+    return log
+
+
+THINK_TANK_EVENT_DAYS = 14
+THINK_TANK_EVENT_LIMIT = 3
+
+
+def add_think_tank_events(digest: dict, payload: dict | None, today=None) -> list[str]:
+    """Dated think-tank events (collect.split_events) into Upcoming.
+
+    An event listing is not analysis, but a reader wants to know it is
+    coming: the owner asked for them in the calendar (28 October 2026, a CSIS
+    press briefing previewing President Trump's Asia trip). Added in code,
+    not left to the model: the date is read from the event's own page, the
+    title is the institution's, and nothing is written about it. CSIS first,
+    then soonest; an event already listed (same day and title words) is not
+    added twice.
+    """
+    from datetime import date as _date, timedelta as _td
+    today = today or datetime.now(ZoneInfo("America/New_York")).date()
+    horizon = today + _td(days=THINK_TANK_EVENT_DAYS)
+    cal = list(digest.get("calendar_watch") or [])
+    have = {(str(c.get("month", ""))[:3].lower(), str(c.get("day", "")),) for c in cal if isinstance(c, dict)}
+    picks = []
+    for e in (payload or {}).get("think_tank_events") or []:
+        try:
+            when = _date.fromisoformat(str(e.get("event_date") or ""))
+        except ValueError:
+            continue
+        if not (today < when <= horizon) or not e.get("title"):
+            continue
+        picks.append((("csis" not in f'{e.get("source", "")} {e.get("url", "")}'.lower(), when), e, when))
+    log = []
+    for _, e, when in sorted(picks, key=lambda t: t[0])[:THINK_TANK_EVENT_LIMIT]:
+        mon = when.strftime("%b")
+        title = re.sub(r"\s+", " ", str(e["title"])).strip()
+        if (mon.lower(), str(when.day)) in have and any(
+                title.lower()[:30] in str(c.get("headline", "")).lower() for c in cal if isinstance(c, dict)):
+            continue
+        src = str(e.get("source") or "")
+        src = "CSIS" if "csis" in f'{src} {e.get("url", "")}'.lower() else src
+        cal.append({"month": mon, "day": when.day, "headline": title, "detail": f"{src} event.",
+                    "source": src, "url": e.get("url", ""), "_source": "think_tank_event"})
+        log.append(f"Upcoming: added {src} event on {mon} {when.day}: {title[:70]}")
+    if log:
+        digest["calendar_watch"] = cal
     return log
 
 
@@ -2703,7 +2753,10 @@ def main():
     if validation_passed:
         from digest import fill_analysis
         for _line in fill_analysis(payload or {}, digest_data):
-            print(f"  📚  {_line}")
+            # An annotation, so the run summary says whether the fill ran.
+            print(f"::notice title=Analysis fill::{_line}")
+        for _line in add_think_tank_events(digest_data, payload):
+            print(f"  📅  {_line}")
 
     # ── Step 2b: Push flagged entries to databases ────────────────────────────
     if not args.no_push and validation_passed and not _is_test_send:

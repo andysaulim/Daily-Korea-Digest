@@ -671,6 +671,20 @@ KOREA AND THE WORLD (beyond the US and Northeast Asia, last 36h)
 {tier_json(world_articles, max_items=30)}
 Use these for korea_world. Each item must be one of these articles (or a tier-1 article), with its exact URL. If none qualifies, return an empty korea_world array."""
 
+    # Think-tank event listings, taken out of tier 2 (collect.split_events).
+    # Only dated ones are shown: an undated event cannot go in calendar_watch.
+    events = [e for e in payload.get("think_tank_events") or [] if e.get("event_date")]
+    events_block = ""
+    if events:
+        rows = [{"date": e["event_date"], "title": e.get("title", ""), "source": e.get("source", ""),
+                 "url": e.get("url", "")} for e in events]
+        events_block = f"""
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+THINK-TANK EVENTS (upcoming; each date read from the event's own page)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{json.dumps(rows, ensure_ascii=False, indent=1)}
+These are event listings, not analysis: never put one in opeds_today or academic_today, and never describe one as a report or an analysis. They are added to the Upcoming calendar automatically after you return, so do not add them to calendar_watch yourself."""
+
     # Pass market data if available
     market_block = ""
     markets = payload.get("market_indicators")
@@ -872,6 +886,7 @@ US-KOREA INVESTMENT LEDGER
 {satellite_block}
 {hill_block}
 {world_block}
+{events_block}
 {db_block}
 {x_block}
 {recent_block}
@@ -1411,7 +1426,7 @@ def fill_analysis(payload: dict, digest: dict, minimum: int = ANALYSIS_MINIMUM) 
         cands = []
         for u in coverage_audit.unused_analysis(payload, digest, limit=12):
             a = by_url.get(str(u.get("url", "")).strip())
-            if not a or str(u.get("source", "")).strip().lower() in used_src:
+            if not a or str(u.get("source", "")).strip().lower() in used_src or a.get("kind") == "event":
                 continue
             cands.append(a)
         # CSIS's own work first: the brief goes out under the Korea Chair's name.

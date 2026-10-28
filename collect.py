@@ -1336,6 +1336,83 @@ def _collect_tier2() -> list:
     return _dedup(articles)
 
 
+# ── Think-tank events ────────────────────────────────────────────────────
+# An event page is not analysis. On 28 October a CSIS listing, "Press
+# Briefing: Previewing President Trump's Trip to Asia", ran in Analysis as
+# "a new CSIS analysis"; the briefing itself was on 9 November. Event pages
+# are taken out of tier 2, dated from the page, and offered for Upcoming.
+_EVENT_URL = re.compile(r"/events?/", re.I)
+_EVENT_TITLE = re.compile(
+    r"^(?:press briefing|webinar|virtual event|online event|in-person event|book (?:launch|talk|event)|"
+    r"launch event|report launch|panel discussion|fireside chat|a conversation with|conference)\b"
+    r"|\b(?:forum|dialogue|symposium|conference|summit|roundtable) 20\d\d\b", re.I)
+_EVENT_DATE = re.compile(
+    r"\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*\.?\s+(\d{1,2}),\s+(20\d\d)\b")
+_EVENT_ISO = re.compile(r'"startDate"\s*:\s*"(20\d\d-\d\d-\d\d)')
+THINK_TANK_EVENT_MAX = 8
+
+
+def is_event(article: dict) -> bool:
+    """A think-tank event listing rather than a piece of analysis."""
+    url = str(article.get("url") or "")
+    if "news.google.com" not in url and _EVENT_URL.search(url):
+        return True
+    return bool(_EVENT_TITLE.search(str(article.get("title") or "")))
+
+
+def event_date(html: str, today=None) -> str:
+    """The event's date from its page: schema.org startDate, else the first
+    written date from today on. '' when the page names none."""
+    today = today or datetime.now(timezone.utc).date()
+    m = _EVENT_ISO.search(html)
+    if m:
+        return m.group(1)
+    text = re.sub(r"<[^>]+>", " ", html)
+    for mon, day, year in _EVENT_DATE.findall(text):
+        try:
+            d = datetime.strptime(f"{mon[:3]} {day} {year}", "%b %d %Y").date()
+        except ValueError:
+            continue
+        if d >= today:
+            return d.isoformat()
+    return ""
+
+
+def _date_event(article: dict) -> dict:
+    """Resolve an event's link and read its date from the page. Never raises."""
+    a = dict(article, kind="event")
+    url = a.get("url") or ""
+    try:
+        if "news.google.com" in url:
+            url = links.decode_gnews(url) or url
+            a["url"] = url
+        if "news.google.com" not in url:
+            resp = requests.get(url, timeout=_FULLTEXT_TIMEOUT, headers={
+                "User-Agent": "Mozilla/5.0 (compatible; CSIS-Korea-Digest/1.0)"})
+            if resp.status_code == 200:
+                a["event_date"] = event_date(resp.text)
+    except Exception:                                           # noqa: BLE001
+        pass
+    return a
+
+
+def split_events(tier2: list) -> tuple[list, list]:
+    """(analysis, events): event listings out of tier 2, each with its date when the page gives one."""
+    events = [a for a in tier2 if is_event(a)][:THINK_TANK_EVENT_MAX]
+    if not events:
+        return tier2, []
+    ids = {id(a) for a in events}
+    rest = [a for a in tier2 if id(a) not in ids and not is_event(a)]
+    try:
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            dated = list(pool.map(_date_event, events, timeout=_FULLTEXT_TIMEOUT * 4))
+    except Exception:                                           # noqa: BLE001
+        dated = [dict(a, kind="event") for a in events]
+    print(f"    📅  Think-tank events taken out of Analysis: {len(dated)}"
+          f" ({sum(1 for a in dated if a.get('event_date'))} dated)")
+    return rest, dated
+
+
 _ACADEMIC_SIGNALS = ("journal", "paper", "study", "research", "analysis", "findings",
                      "abstract", "doi", "vol.", "issue")
 
@@ -2737,7 +2814,7 @@ def collect() -> dict:
         if _a["url"] not in _have:
             _have.add(_a["url"])
             tier1.append(_a)
-    tier2 = results["tier2"]
+    tier2, think_tank_events = split_events(results["tier2"])
     tier3 = results["tier3"]
     tier4 = results["tier4"]
     kcna_scraped = results.get("kcna_scrape", [])
@@ -2796,6 +2873,7 @@ def collect() -> dict:
         "capitol_hill_articles": capitol_hill,
         "korea_world_articles": korea_world,
         "hill_calendar": results.get("hill_calendar") or [],
+        "think_tank_events": think_tank_events,
         "hill_calendar_stats": dict(_hill_calendar_stats),
         "market_indicators": results["markets"],
         "sentiment_baseline": results["sentiment"],

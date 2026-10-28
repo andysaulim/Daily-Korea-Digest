@@ -3159,7 +3159,48 @@ def check_weekly_v2():
     return problems
 
 
+def check_think_tank_events():
+    """An event listing never runs as analysis, in print or in the audio."""
+    import collect, digest, run
+    from datetime import date
+    problems = []
+    t2 = [{"title": "Press Briefing: Previewing President Trump's Trip to Asia",
+           "url": "https://www.csis.org/events/press-briefing-previewing-president-trumps-trip-asia", "kind": "report"},
+          {"title": "Mapping Security Influence in the Pacific", "url": "https://www.csis.org/analysis/x", "kind": "report"}]
+    saved = collect.requests.get
+    class R:
+        status_code = 200
+        text = f'<div class="date">November 9, {date.today().year + 1}</div>'
+    collect.requests.get = lambda *a, **k: R()
+    try:
+        rest, events = collect.split_events(t2)
+    finally:
+        collect.requests.get = saved
+    if [a["title"] for a in rest] != ["Mapping Security Influence in the Pacific"] or len(events) != 1:
+        problems.append("event listing not taken out of tier 2")
+    elif not events[0].get("event_date", "").startswith("20"):
+        problems.append("event date not read from the page")
+    if collect.event_date("<p>Posted October 1, 2026</p><p>November 9, 2026</p>", date(2026, 10, 28)) != "2026-11-09":
+        problems.append("event date picked a past date")
+    prompt = digest.build_user_prompt({"think_tank_events": [dict(events[0], event_date="2026-11-09")] if events else []}, "Wednesday")
+    if "THINK-TANK EVENTS" not in prompt:
+        problems.append("dated events not offered to the model")
+    cal = {"calendar_watch": [{"month": "Oct", "day": 30, "headline": "Hoguk ends"}]}
+    run.add_think_tank_events(cal, {"think_tank_events": [
+        {"title": t2[0]["title"], "url": t2[0]["url"], "source": "CSIS Korea Chair", "event_date": "2026-11-09"},
+        {"title": "Old event", "url": "https://x.org/events/o", "event_date": "2026-10-01"}]}, date(2026, 10, 28))
+    heads = [c["headline"] for c in cal["calendar_watch"]]
+    if heads != ["Hoguk ends", t2[0]["title"]] or cal["calendar_watch"][1]["source"] != "CSIS":
+        problems.append(f"Upcoming events wrong: {heads}")
+    d = {"opeds_today": [{"headline": "Press Briefing", "url": t2[0]["url"]}]}
+    run._drop_news_from_analysis(d, {"tier2": [], "tier1": []})
+    if d["opeds_today"]:
+        problems.append("an event page survived in Analysis")
+    return problems
+
+
 CHECKS = [
+    ("think-tank events kept out of Analysis and audio", check_think_tank_events),
     ("Week in Review in the v2 design", check_weekly_v2),
     ("Oct 22 fixes: Korean Hill press, labels, anniversaries, Analysis", check_oct22_fixes),
     ("content farms dropped", check_content_farms_dropped),

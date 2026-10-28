@@ -882,6 +882,8 @@ def build_script(digest: dict) -> str:
 
     analysis = []
     for o in _items(digest, "opeds_today") + _items(digest, "academic_today"):
+        if re.search(r"/events?/", str(o.get("url") or "")):
+            continue                    # an event listing, not something anyone argued
         head = speakable(o.get("headline", "")).rstrip(".")
         by = o.get("authors")
         by = [str(x) for x in by if x] if isinstance(by, list) else [x.strip() for x in str(by or "").split(",") if x.strip()]
@@ -989,6 +991,7 @@ WRITE FOR THE EAR. These are broadcast writing rules:
 - End each lead story by restating its key fact in a few words, because the listener can't re-read it.
 - Give a quote its context: who said it, and when or why, before the words themselves.
 - Never title-read: say what an analysis argues and who published it, not its headline.
+- An event (a press briefing, webinar, forum or launch) is never an analysis, a report or a "new piece": say who is holding it, what it is and when, or leave it out.
 - No headline-ese, no strings of fragments, no lists read out.
 - Never use these phrases: "let's dive in", "dive into", "delve", "in today's rapidly evolving", "it's worth noting", "notably", "a stark reminder", "only time will tell", "remains to be seen", "buckle up", "game-changer", "in a world where", "at the end of the day". Don't end sentences on a list of three for effect. Don't open with a rhetorical question.
 
