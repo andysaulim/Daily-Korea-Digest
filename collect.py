@@ -2364,30 +2364,80 @@ def _collect_markets() -> dict:
     return result
 
 
+# Last known base rate, used only when ECOS and today's reporting both fail.
+# The WSJ reported the hold at 3.00% on 22 October 2026, after back-to-back
+# hikes. It had read 2.50% since before those hikes, and the brief of 28
+# October repeated that figure as the rate the bank had just held.
+BOK_RATE_FALLBACK = {"value": "3.00%", "last_change": "Oct 2026", "as_of": "2026-10-22"}
+
+
 def _fetch_bok_rate() -> dict:
-    """Fetch BOK base rate. Falls back to last known value."""
-    # BOK ECOS open API — base rate series (dynamic date range)
+    """The BOK base rate from ECOS, the bank's statistics API.
+
+    The request had no key in it (the path went straight from StatisticSearch
+    to "json", which ECOS read as the key), so it failed every day and the brief printed the fallback.
+    ECOS_API_KEY is used when set; ECOS's public "sample" key otherwise,
+    which serves the few rows asked for here.
+    """
+    key = os.environ.get("ECOS_API_KEY") or "sample"
     try:
         now = datetime.now(timezone.utc)
         start = (now - timedelta(days=365)).strftime("%Y%m")
         end = now.strftime("%Y%m")
-        url = f"https://ecos.bok.or.kr/api/StatisticSearch/json/en/1/5/722Y001/M/{start}/{end}/0101000/"
+        url = (f"https://ecos.bok.or.kr/api/StatisticSearch/{key}/json/en/1/13/"
+               f"722Y001/M/{start}/{end}/0101000/")
         resp = requests.get(url, timeout=10, headers={"User-Agent": "Mozilla/5.0"})
         if resp.ok:
             rows = resp.json().get("StatisticSearch", {}).get("row", [])
-            if rows:
-                val = rows[-1].get("DATA_VALUE", "")
-                if val:
-                    return {"value": f"{float(val):.2f}%", "last_change": ""}
+            vals = [(r.get("TIME", ""), r.get("DATA_VALUE", "")) for r in rows if r.get("DATA_VALUE")]
+            if vals:
+                latest = float(vals[-1][1])
+                changed = ""
+                for t, v in reversed(vals[:-1]):
+                    if float(v) != latest:
+                        break
+                    changed = t
+                changed = changed or vals[-1][0]
+                try:
+                    changed = datetime.strptime(changed[:6], "%Y%m").strftime("%b %Y")
+                except ValueError:
+                    pass
+                return {"value": f"{latest:.2f}%", "last_change": changed, "source": "ECOS"}
     except Exception:
         pass
-    # Fallback: last known BOK rate (updated manually if API unavailable)
-    print("    ⚠  BOK rate: using fallback (2.50%)")
-    fallback_date = datetime.now(timezone.utc).strftime("%b %Y")
-    return {"value": "2.50%", "last_change": fallback_date}
+    print(f"    ⚠  BOK rate: ECOS unavailable, using last known ({BOK_RATE_FALLBACK['value']})")
+    return dict(BOK_RATE_FALLBACK, fallback=True)
 
 
+_BOK_DECISION = re.compile(
+    r"(?:Bank of Korea|\bBOK\b|한국은행|한은|금통위)[^.%]{0,120}?"
+    r"(?:holds?|held|kept|keeps|freez\w*|raises?|raised|hikes?|hiked|cuts?|lower\w*|동결|인상|인하)"
+    r"[^.%]{0,60}?(\d\.\d{1,2})\s?%"
+    # Korean word order: the figure, then the decision ("기준금리 연 3.00%로 동결").
+    r"|(?:한국은행|한은|금통위)[^.%]{0,40}?기준금리[^.%]{0,10}?(\d\.\d{1,2})\s?%[^.]{0,8}?(?:동결|인상|인하)", re.I)
 
+
+def bok_rate_from_news(articles: list) -> dict | None:
+    """The base rate stated in today's reporting of a rate decision, or None.
+
+    Used when ECOS fails, so the strip and the prompt carry the rate the
+    articles report rather than a remembered one. The most common figure
+    wins; a single stray mention does not.
+    """
+    from collections import Counter
+    seen = Counter()
+    for a in articles or []:
+        text = f"{a.get('title', '')} {a.get('summary', '')}"
+        for m in _BOK_DECISION.finditer(text):
+            v = float(m.group(1) or m.group(2))
+            if 0.25 <= v <= 6:
+                seen[f"{v:.2f}%"] += 1
+    if not seen:
+        return None
+    value, n = seen.most_common(1)[0]
+    if n < 2:
+        return None
+    return {"value": value, "last_change": "", "source": "today's reporting"}
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -2815,6 +2865,12 @@ def collect() -> dict:
             _have.add(_a["url"])
             tier1.append(_a)
     tier2, think_tank_events = split_events(results["tier2"])
+    markets = results["markets"] or {}
+    if (markets.get("bok_rate") or {}).get("fallback"):
+        news_rate = bok_rate_from_news(results["tier1"])
+        if news_rate:
+            markets["bok_rate"] = news_rate
+            print(f"    🏦  BOK rate from today's reporting: {news_rate['value']}")
     tier3 = results["tier3"]
     tier4 = results["tier4"]
     kcna_scraped = results.get("kcna_scrape", [])

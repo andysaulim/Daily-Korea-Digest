@@ -3199,7 +3199,35 @@ def check_think_tank_events():
     return problems
 
 
+def check_bok_rate_and_calendar_dates():
+    """The BOK rate comes from ECOS or today's reporting; Upcoming keeps only sourced, dated items."""
+    import collect, run
+    problems = []
+    src = open("collect.py", encoding="utf-8").read()
+    if "StatisticSearch/json/" in src:
+        problems.append("the ECOS request has no API key in it")
+    got = collect.bok_rate_from_news([{"title": "Bank of Korea holds rate at 3.00% after back-to-back hikes"},
+                                      {"title": "한은, 기준금리 연 3.00%로 동결"}])
+    if not got or got["value"] != "3.00%":
+        problems.append(f"BOK rate not read from the reporting: {got}")
+    if collect.bok_rate_from_news([{"title": "BOK cut to 2.75%"}]) is not None:
+        problems.append("a single mention set the BOK rate")
+    url = "https://en.yna.co.kr/view/AEN1"
+    d = {"calendar_watch": [
+        {"month": "Nov", "day": 1, "headline": "ROK-US defense ministerial", "url": url,
+         "detail": "Agreed to hold a ministerial next month; no precise date given."},
+        {"month": "Nov", "day": 3, "headline": "Court ruling", "detail": "Set for Nov 3.", "url": url},
+        {"month": "Nov", "day": 4, "headline": "Uncited", "detail": "Set for Nov 4."},
+        {"month": "Nov", "day": 9, "headline": "CSIS event", "_source": "think_tank_event"}]}
+    run.verify_calendar(d, {"tier1": [{"url": url, "title": "t"}]})
+    heads = [c["headline"] for c in d["calendar_watch"]]
+    if heads != ["Court ruling", "CSIS event"]:
+        problems.append(f"Upcoming check kept {heads}")
+    return problems
+
+
 CHECKS = [
+    ("BOK rate sourced; Upcoming dates verified", check_bok_rate_and_calendar_dates),
     ("think-tank events kept out of Analysis and audio", check_think_tank_events),
     ("Week in Review in the v2 design", check_weekly_v2),
     ("Oct 22 fixes: Korean Hill press, labels, anniversaries, Analysis", check_oct22_fixes),

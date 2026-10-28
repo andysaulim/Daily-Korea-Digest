@@ -1569,6 +1569,46 @@ def _drop_news_from_analysis(digest: dict, payload: dict | None) -> list[str]:
     return log
 
 
+# A date the article did not give. The model is told not to turn "next
+# month" into a day; on 28 October it did, and wrote so in the detail.
+_VAGUE_DATE = re.compile(
+    r"\b(?:no (?:precise|specific|exact|set|firm) date|date (?:not|yet to be|to be) (?:given|set|announced|confirmed|determined)"
+    r"|next month|later this month|early (?:next )?(?:january|february|march|april|may|june|july|august|september|october|november|december)"
+    r"|mid-(?:january|february|march|april|may|june|july|august|september|october|november|december)|\btbd\b|\btba\b)", re.I)
+
+
+def verify_calendar(digest: dict, payload: dict | None) -> list[str]:
+    """Upcoming items the articles do not support are removed.
+
+    Each item must cite an article in today's input by URL (the prompt asks
+    for it), and must not say in its own words that the date was not given.
+    Items the code added (observances, think-tank events) are not the
+    model's and are not checked here. Returns log lines; never raises.
+    """
+    try:
+        import links
+        index = links.corpus_index(payload or {})
+    except Exception:                                           # noqa: BLE001
+        return []
+    kept, log = [], []
+    for c in digest.get("calendar_watch") or []:
+        if not isinstance(c, dict) or c.get("_source"):
+            kept.append(c)
+            continue
+        label = str(c.get("headline") or c.get("event") or "")[:70]
+        text = f'{c.get("headline", "")} {c.get("detail", "")}'
+        if _VAGUE_DATE.search(text):
+            log.append(f"Upcoming: dropped {label!r}: the article gives no day")
+            continue
+        url = str(c.get("url") or "").strip()
+        if not url or not links.lookup(url, index):
+            log.append(f"Upcoming: dropped {label!r}: no article in today's input cited")
+            continue
+        kept.append(c)
+    digest["calendar_watch"] = kept
+    return log
+
+
 THINK_TANK_EVENT_DAYS = 14
 THINK_TANK_EVENT_LIMIT = 3
 
@@ -2755,6 +2795,8 @@ def main():
         for _line in fill_analysis(payload or {}, digest_data):
             # An annotation, so the run summary says whether the fill ran.
             print(f"::notice title=Analysis fill::{_line}")
+        for _line in verify_calendar(digest_data, payload):
+            print(f"::notice title=Upcoming check::{_line}")
         for _line in add_think_tank_events(digest_data, payload):
             print(f"  📅  {_line}")
 
