@@ -1,6 +1,12 @@
 {
   "days": [
     {
+      "date": "2026-10-29",
+      "silence_today": false,
+      "watch_flag": false,
+      "bottom_line": "North Korea launched approximately 10 short-range ballistic missiles from Wonsan on October 29, days after the ROK defense minister called for dialogue; state media covered the Pyongyang trade fair and harvest mobilization but had not reported on the launches as of this digest."
+    },
+    {
       "date": "2026-10-28",
       "silence_today": false,
       "watch_flag": false,
@@ -82,5 +88,5 @@
       "bottom_line": "DPRK state media led with Kim Yo Jong's loudspeaker threat and a reaffirmation of Russia ties; no Kim Jong Un appearance or direct statement today."
     }
   ],
-  "last_updated": "2026-10-28T11:08:44.673111+00:00"
+  "last_updated": "2026-10-29T11:10:54.231238+00:00"
 }
