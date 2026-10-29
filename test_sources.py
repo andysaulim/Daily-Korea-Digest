@@ -3159,7 +3159,186 @@ def check_weekly_v2():
     return problems
 
 
+def check_think_tank_events():
+    """An event listing never runs as analysis, in print or in the audio."""
+    import collect, digest, run
+    from datetime import date
+    problems = []
+    t2 = [{"title": "Press Briefing: Previewing President Trump's Trip to Asia",
+           "url": "https://www.csis.org/events/press-briefing-previewing-president-trumps-trip-asia", "kind": "report"},
+          {"title": "Mapping Security Influence in the Pacific", "url": "https://www.csis.org/analysis/x", "kind": "report"}]
+    saved = collect.requests.get
+    class R:
+        status_code = 200
+        text = f'<div class="date">November 9, {date.today().year + 1}</div>'
+    collect.requests.get = lambda *a, **k: R()
+    try:
+        rest, events = collect.split_events(t2)
+    finally:
+        collect.requests.get = saved
+    if [a["title"] for a in rest] != ["Mapping Security Influence in the Pacific"] or len(events) != 1:
+        problems.append("event listing not taken out of tier 2")
+    elif not events[0].get("event_date", "").startswith("20"):
+        problems.append("event date not read from the page")
+    if collect.event_date("<p>Posted October 1, 2026</p><p>November 9, 2026</p>", date(2026, 10, 28)) != "2026-11-09":
+        problems.append("event date picked a past date")
+    prompt = digest.build_user_prompt({"think_tank_events": [dict(events[0], event_date="2026-11-09")] if events else []}, "Wednesday")
+    if "THINK-TANK EVENTS" not in prompt:
+        problems.append("dated events not offered to the model")
+    cal = {"calendar_watch": [{"month": "Oct", "day": 30, "headline": "Hoguk ends"}]}
+    run.add_think_tank_events(cal, {"think_tank_events": [
+        {"title": t2[0]["title"], "url": t2[0]["url"], "source": "CSIS Korea Chair", "event_date": "2026-11-09"},
+        {"title": "Old event", "url": "https://x.org/events/o", "event_date": "2026-10-01"}]}, date(2026, 10, 28))
+    heads = [c["headline"] for c in cal["calendar_watch"]]
+    if heads != ["Hoguk ends", t2[0]["title"]] or cal["calendar_watch"][1]["source"] != "CSIS":
+        problems.append(f"Upcoming events wrong: {heads}")
+    d = {"opeds_today": [{"headline": "Press Briefing", "url": t2[0]["url"]}]}
+    run._drop_news_from_analysis(d, {"tier2": [], "tier1": []})
+    if d["opeds_today"]:
+        problems.append("an event page survived in Analysis")
+    return problems
+
+
+def check_bok_rate_and_calendar_dates():
+    """The BOK rate comes from ECOS or today's reporting; Upcoming keeps only sourced, dated items."""
+    import collect, run
+    problems = []
+    src = open("collect.py", encoding="utf-8").read()
+    if "StatisticSearch/json/" in src:
+        problems.append("the ECOS request has no API key in it")
+    got = collect.bok_rate_from_news([{"title": "Bank of Korea holds rate at 3.00% after back-to-back hikes"},
+                                      {"title": "한은, 기준금리 연 3.00%로 동결"}])
+    if not got or got["value"] != "3.00%":
+        problems.append(f"BOK rate not read from the reporting: {got}")
+    if collect.bok_rate_from_news([{"title": "BOK cut to 2.75%"}]) is not None:
+        problems.append("a single mention set the BOK rate")
+    url = "https://en.yna.co.kr/view/AEN1"
+    d = {"calendar_watch": [
+        {"month": "Nov", "day": 1, "headline": "ROK-US defense ministerial", "url": url,
+         "detail": "Agreed to hold a ministerial next month; no precise date given."},
+        {"month": "Nov", "day": 3, "headline": "Court ruling", "detail": "Set for Nov 3.", "url": url},
+        {"month": "Nov", "day": 4, "headline": "Uncited", "detail": "Set for Nov 4."},
+        {"month": "Nov", "day": 9, "headline": "CSIS event", "_source": "think_tank_event"}]}
+    run.verify_calendar(d, {"tier1": [{"url": url, "title": "t"}]})
+    heads = [c["headline"] for c in d["calendar_watch"]]
+    if heads != ["Court ruling", "CSIS event"]:
+        problems.append(f"Upcoming check kept {heads}")
+    return problems
+
+
+def check_fact_check_enforces():
+    """Unsourced figures and dates are removed; sourced ones, rounded or in Korean, stay."""
+    import factcheck
+    from datetime import date
+    problems = []
+    wsj = "https://www.wsj.com/economy/bok-holds"
+    yna = "https://en.yna.co.kr/view/AEN2"
+    payload = {"tier1": [
+        {"url": wsj, "title": "Bank of Korea Holds Rate Steady After Back-to-Back Hikes", "summary": "", "pub_date": "2026-10-28"},
+        {"url": "https://www.yna.co.kr/x", "title": "한은, 기준금리 연 3.00%로 동결", "summary": "", "pub_date": "2026-10-28"},
+        {"url": yna, "title": "Births up 13% in August", "summary": "Births rose 13.2 percent to 21,803; the fertility rate was 0.87.",
+         "pub_date": "2026-10-28"}],
+        "market_indicators": {"bok_rate": {"value": "2.50%"}, "kospi": {"value": "6,012.44", "change_pct": 2.47}}}
+    d = {"top_stories": [{"headline": "A", "url": yna, "body": "x"}, {"headline": "B", "url": yna, "body": "y"},
+                         {"headline": "Bank of Korea holds rate at 2.50%", "url": wsj, "body": "It held."}],
+         "overnight_items": [{"headline": "Births up 13%", "url": yna,
+                              "body_text": "Births rose 13.2% to about 21,800. The rate was 0.87. It was the 26th straight rise."}],
+         "business_economy": [{"headline": "Bank of Korea holds at 3.00%", "url": wsj, "body_text": "Held at 3.00%."}],
+         "morning_memo": ["The BOK held at 2.50%.", "Births up 13%."]}
+    log, _ = factcheck.apply(d, payload, date(2026, 10, 28))
+    heads = [t["headline"] for t in d["top_stories"]]
+    if "Bank of Korea holds rate at 2.50%" in heads:
+        problems.append("a lead with an unsourced figure survived")
+    body = d["overnight_items"][0]["body_text"]
+    if "13.2%" not in body or "0.87" not in body or "26th" in body:
+        problems.append(f"sentence cuts wrong: {body!r}")
+    if not d["business_economy"]:
+        problems.append("a figure sourced by a Korean report of the same decision was removed")
+    if d["morning_memo"] != ["Births up 13%."]:
+        problems.append(f"glance kept {d['morning_memo']}")
+    if not factcheck.date_supported(10, 27, "said on Tuesday", date(2026, 10, 28), date(2026, 10, 28)):
+        problems.append("a weekday in the source did not support its date")
+    if factcheck.date_supported(11, 1, "a ministerial next month", date(2026, 10, 28), date(2026, 10, 28)):
+        problems.append("'next month' supported November 1")
+    # A checker that would gut the brief changes nothing.
+    many = {"overnight_items": [{"headline": f"Item {n}", "url": yna, "body_text": f"It rose {40 + n}%."} for n in range(12)]}
+    log, found = factcheck.apply(many, payload, date(2026, 10, 28))
+    if len(many["overnight_items"]) != 12 or "nothing was removed" not in " ".join(log):
+        problems.append("the safety limit did not hold")
+    return problems
+
+
+def check_health_report():
+    """The owner's run report sorts what was removed, flagged and fell back."""
+    import health_report
+    lines = ["::notice title=Fact check::top_stories: removed 'Bank of Korea holds rate at 2.50%' (2.50% not in its source)",
+             "    ⚠  BOK rate: ECOS unavailable, using last known (3.00%)",
+             "::warning title=Analysis left out::the Analysis section ran 1 piece(s)",
+             "::warning title=::Node.js 20 is deprecated",
+             "  🚫  Skipping email due to critical validation failures."]
+    groups = health_report.grouped(lines)
+    if (len(groups["Removed by the checks"]) != 1 or len(groups["Fell back to stored data"]) != 1
+            or len(groups["Flagged"]) != 1 or len(groups["Problems"]) != 1):
+        return [f"report groups wrong: { {k: len(v) for k, v in groups.items()} }"]
+    subject, page = health_report.build(lines, {"sent": True, "words": 2500})
+    problems = []
+    if "1 removed" not in subject or "Analysis left out: the Analysis section" not in page:
+        problems.append(f"report subject or body wrong: {subject!r}")
+    return problems
+
+
+def check_fulltext_for_english():
+    """The top English articles are read in full; the extractor keeps the article, not the menu."""
+    import collect
+    problems = []
+    page = ("<html><body><nav><p>Politics North Korea Economy Sports Entertainment World Opinion Video</p></nav>"
+            "<article><p>SEOUL, Oct. 28 (Yonhap) -- South Korea and the United States agreed to hold the 58th "
+            "Security Consultative Meeting in early 2027, the defense ministry said Wednesday.</p>"
+            "<p>Defense Minister Kang Shin-chul and U.S. Defense Secretary Pete Hegseth reached the agreement in "
+            "Cebu, on the sidelines of the 13th ADMM-Plus meeting of defense ministers.</p>"
+            "<p>The two sides also agreed that the transfer of wartime operational control should proceed on "
+            "schedule, and set a separate ministerial meeting in Washington.</p>"
+            "<p>Copyright Yonhap News Agency. All rights reserved.</p>" + "<p>.</p>" * 40 + "</article></body></html>")
+    body = collect._extract_body(page)
+    if "58th" not in body or "Politics North Korea" in body or "Copyright" in body:
+        problems.append(f"extractor kept the wrong text: {body[:120]!r}")
+    arts = [{"title": f"Story {n} about South Korea", "url": f"https://en.yna.co.kr/view/AEN{n}", "lang": "EN",
+             "summary": "short", "source": "Yonhap"} for n in range(3)]
+    arts.append({"title": "WSJ story", "url": "https://www.wsj.com/x", "lang": "EN", "summary": "short", "source": "WSJ"})
+    saved = collect.requests.get
+    calls = []
+
+    class R:
+        status_code = 200
+        text = page
+        apparent_encoding = "utf-8"
+        encoding = "utf-8"
+
+    def fake(url, *a, **k):
+        calls.append(url)
+        return R()
+    collect.requests.get = fake
+    try:
+        t1, _, stats = collect.add_fulltext_en(arts, [])
+    finally:
+        collect.requests.get = saved
+    if stats["fetched"] != 3 or any("wsj.com" in u for u in calls):
+        problems.append(f"full-text pass wrong: {stats}, fetched {calls}")
+    if not all(a.get("fulltext") and "58th" in a["summary"] for a in t1[:3]):
+        problems.append("fetched text did not replace the headline-only summary")
+    import digest
+    prompt = digest.build_user_prompt({"tier1": [dict(t1[0], summary="x" * 1700)]}, "Wednesday")
+    if "x" * 1700 not in prompt:
+        problems.append("the prompt still cuts a full-text article to 800 characters")
+    return problems
+
+
 CHECKS = [
+    ("English articles read in full", check_fulltext_for_english),
+    ("fact check enforces sourced figures and dates", check_fact_check_enforces),
+    ("owner's run report", check_health_report),
+    ("BOK rate sourced; Upcoming dates verified", check_bok_rate_and_calendar_dates),
+    ("think-tank events kept out of Analysis and audio", check_think_tank_events),
     ("Week in Review in the v2 design", check_weekly_v2),
     ("Oct 22 fixes: Korean Hill press, labels, anniversaries, Analysis", check_oct22_fixes),
     ("content farms dropped", check_content_farms_dropped),

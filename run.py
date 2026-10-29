@@ -304,6 +304,15 @@ def backfill_archive_entries(entries: list, web_base: str = "") -> list:
     return merged
 
 
+def _health_facts(**kw) -> None:
+    """Headline facts for the owner's run report (health_report.FACTS)."""
+    try:
+        import health_report
+        health_report.FACTS.update({k: v for k, v in kw.items() if v is not None})
+    except Exception:                                           # noqa: BLE001
+        pass
+
+
 def warn(title: str, message) -> None:
     """A GitHub Actions warning annotation, shown on the run page.
 
@@ -1555,6 +1564,10 @@ def _drop_news_from_analysis(digest: dict, payload: dict | None) -> list[str]:
     for item in digest.get("opeds_today") or []:
         url = str((item or {}).get("url") or "").strip()
         kind = analysis.get(url)
+        if re.search(r"/events?/", url):
+            log.append(f"  opeds_today: event listing dropped from Analysis: "
+                       f"{str(item.get('headline', ''))[:70]}")
+            continue
         if kind == "news" or (kind is None and url in news):
             log.append(f"  opeds_today: news story dropped from Analysis: "
                        f"{str(item.get('headline', ''))[:70]}")
@@ -1562,6 +1575,92 @@ def _drop_news_from_analysis(digest: dict, payload: dict | None) -> list[str]:
         kept.append(item)
     if log:
         digest["opeds_today"] = kept
+    return log
+
+
+# A date the article did not give. The model is told not to turn "next
+# month" into a day; on 28 October it did, and wrote so in the detail.
+_VAGUE_DATE = re.compile(
+    r"\b(?:no (?:precise|specific|exact|set|firm) date|date (?:not|yet to be|to be) (?:given|set|announced|confirmed|determined)"
+    r"|next month|later this month|early (?:next )?(?:january|february|march|april|may|june|july|august|september|october|november|december)"
+    r"|mid-(?:january|february|march|april|may|june|july|august|september|october|november|december)|\btbd\b|\btba\b)", re.I)
+
+
+def verify_calendar(digest: dict, payload: dict | None) -> list[str]:
+    """Upcoming items the articles do not support are removed.
+
+    Each item must cite an article in today's input by URL (the prompt asks
+    for it), and must not say in its own words that the date was not given.
+    Items the code added (observances, think-tank events) are not the
+    model's and are not checked here. Returns log lines; never raises.
+    """
+    try:
+        import links
+        index = links.corpus_index(payload or {})
+    except Exception:                                           # noqa: BLE001
+        return []
+    kept, log = [], []
+    for c in digest.get("calendar_watch") or []:
+        if not isinstance(c, dict) or c.get("_source"):
+            kept.append(c)
+            continue
+        label = str(c.get("headline") or c.get("event") or "")[:70]
+        text = f'{c.get("headline", "")} {c.get("detail", "")}'
+        if _VAGUE_DATE.search(text):
+            log.append(f"Upcoming: dropped {label!r}: the article gives no day")
+            continue
+        url = str(c.get("url") or "").strip()
+        if not url or not links.lookup(url, index):
+            log.append(f"Upcoming: dropped {label!r}: no article in today's input cited")
+            continue
+        kept.append(c)
+    digest["calendar_watch"] = kept
+    return log
+
+
+THINK_TANK_EVENT_DAYS = 14
+THINK_TANK_EVENT_LIMIT = 3
+
+
+def add_think_tank_events(digest: dict, payload: dict | None, today=None) -> list[str]:
+    """Dated think-tank events (collect.split_events) into Upcoming.
+
+    An event listing is not analysis, but a reader wants to know it is
+    coming: the owner asked for them in the calendar (28 October 2026, a CSIS
+    press briefing previewing President Trump's Asia trip). Added in code,
+    not left to the model: the date is read from the event's own page, the
+    title is the institution's, and nothing is written about it. CSIS first,
+    then soonest; an event already listed (same day and title words) is not
+    added twice.
+    """
+    from datetime import date as _date, timedelta as _td
+    today = today or datetime.now(ZoneInfo("America/New_York")).date()
+    horizon = today + _td(days=THINK_TANK_EVENT_DAYS)
+    cal = list(digest.get("calendar_watch") or [])
+    have = {(str(c.get("month", ""))[:3].lower(), str(c.get("day", "")),) for c in cal if isinstance(c, dict)}
+    picks = []
+    for e in (payload or {}).get("think_tank_events") or []:
+        try:
+            when = _date.fromisoformat(str(e.get("event_date") or ""))
+        except ValueError:
+            continue
+        if not (today < when <= horizon) or not e.get("title"):
+            continue
+        picks.append((("csis" not in f'{e.get("source", "")} {e.get("url", "")}'.lower(), when), e, when))
+    log = []
+    for _, e, when in sorted(picks, key=lambda t: t[0])[:THINK_TANK_EVENT_LIMIT]:
+        mon = when.strftime("%b")
+        title = re.sub(r"\s+", " ", str(e["title"])).strip()
+        if (mon.lower(), str(when.day)) in have and any(
+                title.lower()[:30] in str(c.get("headline", "")).lower() for c in cal if isinstance(c, dict)):
+            continue
+        src = str(e.get("source") or "")
+        src = "CSIS" if "csis" in f'{src} {e.get("url", "")}'.lower() else src
+        cal.append({"month": mon, "day": when.day, "headline": title, "detail": f"{src} event.",
+                    "source": src, "url": e.get("url", ""), "_source": "think_tank_event"})
+        log.append(f"Upcoming: added {src} event on {mon} {when.day}: {title[:70]}")
+    if log:
+        digest["calendar_watch"] = cal
     return log
 
 
@@ -2383,6 +2482,12 @@ def main():
     parser.add_argument("--dry-run",    action="store_true", help="Collect only, don't call Claude")
     parser.add_argument("--no-push",    action="store_true", help="Skip pushing new entries to NK-Russia/provocations databases")
     args = parser.parse_args()
+    # The owner's run report (health_report.py): every line the run prints
+    # is kept, and a sorted summary is mailed when the run ends, sent or not.
+    # Not on a local --no-send or --dry-run run.
+    if not (args.no_send or args.dry_run):
+        import health_report
+        health_report.start()
 
     # The design the list receives: BRIEF_DESIGN (a repository variable) set
     # to "v2" switches it with no code change; unset or anything else keeps
@@ -2471,6 +2576,13 @@ def main():
     if args.dry_run:
         print("\n  --dry-run: stopping after collection. See collected.json")
         return
+
+    _ft = (payload or {}).get("fulltext_stats") or {}
+    if _ft.get("tried"):
+        _health_facts(fulltext=f'{_ft["fetched"]}/{_ft["tried"]}')
+        if _ft["fetched"] < _ft["tried"] / 3:
+            warn("Full text mostly unavailable", f'only {_ft["fetched"]} of {_ft["tried"]} English articles '
+                 "could be read in full; the brief is written largely from headlines today")
 
     # ── Step 1b: Fetch CSIS databases for context ─────────────────────────────
     from databases import fetch_all, build_context_block, process_digest_entries
@@ -2703,7 +2815,21 @@ def main():
     if validation_passed:
         from digest import fill_analysis
         for _line in fill_analysis(payload or {}, digest_data):
-            print(f"  📚  {_line}")
+            # An annotation, so the run summary says whether the fill ran.
+            print(f"::notice title=Analysis fill::{_line}")
+        for _line in verify_calendar(digest_data, payload):
+            print(f"::notice title=Upcoming check::{_line}")
+        # Every number and date against the article its item cites
+        # (factcheck.py): unsupported sentences and items are removed.
+        try:
+            import factcheck
+            _fc_log, _fc_found = factcheck.apply(digest_data, payload or {})
+            for _line in _fc_log:
+                print(f"::notice title=Fact check::{_line}")
+        except Exception as _e:                                 # noqa: BLE001
+            warn("Fact check skipped", str(_e))
+        for _line in add_think_tank_events(digest_data, payload):
+            print(f"  📅  {_line}")
 
     # ── Step 2b: Push flagged entries to databases ────────────────────────────
     if not args.no_push and validation_passed and not _is_test_send:
@@ -3143,6 +3269,7 @@ def main():
     # ── Step 4: Send email ───────────────────────────────────────────────────
     if not validation_passed:
         print("\n🚫  Skipping email due to critical validation failures. Review latest.html.")
+        _health_facts(sent=False, words=_count_digest_words(digest_data))
         import sys
         sys.exit(1)
     elif args.no_send:
@@ -3231,6 +3358,10 @@ def main():
                       f"{usage['output_tokens']:,} out)")
         except Exception:
             pass
+        _health_facts(sent=metrics.get("sent"), words=metrics.get("word_count"),
+                      bytes=metrics.get("html_bytes"),
+                      audio_minutes=round((metrics.get("audio_seconds") or 0) / 60, 1) or None,
+                      cost=f"${metrics['est_cost_usd']:.2f}" if metrics.get("est_cost_usd") else None)
         metrics_path = Path("metrics.jsonl")
         if _is_test_send:
             print("  🧪  Test send: no metrics row written.")

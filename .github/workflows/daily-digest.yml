@@ -237,6 +237,12 @@ jobs:
           # Optional: the same issue in the candidate design, to these
           # addresses only (run.send_design_preview). Unset sends nothing.
           DESIGN_PREVIEW_TO: ${{ vars.DESIGN_PREVIEW_TO || secrets.DESIGN_PREVIEW_TO }}
+          # Optional: where the run report goes (health_report.py). Unset
+          # sends it to the sending account itself; HEALTH_REPORT=0 turns it off.
+          HEALTH_REPORT_TO: ${{ vars.HEALTH_REPORT_TO }}
+          HEALTH_REPORT: ${{ vars.HEALTH_REPORT }}
+          # Optional: a Bank of Korea ECOS key for the base rate.
+          ECOS_API_KEY: ${{ secrets.ECOS_API_KEY }}
           # Optional: "v2" sends the new design to the list (render.DESIGN).
           BRIEF_DESIGN: ${{ vars.BRIEF_DESIGN }}
           # Optional. Unset is fine: send_email.py already defaults the reply
@@ -291,6 +297,9 @@ jobs:
           X_SCRAPER_KEY: ${{ secrets.X_SCRAPER_KEY }}
           WEB_URL: https://andysaulim.github.io/Daily-Korea-Digest
           BRIEF_DESIGN: ${{ vars.BRIEF_DESIGN }}
+          HEALTH_REPORT_TO: ${{ vars.HEALTH_REPORT_TO }}
+          HEALTH_REPORT: ${{ vars.HEALTH_REPORT }}
+          ECOS_API_KEY: ${{ secrets.ECOS_API_KEY }}
         run: |
           set -o pipefail
           echo "::notice::TEST SEND to ${{ inputs.send_to }} — the distribution list is not used."

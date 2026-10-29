@@ -1196,26 +1196,89 @@ _SCRIPT_RE = re.compile(r"<(script|style|noscript)[^>]*>.*?</\1>", re.S | re.I)
 _TAG_RE = re.compile(r"<[^>]+>")
 
 
-def _extract_body(html: str) -> str:
-    """Pull readable text out of an article page.
+_P_RE = re.compile(r"<p\b[^>]*>(.*?)</p>", re.S | re.I)
+_ARTICLE_RE = re.compile(r"<article\b.*?</article>", re.S | re.I)
+_BODY_DIV_RE = re.compile(
+    r"<div\b[^>]*(?:id|class)=\"[^\"]*(?:article[-_]?(?:body|txt|text|content|view)|news[-_]?(?:body|text|content)"
+    r"|story[-_]?body|entry[-_]?content|post[-_]?content|view[-_]?(?:cont|text))[^\"]*\"[^>]*>", re.I)
+_META_DESC_RE = re.compile(
+    r"<meta[^>]+(?:property|name)=\"(?:og:description|description)\"[^>]+content=\"([^\"]{60,})\"", re.I)
+_PARA_JUNK = re.compile(
+    r"all rights reserved|copyright|©|subscribe|sign up|newsletter|cookie|advertis|related (?:articles|stories)"
+    r"|follow us|share this|click here|무단 ?전재|재배포 ?금지|기자 ?=|구독", re.I)
 
-    No dependency on a readability library: strip scripts and tags, collapse
-    whitespace, then keep the longest run of prose. Crude, but it only has to
-    beat a bare headline, and a bad extraction is discarded by the caller.
+
+def _clean_html_text(fragment: str) -> str:
+    text = _TAG_RE.sub(" ", fragment)
+    text = html_lib.unescape(re.sub(r"&nbsp;?", " ", text))
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _extract_body(html: str) -> str:
+    """The article's own text from its page, or '' when none can be told apart.
+
+    It used to strip every tag and keep the start of what was left, which on
+    most sites is the navigation menu: the "full text" the model was handed
+    was the site's header. Now, in order:
+      1. the paragraphs (<p>) inside <article>, or anywhere, that read as
+         prose (60+ characters, or 25+ in Korean) and are not boilerplate;
+      2. the article-body container Korean sites use (<div id="article_body">
+         with <br> breaks), its text up to the next big block;
+      3. the page's own description (og:description).
+    The longest of the first two wins; a poor result is discarded by the
+    caller, which keeps the feed's summary instead.
     """
     if not html:
         return ""
-    text = _SCRIPT_RE.sub(" ", html)
-    text = _TAG_RE.sub(" ", text)
-    text = re.sub(r"&nbsp;?", " ", text)
-    text = re.sub(r"\s+", " ", text).strip()
-    return text
+    page = _SCRIPT_RE.sub(" ", html)
+    def prose(region: str) -> list[str]:
+        out = []
+        for frag in _P_RE.findall(region):
+            t = _clean_html_text(frag)
+            korean = bool(re.search(r"[가-힣]", t))
+            if (len(t) >= 60 or (korean and len(t) >= 25)) and not _PARA_JUNK.search(t[:160]):
+                out.append(t)
+        return out
+    # The <article> element when it holds the story (two or more paragraphs
+    # of prose), so the menus and promos around it are left out.
+    m = _ARTICLE_RE.search(page)
+    paras = prose(m.group(0)) if m else []
+    if len(paras) < 2:
+        paras = prose(page)
+    by_p = " ".join(paras)
+    by_div = ""
+    d = _BODY_DIV_RE.search(page)
+    if d:
+        chunk = page[d.end():d.end() + 20000]
+        chunk = re.split(r"<(?:footer|aside)\b|<div\b[^>]*(?:class|id)=\"[^\"]*(?:related|reporter|copyright|footer)",
+                         chunk, maxsplit=1, flags=re.I)[0]
+        by_div = _clean_html_text(re.sub(r"<br\s*/?>", " ", chunk, flags=re.I))
+    body = max((by_p, by_div), key=len)
+    if len(body) < 300:
+        meta = _META_DESC_RE.search(page)
+        if meta:
+            body = html_lib.unescape(meta.group(1)).strip()
+    return body
 
 
 def _fetch_fulltext(article: dict) -> dict:
-    """Best-effort body fetch for one article. Never raises."""
+    """Best-effort body fetch for one article. Never raises.
+
+    A Google News link is decoded to the publisher's own first (two requests
+    to Google); the article then carries the real URL, with the Google one
+    kept as gnews_url.
+    """
     url = article.get("url") or ""
-    if not url.startswith("http") or "news.google.com" in url:
+    if "news.google.com" in url:
+        try:
+            real = links.decode_gnews(url, timeout=4.0)
+        except Exception:                                       # noqa: BLE001
+            real = ""
+        if not real:
+            return article
+        article = dict(article, url=real, gnews_url=url)
+        url = real
+    if not url.startswith("http") or links.base_domain(url) in PAYWALLED:
         return article
     try:
         resp = requests.get(url, timeout=_FULLTEXT_TIMEOUT, headers={
@@ -1235,6 +1298,74 @@ def _fetch_fulltext(article: dict) -> dict:
     return article
 
 
+# Sites whose pages hold a paywall, not the article: a fetch returns the
+# login prompt. Their summaries stay as the feed gave them.
+PAYWALLED = {"wsj.com", "ft.com", "bloomberg.com", "nytimes.com", "economist.com",
+             "washingtonpost.com", "nikkei.com", "barrons.com", "theinformation.com",
+             "foreignaffairs.com", "thetimes.co.uk", "theatlantic.com", "politico.com"}
+FULLTEXT_EN_MAX = 60          # tier-1 English articles, in the prompt's own order
+FULLTEXT_ANALYSIS_MAX = 20    # tier-2 analysis pieces
+_SHORT_SUMMARY = 400          # a summary shorter than this is little more than its headline
+
+
+def add_fulltext_en(tier1: list, tier2: list) -> tuple[list, list, dict]:
+    """Full text for the English articles the model will actually read.
+
+    Most items reach the collector from Google News, whose "summary" is the
+    headline again: on 28 October the median summary was 83 characters, so
+    the model wrote 2,500 words from headlines and filled the rest from
+    memory. The articles that will make the prompt (digest.rank_for_prompt,
+    the same order the prompt uses) and whose summary is short get their
+    page fetched, its text kept up to _FULLTEXT_CHARS. Paywalled sites are
+    skipped. Returns (tier1, tier2, stats); never raises.
+    """
+    stats = {"tried": 0, "fetched": 0}
+    try:
+        from digest import rank_for_prompt, rank_analysis
+    except Exception:                                           # noqa: BLE001
+        return tier1, tier2, stats
+
+    def pick(arts, ranked, limit):
+        out = []
+        for a in ranked:
+            if len(out) >= limit:
+                break
+            if (a.get("lang") == "EN" and not a.get("fulltext")
+                    and len(a.get("summary") or "") < _SHORT_SUMMARY
+                    and links.base_domain(a.get("url") or "") not in PAYWALLED
+                    and links.base_domain(a.get("publisher_home") or "") not in PAYWALLED):
+                out.append(a)
+        return out
+
+    try:
+        targets = (pick(tier1, rank_for_prompt(tier1)[:140], FULLTEXT_EN_MAX)
+                   + pick(tier2, rank_analysis(tier2)[:45], FULLTEXT_ANALYSIS_MAX))
+    except Exception:                                           # noqa: BLE001
+        return tier1, tier2, stats
+    stats["tried"] = len(targets)
+    if not targets:
+        return tier1, tier2, stats
+    done: dict[int, dict] = {}
+    try:
+        with ThreadPoolExecutor(max_workers=12) as pool:
+            futures = {pool.submit(_fetch_fulltext, a): id(a) for a in targets}
+            for fut in as_completed(futures, timeout=90):
+                try:
+                    got = fut.result()
+                    if got.get("fulltext"):
+                        done[futures[fut]] = got
+                except Exception:                               # noqa: BLE001
+                    continue
+    except Exception:                                           # noqa: BLE001
+        pass
+    stats["fetched"] = len(done)
+    tier1 = [done.get(id(a), a) for a in tier1]
+    tier2 = [done.get(id(a), a) for a in tier2]
+    print(f"    📄  Full text fetched for {len(done)}/{len(targets)} English articles "
+          f"(the rest keep the feed's summary)")
+    return tier1, tier2, stats
+
+
 def _add_fulltext(articles: list) -> list:
     """Fetch bodies for the newest Korean-language articles, in parallel."""
     targets = [a for a in articles if a.get("lang") == "KO"][:_FULLTEXT_MAX_ARTICLES]
@@ -1243,12 +1374,14 @@ def _add_fulltext(articles: list) -> list:
     by_url = {}
     try:
         with ThreadPoolExecutor(max_workers=8) as pool:
+            # Keyed by the URL as collected: a fetched article may come back
+            # under its decoded publisher URL.
             futures = {pool.submit(_fetch_fulltext, a): a.get("url") for a in targets}
-            for fut in as_completed(futures, timeout=_FULLTEXT_TIMEOUT * 4):
+            for fut in as_completed(futures, timeout=_FULLTEXT_TIMEOUT * 6):
                 try:
                     got = fut.result()
                     if got.get("fulltext"):
-                        by_url[got.get("url")] = got
+                        by_url[futures[fut]] = got
                 except Exception:
                     continue
     except Exception:
@@ -1334,6 +1467,83 @@ def _collect_tier2() -> list:
                 "prestige": prestige, "kind": ANALYSIS_KIND.get(source, "report")})
             articles.append(article)
     return _dedup(articles)
+
+
+# ── Think-tank events ────────────────────────────────────────────────────
+# An event page is not analysis. On 28 October a CSIS listing, "Press
+# Briefing: Previewing President Trump's Trip to Asia", ran in Analysis as
+# "a new CSIS analysis"; the briefing itself was on 9 November. Event pages
+# are taken out of tier 2, dated from the page, and offered for Upcoming.
+_EVENT_URL = re.compile(r"/events?/", re.I)
+_EVENT_TITLE = re.compile(
+    r"^(?:press briefing|webinar|virtual event|online event|in-person event|book (?:launch|talk|event)|"
+    r"launch event|report launch|panel discussion|fireside chat|a conversation with|conference)\b"
+    r"|\b(?:forum|dialogue|symposium|conference|summit|roundtable) 20\d\d\b", re.I)
+_EVENT_DATE = re.compile(
+    r"\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*\.?\s+(\d{1,2}),\s+(20\d\d)\b")
+_EVENT_ISO = re.compile(r'"startDate"\s*:\s*"(20\d\d-\d\d-\d\d)')
+THINK_TANK_EVENT_MAX = 8
+
+
+def is_event(article: dict) -> bool:
+    """A think-tank event listing rather than a piece of analysis."""
+    url = str(article.get("url") or "")
+    if "news.google.com" not in url and _EVENT_URL.search(url):
+        return True
+    return bool(_EVENT_TITLE.search(str(article.get("title") or "")))
+
+
+def event_date(html: str, today=None) -> str:
+    """The event's date from its page: schema.org startDate, else the first
+    written date from today on. '' when the page names none."""
+    today = today or datetime.now(timezone.utc).date()
+    m = _EVENT_ISO.search(html)
+    if m:
+        return m.group(1)
+    text = re.sub(r"<[^>]+>", " ", html)
+    for mon, day, year in _EVENT_DATE.findall(text):
+        try:
+            d = datetime.strptime(f"{mon[:3]} {day} {year}", "%b %d %Y").date()
+        except ValueError:
+            continue
+        if d >= today:
+            return d.isoformat()
+    return ""
+
+
+def _date_event(article: dict) -> dict:
+    """Resolve an event's link and read its date from the page. Never raises."""
+    a = dict(article, kind="event")
+    url = a.get("url") or ""
+    try:
+        if "news.google.com" in url:
+            url = links.decode_gnews(url) or url
+            a["url"] = url
+        if "news.google.com" not in url:
+            resp = requests.get(url, timeout=_FULLTEXT_TIMEOUT, headers={
+                "User-Agent": "Mozilla/5.0 (compatible; CSIS-Korea-Digest/1.0)"})
+            if resp.status_code == 200:
+                a["event_date"] = event_date(resp.text)
+    except Exception:                                           # noqa: BLE001
+        pass
+    return a
+
+
+def split_events(tier2: list) -> tuple[list, list]:
+    """(analysis, events): event listings out of tier 2, each with its date when the page gives one."""
+    events = [a for a in tier2 if is_event(a)][:THINK_TANK_EVENT_MAX]
+    if not events:
+        return tier2, []
+    ids = {id(a) for a in events}
+    rest = [a for a in tier2 if id(a) not in ids and not is_event(a)]
+    try:
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            dated = list(pool.map(_date_event, events, timeout=_FULLTEXT_TIMEOUT * 4))
+    except Exception:                                           # noqa: BLE001
+        dated = [dict(a, kind="event") for a in events]
+    print(f"    📅  Think-tank events taken out of Analysis: {len(dated)}"
+          f" ({sum(1 for a in dated if a.get('event_date'))} dated)")
+    return rest, dated
 
 
 _ACADEMIC_SIGNALS = ("journal", "paper", "study", "research", "analysis", "findings",
@@ -2287,30 +2497,80 @@ def _collect_markets() -> dict:
     return result
 
 
+# Last known base rate, used only when ECOS and today's reporting both fail.
+# The WSJ reported the hold at 3.00% on 22 October 2026, after back-to-back
+# hikes. It had read 2.50% since before those hikes, and the brief of 28
+# October repeated that figure as the rate the bank had just held.
+BOK_RATE_FALLBACK = {"value": "3.00%", "last_change": "Oct 2026", "as_of": "2026-10-22"}
+
+
 def _fetch_bok_rate() -> dict:
-    """Fetch BOK base rate. Falls back to last known value."""
-    # BOK ECOS open API — base rate series (dynamic date range)
+    """The BOK base rate from ECOS, the bank's statistics API.
+
+    The request had no key in it (the path went straight from StatisticSearch
+    to "json", which ECOS read as the key), so it failed every day and the brief printed the fallback.
+    ECOS_API_KEY is used when set; ECOS's public "sample" key otherwise,
+    which serves the few rows asked for here.
+    """
+    key = os.environ.get("ECOS_API_KEY") or "sample"
     try:
         now = datetime.now(timezone.utc)
         start = (now - timedelta(days=365)).strftime("%Y%m")
         end = now.strftime("%Y%m")
-        url = f"https://ecos.bok.or.kr/api/StatisticSearch/json/en/1/5/722Y001/M/{start}/{end}/0101000/"
+        url = (f"https://ecos.bok.or.kr/api/StatisticSearch/{key}/json/en/1/13/"
+               f"722Y001/M/{start}/{end}/0101000/")
         resp = requests.get(url, timeout=10, headers={"User-Agent": "Mozilla/5.0"})
         if resp.ok:
             rows = resp.json().get("StatisticSearch", {}).get("row", [])
-            if rows:
-                val = rows[-1].get("DATA_VALUE", "")
-                if val:
-                    return {"value": f"{float(val):.2f}%", "last_change": ""}
+            vals = [(r.get("TIME", ""), r.get("DATA_VALUE", "")) for r in rows if r.get("DATA_VALUE")]
+            if vals:
+                latest = float(vals[-1][1])
+                changed = ""
+                for t, v in reversed(vals[:-1]):
+                    if float(v) != latest:
+                        break
+                    changed = t
+                changed = changed or vals[-1][0]
+                try:
+                    changed = datetime.strptime(changed[:6], "%Y%m").strftime("%b %Y")
+                except ValueError:
+                    pass
+                return {"value": f"{latest:.2f}%", "last_change": changed, "source": "ECOS"}
     except Exception:
         pass
-    # Fallback: last known BOK rate (updated manually if API unavailable)
-    print("    ⚠  BOK rate: using fallback (2.50%)")
-    fallback_date = datetime.now(timezone.utc).strftime("%b %Y")
-    return {"value": "2.50%", "last_change": fallback_date}
+    print(f"    ⚠  BOK rate: ECOS unavailable, using last known ({BOK_RATE_FALLBACK['value']})")
+    return dict(BOK_RATE_FALLBACK, fallback=True)
 
 
+_BOK_DECISION = re.compile(
+    r"(?:Bank of Korea|\bBOK\b|한국은행|한은|금통위)[^.%]{0,120}?"
+    r"(?:holds?|held|kept|keeps|freez\w*|raises?|raised|hikes?|hiked|cuts?|lower\w*|동결|인상|인하)"
+    r"[^.%]{0,60}?(\d\.\d{1,2})\s?%"
+    # Korean word order: the figure, then the decision ("기준금리 연 3.00%로 동결").
+    r"|(?:한국은행|한은|금통위)[^.%]{0,40}?기준금리[^.%]{0,10}?(\d\.\d{1,2})\s?%[^.]{0,8}?(?:동결|인상|인하)", re.I)
 
+
+def bok_rate_from_news(articles: list) -> dict | None:
+    """The base rate stated in today's reporting of a rate decision, or None.
+
+    Used when ECOS fails, so the strip and the prompt carry the rate the
+    articles report rather than a remembered one. The most common figure
+    wins; a single stray mention does not.
+    """
+    from collections import Counter
+    seen = Counter()
+    for a in articles or []:
+        text = f"{a.get('title', '')} {a.get('summary', '')}"
+        for m in _BOK_DECISION.finditer(text):
+            v = float(m.group(1) or m.group(2))
+            if 0.25 <= v <= 6:
+                seen[f"{v:.2f}%"] += 1
+    if not seen:
+        return None
+    value, n = seen.most_common(1)[0]
+    if n < 2:
+        return None
+    return {"value": value, "last_change": "", "source": "today's reporting"}
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -2737,7 +2997,13 @@ def collect() -> dict:
         if _a["url"] not in _have:
             _have.add(_a["url"])
             tier1.append(_a)
-    tier2 = results["tier2"]
+    tier2, think_tank_events = split_events(results["tier2"])
+    markets = results["markets"] or {}
+    if (markets.get("bok_rate") or {}).get("fallback"):
+        news_rate = bok_rate_from_news(results["tier1"])
+        if news_rate:
+            markets["bok_rate"] = news_rate
+            print(f"    🏦  BOK rate from today's reporting: {news_rate['value']}")
     tier3 = results["tier3"]
     tier4 = results["tier4"]
     kcna_scraped = results.get("kcna_scrape", [])
@@ -2783,6 +3049,7 @@ def collect() -> dict:
     # machine-translate it, reach us through Google News searches. Dropped
     # here so the outlet that did the reporting wins the slot.
     tier1, tier2, tier3, tier4 = (_drop_content_farms(x) for x in (tier1, tier2, tier3, tier4))
+    tier1, tier2, _ft_stats = add_fulltext_en(tier1, tier2)
     capitol_hill, korea_world, satellite = (_drop_content_farms(x) for x in (capitol_hill, korea_world, satellite))
 
     return {
@@ -2796,6 +3063,8 @@ def collect() -> dict:
         "capitol_hill_articles": capitol_hill,
         "korea_world_articles": korea_world,
         "hill_calendar": results.get("hill_calendar") or [],
+        "think_tank_events": think_tank_events,
+        "fulltext_stats": _ft_stats,
         "hill_calendar_stats": dict(_hill_calendar_stats),
         "market_indicators": results["markets"],
         "sentiment_baseline": results["sentiment"],
