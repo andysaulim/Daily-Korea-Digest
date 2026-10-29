@@ -1,0 +1,53 @@
+{
+ "version": "1.2.0",
+ "chapters": [
+  {
+   "startTime": 0.0,
+   "title": "Today's headlines",
+   "endTime": 46.58
+  },
+  {
+   "startTime": 46.58,
+   "title": "North Korea fires ~10 short-range ballistic missiles from Wonsan…",
+   "url": "https://www.nknews.org/2026/10/north-korea-fires-unidentified-projectile-toward-sea-rok-military/",
+   "endTime": 141.68
+  },
+  {
+   "startTime": 141.68,
+   "title": "NIS: Kim Jong Un may have used Dandong visit to convey Pyongyang's…",
+   "url": "https://www.koreatimes.co.kr/foreignaffairs/northkorea/20261029/nk-leader-may-have-discussed-potential-talks-with-us-during-china-visit-spy-agency?utm_source=rss",
+   "endTime": 259.68
+  },
+  {
+   "startTime": 259.68,
+   "title": "Prosecutors seek death penalty for former President Yoon Suk Yeol…",
+   "url": "https://www.washingtonpost.com/world/2026/10/29/korea-yoon-martial-law-death-penalty/df1a0f7e-d36b-11f1-9931-2a41b76fc976_story.html",
+   "endTime": 329.38
+  },
+  {
+   "startTime": 329.38,
+   "title": "Pyongyang",
+   "endTime": 378.23
+  },
+  {
+   "startTime": 378.23,
+   "title": "The round-up",
+   "endTime": 554.96
+  },
+  {
+   "startTime": 554.96,
+   "title": "Capitol Hill",
+   "endTime": 586.99
+  },
+  {
+   "startTime": 586.99,
+   "title": "Korea and the World",
+   "endTime": 621.52
+  },
+  {
+   "startTime": 621.52,
+   "title": "Markets",
+   "endTime": 657.71
+  }
+ ]
+}
