@@ -1,0 +1,53 @@
+{
+ "version": "1.2.0",
+ "chapters": [
+  {
+   "startTime": 0.0,
+   "title": "Today's headlines",
+   "endTime": 42.06
+  },
+  {
+   "startTime": 42.06,
+   "title": "Kim attends drone expo, North Korea fires ~10 ballistic missiles from…",
+   "url": "https://www.nknews.org/2026/10/kim-jong-un-calls-for-absolute-superiority-in-drones-at-north-korean-uav-expo/",
+   "endTime": 144.22
+  },
+  {
+   "startTime": 144.22,
+   "title": "NIS confirms US restricted intelligence sharing after Seoul disclosed…",
+   "url": "https://www.nknews.org/2026/10/us-curbed-intel-sharing-over-seouls-disclosure-of-north-korean-nuke-site-nis/",
+   "endTime": 241.69
+  },
+  {
+   "startTime": 241.69,
+   "title": "Korea Hydro and Nuclear Power ends contractor talks, putting $18.7B…",
+   "url": "https://www.koreajoongangdaily.com/business/khnp-ends-daewoodoosan-talks-on-187-billion-czech-nuclear-plant/12946437",
+   "endTime": 320.25
+  },
+  {
+   "startTime": 320.25,
+   "title": "Pyongyang",
+   "endTime": 369.95
+  },
+  {
+   "startTime": 369.95,
+   "title": "The round-up",
+   "endTime": 519.22
+  },
+  {
+   "startTime": 519.22,
+   "title": "Capitol Hill",
+   "endTime": 550.01
+  },
+  {
+   "startTime": 550.01,
+   "title": "Korea and the World",
+   "endTime": 593.09
+  },
+  {
+   "startTime": 593.09,
+   "title": "Markets",
+   "endTime": 628.17
+  }
+ ]
+}

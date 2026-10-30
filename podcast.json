@@ -500,5 +500,40 @@
     "transcript": "digest_2026-10-29.vtt",
     "chapters": "digest_2026-10-29.chapters.json",
     "page": "listen/2026-10-29.html"
+  },
+  {
+    "date": "2026-10-30",
+    "title": "Korea Daily Brief | Friday, October 30",
+    "summary": "Kim drones missile salvo, National Intelligence Service confirms U.S. intel cutoff, KHNP Czech collapse, Lee-Merz strategic partnership, Binance 6.3 billion dollars North Korea hack.",
+    "file": "digest_2026-10-30.mp3",
+    "bytes": 5026432,
+    "seconds": 628,
+    "script": "written",
+    "transcript_text": "digest_2026-10-30.txt",
+    "notes": [
+      {
+        "headline": "Kim attends drone expo, North Korea fires ~10 ballistic missiles from Wonsan",
+        "source": "NK News / Korea Herald / Korea Times",
+        "url": "https://www.nknews.org/2026/10/kim-jong-un-calls-for-absolute-superiority-in-drones-at-north-korean-uav-expo/"
+      },
+      {
+        "headline": "NIS confirms US restricted intelligence sharing after Seoul disclosed North Korean nuclear site",
+        "source": "NK News / Hankyoreh",
+        "url": "https://www.nknews.org/2026/10/us-curbed-intel-sharing-over-seouls-disclosure-of-north-korean-nuke-site-nis/"
+      },
+      {
+        "headline": "Korea Hydro and Nuclear Power ends contractor talks, putting $18.7B Czech nuclear plant at risk",
+        "source": "Korea JoongAng Daily / UPI / Chosun Ilbo",
+        "url": "https://www.koreajoongangdaily.com/business/khnp-ends-daewoodoosan-talks-on-187-billion-czech-nuclear-plant/12946437"
+      },
+      {
+        "headline": "Lee and Merz launch 'enhanced strategic partnership,' sign double-tax treaty amendment",
+        "source": "Korea.net / Reuters",
+        "url": "https://www.korea.net/NewsFocus/policies/view?articleId=302012"
+      }
+    ],
+    "transcript": "digest_2026-10-30.vtt",
+    "chapters": "digest_2026-10-30.chapters.json",
+    "page": "listen/2026-10-30.html"
   }
 ]
