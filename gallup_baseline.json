@@ -1,32 +1,32 @@
 {
-  "poll": "Gallup Korea (October 13-15, 2026)",
-  "survey_dates": "October 13-15, 2026",
+  "poll": "Gallup Korea (week of October 27-29, 2026)",
+  "survey_dates": "October 27-29, 2026",
   "source": "Gallup Korea",
   "presidential_approval": {
     "value": "39%",
-    "trend": "up"
+    "trend": "stable"
   },
   "party_ruling": {
-    "value": "36%",
+    "value": "35%",
     "party": "Democratic Party",
     "party_kr": "더불어민주당",
-    "trend": "up"
+    "trend": "down"
   },
   "party_opposition": {
-    "value": "27%",
+    "value": "30%",
     "party": "People Power Party",
     "party_kr": "국민의힘",
     "trend": "up"
   },
   "party_independent": {
-    "value": "29%",
+    "value": "28%",
     "trend": "down"
   },
   "spotlight": {
-    "headline": "President Lee Jae-myung's approval rose two points to 39% in Gallup Korea's October 13-15 poll. Democratic Party support edged up to 36% and the People Power Party to 27%, while independents fell to 29%.",
-    "poll_date": "October 13-15, 2026"
+    "headline": "President Lee Jae-myung's approval held at 39% in Gallup Korea's October 27-29 poll. Democratic Party support slipped to 35% and the People Power Party rose to 30%, while independents fell to 28%.",
+    "poll_date": "October 27-29, 2026"
   },
-  "updated_at": "2026-10-16",
+  "updated_at": "2026-10-30",
   "updated_by": "gallup_update.py (manual, figures supplied by the editor)",
   "history": [
     {
@@ -58,6 +58,11 @@
       "date": "2026-10-13",
       "approval": 39.0,
       "label": "Oct 13-15"
+    },
+    {
+      "date": "2026-10-27",
+      "approval": 39.0,
+      "label": "Oct 27-29"
     }
   ]
 }

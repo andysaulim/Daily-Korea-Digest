@@ -3333,7 +3333,35 @@ def check_fulltext_for_english():
     return problems
 
 
+def check_weekly_audio():
+    """The Week in Review has an episode: its script reads the weekly as written, and the email a Listen card."""
+    import podcast, weekly
+    problems = []
+    w = {"week_label": "October 24-30, 2026", "bottom_line": "The week turned on the border.",
+         "top_10": [{"headline": "Kim Yo Jong orders loudspeakers", "body": "She set a deadline."}],
+         "dprk_statements": {"summary": "Posture escalated."}}
+    script = podcast.build_weekly_script(w, {"days": [1] * 7, "kim_seen": [("Tue Oct 27", "x")]},
+                                         [{"month": "Nov", "day": 3, "headline": "Court ruling"}])
+    for want in ("Korea Week in Review from the CSIS Korea Chair, read by an AI voice",
+                 "First: Kim Yo Jong orders loudspeakers. She set a deadline.", "November 3: Court ruling.",
+                 "1 of 7 days", "daily brief returns"):
+        if want not in script:
+            problems.append(f"weekly script lacks {want!r}")
+    if ".." in script or "—" in script:
+        problems.append("weekly script has a doubled full stop or a dash")
+    html = weekly.render_weekly(dict(w, audio_url="https://x/weekly_2026-10-30.mp3", audio_minutes=6), [])
+    if "Listen, 6 min" not in html or "weekly_2026-10-30.mp3" not in html:
+        problems.append("weekly email has no Listen card")
+    if "Listen, " in weekly.render_weekly(w, []):
+        problems.append("a Listen card with no episode")
+    wf = open(".github/workflows/weekly-summary.yml", encoding="utf-8").read()
+    if "ELEVENLABS_API_KEY" not in wf or "publish_dir: ./weekly_public" not in wf:
+        problems.append("the weekly workflow neither voices nor publishes the episode")
+    return problems
+
+
 CHECKS = [
+    ("Week in Review audio edition", check_weekly_audio),
     ("English articles read in full", check_fulltext_for_english),
     ("fact check enforces sourced figures and dates", check_fact_check_enforces),
     ("owner's run report", check_health_report),
