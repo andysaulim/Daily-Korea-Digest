@@ -1,6 +1,19 @@
 {
   "days": [
     {
+      "date": "2026-10-30",
+      "silence_today": false,
+      "watch_flag": false,
+      "bottom_line": "State media led with Kim's drone-supremacy call and the 600mm 'Sniper' live-fire debut, while Switzerland's diplomatic office opening in Pyongyang marked the most significant Western re-engagement signal in Pyongyang in years.",
+      "quotes": [
+        {
+          "speaker": "Kim Jong Un",
+          "quote": "The aim to seize the absolute superiority in the drone technology is an indispensable option in the light of the ever-changing patterns of modern warfare. Strength precisely means peace and peace is guaranteed only by strength.",
+          "source": "North Korea displays drones, missiles as Kim Jong-un urges AI weapons push"
+        }
+      ]
+    },
+    {
       "date": "2026-10-29",
       "silence_today": false,
       "watch_flag": false,
@@ -88,5 +101,5 @@
       "bottom_line": "DPRK state media led with Kim Yo Jong's loudspeaker threat and a reaffirmation of Russia ties; no Kim Jong Un appearance or direct statement today."
     }
   ],
-  "last_updated": "2026-10-29T11:10:54.231238+00:00"
+  "last_updated": "2026-10-30T11:11:16.467500+00:00"
 }
