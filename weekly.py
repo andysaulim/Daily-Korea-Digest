@@ -327,7 +327,7 @@ def render_weekly(weekly: dict, digests: list[dict] | None = None) -> str:
     tz = ZoneInfo("America/New_York")
     now = datetime.now(tz)
     base = (os.environ.get("WEB_URL") or "https://andysaulim.github.io/Daily-Korea-Digest").rstrip("/") + "/"
-    ctx = {"web_url": base + "latest.html"}
+    ctx = {"web_url": base + "latest.html", **({"audio_url": weekly["audio_url"]} if weekly.get("audio_url") else {})}
     SANS, SERIF = R._V2_SANS, R._V2_SERIF
 
     def card(anchor: str, label: str, inner: str) -> str:
@@ -367,7 +367,22 @@ def render_weekly(weekly: dict, digests: list[dict] | None = None) -> str:
             f'color:{R._V2_FOOT};"><b style="white-space:nowrap;color:#FFFFFF;">'
             f'{_esc(weekly.get("week_label", ""))}</b><!--c-->'
             + "".join(f"&emsp; {f}" for f in facts) + '<!--/c--></div></div></div>')
-    masthead = f'<!--v2--><a name="top" id="top"></a>{strip}{band}%%TOCCARD%%'
+    # The daily's Listen card, when this week has an episode.
+    listen = ""
+    if weekly.get("audio_url"):
+        mins = weekly.get("audio_minutes")
+        title = f"Listen, {int(mins)} min" if isinstance(mins, (int, float)) and mins > 0 else "Listen to this week&#8217;s review"
+        listen = R._v2_gap(
+            f'<a href="{_esc(weekly["audio_url"])}" class="listen-bar" style="display:block;background:#FFFFFF;text-decoration:none;">'
+            '<table width="100%" cellpadding="0" cellspacing="0" border="0" role="presentation"><tr>'
+            f'<td style="padding:12px 0 12px 20px;vertical-align:middle;font-family:{SANS};">'
+            f'<div class="listen-title" style="font-size:14px;font-weight:700;color:{R._V2_INK};">{title}</div>'
+            f'<div class="listen-sub" style="font-size:12px;color:{R._V2_META};margin-top:1px;">The Week in Review, read aloud</div></td>'
+            f'<td align="right" style="padding:12px 20px 12px 8px;vertical-align:middle;font-family:{SANS};">'
+            f'<span class="listen-btn" style="display:inline-block;border:1px solid {R._V2_NAVY};padding:6px 12px;'
+            f'font-size:13px;font-weight:700;color:{R._V2_NAVY};white-space:nowrap;">Play</span></td>'
+            '</tr></table></a>', top=12, bottom=0)
+    masthead = f'<!--v2--><a name="top" id="top"></a>{strip}{band}{listen}%%TOCCARD%%'
 
     sections = []
 
@@ -615,6 +630,24 @@ def main():
             print(f"::warning title=Korean text in weekly::{w}")
     except Exception as e:                                      # noqa: BLE001
         print(f"  ⚠  English pass skipped (non-fatal): {e}")
+
+    # The audio edition, before the email so it can carry a Listen card. The
+    # MP3 goes to weekly_public/, which the workflow deploys to the site
+    # beside the daily episodes. No ElevenLabs key: no card, nothing else lost.
+    if not args.no_send:
+        try:
+            import podcast
+            tz_now = datetime.now(ZoneInfo("America/New_York")).date()
+            rec = podcast.produce_weekly(weekly, Path("weekly_public"), date_slug,
+                                         pyongyang=pyongyang_week(digests),
+                                         events=next_week_events(weekly.get("calendar_next_week"), tz_now))
+            if rec:
+                base = (os.environ.get("WEB_URL") or "https://andysaulim.github.io/Daily-Korea-Digest").rstrip("/")
+                weekly["audio_url"] = f"{base}/{rec['file']}"
+                weekly["audio_minutes"] = max(1, round(rec.get("audio_seconds", 0) / 60))
+                print(f"🎧  Weekly audio: {rec.get('audio_bytes', 0):,} bytes, ~{weekly['audio_minutes']} min")
+        except Exception as e:                                  # noqa: BLE001
+            print(f"::warning title=Weekly audio skipped::{e}")
 
     html = render_weekly(weekly, digests)
     html_path = Path(f"weekly_{date_slug}.html")

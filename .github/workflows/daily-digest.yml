@@ -337,7 +337,10 @@ jobs:
           rm -rf /tmp/ghp && git worktree add -q --detach /tmp/ghp FETCH_HEAD
           cd /tmp/ghp
           old=$(ls -1 digest_*.mp3 2>/dev/null | sort | head -n -30)
-          if [ -z "$old" ]; then echo "Nothing to prune"; exit 0; fi
+          # The Week in Review's episodes: the 12 newest stay.
+          oldw=$(ls -1 weekly_*.mp3 2>/dev/null | sort | head -n -12)
+          for f in $oldw; do git rm -q --ignore-unmatch "$f" "${f%.mp3}.txt"; done
+          if [ -z "$old" ] && [ -z "$oldw" ]; then echo "Nothing to prune"; exit 0; fi
           # Each episode also has a transcript (.txt, .vtt), chapters
           # (.chapters.json) and a player page (listen/DATE.html); they go
           # with its MP3. --ignore-unmatch: older episodes lack some of them.

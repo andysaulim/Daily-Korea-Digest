@@ -50,13 +50,39 @@ jobs:
           done
           ls -la public/digest_*.json 2>/dev/null || echo "No digest JSONs found"
 
+      - name: Install ffmpeg for the audio edition
+        timeout-minutes: 2
+        continue-on-error: true
+        run: pip install imageio-ffmpeg || echo "::warning title=ffmpeg not installed::audio will be unmastered"
+
       - name: Generate weekly summary
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASS: ${{ secrets.GMAIL_APP_PASS }}
           DIGEST_TO: ${{ secrets.DIGEST_TO }}
+          GMAIL_FROM: ${{ secrets.GMAIL_FROM }}
+          DIGEST_REPLY_TO: ${{ secrets.DIGEST_REPLY_TO }}
+          DIGEST_VISIBLE_TO: ${{ secrets.DIGEST_VISIBLE_TO }}
+          DIGEST_FROM_NAME: ${{ secrets.DIGEST_FROM_NAME }}
+          # The audio edition, in the daily's voice (podcast.produce_weekly).
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          ELEVENLABS_VOICE_ID: ${{ vars.ELEVENLABS_VOICE_ID }}
+          ELEVENLABS_MODEL: ${{ vars.ELEVENLABS_MODEL }}
+          TTS_PACE: ${{ vars.TTS_PACE }}
+          WEB_URL: https://andysaulim.github.io/Daily-Korea-Digest
         run: python weekly.py
+
+      # The MP3 the email's Listen card points at. keep_files: only the week's
+      # audio and transcript are added; every daily file stays as it is.
+      - name: Publish the weekly audio
+        if: hashFiles('weekly_public/*.mp3') != ''
+        continue-on-error: true
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          personal_token: ${{ secrets.GH_PAT }}
+          publish_dir: ./weekly_public
+          keep_files: true
 
       - name: Save tracker data to cache
         if: always()
