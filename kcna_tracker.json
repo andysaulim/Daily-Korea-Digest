@@ -1,6 +1,19 @@
 {
   "days": [
     {
+      "date": "2026-10-31",
+      "silence_today": false,
+      "watch_flag": false,
+      "bottom_line": "State media's lead items were the Swiss FM Pyongyang visit and a Foreign Ministry press statement rejecting sanctions and nuclear weapons-state denial, while KCNA reported the October 29 drone exhibition and 600mm 'Sniper' rocket live-fire demonstration without yet acknowledging the simultaneous ballistic missile salvo.",
+      "quotes": [
+        {
+          "speaker": "Kim Jong Un",
+          "quote": "The aim to seize the absolute superiority in the drone technology is an indispensable option in the light of the ever-changing patterns of modern warfare. Strength precisely means peace and peace is guaranteed only by strength.",
+          "source": "Kim Jong Un inspects new stealth drone, calls for 'absolute' UAV superiority"
+        }
+      ]
+    },
+    {
       "date": "2026-10-30",
       "silence_today": false,
       "watch_flag": false,
@@ -101,5 +114,5 @@
       "bottom_line": "DPRK state media led with Kim Yo Jong's loudspeaker threat and a reaffirmation of Russia ties; no Kim Jong Un appearance or direct statement today."
     }
   ],
-  "last_updated": "2026-10-30T11:11:16.467500+00:00"
+  "last_updated": "2026-10-31T11:09:49.360252+00:00"
 }
