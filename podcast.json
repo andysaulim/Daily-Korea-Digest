@@ -535,5 +535,40 @@
     "transcript": "digest_2026-10-30.vtt",
     "chapters": "digest_2026-10-30.chapters.json",
     "page": "listen/2026-10-30.html"
+  },
+  {
+    "date": "2026-10-31",
+    "title": "Korea Daily Brief | Saturday, October 31",
+    "summary": "U.S.-South Korea-Japan foreign ministers reaffirm denuclearization at G20, North Korean drone expo targets South Korea and U.S. assets, Binance 6.3 billion dollar hack linked to North Korea, Hanwha wins 269 million dollars U.S. Navy contract, wartime operational control transfer progress signaled.",
+    "file": "digest_2026-10-31.mp3",
+    "bytes": 5016296,
+    "seconds": 626,
+    "script": "written",
+    "transcript_text": "digest_2026-10-31.txt",
+    "notes": [
+      {
+        "headline": "US, ROK, Japan FMs sign Arctic-Pacific partnership pact, reaffirm DPRK denuclearization at G20",
+        "source": "US State Department",
+        "url": "https://www.state.gov/releases/office-of-the-spokesman/2026/10/united-states-japan-republic-of-korea-rok-trilateral-foreign-ministers-meeting-2/"
+      },
+      {
+        "headline": "North Korea exhibits drones targeting mock ROK guard post and US tank at 'Unmanned Aviation Technology Development-2026'",
+        "source": "Dong-A Ilbo",
+        "url": "https://www.donga.com/en/article/all/20261031/6440851/1"
+      },
+      {
+        "headline": "Trump says US investigating Binance hack; blockchain firms tie $6.3B theft to North Korean group TraderTraitor",
+        "source": "The Hill / The Hill International",
+        "url": "https://thehill.com/policy/technology/6185518-trump-binance-crypto-hack-north-korea/"
+      },
+      {
+        "headline": "Seoul signals OPCON transfer could advance in early 2027, eyes December SCM for timeline",
+        "source": "Dong-A Ilbo",
+        "url": "https://www.donga.com/en/article/all/20261031/6440866/1"
+      }
+    ],
+    "transcript": "digest_2026-10-31.vtt",
+    "chapters": "digest_2026-10-31.chapters.json",
+    "page": "listen/2026-10-31.html"
   }
 ]

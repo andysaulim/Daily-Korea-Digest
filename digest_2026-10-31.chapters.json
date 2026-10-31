@@ -1,0 +1,53 @@
+{
+ "version": "1.2.0",
+ "chapters": [
+  {
+   "startTime": 0.0,
+   "title": "Today's headlines",
+   "endTime": 47.09
+  },
+  {
+   "startTime": 47.09,
+   "title": "US, ROK, Japan FMs sign Arctic-Pacific partnership pact, reaffirm…",
+   "url": "https://www.state.gov/releases/office-of-the-spokesman/2026/10/united-states-japan-republic-of-korea-rok-trilateral-foreign-ministers-meeting-2/",
+   "endTime": 154.66
+  },
+  {
+   "startTime": 154.66,
+   "title": "North Korea exhibits drones targeting mock ROK guard post and US tank…",
+   "url": "https://www.donga.com/en/article/all/20261031/6440851/1",
+   "endTime": 255.26
+  },
+  {
+   "startTime": 255.26,
+   "title": "Trump says US investigating Binance hack",
+   "url": "https://thehill.com/policy/technology/6185518-trump-binance-crypto-hack-north-korea/",
+   "endTime": 313.83
+  },
+  {
+   "startTime": 313.83,
+   "title": "Pyongyang",
+   "endTime": 382.58
+  },
+  {
+   "startTime": 382.58,
+   "title": "The round-up",
+   "endTime": 541.96
+  },
+  {
+   "startTime": 541.96,
+   "title": "Capitol Hill",
+   "endTime": 559.08
+  },
+  {
+   "startTime": 559.08,
+   "title": "Korea and the World",
+   "endTime": 588.8
+  },
+  {
+   "startTime": 588.8,
+   "title": "Markets",
+   "endTime": 626.91
+  }
+ ]
+}
