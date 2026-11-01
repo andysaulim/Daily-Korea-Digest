@@ -1,0 +1,53 @@
+{
+ "version": "1.2.0",
+ "chapters": [
+  {
+   "startTime": 0.0,
+   "title": "Today's headlines",
+   "endTime": 40.72
+  },
+  {
+   "startTime": 40.72,
+   "title": "North Korea tests tactical ballistic missile cluster warhead, vows…",
+   "url": "https://www.nknews.org/2026/11/north-korea-tests-cluster-warhead-plans-military-use-by-end-of-2026/",
+   "endTime": 125.57
+  },
+  {
+   "startTime": 125.57,
+   "title": "FBI formally attributes $6.3B Binance cryptocurrency theft to North…",
+   "url": "https://www.reuters.com/world/fbi-links-north-korea-theft-6-billion-from-binance-2026-10-31/",
+   "endTime": 196.86
+  },
+  {
+   "startTime": 196.86,
+   "title": "South Korea October exports hit record $115.3B, chip boom puts $1…",
+   "url": "https://www.wsj.com/world/asia/south-koreas-chip-led-exports-accelerate-bringing-1-trln-annual-target-closer-5180b539",
+   "endTime": 260.82
+  },
+  {
+   "startTime": 260.82,
+   "title": "Pyongyang",
+   "endTime": 326.89
+  },
+  {
+   "startTime": 326.89,
+   "title": "The round-up",
+   "endTime": 513.58
+  },
+  {
+   "startTime": 513.58,
+   "title": "Capitol Hill",
+   "endTime": 539.75
+  },
+  {
+   "startTime": 539.75,
+   "title": "Korea and the World",
+   "endTime": 583.72
+  },
+  {
+   "startTime": 583.72,
+   "title": "Markets",
+   "endTime": 625.68
+  }
+ ]
+}

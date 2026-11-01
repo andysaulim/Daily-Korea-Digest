@@ -1704,5 +1704,12 @@
     "top_stories_count": 4,
     "word_count": 2658,
     "url": "digest_2026-10-31.html"
+  },
+  {
+    "date": "2026-11-01",
+    "headline_re": "DPRK cluster warhead test · FBI pins $6.3B Binance hack on North Korea · ROK October exports near $115B record · Cho at G20 Atlanta",
+    "top_stories_count": 3,
+    "word_count": 2578,
+    "url": "digest_2026-11-01.html"
   }
 ]

@@ -570,5 +570,38 @@
     "transcript": "digest_2026-10-31.vtt",
     "chapters": "digest_2026-10-31.chapters.json",
     "page": "listen/2026-10-31.html"
+  },
+  {
+    "date": "2026-11-01",
+    "title": "Korea Daily Brief | Sunday, November 1",
+    "summary": "North Korean cluster warhead test, FBI pins 6.3 billion dollars Binance hack on North Korea, South Korean October exports near 115 billion dollar record, Cho at G20 Atlanta.",
+    "file": "digest_2026-11-01.mp3",
+    "bytes": 5006565,
+    "seconds": 625,
+    "script": "written",
+    "script_repaired": [
+      "He held bilaterals with the EU's Kaja Kallas, U.K."
+    ],
+    "transcript_text": "digest_2026-11-01.txt",
+    "notes": [
+      {
+        "headline": "North Korea tests tactical ballistic missile cluster warhead, vows four types in service by year-end",
+        "source": "NK News / Korea Times / Yonhap",
+        "url": "https://www.nknews.org/2026/11/north-korea-tests-cluster-warhead-plans-military-use-by-end-of-2026/"
+      },
+      {
+        "headline": "FBI formally attributes $6.3B Binance cryptocurrency theft to North Korea's TraderTraitor unit",
+        "source": "Reuters / AP / Bloomberg",
+        "url": "https://www.reuters.com/world/fbi-links-north-korea-theft-6-billion-from-binance-2026-10-31/"
+      },
+      {
+        "headline": "South Korea October exports hit record $115.3B, chip boom puts $1 trillion annual target in reach",
+        "source": "Bloomberg / Reuters / WSJ / Forbes Middle East",
+        "url": "https://www.wsj.com/world/asia/south-koreas-chip-led-exports-accelerate-bringing-1-trln-annual-target-closer-5180b539"
+      }
+    ],
+    "transcript": "digest_2026-11-01.vtt",
+    "chapters": "digest_2026-11-01.chapters.json",
+    "page": "listen/2026-11-01.html"
   }
 ]
