@@ -1,6 +1,19 @@
 {
   "days": [
     {
+      "date": "2026-11-01",
+      "silence_today": false,
+      "watch_flag": false,
+      "bottom_line": "State media's lead today was the Missile Administration's cluster warhead test confirmation, with the Foreign Ministry reiterating the nuclear-weapons-state position; Kim's drone exhibition quote from October 30 remains the current headline from state media, and the New Yalu River Bridge vehicle gap persists.",
+      "quotes": [
+        {
+          "speaker": "Kim Jong Un",
+          "quote": "The aim to seize the absolute superiority in the drone technology is an indispensable option in the light of the ever-changing patterns of modern warfare. Strength precisely means peace and peace is guaranteed only by strength.",
+          "source": "Kim Jong Un inspects new stealth drone, calls for 'absolute' UAV superiority"
+        }
+      ]
+    },
+    {
       "date": "2026-10-31",
       "silence_today": false,
       "watch_flag": false,
@@ -114,5 +127,5 @@
       "bottom_line": "DPRK state media led with Kim Yo Jong's loudspeaker threat and a reaffirmation of Russia ties; no Kim Jong Un appearance or direct statement today."
     }
   ],
-  "last_updated": "2026-10-31T11:09:49.360252+00:00"
+  "last_updated": "2026-11-01T12:10:20.279633+00:00"
 }
