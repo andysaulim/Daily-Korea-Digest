@@ -1,6 +1,12 @@
 {
   "days": [
     {
+      "date": "2026-11-02",
+      "silence_today": false,
+      "watch_flag": false,
+      "bottom_line": "State media led with the cluster warhead test confirmation and a fierce condemnation of US-ROK nuclear drills, while North Korean coal officials pursued Chinese smart-mining technology — no Kim appearance reported today."
+    },
+    {
       "date": "2026-11-01",
       "silence_today": false,
       "watch_flag": false,
@@ -119,13 +125,7 @@
       "silence_today": false,
       "watch_flag": false,
       "bottom_line": "KCNA led with Kim Jong Un's expo appearance — rebutting death rumors — and Kim Yo Jong's border threat statement; North Korea-Russia education cooperation talks were also reported."
-    },
-    {
-      "date": "2026-10-19",
-      "silence_today": false,
-      "watch_flag": false,
-      "bottom_line": "DPRK state media led with Kim Yo Jong's loudspeaker threat and a reaffirmation of Russia ties; no Kim Jong Un appearance or direct statement today."
     }
   ],
-  "last_updated": "2026-11-01T12:10:20.279633+00:00"
+  "last_updated": "2026-11-02T12:09:12.988939+00:00"
 }
