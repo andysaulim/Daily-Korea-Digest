@@ -2198,3 +2198,76 @@ if __name__ == "__main__":
     s = build_script(d)
     print(s)
     print(f"\n— {len(s.split()):,} words, ~{estimate_minutes(s):.1f} min, {len(s):,} chars")
+
+
+# ── Week in Review audio ─────────────────────────────────────────────────────
+# The Friday edition gets an episode too, in the same voice. Its script is
+# assembled from the weekly's own text rather than rewritten by a model: the
+# weekly is already a synthesis of seven checked briefs, and read as written
+# it cannot say anything the email does not.
+
+WEEKLY_CLOSE = ("That's the Korea Week in Review from the CSIS Korea Chair. "
+                "The daily brief returns tomorrow morning.")
+
+
+def weekly_opening(label: str) -> str:
+    return (f"This is the Korea Week in Review from the CSIS Korea Chair, {SPOKEN_DISCLOSURE}. "
+            f"It covers {label}.")
+
+
+def build_weekly_script(weekly: dict, pyongyang: dict | None = None, events: list | None = None) -> str:
+    """The weekly, read aloud: the week in brief, the top stories, Pyongyang, next week."""
+    def bare(t) -> str:
+        return speakable(str(t or "")).rstrip(". ")
+    label = bare(weekly.get("week_label") or "this week")
+    parts = [weekly_opening(label)]
+    if weekly.get("bottom_line"):
+        parts += [SEGMENT, "The week in brief.", speakable(weekly["bottom_line"])]
+    stories = [s for s in (weekly.get("top_10") or []) if isinstance(s, dict) and s.get("headline")]
+    if stories:
+        parts += [SEGMENT, f"The {'top ' + str(len(stories)) + ' stories' if len(stories) > 1 else 'top story'} of the week."]
+        ordinals = ("First", "Second", "Third", "Fourth", "Fifth", "Sixth", "Seventh", "Eighth", "Ninth", "Tenth")
+        for i, s in enumerate(stories[:10]):
+            head = bare(s["headline"])
+            body = speakable(str(s.get("body") or ""))
+            parts.append(f"{ordinals[i]}: {head}. {body}".strip())
+    dprk = weekly.get("dprk_statements") or {}
+    pw = pyongyang or {}
+    lines = []
+    seen = pw.get("kim_seen") or []
+    days = len(pw.get("days") or [])
+    if days:
+        lines.append(f"Kim Jong Un made a public appearance on {len(seen)} of {days} days"
+                     + (f", most recently on {bare(seen[-1][0])}" if seen else "") + ".")
+    if dprk.get("summary"):
+        lines.append(speakable(dprk["summary"]))
+    for q in (dprk.get("notable_quotes") or [])[:2]:
+        if q.get("quote") and q.get("speaker"):
+            lines.append(f"{bare(q['speaker'])}, in their words: {speakable(q['quote'])}")
+    if lines:
+        parts += [SEGMENT, CUE_PYONGYANG] + lines
+    ahead = [f"{bare(str(e.get('month', '')) + ' ' + str(e.get('day', '')))}: {bare(e.get('headline', ''))}."
+             for e in (events or []) if e.get("headline")]
+    if ahead:
+        parts += [SEGMENT, "Next week."] + ahead
+    parts += [SEGMENT, WEEKLY_CLOSE]
+    return "\n\n".join(p for p in parts if p.strip())
+
+
+def produce_weekly(weekly: dict, public: Path, date_slug: str,
+                   pyongyang: dict | None = None, events: list | None = None) -> dict | None:
+    """Script and MP3 for one Week in Review. Returns the record, or None. Never raises."""
+    try:
+        script = build_weekly_script(weekly, pyongyang, events)
+        print(f"  🎙  Weekly script: {len(script.split()):,} words")
+        public.mkdir(parents=True, exist_ok=True)
+        (public / f"weekly_{date_slug}.txt").write_text(spoken_text(script), encoding="utf-8")
+        mp3 = public / f"weekly_{date_slug}.mp3"
+        rec = synthesize(script, mp3)
+        if rec:
+            rec.pop("_chunks", None)
+            rec["file"] = mp3.name
+        return rec
+    except Exception as e:                                      # noqa: BLE001
+        print(f"::warning title=Weekly audio skipped::{e}")
+        return None
