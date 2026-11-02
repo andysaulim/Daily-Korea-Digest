@@ -1711,5 +1711,12 @@
     "top_stories_count": 3,
     "word_count": 2578,
     "url": "digest_2026-11-01.html"
+  },
+  {
+    "date": "2026-11-02",
+    "headline_re": "Lee unveils record 821T won budget · DPRK cluster warhead deployment planned by year-end · ROK Defense Drone HQ launches · Altman visits Samsung/SK",
+    "top_stories_count": 2,
+    "word_count": 2128,
+    "url": "digest_2026-11-02.html"
   }
 ]

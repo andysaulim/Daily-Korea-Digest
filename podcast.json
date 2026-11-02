@@ -603,5 +603,30 @@
     "transcript": "digest_2026-11-01.vtt",
     "chapters": "digest_2026-11-01.chapters.json",
     "page": "listen/2026-11-01.html"
+  },
+  {
+    "date": "2026-11-02",
+    "title": "Korea Daily Brief | Monday, November 2",
+    "summary": "Lee unveils record 821T won budget, North Korean cluster warhead deployment planned by year-end, South Korean Defense Drone HQ launches, Altman visits Samsung and SK.",
+    "file": "digest_2026-11-02.mp3",
+    "bytes": 5008691,
+    "seconds": 625,
+    "script": "written",
+    "transcript_text": "digest_2026-11-02.txt",
+    "notes": [
+      {
+        "headline": "Lee submits record 820.9 trillion won budget with AI, defense, and OPCON acceleration at its core",
+        "source": "Korea Herald / CNBC",
+        "url": "https://www.koreaherald.com/article/10922746"
+      },
+      {
+        "headline": "OpenAI CEO Altman makes unannounced Seoul visit, meets Samsung and SK Group on AI chip partnerships",
+        "source": "CNBC",
+        "url": "https://www.cnbc.com/2026/11/02/openai-sam-altman-samsung-sk-south-korea.html"
+      }
+    ],
+    "transcript": "digest_2026-11-02.vtt",
+    "chapters": "digest_2026-11-02.chapters.json",
+    "page": "listen/2026-11-02.html"
   }
 ]

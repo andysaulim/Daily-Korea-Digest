@@ -1,0 +1,71 @@
+This is the Korea Daily Brief from the CSIS Korea Chair, read by an AI voice. It's Monday, November 2.
+
+Three things today: President Lee tables a record budget, North Korea plans cluster warheads by year-end, and South Korea stands up a new Defense Drone Headquarters. The budget is the largest in South Korean history, and it lands in a National Assembly already crackling with political friction over Lee's legal proceedings. Turkish President Erdogan is in Seoul today for a state visit, with a bilateral summit scheduled for tomorrow.
+
+First, the budget.
+
+President Lee Jae-myung walked into the National Assembly on Monday and presented a 2027 spending plan of 820.9 trillion won, roughly 610 billion dollars. That is up 12.8 percent from 2026 and the largest annual budget in South Korean history.
+
+Lee framed it as a redistribution agenda. In his address, he said: "Not the growth of a few, but a great transformation to 'growth for all' in which every region and every citizen equally enjoys the opportunities and outcomes of growth." Maeil Gyeongje TV noted he used the word "growth" 36 times in the speech.
+
+Defense is a major driver. The Defense Ministry confirmed in a statement Monday that the 2027 defense allocation is 73.3 trillion won, an 8.2 percent increase from the previous year. The ministry says the budget prioritizes a shift from a personnel-centered to an advanced-technology-centered force, with money specifically earmarked for accelerating wartime operational control transfer, the KF-21 fighter jet program, and procurement of nuclear-powered submarines.
+
+The speech did not go smoothly. People Power Party lawmakers heckled Lee from the floor, shouting "resume the trial," a reference to his ongoing legal proceedings. Lee responded from the podium: "stop the interference." The exchange reflects the deep political friction surrounding his presidency.
+
+The budget faces a legal passage deadline of December 2. Remember: 820.9 trillion won, the largest in South Korean history, with defense up 8.2 percent.
+
+Second, North Korea's cluster warhead plans and the Iron Mace response.
+
+North Korea said over the weekend it plans to deploy cluster warheads by the end of the year. That development comes alongside a sharp condemnation of the U.S.-South Korea Iron Mace nuclear tabletop exercise. Kim Jong-sik, First Vice Department Director of the Workers' Party of Korea Central Committee, released a statement through state media calling Iron Mace "the most hideous nuclear war rehearsal" and vowing to continue bolstering North Korea's nuclear deterrent.
+
+State media also confirmed a cluster warhead test. That confirmation, combined with the planned deployment timeline, marks a concrete step in North Korea's weapons development.
+
+The Beyond Parallel analysis published today adds another layer. Using satellite imagery, it shows completion of a new building at Yongbyon widely believed to be a uranium enrichment plant, alongside rapid expansion of what appears to be Russian drone production infrastructure at the Yelabuga Special Economic Zone, with reports of potential North Korean involvement there as well.
+
+On the financial front, South Korea's Financial Services Commission convened an emergency meeting Monday with domestic crypto exchanges, including Upbit, Bithumb, and Coinone, following a 6.3 billion dollar hack of Binance attributed to North Korea. The commission instructed exchanges to increase cold wallet holdings above the current 80 percent legal minimum and to report any abnormal outflows through the Digital Asset Exchange Alliance. The Washington Post is also out today with an investigation into the technical mechanics of that hack, describing how attackers accessed hot wallets through compromised employee laptops.
+
+The cluster warhead deployment timeline, the Yongbyon imagery, and the crypto operation together paint a picture of a regime accelerating on multiple fronts simultaneously.
+
+Third, Sam Altman in Seoul.
+
+OpenAI chief executive Sam Altman made an unannounced visit to South Korea over the weekend. He met with approximately 50 Samsung executives in Yongin and had lunch separately with SK Group Chairman Chey Tae-won, with senior officials from SK Hynix and SK Telecom present. Samsung confirmed the Yongin meeting covered AI developments, potential business opportunities, and AI's impact on corporate decision-making. SK Hynix declined to confirm the reported meeting.
+
+The visit follows Altman's October 2025 Seoul trip, when he announced Stargate partnerships with Samsung and SK Group covering high-bandwidth memory supplies and AI data center development. This visit comes as President Lee's record budget allocates heavily for AI development, and as Samsung holds the global smartphone shipment lead with a 22.7 percent share in the third quarter of 2026, shipping 57.8 million units, even as that volume was down 5 percent year-on-year.
+
+The timing matters. Altman is meeting South Korea's two most critical AI hardware partners at the same moment Seoul is committing historic public funds to AI. What those conversations produce in formal agreements, if anything, is the thing to watch next.
+
+Now to Pyongyang.
+
+Kim Jong Un has not appeared in state media for three days. State media today led with the cluster warhead test confirmation and Kim Jong-sik's fierce condemnation of the Iron Mace nuclear tabletop exercise. Separately, more than 20 officials from North Korea's State Academy of Sciences visited a Chinese smart-mining technology company, Shaanxi Coal Meilianmei Smart Energy, as part of a coal ministry delegation tour. The bottom line from the brief: state media drove hard on the nuclear deterrence message while North Korean officials quietly pursued Chinese industrial technology.
+
+The rest of the news, quickly.
+
+South Korea stood up a new Defense Drone Headquarters in Pocheon on Monday, disestablishing the three-year-old Drone Operations Command. Combat drone roles now shift to each individual military service.
+
+On exports, October was a remarkable month. South Korea posted 115.3 billion dollars in exports, the second-highest monthly total on record. Semiconductor exports surged 259.4 percent year-on-year to 56.44 billion dollars. Cumulative 2026 exports through October reached 930 billion dollars, putting the annual one-trillion-dollar threshold within reach by November. That said, manufacturing activity grew at its slowest pace in eight months in October, and large discount stores have posted ten consecutive quarters of declining sales, the longest downturn on record.
+
+Seoul's main stock index, the KOSPI, rebounded 2.24 percent Monday to close at about 5,859. Institutional buyers put in 1.2329 trillion won in net purchases, offsetting foreign selling.
+
+The U.S., South Korea, and Japan signed a memorandum of understanding launching the Trilateral Arctic-Pacific Partnership, with Secretary of State Marco Rubio, Japanese Foreign Minister Motegi, and South Korean Foreign Minister Cho Hyun signing the document. The three countries are also reportedly exploring joint small modular reactor deployment in Indonesia.
+
+The U.N. adopted a Korea-Netherlands resolution on responsible military AI for the third straight year, now with 171 co-sponsors. The resolution adds a structured Geneva dialogue on the topic for 2027 and 2028.
+
+South Korea's Unification Ministry formally recognized three additional post-war abductees, raising the official count to 519. The three were crew members of the vessel Daeyoung-ho, abducted near Yeonpyeong Island on November 24, 1973.
+
+KAI delivered the first two FA-50 light combat aircraft to Malaysia under a 2023 contract, arriving at Kuantan Air Base on Sunday.
+
+A South Korean army sergeant died at a frontline unit with external injuries. An investigation is underway.
+
+In the latest Gallup Korea poll, taken October 13 to 15, President Lee's approval stood at 39 percent, up two points. The Democratic Party sat at 36 percent and the People Power Party at 27 percent, both up, while independents fell to 29 percent.
+
+Jung Yeon-guk, a former MBC journalist, has been appointed Blue House spokesperson, the second appointment of a current journalist to a presidential communications post.
+
+Beyond the region.
+
+Ukraine's foreign ministry denied reports it was considering a diplomatic break with Seoul, as the two countries remain in active dispute over South Korea's request to transfer captured North Korean soldiers. South Korea has also activated emergency government measures to keep the 17.5 billion dollar Czech Dukovany nuclear project on track, after Korea Hydro and Nuclear Power ended contract negotiations with consortium lead Daewoo Engineering and Construction. Daewoo has asked the Ministry of Trade, Industry and Resources to mediate.
+
+Finally, the markets.
+
+Seoul's main stock index, the KOSPI, closed at about 5,859, up about 2.2 percent. The won traded at about 1,342 to the dollar, up about 0.3 percent. Brent crude fell sharply, down about 7.8 percent to around 108 dollars a barrel. The Bank of Korea's policy rate stands at 3.00 percent, last moved in October.
+
+That's the Korea Daily Brief for Monday, November 2. The full text, with a link to every source, is in today's email.

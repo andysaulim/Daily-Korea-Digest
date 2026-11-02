@@ -1,0 +1,47 @@
+{
+ "version": "1.2.0",
+ "chapters": [
+  {
+   "startTime": 0.0,
+   "title": "Today's headlines",
+   "endTime": 38.51
+  },
+  {
+   "startTime": 38.51,
+   "title": "Lee submits record 820.9 trillion won budget with AI, defense, and…",
+   "url": "https://www.koreaherald.com/article/10922746",
+   "endTime": 144.28
+  },
+  {
+   "startTime": 144.28,
+   "title": "OpenAI CEO Altman makes unannounced Seoul visit, meets Samsung and SK…",
+   "url": "https://www.cnbc.com/2026/11/02/openai-sam-altman-samsung-sk-south-korea.html",
+   "endTime": 261.6
+  },
+  {
+   "startTime": 261.6,
+   "title": "Lead story: third",
+   "endTime": 343.36
+  },
+  {
+   "startTime": 343.36,
+   "title": "Pyongyang",
+   "endTime": 381.37
+  },
+  {
+   "startTime": 381.37,
+   "title": "The round-up",
+   "endTime": 549.13
+  },
+  {
+   "startTime": 549.13,
+   "title": "Korea and the World",
+   "endTime": 585.77
+  },
+  {
+   "startTime": 585.77,
+   "title": "Markets",
+   "endTime": 625.97
+  }
+ ]
+}
