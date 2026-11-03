@@ -3360,7 +3360,28 @@ def check_weekly_audio():
     return problems
 
 
+def check_front_pages_dropped():
+    """A site's front page or a section listing is never collected as an article."""
+    import collect, run
+    problems = []
+    arts = [{"title": "Beyond Parallel", "url": "https://beyondparallel.csis.org/", "source": "Beyond Parallel"},
+            {"title": "재단법인 아산정책연구원", "url": "https://www.asaninst.org/", "source": "ASAN Institute"},
+            {"title": "North Korea", "url": "https://www.38north.org/topics/north-korea/", "source": "38 North"},
+            {"title": "Did the United States and Russia Just Agree to Collaborate",
+             "url": "https://beyondparallel.csis.org/did-the-united-states-and-russia/", "source": "Beyond Parallel"},
+            {"title": "Bank of Korea holds rate", "url": "https://news.google.com/rss/articles/CBMi", "source": "WSJ"}]
+    kept = [a["title"] for a in collect._drop_content_farms(arts)]
+    if kept != ["Did the United States and Russia Just Agree to Collaborate", "Bank of Korea holds rate"]:
+        problems.append(f"front-page filter kept {kept}")
+    d = {"opeds_today": [{"headline": "Beyond Parallel", "url": "https://beyondparallel.csis.org/", "source": "Beyond Parallel"}]}
+    run._drop_news_from_analysis(d, {"tier1": [], "tier2": []})
+    if d["opeds_today"]:
+        problems.append("a front page survived in Analysis")
+    return problems
+
+
 CHECKS = [
+    ("front pages and listings are not articles", check_front_pages_dropped),
     ("Week in Review audio edition", check_weekly_audio),
     ("English articles read in full", check_fulltext_for_english),
     ("fact check enforces sourced figures and dates", check_fact_check_enforces),

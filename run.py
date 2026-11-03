@@ -1564,6 +1564,16 @@ def _drop_news_from_analysis(digest: dict, payload: dict | None) -> list[str]:
     for item in digest.get("opeds_today") or []:
         url = str((item or {}).get("url") or "").strip()
         kind = analysis.get(url)
+        try:
+            import collect as _collect
+            _index = _collect.is_index_page({"url": url, "title": item.get("headline", ""),
+                                             "source": item.get("source", "")})
+        except Exception:                                       # noqa: BLE001
+            _index = False
+        if _index:
+            log.append(f"  opeds_today: a site's front page dropped from Analysis: "
+                       f"{str(item.get('headline', ''))[:70]}")
+            continue
         if re.search(r"/events?/", url):
             log.append(f"  opeds_today: event listing dropped from Analysis: "
                        f"{str(item.get('headline', ''))[:70]}")
