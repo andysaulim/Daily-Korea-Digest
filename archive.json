@@ -1718,5 +1718,12 @@
     "top_stories_count": 2,
     "word_count": 2128,
     "url": "digest_2026-11-02.html"
+  },
+  {
+    "date": "2026-11-03",
+    "headline_re": "Kim Yo Jong denies $6.3B Binance hack · DPRK cruise missile cluster warhead test · Lee-Erdogan summit · ROK passport data breach · 820.9T won budget · Seoul launches new submarine",
+    "top_stories_count": 4,
+    "word_count": 2686,
+    "url": "digest_2026-11-03.html"
   }
 ]

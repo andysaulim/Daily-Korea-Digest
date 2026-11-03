@@ -1,0 +1,53 @@
+{
+ "version": "1.2.0",
+ "chapters": [
+  {
+   "startTime": 0.0,
+   "title": "Today's headlines",
+   "endTime": 54.69
+  },
+  {
+   "startTime": 54.69,
+   "title": "Kim Yo Jong calls FBI's $6.3B Binance attribution a 'grave political…",
+   "url": "https://en.yna.co.kr/view/AEN20261103000653315",
+   "endTime": 161.23
+  },
+  {
+   "startTime": 161.23,
+   "title": "North Korea tests cruise missiles with cluster dispersal warheads…",
+   "url": "https://www.nknews.org/2026/11/north-korea-claims-first-test-of-smaller-cluster-warheads-on-cruise-missiles/",
+   "endTime": 253.69
+  },
+  {
+   "startTime": 253.69,
+   "title": "Lee and Erdogan agree to expand nuclear plant and defense cooperation…",
+   "url": "https://en.yna.co.kr/view/AEN20261103011151315",
+   "endTime": 353.88
+  },
+  {
+   "startTime": 353.88,
+   "title": "Pyongyang",
+   "endTime": 402.25
+  },
+  {
+   "startTime": 402.25,
+   "title": "The round-up",
+   "endTime": 600.04
+  },
+  {
+   "startTime": 600.04,
+   "title": "Capitol Hill",
+   "endTime": 627.21
+  },
+  {
+   "startTime": 627.21,
+   "title": "Korea and the World",
+   "endTime": 682.16
+  },
+  {
+   "startTime": 682.16,
+   "title": "Markets",
+   "endTime": 713.33
+  }
+ ]
+}

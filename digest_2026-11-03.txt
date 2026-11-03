@@ -1,0 +1,89 @@
+This is the Korea Daily Brief from the CSIS Korea Chair, read by an AI voice. It's Tuesday, November 3.
+
+Three things today: Kim Yo Jong fires back at the FBI over a six-billion-dollar crypto theft, North Korea tests cruise missiles with a new kind of warhead, and President Lee hosts Turkey's Erdogan in Seoul. The crypto denial is striking because Kim Yo Jong rarely speaks on hacking at all, and it lands the same day analysts say Pyongyang has turned cybercrime into a primary source of state revenue. On Capitol Hill, the Binance attribution is drawing scrutiny over North Korean cyber financing. No major events are scheduled for today, but watch November 5, when South Korea's National Assembly could hold a plenary vote on a high-stakes special counsel bill.
+
+First, North Korea's denial of the Binance hack, and what's behind it.
+
+Kim Yo Jong, the sister of North Korean leader Kim Jong Un, issued a rare personal statement through state media flatly rejecting the FBI's finding that Pyongyang stole more than 6.3 billion dollars in cryptocurrency from Binance. She called the attribution a "grave political provocation" and described it as a "sinister" attempt to damage North Korea's international image. The FBI linked the theft to a North Korean-affiliated hacking group it calls TraderTraitor.
+
+It's rare for Kim to speak directly on hacking incidents. Her statement signals how seriously Pyongyang is treating this attribution, even as outside analysts say the theft is already visible on public blockchains.
+
+The Financial Times reports that tokens from the theft have been split into small packages to obscure tracing, a process experts expect will take months. The Diplomat argues in a new analysis that the FBI's attribution shows North Korea has moved from opportunistic cybercrime to systematic state-sponsored financial extraction, with laundering routes running heavily through Chinese platforms and networks.
+
+A separate report from South Korea's Institute for National Security Strategy, affiliated with the National Intelligence Service, pushes back on recent portrayals of North Korean economic recovery. It argues that the reported 3 percent growth rate is driven by military production tied to Russia's war in Ukraine, and warns that living standards could suffer once wartime demand falls.
+
+The bottom line: more than 6.3 billion dollars allegedly stolen, a rare personal denial from Kim Yo Jong, and analysts saying the laundering process has only just begun.
+
+Second, North Korea's cruise missile test with a new warhead type.
+
+North Korea tested strategic cruise missiles fitted with what KCNA called a "middle-sized dispersal warhead," capable of destroying a target area of 5 to 6 hectares. Photos published by state media appear to show a Hwasal or Pulhwasal series long-range cruise missile releasing dozens of submunitions.
+
+The test comes just days after a separate ballistic missile cluster bomb test, making this the second cluster munitions demonstration in quick succession. The South Korean Joint Chiefs of Staff addressed the October 29 launch separately, saying the delayed announcement was a judgment based on operational security. The Joint Chiefs also said South Korea had secured superior counter-cluster munition technology approximately 20 years ago.
+
+State media confirmed the test while also condemning ongoing U.S.-South Korea nuclear drills, saying those exercises demonstrate the necessity of bolstering North Korea's nuclear deterrence. That framing connects the two stories: Pyongyang presenting both as part of a consistent deterrence posture.
+
+South Korea's Joint Chiefs Chairman separately visited soldiers injured in a September mine blast along the DMZ, an incident the military has attributed to North Korea.
+
+The key facts to hold: cruise missiles with dispersal warheads, a claimed kill zone of 5 to 6 hectares, and a back-to-back pace of cluster munitions testing that analysts and Seoul are both watching closely.
+
+Third, the Lee-Erdogan summit in Seoul, and a serious data breach that followed.
+
+South Korean President Lee Jae-myung and Turkish President Recep Tayyip Erdogan met in Seoul and agreed to deepen cooperation in nuclear power plants, defense manufacturing, and infrastructure. President Lee said progress on KEPCO's potential participation in Turkey's Sinop nuclear power plant project was "smooth." The two countries also elevated the Korea-Turkey Free Trade Agreement Joint Committee to ministerial level. Erdogan's visit is his first to South Korea since 2018 and follows talks the two leaders held in Ankara in November 2025.
+
+But the summit was shadowed by a significant security failure. Passport numbers, dates of birth, and other personal details of 168 people were posted online in an unencrypted file titled "Passenger List for Code One," uploaded to a foreign malware-scanning platform in June, ahead of President Lee's European tour. Those exposed include Lee himself, First Lady Kim Hea-kyung, Foreign Minister Cho Hyun, National Security Office Director Wi Sung-lac, and classified bodyguards.
+
+The presidential office said it was already aware and had taken measures. The Foreign Ministry said it views the case as a leak rather than a hack and is working with police to identify the source. President Lee has since called for the creation of a centralized government-wide cybersecurity body.
+
+The summit's nuclear and defense agreements are the headline, but it's the passport breach, and what it exposed about the security of South Korea's most sensitive travel documents, that may linger longer.
+
+Now to Pyongyang.
+
+State media led today with Kim Yo Jong's rare personal denial of the Binance hack attribution, which a lead story covered in full. On that, it's enough to say KCNA gave it prominent placement, framing it as a defense of national sovereignty against what the statement called a U.S. political campaign.
+
+KCNA also confirmed the cruise missile dispersal warhead test and carried North Korea's condemnation of joint U.S.-South Korea nuclear drills, calling those exercises proof of the need for a stronger nuclear deterrent.
+
+Separately, a Chinese Communist Party Central Party School delegation arrived in Pyongyang, and North Korea continued to court Chinese investment in the Sinuiju border region. Kim Jong Un has not appeared publicly in four days.
+
+The rest of the news, quickly.
+
+President Lee addressed the National Assembly on November 2 to present a proposed 2027 budget of 820.9 trillion won, up 12.8 percent from the current year. The plan is framed around what Lee called "growth for all," with an emphasis on direct fiscal spending over tax credits and prioritized support for regions outside the Seoul metropolitan area. The government says it reviewed all fiscal spending from scratch, abolishing roughly 2,100 programs and restructuring 6,476 others for a combined expenditure adjustment of 107.2 trillion won.
+
+South Korea's October consumer price index remained above the Bank of Korea's target, bolstering the case for further interest rate increases. The Bank of Korea expects November inflation to also stay in the high 2 percent range, driven by elevated core inflation. The Bank's current rate stands at 3 percent.
+
+Chip-led export growth accelerated in October, bringing South Korea's full-year 1 trillion dollar export target within reach, with semiconductors accounting for nearly half of expected export revenues.
+
+The Korea Exchange and Korea Securities Depository announced a target of April 2028 for next-business-day stock settlement, the first such overhaul since 1972, requiring system upgrades by October 2027 and a six-month trial period.
+
+The South Korean Navy launched the Seohuiham, a 3,600-ton diesel submarine built by Hanwha Ocean, with delivery to the fleet set for 2028.
+
+South Korea's Defense Drone Agency launched Monday, replacing the Drone Operations Command established in 2023. Strike and other operational functions have been transferred to each service branch.
+
+Korea's 17th vice minister-level strategic dialogue with Japan was held in Karuizawa, covering Korean War victims' DNA identification and Korean Peninsula denuclearization. Seoul also confirmed it will hold a separate Sado mine forced labor memorial for the third consecutive year on November 13.
+
+Korean Workers' Party International Secretary Kim Song Nam departed Pyongyang for Beijing.
+
+Romania has appointed a charge d'affaires to Pyongyang, two months after reopening its embassy there.
+
+A Gallup Korea poll taken October 27 to 29 put President Lee's approval at 39 percent. The Democratic Party stood at 35 percent, the People Power Party at 30 percent, and independents at 28 percent.
+
+Watch November 5: the Democratic Party plans a National Assembly plenary vote on a special counsel bill targeting alleged fabricated indictments from the Yoon Suk Yeol era. The People Power Party has threatened to filibuster every bill on that day's agenda.
+
+Foreign Minister Cho Hyun welcomed India's Deputy National Security Adviser Pavan Kapoor for breakfast on November 3, the inaugural session of the Korea-India Economic Security Dialogue, agreed at the April 2026 Korea-India summit. The U.S. Ambassador to South Korea also met with Deputy Prime Minister Lee Hyeong-il to discuss supply chain strengthening and economic cooperation.
+
+On Capitol Hill.
+
+North Korea's denial of the Binance hack is drawing attention in the context of congressional oversight of North Korean cyber financing. The Hill covered Kim Yo Jong's statement calling the FBI investigation "a trite provocation." No hearings are scheduled today, but the attribution and the scale of the alleged theft, 6.3 billion dollars, are likely to feature in ongoing oversight discussions.
+
+Beyond the region.
+
+South Korea has launched emergency government measures to keep its 17.5 billion dollar Czech nuclear power project on track. A dispute between Daewoo E and C and KHNP over subcontracting terms threatened the deal; Daewoo is seeking both government mediation and fresh direct talks with KHNP.
+
+The Korea-Bangladesh trade relationship gained a new structure, with Trade Minister Park Jung-sung and Bangladesh's Finance and Planning Minister agreeing in Seoul to establish a joint government-private sector working group on investment and reform priorities.
+
+POSCO plans to expand rare earths processing operations in Malaysia as part of its critical minerals supply chain diversification.
+
+Saudi Arabia's defense minister held separate talks with South Korea's counterpart on defense cooperation and Houthi threats, on the margins of regional diplomacy.
+
+Finally, the markets. Seoul's main stock index, the KOSPI, closed at about 5,649, down roughly 3.6 percent. The won weakened to about 1,345 to the dollar. Brent crude was up, trading near 106.50 dollars a barrel.
+
+That's the Korea Daily Brief for Tuesday, November 3. The full text, with a link to every source, is in today's email.

@@ -628,5 +628,40 @@
     "transcript": "digest_2026-11-02.vtt",
     "chapters": "digest_2026-11-02.chapters.json",
     "page": "listen/2026-11-02.html"
+  },
+  {
+    "date": "2026-11-03",
+    "title": "Korea Daily Brief | Tuesday, November 3",
+    "summary": "Kim Yo Jong denies 6.3 billion dollars Binance hack, North Korean cruise missile cluster warhead test, Lee-Erdogan summit, South Korean passport data breach, 820.9T won budget, Seoul launches new submarine.",
+    "file": "digest_2026-11-03.mp3",
+    "bytes": 5707700,
+    "seconds": 713,
+    "script": "written",
+    "transcript_text": "digest_2026-11-03.txt",
+    "notes": [
+      {
+        "headline": "Kim Yo Jong calls FBI's $6.3B Binance attribution a 'grave political provocation'",
+        "source": "Yonhap English",
+        "url": "https://en.yna.co.kr/view/AEN20261103000653315"
+      },
+      {
+        "headline": "North Korea tests cruise missiles with cluster dispersal warheads, days after ballistic missile cluster bomb test",
+        "source": "NK News",
+        "url": "https://www.nknews.org/2026/11/north-korea-claims-first-test-of-smaller-cluster-warheads-on-cruise-missiles/"
+      },
+      {
+        "headline": "Lee and Erdogan agree to expand nuclear plant and defense cooperation at Seoul summit",
+        "source": "Yonhap English",
+        "url": "https://en.yna.co.kr/view/AEN20261103011151315"
+      },
+      {
+        "headline": "Passport data of President Lee and 167 delegation members leaked from presidential aircraft manifest",
+        "source": "Hankyoreh English Edition",
+        "url": "https://english.hani.co.kr/arti/english_edition/e_national/1285585.html"
+      }
+    ],
+    "transcript": "digest_2026-11-03.vtt",
+    "chapters": "digest_2026-11-03.chapters.json",
+    "page": "listen/2026-11-03.html"
   }
 ]
