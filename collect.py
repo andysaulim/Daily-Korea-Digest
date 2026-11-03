@@ -2922,14 +2922,45 @@ CONTENT_FARM_NAMES = ("biggo", "vietnam.vn", "newscord", "devdiscourse", "latest
                       "newsbreak", "head topics", "big news network")
 
 
+# A section or listing page: /category/x, /tag/x, /topics/x, /page/2, /search.
+_INDEX_PATH = re.compile(r"^/(?:[a-z]{2}(?:-[a-z]{2})?/)?(?:category|categories|tag|tags|topics?|section|sections"
+                         r"|programs?|regions?|page|search|archives?|author|authors|experts?)(?:/[^/]*)?/?$", re.I)
+
+
+def is_index_page(article: dict) -> bool:
+    """A site's front page or a section listing, not an article.
+
+    On 2 November the Beyond Parallel feed delivered the site's homepage
+    (https://beyondparallel.csis.org/, titled "Beyond Parallel"), whose text
+    is the teasers of several older pieces. The brief ran it in Analysis as
+    one new piece "presenting" all of them. A page whose path is empty or a
+    listing, or whose title is only the site's or feed's own name, is dropped.
+    """
+    from urllib.parse import urlparse
+    url = str(article.get("url") or "")
+    if url and "news.google.com" not in url:
+        path = urlparse(url).path or "/"
+        if path in ("/", "") or re.fullmatch(r"/(?:index\.\w+|home|en|eng|kr|ko)/?", path, re.I) or _INDEX_PATH.match(path):
+            return True
+    title = re.sub(r"\s+", " ", str(article.get("title") or "")).strip().lower()
+    if not title:
+        return False
+    names = {str(article.get(k) or "").strip().lower() for k in ("source", "feed", "publisher")}
+    host = links.base_domain(url).split(".")[0] if url else ""
+    return title in names or (bool(host) and title.replace(" ", "") == host)
+
+
 def _drop_content_farms(articles: list) -> list:
-    """Remove items whose publisher or URL is a known aggregator or content farm."""
+    """Remove items whose publisher or URL is a known aggregator or content farm,
+    and front pages or section listings that are not articles (is_index_page)."""
     out = []
     for a in articles or []:
         if not isinstance(a, dict):
             continue
         hay = " ".join(str(a.get(k) or "") for k in ("url", "publisher_home", "source", "publisher")).lower()
         if any(d in hay for d in CONTENT_FARM_DOMAINS) or any(n in hay for n in CONTENT_FARM_NAMES):
+            continue
+        if is_index_page(a):
             continue
         out.append(a)
     return out
