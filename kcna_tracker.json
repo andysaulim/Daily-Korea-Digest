@@ -1,6 +1,12 @@
 {
   "days": [
     {
+      "date": "2026-11-03",
+      "silence_today": false,
+      "watch_flag": false,
+      "bottom_line": "State media led with Kim Yo Jong's rare personal denial of the Binance hack attribution and KCNA's confirmation of the cruise missile dispersal warhead test, while a Chinese Communist Party Central Party School delegation arrived in Pyongyang and North Korea continued to court Chinese investment in Sinuiju."
+    },
+    {
       "date": "2026-11-02",
       "silence_today": false,
       "watch_flag": false,
@@ -119,13 +125,7 @@
       "silence_today": false,
       "watch_flag": false,
       "bottom_line": "KCNA led with Kim Yo Jong and Pak Jong Chon's border fortification inspection and troop orders, while North Korean state websites remained offline for a second day in an unexplained simultaneous outage."
-    },
-    {
-      "date": "2026-10-20",
-      "silence_today": false,
-      "watch_flag": false,
-      "bottom_line": "KCNA led with Kim Jong Un's expo appearance — rebutting death rumors — and Kim Yo Jong's border threat statement; North Korea-Russia education cooperation talks were also reported."
     }
   ],
-  "last_updated": "2026-11-02T12:09:12.988939+00:00"
+  "last_updated": "2026-11-03T12:08:42.118474+00:00"
 }

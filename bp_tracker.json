@@ -45,8 +45,8 @@
     "Sinuiju–Dandong (NK-China border)": {
       "name": "Sinuiju–Dandong (NK-China border)",
       "status": "activity",
-      "note": "38 North satellite imagery from October 16 confirms trucks traversing the New Yalu River (DPRK-Friendship) Bridge one day after the October 15 official opening, marking the start of commercial vehicle traffic. Daily NK reports (Oct 31) that North Korean trucks have still not joined Chinese cargo trucks on the bridge two weeks after the Oct 15 opening; North Korean transport officials are still preparing vehicles. North Korea-China trade reached $299M in September 2026, the second-highest monthly total in 2026. Kim Jong Un crossed the New Yalu River Bridge on October 24 during his unannounced visit to Dandong.",
-      "last_source_date": "2026-10-31",
+      "note": "38 North satellite imagery from October 16 confirms trucks traversing the New Yalu River (DPRK-Friendship) Bridge one day after the October 15 official opening, marking the start of commercial vehicle traffic. Daily NK reports (Oct 31) that North Korean trucks have still not joined Chinese cargo trucks on the bridge two weeks after the Oct 15 opening; North Korean transport officials are still preparing vehicles. North Korea-China trade reached $299M in September 2026, the second-highest monthly total in 2026. Kim Jong Un crossed the New Yalu River Bridge on October 24 during his unannounced visit to Dandong. Daily NK reports on Nov 3, 2026 that North Korea is courting Chinese investors to build hotels and shopping complexes in Sinuiju, with officials pitching lodging and commercial projects following the revival of Chinese interest after the New Yalu River Bridge opening and Kim's October visit to Dandong.",
+      "last_source_date": "2026-11-03",
       "direction": "up"
     },
     "Rason SEZ": {
@@ -78,5 +78,5 @@
       "direction": "up"
     }
   },
-  "last_updated": "2026-11-02T12:09:12.989885+00:00"
+  "last_updated": "2026-11-03T12:08:42.119470+00:00"
 }
