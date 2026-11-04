@@ -663,5 +663,35 @@
     "transcript": "digest_2026-11-03.vtt",
     "chapters": "digest_2026-11-03.chapters.json",
     "page": "listen/2026-11-03.html"
+  },
+  {
+    "date": "2026-11-04",
+    "title": "Korea Daily Brief | Wednesday, November 4",
+    "summary": "North Korea fires missiles on U.S. midterm day, Kim Yo Jong keeps talks door ajar, Democrats take Congress, Yoon election conviction upheld.",
+    "file": "digest_2026-11-04.mp3",
+    "bytes": 5205675,
+    "seconds": 650,
+    "script": "written",
+    "transcript_text": "digest_2026-11-04.txt",
+    "notes": [
+      {
+        "headline": "North Korea fires several missiles toward East Sea, fourth weapons launch in a week",
+        "source": "Yonhap English",
+        "url": "https://en.yna.co.kr/view/AEN20261104005500315"
+      },
+      {
+        "headline": "Seoul High Court upholds Yoon's suspended prison term in election law case; PPP faces 39.7B won liability",
+        "source": "Yonhap English / Korea Times",
+        "url": "https://en.yna.co.kr/view/AEN20261104001651315"
+      },
+      {
+        "headline": "Kim inspects Nampho Shipyard, reveals new warship class larger than destroyers under construction",
+        "source": "NK News / Korea Herald / Reuters",
+        "url": "https://www.nknews.org/2026/11/north-korea-teases-new-warship-under-construction-larger-than-destroyers/"
+      }
+    ],
+    "transcript": "digest_2026-11-04.vtt",
+    "chapters": "digest_2026-11-04.chapters.json",
+    "page": "listen/2026-11-04.html"
   }
 ]

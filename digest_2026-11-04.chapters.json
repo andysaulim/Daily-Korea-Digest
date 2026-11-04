@@ -1,0 +1,48 @@
+{
+ "version": "1.2.0",
+ "chapters": [
+  {
+   "startTime": 0.0,
+   "title": "Today's headlines",
+   "endTime": 31.68
+  },
+  {
+   "startTime": 31.68,
+   "title": "North Korea fires several missiles toward East Sea, fourth weapons…",
+   "url": "https://en.yna.co.kr/view/AEN20261104005500315",
+   "endTime": 145.2
+  },
+  {
+   "startTime": 145.2,
+   "title": "Seoul High Court upholds Yoon's suspended prison term in election law…",
+   "url": "https://en.yna.co.kr/view/AEN20261104001651315",
+   "endTime": 245.0
+  },
+  {
+   "startTime": 245.0,
+   "title": "Kim inspects Nampho Shipyard, reveals new warship class larger than…",
+   "url": "https://www.nknews.org/2026/11/north-korea-teases-new-warship-under-construction-larger-than-destroyers/",
+   "endTime": 334.0
+  },
+  {
+   "startTime": 334.0,
+   "title": "Pyongyang",
+   "endTime": 375.25
+  },
+  {
+   "startTime": 375.25,
+   "title": "The round-up",
+   "endTime": 580.17
+  },
+  {
+   "startTime": 580.17,
+   "title": "Korea and the World",
+   "endTime": 614.44
+  },
+  {
+   "startTime": 614.44,
+   "title": "Markets",
+   "endTime": 650.58
+  }
+ ]
+}
