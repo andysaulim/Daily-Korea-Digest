@@ -10,8 +10,8 @@
     "Sinpo South Shipyard": {
       "name": "Sinpo South Shipyard",
       "status": "activity",
-      "note": "As of May 2025: Hero Kim Kun Ok SLBM submarine exited drydock after 2+ years of fitting-out but was still not operational. New submarine construction begun in separate bay. NK Pro satellite analysis (Oct 20 2026) separately reports North Korea's Nampho Shipyard missed a deadline earlier in Oct 2026 to launch a 5,000-ton naval destroyer, with hull sections visible at two potential outdoor assembly areas. 38 North analysis published Oct 30 documents public display of a vessel described as a 'Tactical Nuclear Attack' submarine.",
-      "last_source_date": "2026-10-30",
+      "note": "As of May 2025: Hero Kim Kun Ok SLBM submarine exited drydock after 2+ years of fitting-out but was still not operational. New submarine construction begun in separate bay. NK Pro satellite analysis (Oct 20 2026) separately reports North Korea's Nampho Shipyard missed a deadline earlier in Oct 2026 to launch a 5,000-ton naval destroyer, with hull sections visible at two potential outdoor assembly areas. 38 North analysis published Oct 30 documents public display of a vessel described as a 'Tactical Nuclear Attack' submarine. Kim Jong Un inspected Nampho Shipyard on Nov 2 (reported Nov 4 by KCNA), announcing a new warship under construction larger than the destroyer built last year.",
+      "last_source_date": "2026-11-04",
       "direction": "up"
     },
     "THAAD Site — Seongju County": {
@@ -59,8 +59,8 @@
     "Yellow Sea NLL": {
       "name": "Yellow Sea NLL",
       "status": "normal",
-      "note": "As of September 26, 2025: 140m DPRK merchant vessel Toksong crossed the Northern Limit Line near Baengnyeong Island, advanced 5km south. ROK Navy fired approximately 60 warning shots; vessel retreated after 1 hour. ROK Marine Corps Commandant Gen. Ju Il-suk stated October 20 2026 that North Korea has made 'various changes' to forces facing South Korea's border islands, with Seoul stepping up surveillance along the maritime border. 38 North satellite imagery published October 29 shows North Korea continuing to install new fencing along its border.",
-      "last_source_date": "2026-10-29",
+      "note": "As of September 26, 2025: 140m DPRK merchant vessel Toksong crossed the Northern Limit Line near Baengnyeong Island, advanced 5km south. ROK Navy fired approximately 60 warning shots; vessel retreated after 1 hour. ROK Marine Corps Commandant Gen. Ju Il-suk stated October 20 2026 that North Korea has made 'various changes' to forces facing South Korea's border islands, with Seoul stepping up surveillance along the maritime border. 38 North satellite imagery published October 29 shows North Korea continuing to install new fencing along its border. North Korean propaganda loudspeakers were visible at two border locations on Nov 4 from Odusan Unification Observatory and Key Observatory in Gyeonggi Province, with no audible broadcasts detected from the South Korean side.",
+      "last_source_date": "2026-11-04",
       "direction": ""
     },
     "Yellow Sea PMZ": {
@@ -78,5 +78,5 @@
       "direction": "up"
     }
   },
-  "last_updated": "2026-11-03T12:08:42.119470+00:00"
+  "last_updated": "2026-11-04T12:09:19.613882+00:00"
 }

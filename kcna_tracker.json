@@ -1,6 +1,12 @@
 {
   "days": [
     {
+      "date": "2026-11-04",
+      "silence_today": false,
+      "watch_flag": false,
+      "bottom_line": "State media led with Kim's Nampho Shipyard inspection and Kim Yo Jong's dual-track message pairing conditional dialogue with the same day's missile launches, while KCNA also confirmed a cruise missile dispersal warhead test announced by Yonhap on Nov 3."
+    },
+    {
       "date": "2026-11-03",
       "silence_today": false,
       "watch_flag": false,
@@ -119,13 +125,7 @@
       "silence_today": false,
       "watch_flag": false,
       "bottom_line": "KCNA led with Kim Yo Jong's loudspeaker deadline and border inspection, while Kim Jong Un received a reply letter from Xi Jinping reaffirming bilateral ties."
-    },
-    {
-      "date": "2026-10-21",
-      "silence_today": false,
-      "watch_flag": false,
-      "bottom_line": "KCNA led with Kim Yo Jong and Pak Jong Chon's border fortification inspection and troop orders, while North Korean state websites remained offline for a second day in an unexplained simultaneous outage."
     }
   ],
-  "last_updated": "2026-11-03T12:08:42.118474+00:00"
+  "last_updated": "2026-11-04T12:09:19.612971+00:00"
 }
