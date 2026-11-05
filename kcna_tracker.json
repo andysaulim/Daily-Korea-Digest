@@ -1,6 +1,12 @@
 {
   "days": [
     {
+      "date": "2026-11-05",
+      "silence_today": false,
+      "watch_flag": false,
+      "bottom_line": "State media confirmed North Korea's fourth weapons test in a week — a new air-defense SAM and a cruise missile airport-strike drill — while Kim Yo Jong publicly conditioned any US talks on abandonment of hostile policy, and the WPK international secretary met Wang Yi in Beijing."
+    },
+    {
       "date": "2026-11-04",
       "silence_today": false,
       "watch_flag": false,
@@ -119,13 +125,7 @@
       "silence_today": false,
       "watch_flag": false,
       "bottom_line": "Kim Yo Jong's border inspection and loudspeaker warning dominated KCNA output, with no Kim Jong Un public appearance; state media separately reported a Chinese veterans affairs delegation arrived in Pyongyang ahead of the Korean War anniversary."
-    },
-    {
-      "date": "2026-10-22",
-      "silence_today": false,
-      "watch_flag": false,
-      "bottom_line": "KCNA led with Kim Yo Jong's loudspeaker deadline and border inspection, while Kim Jong Un received a reply letter from Xi Jinping reaffirming bilateral ties."
     }
   ],
-  "last_updated": "2026-11-04T12:09:19.612971+00:00"
+  "last_updated": "2026-11-05T12:10:09.256098+00:00"
 }
