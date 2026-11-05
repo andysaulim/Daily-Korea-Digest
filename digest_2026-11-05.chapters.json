@@ -1,0 +1,53 @@
+{
+ "version": "1.2.0",
+ "chapters": [
+  {
+   "startTime": 0.0,
+   "title": "Today's headlines",
+   "endTime": 41.24
+  },
+  {
+   "startTime": 41.24,
+   "title": "North Korea tests new air-defense missile, conducts cruise missile…",
+   "url": "https://www.nknews.org/2026/11/north-korea-tests-anti-aircraft-missiles-conducts-attack-drill-on-airport-kcna/",
+   "endTime": 147.27
+  },
+  {
+   "startTime": 147.27,
+   "title": "Seoul expands Cheonghae anti-piracy mission toward Hormuz, adds P-8A…",
+   "url": "https://en.yna.co.kr/view/AEN20261105000751315",
+   "endTime": 228.91
+  },
+  {
+   "startTime": 228.91,
+   "title": "South Korea's September current account surplus hits record on chip…",
+   "url": "https://www.bloomberg.com/news/articles/2026-11-05/south-korea-s-current-account-surplus-hits-record-on-chip-boom",
+   "endTime": 308.81
+  },
+  {
+   "startTime": 308.81,
+   "title": "Pyongyang",
+   "endTime": 351.17
+  },
+  {
+   "startTime": 351.17,
+   "title": "The round-up",
+   "endTime": 559.43
+  },
+  {
+   "startTime": 559.43,
+   "title": "Capitol Hill",
+   "endTime": 585.81
+  },
+  {
+   "startTime": 585.81,
+   "title": "Korea and the World",
+   "endTime": 619.76
+  },
+  {
+   "startTime": 619.76,
+   "title": "Markets",
+   "endTime": 650.66
+  }
+ ]
+}

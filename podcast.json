@@ -693,5 +693,38 @@
     "transcript": "digest_2026-11-04.vtt",
     "chapters": "digest_2026-11-04.chapters.json",
     "page": "listen/2026-11-04.html"
+  },
+  {
+    "date": "2026-11-05",
+    "title": "Korea Daily Brief | Thursday, November 5",
+    "summary": "North Korean 4th test in a week: air-defense SAM cruise missile drill, Democrats sweep Congress, complicating Trump-Kim summit, Seoul expands Cheonghae anti-piracy zone toward Hormuz, Current account surplus hits record 61.5 billion dollars in September.",
+    "file": "digest_2026-11-05.mp3",
+    "bytes": 5206357,
+    "seconds": 650,
+    "script": "written",
+    "script_repaired": [
+      "Deputy Foreign Affairs Minister Jung Eui-hye also met a six-member parliamentary delegation from the United Kingdom today, covering the Korean Peninsula, Ukraine, and the Strait of Hormuz, among other topics."
+    ],
+    "transcript_text": "digest_2026-11-05.txt",
+    "notes": [
+      {
+        "headline": "North Korea tests new air-defense missile, conducts cruise missile airport-strike drill",
+        "source": "NK News / Korea Times / Reuters",
+        "url": "https://www.nknews.org/2026/11/north-korea-tests-anti-aircraft-missiles-conducts-attack-drill-on-airport-kcna/"
+      },
+      {
+        "headline": "Seoul expands Cheonghae anti-piracy mission toward Hormuz, adds P-8A and EOD team",
+        "source": "Yonhap News Agency",
+        "url": "https://en.yna.co.kr/view/AEN20261105000751315"
+      },
+      {
+        "headline": "South Korea's September current account surplus hits record on chip boom",
+        "source": "Bloomberg",
+        "url": "https://www.bloomberg.com/news/articles/2026-11-05/south-korea-s-current-account-surplus-hits-record-on-chip-boom"
+      }
+    ],
+    "transcript": "digest_2026-11-05.vtt",
+    "chapters": "digest_2026-11-05.chapters.json",
+    "page": "listen/2026-11-05.html"
   }
 ]
