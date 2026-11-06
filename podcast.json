@@ -1,14 +1,5 @@
 [
   {
-    "date": "2026-10-07",
-    "title": "Korea Daily Brief | Wednesday, October 7",
-    "summary": "North Korea warns Seoul over DMZ demining, Kim letter to Putin, Nuri-5 launches 15 satellites, South Korea's 747 billion dollar energy transition.",
-    "file": "digest_2026-10-07.mp3",
-    "bytes": 4579412,
-    "seconds": 572,
-    "script": "written"
-  },
-  {
     "date": "2026-10-08",
     "title": "Korea Daily Brief | Thursday, October 8",
     "summary": "South Korea recalls Ukraine envoy over NK prisoner of war row, South Korea test-fires first hypersonic glide vehicle, AI-driven cyberattack on Korean banks, DMZ mine provocation escalates.",
@@ -726,5 +717,35 @@
     "transcript": "digest_2026-11-05.vtt",
     "chapters": "digest_2026-11-05.chapters.json",
     "page": "listen/2026-11-05.html"
+  },
+  {
+    "date": "2026-11-06",
+    "title": "Korea Daily Brief | Friday, November 6",
+    "summary": "KOSPI down 6 percent on AI selloff, North Korea expands naval buildup to third shipyard, Democrats take Congress, Lee nominates new justice minister.",
+    "file": "digest_2026-11-06.mp3",
+    "bytes": 4948393,
+    "seconds": 618,
+    "script": "written",
+    "transcript_text": "digest_2026-11-06.txt",
+    "notes": [
+      {
+        "headline": "Korea's $1.7 trillion market rout burns day traders as AI selloff follows Democratic midterm sweep",
+        "source": "Bloomberg.com / Reuters",
+        "url": "https://www.bloomberg.com/news/articles/2026-11-06/korea-s-1-7-trillion-rout-burns-day-traders-challenges-lee"
+      },
+      {
+        "headline": "North Korea expands warship construction project to third shipyard",
+        "source": "NK News",
+        "url": "https://www.nknews.org/pro/?p=2266093"
+      },
+      {
+        "headline": "Lee nominates defense procurement chief Lee Yong-cheol as justice minister",
+        "source": "Yonhap English",
+        "url": "https://en.yna.co.kr/view/AEN20261106011051315"
+      }
+    ],
+    "transcript": "digest_2026-11-06.vtt",
+    "chapters": "digest_2026-11-06.chapters.json",
+    "page": "listen/2026-11-06.html"
   }
 ]

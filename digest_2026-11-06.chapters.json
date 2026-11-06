@@ -1,0 +1,53 @@
+{
+ "version": "1.2.0",
+ "chapters": [
+  {
+   "startTime": 0.0,
+   "title": "Today's headlines",
+   "endTime": 36.87
+  },
+  {
+   "startTime": 36.87,
+   "title": "Korea's $1.7 trillion market rout burns day traders as AI selloff…",
+   "url": "https://www.bloomberg.com/news/articles/2026-11-06/korea-s-1-7-trillion-rout-burns-day-traders-challenges-lee",
+   "endTime": 139.83
+  },
+  {
+   "startTime": 139.83,
+   "title": "North Korea expands warship construction project to third shipyard",
+   "url": "https://www.nknews.org/pro/?p=2266093",
+   "endTime": 264.72
+  },
+  {
+   "startTime": 264.72,
+   "title": "Lee nominates defense procurement chief Lee Yong-cheol as justice…",
+   "url": "https://en.yna.co.kr/view/AEN20261106011051315",
+   "endTime": 322.32
+  },
+  {
+   "startTime": 322.32,
+   "title": "Pyongyang",
+   "endTime": 362.63
+  },
+  {
+   "startTime": 362.63,
+   "title": "The round-up",
+   "endTime": 507.49
+  },
+  {
+   "startTime": 507.49,
+   "title": "Capitol Hill",
+   "endTime": 547.42
+  },
+  {
+   "startTime": 547.42,
+   "title": "Korea and the World",
+   "endTime": 584.21
+  },
+  {
+   "startTime": 584.21,
+   "title": "Markets",
+   "endTime": 618.42
+  }
+ ]
+}
