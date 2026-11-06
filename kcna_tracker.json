@@ -1,6 +1,12 @@
 {
   "days": [
     {
+      "date": "2026-11-06",
+      "silence_today": false,
+      "watch_flag": false,
+      "bottom_line": "State media confirmed North Korea's new air-defense SAM test and cruise missile airport-strike drill — its fourth weapons test in a week — while simultaneously keeping all tests off the domestic news agenda; 38 North separately documented a stealth UAV soft reveal from last week's exhibition."
+    },
+    {
       "date": "2026-11-05",
       "silence_today": false,
       "watch_flag": false,
@@ -119,13 +125,7 @@
           "source": "Kim Jong Un rallies junior commanders to build 'world's strongest' army"
         }
       ]
-    },
-    {
-      "date": "2026-10-23",
-      "silence_today": false,
-      "watch_flag": false,
-      "bottom_line": "Kim Yo Jong's border inspection and loudspeaker warning dominated KCNA output, with no Kim Jong Un public appearance; state media separately reported a Chinese veterans affairs delegation arrived in Pyongyang ahead of the Korean War anniversary."
     }
   ],
-  "last_updated": "2026-11-05T12:10:09.256098+00:00"
+  "last_updated": "2026-11-06T12:11:33.109662+00:00"
 }
