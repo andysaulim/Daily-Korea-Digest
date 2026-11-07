@@ -1,6 +1,12 @@
 {
   "days": [
     {
+      "date": "2026-11-07",
+      "silence_today": false,
+      "watch_flag": false,
+      "bottom_line": "State media confirmed the SPA Standing Committee plenary and Kim Sung-nam's third Beijing high-level meeting, while maintaining a complete domestic blackout on the week's four weapons tests."
+    },
+    {
       "date": "2026-11-06",
       "silence_today": false,
       "watch_flag": false,
@@ -112,20 +118,7 @@
           "source": "Kim Jong Un says North Korea 'inspired' by China's success in border city visit"
         }
       ]
-    },
-    {
-      "date": "2026-10-24",
-      "silence_today": false,
-      "watch_flag": false,
-      "bottom_line": "State media reported Kim's KPA commanders conference simultaneously with external confirmation of his surprise China visit, a dual signal combining domestic military mobilization messaging with an unannounced diplomatic move.",
-      "quotes": [
-        {
-          "speaker": "Kim Jong Un",
-          "quote": "military revolution",
-          "source": "Kim Jong Un rallies junior commanders to build 'world's strongest' army"
-        }
-      ]
     }
   ],
-  "last_updated": "2026-11-06T12:11:33.109662+00:00"
+  "last_updated": "2026-11-07T12:10:23.234464+00:00"
 }
