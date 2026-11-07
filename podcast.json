@@ -1,22 +1,5 @@
 [
   {
-    "date": "2026-10-08",
-    "title": "Korea Daily Brief | Thursday, October 8",
-    "summary": "South Korea recalls Ukraine envoy over NK prisoner of war row, South Korea test-fires first hypersonic glide vehicle, AI-driven cyberattack on Korean banks, DMZ mine provocation escalates.",
-    "file": "digest_2026-10-08.mp3",
-    "bytes": 5265492,
-    "seconds": 658,
-    "script": "assembled",
-    "script_rejected": [
-      "quotation not in the brief: ' at differing interpretations of confidentiality arrangement'",
-      "quotation not in the brief: ' and pledged continued investment in hypersonic propulsion, '",
-      "quotation not in the brief: ' Kim also vowed to deepen bilateral strategic ties. The brie'",
-      "name not in the brief: Service",
-      "name not in the brief: U.S",
-      "name not in the brief: Council"
-    ]
-  },
-  {
     "date": "2026-10-09",
     "title": "Korea Daily Brief | Friday, October 9",
     "summary": "South Korea HGV test, Seoul recalls Ukraine envoy, NIS snub roils alliance, October 10 North Korea watch, AI cyber campaign widens.",
@@ -747,5 +730,38 @@
     "transcript": "digest_2026-11-06.vtt",
     "chapters": "digest_2026-11-06.chapters.json",
     "page": "listen/2026-11-06.html"
+  },
+  {
+    "date": "2026-11-07",
+    "title": "Korea Daily Brief | Saturday, November 7",
+    "summary": "KOSPI plunges 6 percent on AI selloff, People Power Party rallies against special counsel bill, Kim Sung-nam holds third Beijing meeting, MASGA U.S. Navy visit, South Korean nuclear sub accelerated.",
+    "file": "digest_2026-11-07.mp3",
+    "bytes": 4795213,
+    "seconds": 599,
+    "script": "written",
+    "script_repaired": [
+      "The KOSPI's plunge isn't just a market story — it's a signal that South Korea's semiconductor-dependent economy is now caught in the crossfire of American domestic politics."
+    ],
+    "transcript_text": "digest_2026-11-07.txt",
+    "notes": [
+      {
+        "headline": "KOSPI plunges 6% as Democratic midterm sweep triggers AI selloff",
+        "source": "Korea Economic Daily / Nikkei",
+        "url": "https://www.hankyung.com/article/2026110723807"
+      },
+      {
+        "headline": "Kim Jong Un orders Nampho Shipyard expansion as warship construction spreads to third shipyard",
+        "source": "NK News / USNI News",
+        "url": "https://news.jkn.co.kr/editions/english/post/1074156"
+      },
+      {
+        "headline": "Lee names Lee Yong-cheol justice minister nominee, plus tax and police chiefs",
+        "source": "Dong-A Ilbo (English)",
+        "url": "https://www.donga.com/en/article/all/20261107/6450034/1"
+      }
+    ],
+    "transcript": "digest_2026-11-07.vtt",
+    "chapters": "digest_2026-11-07.chapters.json",
+    "page": "listen/2026-11-07.html"
   }
 ]
