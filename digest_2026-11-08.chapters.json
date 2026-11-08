@@ -1,0 +1,53 @@
+{
+ "version": "1.2.0",
+ "chapters": [
+  {
+   "startTime": 0.0,
+   "title": "Today's headlines",
+   "endTime": 38.19
+  },
+  {
+   "startTime": 38.19,
+   "title": "North Korea fires two ballistic missiles from Muncheon toward East Sea",
+   "url": "https://news.jtbc.co.kr/article/NB12082676?influxDiv=DAUM&kakao_from=mainnews",
+   "endTime": 127.93
+  },
+  {
+   "startTime": 127.93,
+   "title": "Senior US Navy and Marine Corps officials assess HD Hyundai's Ulsan…",
+   "url": "https://en.yna.co.kr/view/AEN20261108003800315",
+   "endTime": 254.36
+  },
+  {
+   "startTime": 254.36,
+   "title": "National Assembly passes 'fabricated prosecution' special counsel bill",
+   "url": "https://www.globalnewsagency.kr/news/articleView.html?idxno=503606",
+   "endTime": 349.14
+  },
+  {
+   "startTime": 349.14,
+   "title": "Pyongyang",
+   "endTime": 380.52
+  },
+  {
+   "startTime": 380.52,
+   "title": "The round-up",
+   "endTime": 539.14
+  },
+  {
+   "startTime": 539.14,
+   "title": "Capitol Hill",
+   "endTime": 556.28
+  },
+  {
+   "startTime": 556.28,
+   "title": "Korea and the World",
+   "endTime": 592.54
+  },
+  {
+   "startTime": 592.54,
+   "title": "Markets",
+   "endTime": 637.31
+  }
+ ]
+}

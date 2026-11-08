@@ -1,19 +1,5 @@
 [
   {
-    "date": "2026-10-09",
-    "title": "Korea Daily Brief | Friday, October 9",
-    "summary": "South Korea HGV test, Seoul recalls Ukraine envoy, NIS snub roils alliance, October 10 North Korea watch, AI cyber campaign widens.",
-    "file": "digest_2026-10-09.mp3",
-    "bytes": 5283465,
-    "seconds": 660,
-    "script": "assembled",
-    "script_rejected": [
-      "number not in the brief here: 16 (probe but 16 of 18)",
-      "quotation not in the brief: '\\n\\nSeoul now has a hypersonic glide vehicle. Whether it chang'",
-      "quotation not in the brief: ' toward North Korea. That accusation is now visible in multi'"
-    ]
-  },
-  {
     "date": "2026-10-10",
     "title": "Korea Daily Brief | Saturday, October 10",
     "summary": "WPK 81st anniversary, October 10, South Korean envoy returns from Kyiv, U.S. flags alliance intel concerns, Daegu ceiling collapse 38 hurt, Kim silent day 5.",
@@ -763,5 +749,44 @@
     "transcript": "digest_2026-11-07.vtt",
     "chapters": "digest_2026-11-07.chapters.json",
     "page": "listen/2026-11-07.html"
+  },
+  {
+    "date": "2026-11-08",
+    "title": "Korea Daily Brief | Sunday, November 8",
+    "summary": "North Korea fires 2 ballistic missiles, U.S.-South Korean MASGA shipyard visit, Cho-Rubio Paris meeting, Special counsel bill passed, KOSPI down 6 percent.",
+    "file": "digest_2026-11-08.mp3",
+    "bytes": 5099429,
+    "seconds": 637,
+    "script": "written",
+    "script_repaired": [
+      "Five tests in a week, two missiles today, and no sanctions discussion yet in Seoul.",
+      "State media's lead item is Workers' Party International Secretary Kim Sung-nam's five-day visit to China, where he held his third high-level meeting, including a session with a member of the Secretariat of the Central Committee of the Chinese Communist Party, and toured the Chinese Communist Party Central Party School."
+    ],
+    "transcript_text": "digest_2026-11-08.txt",
+    "notes": [
+      {
+        "headline": "North Korea fires two ballistic missiles from Muncheon toward East Sea",
+        "source": "JTBC",
+        "url": "https://news.jtbc.co.kr/article/NB12082676?influxDiv=DAUM&kakao_from=mainnews"
+      },
+      {
+        "headline": "Senior US Navy and Marine Corps officials assess HD Hyundai's Ulsan shipyard under MASGA",
+        "source": "Yonhap English",
+        "url": "https://en.yna.co.kr/view/AEN20261108003800315"
+      },
+      {
+        "headline": "FM Cho Hyun flies to Paris for G7 foreign ministers meeting, first face-to-face with Rubio since midterms",
+        "source": "Yonhap TV",
+        "url": "https://www.yonhapnewstv.co.kr/news/AKR202611081910373pv"
+      },
+      {
+        "headline": "National Assembly passes 'fabricated prosecution' special counsel bill",
+        "source": "GNA",
+        "url": "https://www.globalnewsagency.kr/news/articleView.html?idxno=503606"
+      }
+    ],
+    "transcript": "digest_2026-11-08.vtt",
+    "chapters": "digest_2026-11-08.chapters.json",
+    "page": "listen/2026-11-08.html"
   }
 ]
