@@ -1,6 +1,12 @@
 {
   "days": [
     {
+      "date": "2026-11-08",
+      "silence_today": false,
+      "watch_flag": false,
+      "bottom_line": "State media confirmed Kim Jong Un's Nampho Shipyard inspection and naval modernization orders, while KCNA also carried the 10th Congress of the Union of Agricultural Workers — all four recent weapons tests remain off the domestic news agenda."
+    },
+    {
       "date": "2026-11-07",
       "silence_today": false,
       "watch_flag": false,
@@ -105,20 +111,7 @@
           "source": "Kim Jong Un says North Korea 'inspired' by China's success in border city visit"
         }
       ]
-    },
-    {
-      "date": "2026-10-25",
-      "silence_today": false,
-      "watch_flag": false,
-      "bottom_line": "KCNA led with extensive coverage of Kim's Dandong visit, framing the 'blood alliance' with China around the 76th Korean War anniversary, while also reporting Kim's 'military revolution' address to company-level commanders — two tracks run simultaneously.",
-      "quotes": [
-        {
-          "speaker": "Kim Jong Un",
-          "quote": "North Korea is 'inspired' by China's success.",
-          "source": "Kim Jong Un says North Korea 'inspired' by China's success in border city visit"
-        }
-      ]
     }
   ],
-  "last_updated": "2026-11-07T12:10:23.234464+00:00"
+  "last_updated": "2026-11-08T12:10:06.298264+00:00"
 }
