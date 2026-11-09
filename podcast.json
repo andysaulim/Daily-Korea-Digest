@@ -1,14 +1,5 @@
 [
   {
-    "date": "2026-10-10",
-    "title": "Korea Daily Brief | Saturday, October 10",
-    "summary": "WPK 81st anniversary, October 10, South Korean envoy returns from Kyiv, U.S. flags alliance intel concerns, Daegu ceiling collapse 38 hurt, Kim silent day 5.",
-    "file": "digest_2026-10-10.mp3",
-    "bytes": 4544722,
-    "seconds": 568,
-    "script": "written"
-  },
-  {
     "date": "2026-10-11",
     "title": "Korea Daily Brief | Sunday, October 11",
     "summary": "North Korea marks party anniversary modestly, U.S.-Korea intelligence friction deepens, Arctic route completes, SK chip cluster push, AI bank hacks.",
@@ -788,5 +779,43 @@
     "transcript": "digest_2026-11-08.vtt",
     "chapters": "digest_2026-11-08.chapters.json",
     "page": "listen/2026-11-08.html"
+  },
+  {
+    "date": "2026-11-09",
+    "title": "Korea Daily Brief | Monday, November 9",
+    "summary": "North Korean envoy Beijing visit fuels Kim-Xi summit talk, KN-23 missiles hit Ukraine energy site, Coupang fined 220 million dollars, wartime operational control transfer conditions unchanged, Cheonghae expansion draws Iran warning.",
+    "file": "digest_2026-11-09.mp3",
+    "bytes": 5433508,
+    "seconds": 679,
+    "script": "written",
+    "script_repaired": [
+      "Neither the North Korean nor Chinese sides have confirmed what was discussed.",
+      "Ukrainian President Volodymyr Zelensky said Saturday that Russia used North Korean KN-23 short-range ballistic missiles to strike a key Ukrainian energy facility.",
+      "Zelensky called the preliminary findings confirmation of KN-23 use and said it was proof that international sanctions must be strengthened.",
+      "That's the first time Kyiv has publicly named the specific missile model.",
+      "What to watch: whether the KN-23 attribution accelerates any allied response on North Korea sanctions, and how Seoul calibrates its own Ukraine commitment against its North Korea diplomacy.",
+      "The North Korean KN-23, named by Zelensky for the first time, struck a Ukrainian energy facility on Saturday."
+    ],
+    "transcript_text": "digest_2026-11-09.txt",
+    "notes": [
+      {
+        "headline": "North Korean envoy's Beijing visit fuels Kim-Xi summit speculation ahead of APEC",
+        "source": "Dong-A Ilbo",
+        "url": "https://www.donga.com/en/article/all/20261109/6451765/1"
+      },
+      {
+        "headline": "Zelensky says Russia used North Korean KN-23 missiles to strike Ukrainian energy facility",
+        "source": "NK News",
+        "url": "https://www.nknews.org/2026/11/russia-used-north-korean-kn-23-missiles-in-ukraine-energy-site-strike-zelensky/"
+      },
+      {
+        "headline": "South Korea fines Coupang $220 million for abusing dominance in food delivery market",
+        "source": "Reuters",
+        "url": "https://www.reuters.com/world/south-korea-fines-coupang-220-million-abusing-dominance-food-delivery-market-2026-11-09/"
+      }
+    ],
+    "transcript": "digest_2026-11-09.vtt",
+    "chapters": "digest_2026-11-09.chapters.json",
+    "page": "listen/2026-11-09.html"
   }
 ]
