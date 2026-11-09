@@ -1,6 +1,12 @@
 {
   "days": [
     {
+      "date": "2026-11-09",
+      "silence_today": false,
+      "watch_flag": false,
+      "bottom_line": "State media led with the agricultural workers' congress and domestic welfare content; all five recent weapons tests remain absent from the domestic news agenda."
+    },
+    {
       "date": "2026-11-08",
       "silence_today": false,
       "watch_flag": false,
@@ -98,20 +104,7 @@
       "silence_today": false,
       "watch_flag": false,
       "bottom_line": "KCNA led with Kim's reply to Vietnam and the Pyongyang trade fair opening, while North Korean officials continued CPV anniversary tributes following Kim's Dandong visit."
-    },
-    {
-      "date": "2026-10-26",
-      "silence_today": false,
-      "watch_flag": false,
-      "bottom_line": "State media led with aftermath coverage of Kim's Dandong visit — invoking the 'blood alliance' framing — and North Korea's letter to the UN Security Council claiming the DMZ mine blast was staged by Seoul.",
-      "quotes": [
-        {
-          "speaker": "Kim Jong Un",
-          "quote": "North Korea is 'inspired' by China's success.",
-          "source": "Kim Jong Un says North Korea 'inspired' by China's success in border city visit"
-        }
-      ]
     }
   ],
-  "last_updated": "2026-11-08T12:10:06.298264+00:00"
+  "last_updated": "2026-11-09T12:09:11.872798+00:00"
 }
