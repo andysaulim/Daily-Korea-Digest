@@ -1,0 +1,53 @@
+{
+ "version": "1.2.0",
+ "chapters": [
+  {
+   "startTime": 0.0,
+   "title": "Today's headlines",
+   "endTime": 43.63
+  },
+  {
+   "startTime": 43.63,
+   "title": "North Korea tests new high-speed torpedo, announces early-2027 Navy…",
+   "url": "https://www.nknews.org/2026/11/north-korea-says-navy-to-deploy-new-high-speed-torpedo-in-early-2027/",
+   "endTime": 142.26
+  },
+  {
+   "startTime": 142.26,
+   "title": "Seoul Cabinet approves Cheonghae unit expansion toward Hormuz",
+   "url": "https://www.koreaherald.com/article/10932107",
+   "endTime": 233.53
+  },
+  {
+   "startTime": 233.53,
+   "title": "Lee calls for bipartisan US congressional outreach after Democratic…",
+   "url": "https://en.yna.co.kr/view/AEN20261110003851315",
+   "endTime": 339.17
+  },
+  {
+   "startTime": 339.17,
+   "title": "Pyongyang",
+   "endTime": 382.96
+  },
+  {
+   "startTime": 382.96,
+   "title": "The round-up",
+   "endTime": 529.94
+  },
+  {
+   "startTime": 529.94,
+   "title": "Capitol Hill",
+   "endTime": 560.72
+  },
+  {
+   "startTime": 560.72,
+   "title": "Korea and the World",
+   "endTime": 593.97
+  },
+  {
+   "startTime": 593.97,
+   "title": "Markets",
+   "endTime": 630.41
+  }
+ ]
+}

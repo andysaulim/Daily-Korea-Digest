@@ -1,14 +1,5 @@
 [
   {
-    "date": "2026-10-11",
-    "title": "Korea Daily Brief | Sunday, October 11",
-    "summary": "North Korea marks party anniversary modestly, U.S.-Korea intelligence friction deepens, Arctic route completes, SK chip cluster push, AI bank hacks.",
-    "file": "digest_2026-10-11.mp3",
-    "bytes": 4648376,
-    "seconds": 581,
-    "script": "written"
-  },
-  {
     "date": "2026-10-12",
     "title": "Korea Daily Brief | Monday, October 12",
     "summary": "NK fires 4th missile salvo in a month, Russian emergency minister in Pyongyang, KOSPI -3.65% on tech selloff, Bank of Korea rate hold defended.",
@@ -817,5 +808,43 @@
     "transcript": "digest_2026-11-09.vtt",
     "chapters": "digest_2026-11-09.chapters.json",
     "page": "listen/2026-11-09.html"
+  },
+  {
+    "date": "2026-11-10",
+    "title": "Korea Daily Brief | Tuesday, November 10",
+    "summary": "North Korean torpedo test, Cheonghae unit expansion approved, Lee on U.S. midterms, Kim Yo Jong slams U.N. chief, Bank of Korea governor named BIS CPMI chair.",
+    "file": "digest_2026-11-10.mp3",
+    "bytes": 5044320,
+    "seconds": 630,
+    "script": "written",
+    "script_repaired": [
+      "Taken together: a new weapon with a 2027 timeline and a threat directed at the head of the United Nations."
+    ],
+    "transcript_text": "digest_2026-11-10.txt",
+    "notes": [
+      {
+        "headline": "North Korea tests new high-speed torpedo, announces early-2027 Navy deployment",
+        "source": "NK News / Korea Times / Bloomberg",
+        "url": "https://www.nknews.org/2026/11/north-korea-says-navy-to-deploy-new-high-speed-torpedo-in-early-2027/"
+      },
+      {
+        "headline": "Seoul Cabinet approves Cheonghae unit expansion toward Hormuz; Assembly consent next",
+        "source": "Korea Herald / Yonhap English",
+        "url": "https://www.koreaherald.com/article/10932107"
+      },
+      {
+        "headline": "Lee calls for bipartisan US congressional outreach after Democratic midterm sweep",
+        "source": "Yonhap English / Korea Herald",
+        "url": "https://en.yna.co.kr/view/AEN20261110003851315"
+      },
+      {
+        "headline": "Kim Yo Jong rejects UN Secretary-General's inter-Korean dialogue call, threatens consequences",
+        "source": "NK News",
+        "url": "https://www.nknews.org/2026/11/north-korean-leaders-sister-slams-un-chief-over-dmz-mine-blast-remarks/"
+      }
+    ],
+    "transcript": "digest_2026-11-10.vtt",
+    "chapters": "digest_2026-11-10.chapters.json",
+    "page": "listen/2026-11-10.html"
   }
 ]
