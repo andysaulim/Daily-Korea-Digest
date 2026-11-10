@@ -1,6 +1,12 @@
 {
   "days": [
     {
+      "date": "2026-11-10",
+      "silence_today": false,
+      "watch_flag": false,
+      "bottom_line": "State media confirmed a new high-speed torpedo test with an early-2027 deployment timeline, Kim Yo Jong attacked the UN Secretary-General over the DMZ mine dispute, and domestic content continued to focus on agriculture and welfare — with all recent weapons tests remaining absent from internal DPRK news."
+    },
+    {
       "date": "2026-11-09",
       "silence_today": false,
       "watch_flag": false,
@@ -98,13 +104,7 @@
       "silence_today": false,
       "watch_flag": false,
       "bottom_line": "State media led with Kim's combat readiness call to company commanders and the trade fair opening, while diplomatic messaging continued with a Kim-Vietnam reply letter — no new provocation or test activity reported."
-    },
-    {
-      "date": "2026-10-27",
-      "silence_today": false,
-      "watch_flag": false,
-      "bottom_line": "KCNA led with Kim's reply to Vietnam and the Pyongyang trade fair opening, while North Korean officials continued CPV anniversary tributes following Kim's Dandong visit."
     }
   ],
-  "last_updated": "2026-11-09T12:09:11.872798+00:00"
+  "last_updated": "2026-11-10T12:09:25.846001+00:00"
 }
