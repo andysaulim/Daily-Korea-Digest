@@ -1,0 +1,52 @@
+{
+ "version": "1.2.0",
+ "chapters": [
+  {
+   "startTime": 0.0,
+   "title": "Today's headlines",
+   "endTime": 41.31
+  },
+  {
+   "startTime": 41.31,
+   "title": "North Korea fires two ballistic missiles from Muncheon",
+   "url": "https://news.sbs.co.kr/news/endPage.do?news_id=N1008841745&plink=RSSLINK&cooper=RSSREADER",
+   "endTime": 133.7
+  },
+  {
+   "startTime": 133.7,
+   "title": "FM Cho Hyun meets SecState Rubio on G7 sidelines",
+   "url": "https://www.mofa.go.kr/www/brd/m_4080/view.do?seq=377752",
+   "endTime": 239.7
+  },
+  {
+   "startTime": 239.7,
+   "title": "Lead story: third",
+   "endTime": 303.55
+  },
+  {
+   "startTime": 303.55,
+   "title": "Pyongyang",
+   "endTime": 363.09
+  },
+  {
+   "startTime": 363.09,
+   "title": "The round-up",
+   "endTime": 545.21
+  },
+  {
+   "startTime": 545.21,
+   "title": "Capitol Hill",
+   "endTime": 584.99
+  },
+  {
+   "startTime": 584.99,
+   "title": "Korea and the World",
+   "endTime": 615.16
+  },
+  {
+   "startTime": 615.16,
+   "title": "Markets",
+   "endTime": 648.23
+  }
+ ]
+}

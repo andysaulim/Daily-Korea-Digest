@@ -1,20 +1,5 @@
 [
   {
-    "date": "2026-10-12",
-    "title": "Korea Daily Brief | Monday, October 12",
-    "summary": "NK fires 4th missile salvo in a month, Russian emergency minister in Pyongyang, KOSPI -3.65% on tech selloff, Bank of Korea rate hold defended.",
-    "file": "digest_2026-10-12.mp3",
-    "bytes": 4357894,
-    "seconds": 544,
-    "script": "assembled",
-    "script_rejected": [
-      "number not in the brief here: 900 (more than 900 kilometers that)",
-      "number not in the brief here: 4 (was tested 4 tests in)",
-      "name not in the brief: Chiefs",
-      "name not in the brief: U.S"
-    ]
-  },
-  {
     "date": "2026-10-13",
     "title": "Korea Daily Brief | Tuesday, October 13",
     "summary": "North Korea tactical missile test + Defense Revolution Museum opening, KOSPI -5.5% on chip selloff, Trump floats Kim meeting, South Korea-U.S. intel rift deepens.",
@@ -846,5 +831,34 @@
     "transcript": "digest_2026-11-10.vtt",
     "chapters": "digest_2026-11-10.chapters.json",
     "page": "listen/2026-11-10.html"
+  },
+  {
+    "date": "2026-11-11",
+    "title": "Korea Daily Brief | Wednesday, November 11",
+    "summary": "North Korean constitution published, North Korea fires 2 ballistic missiles, Cho-Rubio meet in Paris, Bond dealers fined record 1.2 billion dollars, Congress post-midterm reshuffles.",
+    "file": "digest_2026-11-11.mp3",
+    "bytes": 5186626,
+    "seconds": 648,
+    "script": "written",
+    "script_repaired": [
+      "The key takeaway: in one day in Paris, South Korea's foreign minister advanced the alliance with Washington, opened a new energy lane with Canada, and began repairing a strained relationship with Ukraine.",
+      "A Korea Economic Institute analysis published today connects North Korea's cyber capacity to Laos, arguing that North Korean IT workers operating there represent a high-priority target for disruption, since Laos is far more susceptible to U.S."
+    ],
+    "transcript_text": "digest_2026-11-11.txt",
+    "notes": [
+      {
+        "headline": "North Korea fires two ballistic missiles from Muncheon; Naenara publishes revised constitution text",
+        "source": "SBS / NK News",
+        "url": "https://news.sbs.co.kr/news/endPage.do?news_id=N1008841745&plink=RSSLINK&cooper=RSSREADER"
+      },
+      {
+        "headline": "FM Cho Hyun meets SecState Rubio on G7 sidelines; agrees to advance Lee-Trump summit agreements",
+        "source": "ROK MOFA",
+        "url": "https://www.mofa.go.kr/www/brd/m_4080/view.do?seq=377752"
+      }
+    ],
+    "transcript": "digest_2026-11-11.vtt",
+    "chapters": "digest_2026-11-11.chapters.json",
+    "page": "listen/2026-11-11.html"
   }
 ]
