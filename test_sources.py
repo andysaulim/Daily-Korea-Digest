@@ -3377,6 +3377,7 @@ def check_front_pages_dropped():
     problems = []
     arts = [{"title": "Beyond Parallel", "url": "https://beyondparallel.csis.org/", "source": "Beyond Parallel"},
             {"title": "재단법인 아산정책연구원", "url": "https://www.asaninst.org/", "source": "ASAN Institute"},
+            {"title": "재단법인 아산정책연구원", "url": "https://news.google.com/rss/articles/CBMiAsan", "source": "ASAN Institute"},
             {"title": "North Korea", "url": "https://www.38north.org/topics/north-korea/", "source": "38 North"},
             {"title": "Did the United States and Russia Just Agree to Collaborate",
              "url": "https://beyondparallel.csis.org/did-the-united-states-and-russia/", "source": "Beyond Parallel"},

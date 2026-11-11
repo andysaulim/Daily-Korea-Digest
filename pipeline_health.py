@@ -26,7 +26,10 @@ GALLUP_ALERT_DAYS = 30
 TIER_EXPECTED_MIN = {
     "tier1": 60,
     "tier2": 10,
-    "tier3": 3,
+    # Journals rarely publish on Korea in any 7-day window: the corpus held
+    # 0 or 1 tier-3 items on every day from September to November 2026, so a
+    # minimum of 3 raised a false "feed loss" alert most mornings.
+    "tier3": 0,
     "tier4": 3,
 }
 
