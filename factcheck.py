@@ -290,6 +290,12 @@ def reference_text(payload: dict) -> str:
         return SYSTEM_PROMPT
 
 
+def distinctive(fig: tuple[float, str, str]) -> bool:
+    """A figure unlikely to match by chance: 1,000 or more, or written with decimals."""
+    v, _, raw = fig
+    return abs(v) >= 1000 or bool(re.search(r"\d\.\d", raw))
+
+
 def check(digest: dict, payload: dict, today: date | None = None) -> list[dict]:
     """Findings, one per unsupported figure or date: section, index, field, claim, kind."""
     import links
@@ -298,6 +304,18 @@ def check(digest: dict, payload: dict, today: date | None = None) -> list[dict]:
     # The reference blocks' figures, not their dates: a "26" in "Feb 26" is
     # a day, and does not make a "26th" in the brief sourced.
     ref_vals = [(v, k) for v, k, _ in figures(reference_text(payload or {}))]
+    # Every figure any article in today's input states. A distinctive figure
+    # (a large amount, a decimal) found here is sourced even when the item
+    # cites a different report: on 11 November the record 1.6 trillion won
+    # bond-rigging fine was removed from the glance, the stat and a lead
+    # because the item cited Bloomberg ("$1.2 billion") while the Korean
+    # reports that state 1조6000억 were not linked.
+    corpus_vals = source_values(" ".join(f'{a.get("title", "")} {a.get("summary", "")}'
+                                         for a in index.values()))
+
+    def ok(fig, vals) -> bool:
+        return supported(fig, vals) or (distinctive(fig) and supported(fig, corpus_vals))
+
     findings = []
     for sec, (head_fields, body_fields) in SECTIONS.items():
         for i, item in enumerate(digest.get(sec) or []):
@@ -316,7 +334,7 @@ def check(digest: dict, payload: dict, today: date | None = None) -> list[dict]:
                 if not isinstance(value, str) or not value.strip():
                     continue
                 for fig in figures(value):
-                    if not supported(fig, vals):
+                    if not ok(fig, vals):
                         findings.append({"section": sec, "index": i, "field": field, "claim": fig[2],
                                          "kind": "figure", "head": field in head_fields})
                 for mm, dd, raw in dates(value):
@@ -335,13 +353,13 @@ def check(digest: dict, payload: dict, today: date | None = None) -> list[dict]:
     for i, mi in enumerate(digest.get("morning_memo") or []):
         text = mi if isinstance(mi, str) else (mi.get("text", "") if isinstance(mi, dict) else "")
         for fig in figures(text):
-            if not supported(fig, all_vals):
+            if not ok(fig, all_vals):
                 findings.append({"section": "morning_memo", "index": i, "field": "text",
                                  "claim": fig[2], "kind": "figure", "head": True})
     ks = digest.get("key_stat")
     if isinstance(ks, dict) and ks.get("number"):
         figs = figures(str(ks["number"])) or figures(str(ks["number"]) + " ")
-        if figs and not supported(figs[0], all_vals):
+        if figs and not ok(figs[0], all_vals):
             findings.append({"section": "key_stat", "index": 0, "field": "number",
                              "claim": str(ks["number"]), "kind": "figure", "head": True})
 
