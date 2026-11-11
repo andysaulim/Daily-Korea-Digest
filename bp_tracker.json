@@ -10,8 +10,8 @@
     "Sinpo South Shipyard": {
       "name": "Sinpo South Shipyard",
       "status": "activity",
-      "note": "As of May 2025: Hero Kim Kun Ok SLBM submarine exited drydock after 2+ years of fitting-out but was still not operational. New submarine construction begun in separate bay. NK Pro satellite analysis (Oct 20 2026) separately reports North Korea's Nampho Shipyard missed a deadline earlier in Oct 2026 to launch a 5,000-ton naval destroyer, with hull sections visible at two potential outdoor assembly areas. 38 North analysis published Oct 30 documents public display of a vessel described as a 'Tactical Nuclear Attack' submarine. Kim Jong Un inspected Nampho Shipyard on Nov 2 (reported Nov 4 by KCNA), announcing a new warship under construction larger than the destroyer built last year. NK News now reports (Nov 6) that North Korea has expanded warship construction to a third shipyard.",
-      "last_source_date": "2026-11-06",
+      "note": "As of May 2025: Hero Kim Kun Ok SLBM submarine exited drydock after 2+ years of fitting-out but was still not operational. New submarine construction begun in separate bay. NK Pro satellite analysis (Oct 20 2026) separately reports North Korea's Nampho Shipyard missed a deadline earlier in Oct 2026 to launch a 5,000-ton naval destroyer, with hull sections visible at two potential outdoor assembly areas. 38 North analysis published Oct 30 documents public display of a vessel described as a 'Tactical Nuclear Attack' submarine. Kim Jong Un inspected Nampho Shipyard on Nov 7 (reported Nov 8 by KCNA), announcing a new warship under construction larger than the destroyer built last year. NK News reported on Nov 6 that North Korea has expanded warship construction to a third shipyard. 38 North published analysis on Nov 11 of the Choe Hyon destroyer and its strategic implications for the West Sea Fleet.",
+      "last_source_date": "2026-11-11",
       "direction": "up"
     },
     "THAAD Site — Seongju County": {
@@ -45,8 +45,8 @@
     "Sinuiju–Dandong (NK-China border)": {
       "name": "Sinuiju–Dandong (NK-China border)",
       "status": "activity",
-      "note": "38 North satellite imagery from October 16 confirms trucks traversing the New Yalu River (DPRK-Friendship) Bridge one day after the October 15 official opening, marking the start of commercial vehicle traffic. Daily NK reports (Oct 31) that North Korean trucks have still not joined Chinese cargo trucks on the bridge two weeks after the Oct 15 opening; North Korean transport officials are still preparing vehicles. North Korea-China trade reached $299M in September 2026, the second-highest monthly total in 2026. Kim Jong Un crossed the New Yalu River Bridge on October 24 during his unannounced visit to Dandong. Daily NK reports on Nov 3, 2026 that North Korea is courting Chinese investors to build hotels and shopping complexes in Sinuiju, with officials pitching lodging and commercial projects following the revival of Chinese interest after the New Yalu River Bridge opening and Kim's October visit to Dandong. ArmsControlWonk analysis (Oct 30 2026) finds Nampho Port's primary intermodal container storage yard is very likely expanding by at least 45%.",
-      "last_source_date": "2026-11-05",
+      "note": "38 North satellite imagery from October 16 confirms trucks traversing the New Yalu River (DPRK-Friendship) Bridge one day after the October 15 official opening, marking the start of commercial vehicle traffic. Daily NK reports (Oct 31) that North Korean trucks have still not joined Chinese cargo trucks on the bridge two weeks after the Oct 15 opening; North Korean transport officials are still preparing vehicles. North Korea-China trade reached $299M in September 2026, the second-highest monthly total in 2026. Kim Jong Un crossed the New Yalu River Bridge on October 24 during his unannounced visit to Dandong. Daily NK reports on Nov 3, 2026 that North Korea is courting Chinese investors to build hotels and shopping complexes in Sinuiju. NK News reports a surge in North Korean delegations visiting China, putting commercial ties in focus.",
+      "last_source_date": "2026-11-11",
       "direction": "up"
     },
     "Rason SEZ": {
@@ -59,7 +59,7 @@
     "Yellow Sea NLL": {
       "name": "Yellow Sea NLL",
       "status": "normal",
-      "note": "As of September 26, 2025: 140m DPRK merchant vessel Toksong crossed the Northern Limit Line near Baengnyeong Island, advanced 5km south. ROK Navy fired approximately 60 warning shots; vessel retreated after 1 hour. ROK Marine Corps Commandant Gen. Ju Il-suk stated October 20 2026 that North Korea has made 'various changes' to forces facing South Korea's border islands, with Seoul stepping up surveillance along the maritime border. 38 North satellite imagery published October 29 shows North Korea continuing to install new fencing along its border. North Korean propaganda loudspeakers were visible at two border locations on Nov 4 from Odusan Unification Observatory and Key Observatory in Gyeonggi Province, with no audible broadcasts detected from the South Korean side. ROK Joint Chiefs confirmed Nov 6 that a drifting North Korean fishing vessel was spotted in international waters off Ulleung Island on Nov 3 and is under investigation.",
+      "note": "As of September 26, 2025: 140m DPRK merchant vessel Toksong crossed the Northern Limit Line near Baengnyeong Island, advanced 5km south. ROK Navy fired approximately 60 warning shots; vessel retreated after 1 hour. ROK Marine Corps Commandant Gen. Ju Il-suk stated October 20 2026 that North Korea has made 'various changes' to forces facing South Korea's border islands, with Seoul stepping up surveillance along the maritime border. 38 North satellite imagery published October 29 shows North Korea continuing to install new fencing along its border. North Korean propaganda loudspeakers were visible at two border locations on Nov 4 from Odusan Unification Observatory and Key Observatory in Gyeonggi Province. ROK Joint Chiefs confirmed Nov 6 that a drifting North Korean fishing vessel was spotted in international waters off Ulleung Island on Nov 3 and is under investigation.",
       "last_source_date": "2026-11-06",
       "direction": ""
     },
@@ -78,5 +78,5 @@
       "direction": "up"
     }
   },
-  "last_updated": "2026-11-10T12:09:25.847190+00:00"
+  "last_updated": "2026-11-11T12:09:31.884871+00:00"
 }

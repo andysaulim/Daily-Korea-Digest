@@ -1,6 +1,12 @@
 {
   "days": [
     {
+      "date": "2026-11-11",
+      "silence_today": false,
+      "watch_flag": false,
+      "bottom_line": "State media confirmed the publication of the revised constitution's full text formalizing Kim's expanded powers and the two-state framework, while the North Korean ballistic missile launches from Muncheon remain absent from domestic KCNA output."
+    },
+    {
       "date": "2026-11-10",
       "silence_today": false,
       "watch_flag": false,
@@ -98,13 +104,7 @@
       "silence_today": false,
       "watch_flag": false,
       "bottom_line": "North Korea launched approximately 10 short-range ballistic missiles from Wonsan on October 29, days after the ROK defense minister called for dialogue; state media covered the Pyongyang trade fair and harvest mobilization but had not reported on the launches as of this digest."
-    },
-    {
-      "date": "2026-10-28",
-      "silence_today": false,
-      "watch_flag": false,
-      "bottom_line": "State media led with Kim's combat readiness call to company commanders and the trade fair opening, while diplomatic messaging continued with a Kim-Vietnam reply letter — no new provocation or test activity reported."
     }
   ],
-  "last_updated": "2026-11-10T12:09:25.846001+00:00"
+  "last_updated": "2026-11-11T12:09:31.883921+00:00"
 }
