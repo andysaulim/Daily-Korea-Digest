@@ -3256,6 +3256,17 @@ def check_fact_check_enforces():
         problems.append("a figure sourced by a Korean report of the same decision was removed")
     if d["morning_memo"] != ["Births up 13%."]:
         problems.append(f"glance kept {d['morning_memo']}")
+    # A distinctive figure stated by any article in today's input is sourced,
+    # even when the item cites another outlet's report (11 November: 1조6000억).
+    bb = "https://www.bloomberg.com/news/bond-dealers"
+    pl = {"tier1": [{"url": bb, "title": "Korea Fines Bond Dealers Record $1.2 Billion", "summary": ""},
+                    {"url": "https://www.khan.co.kr/x", "title": "국고채 담합 15곳에 과징금",
+                     "summary": "은행·증권사 15곳에 1조6000억원대 과징금을 부과했다."}]}
+    g = {"morning_memo": ["Korea fined 15 bond dealers a record 1.6 trillion won."],
+         "key_stat": {"number": "1.6 trillion won"}}
+    factcheck.apply(g, pl, date(2026, 11, 11))
+    if not g["morning_memo"] or not g.get("key_stat"):
+        problems.append("a figure stated in a Korean report of the same story was removed")
     if not factcheck.date_supported(10, 27, "said on Tuesday", date(2026, 10, 28), date(2026, 10, 28)):
         problems.append("a weekday in the source did not support its date")
     if factcheck.date_supported(11, 1, "a ministerial next month", date(2026, 10, 28), date(2026, 10, 28)):
