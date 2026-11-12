@@ -45,8 +45,8 @@
     "Sinuiju–Dandong (NK-China border)": {
       "name": "Sinuiju–Dandong (NK-China border)",
       "status": "activity",
-      "note": "38 North satellite imagery from October 16 confirms trucks traversing the New Yalu River (DPRK-Friendship) Bridge one day after the October 15 official opening, marking the start of commercial vehicle traffic. Daily NK reports (Oct 31) that North Korean trucks have still not joined Chinese cargo trucks on the bridge two weeks after the Oct 15 opening; North Korean transport officials are still preparing vehicles. North Korea-China trade reached $299M in September 2026, the second-highest monthly total in 2026. Kim Jong Un crossed the New Yalu River Bridge on October 24 during his unannounced visit to Dandong. Daily NK reports on Nov 3, 2026 that North Korea is courting Chinese investors to build hotels and shopping complexes in Sinuiju. NK News reports a surge in North Korean delegations visiting China, putting commercial ties in focus.",
-      "last_source_date": "2026-11-11",
+      "note": "38 North satellite imagery from October 16 confirms trucks traversing the New Yalu River (DPRK-Friendship) Bridge one day after the October 15 official opening, marking the start of commercial vehicle traffic. Daily NK reports (Oct 31) that North Korean trucks have still not joined Chinese cargo trucks on the bridge two weeks after the Oct 15 opening; North Korean transport officials are still preparing vehicles. North Korea-China trade reached $299M in September 2026, the second-highest monthly total in 2026. Kim Jong Un crossed the New Yalu River Bridge on October 24 during his unannounced visit to Dandong. Daily NK reports on Nov 3, 2026 that North Korea is courting Chinese investors to build hotels and shopping complexes in Sinuiju. NK News reports a surge in North Korean delegations visiting China, putting commercial ties in focus. Daily NK reports Nov 12 that Chinese truck drivers who relied on side income ferrying parcels across the new bridge are souring on operations due to tighter customs checks and movement controls since the October opening.",
+      "last_source_date": "2026-11-12",
       "direction": "up"
     },
     "Rason SEZ": {
@@ -78,5 +78,5 @@
       "direction": "up"
     }
   },
-  "last_updated": "2026-11-11T12:09:31.884871+00:00"
+  "last_updated": "2026-11-12T12:09:20.875181+00:00"
 }
