@@ -1,0 +1,53 @@
+{
+ "version": "1.2.0",
+ "chapters": [
+  {
+   "startTime": 0.0,
+   "title": "Today's headlines",
+   "endTime": 40.58
+  },
+  {
+   "startTime": 40.58,
+   "title": "Kim inspects east coast naval base, orders timely completion",
+   "url": "https://www.nknews.org/2026/11/kim-jong-un-inspects-new-naval-base-construction-on-east-coast/",
+   "endTime": 149.37
+  },
+  {
+   "startTime": 149.37,
+   "title": "FM Cho flies to Beijing Friday for Wang Yi talks on North Korea and…",
+   "url": "https://www.koreatimes.co.kr/foreignaffairs/others/20261112/fm-cho-to-visit-china-this-week-for-talks-with-wang-yi-on-n-korea-bilateral-ties?utm_source=rss",
+   "endTime": 237.71
+  },
+  {
+   "startTime": 237.71,
+   "title": "Lee says Samsung chip packaging expansion will spur $30 billion in…",
+   "url": "https://www.reuters.com/world/asia-pacific/south-koreas-lee-says-samsung-chip-packaging-expansion-spur-30-billion-2026-11-12/",
+   "endTime": 305.36
+  },
+  {
+   "startTime": 305.36,
+   "title": "Pyongyang",
+   "endTime": 342.58
+  },
+  {
+   "startTime": 342.58,
+   "title": "The round-up",
+   "endTime": 505.4
+  },
+  {
+   "startTime": 505.4,
+   "title": "Capitol Hill",
+   "endTime": 536.88
+  },
+  {
+   "startTime": 536.88,
+   "title": "Korea and the World",
+   "endTime": 567.47
+  },
+  {
+   "startTime": 567.47,
+   "title": "Markets",
+   "endTime": 602.88
+  }
+ ]
+}

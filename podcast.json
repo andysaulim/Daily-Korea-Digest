@@ -1,17 +1,5 @@
 [
   {
-    "date": "2026-10-13",
-    "title": "Korea Daily Brief | Tuesday, October 13",
-    "summary": "North Korea tactical missile test + Defense Revolution Museum opening, KOSPI -5.5% on chip selloff, Trump floats Kim meeting, South Korea-U.S. intel rift deepens.",
-    "file": "digest_2026-10-13.mp3",
-    "bytes": 5537584,
-    "seconds": 692,
-    "script": "assembled",
-    "script_rejected": [
-      "name not in the brief: U.S"
-    ]
-  },
-  {
     "date": "2026-10-14",
     "title": "Korea Daily Brief | Wednesday, October 14",
     "summary": "NK museum flaunts Hwasong-20, New Yalu Bridge opens Thu, DOJ North Korea IT crackdown, Sue Mi Terry charges dropped, Lee names new CoS.",
@@ -860,5 +848,35 @@
     "transcript": "digest_2026-11-11.vtt",
     "chapters": "digest_2026-11-11.chapters.json",
     "page": "listen/2026-11-11.html"
+  },
+  {
+    "date": "2026-11-12",
+    "title": "Korea Daily Brief | Thursday, November 12",
+    "summary": "Kim inspects east coast naval base, Foreign Minister Cho to Beijing Friday, Samsung Chungcheong groundbreaking, Seoul dims APEC Trump-Kim prospect.",
+    "file": "digest_2026-11-12.mp3",
+    "bytes": 4824054,
+    "seconds": 602,
+    "script": "written",
+    "transcript_text": "digest_2026-11-12.txt",
+    "notes": [
+      {
+        "headline": "Kim inspects east coast naval base, orders timely completion",
+        "source": "NK News",
+        "url": "https://www.nknews.org/2026/11/kim-jong-un-inspects-new-naval-base-construction-on-east-coast/"
+      },
+      {
+        "headline": "FM Cho flies to Beijing Friday for Wang Yi talks on North Korea and bilateral ties",
+        "source": "Korea Times",
+        "url": "https://www.koreatimes.co.kr/foreignaffairs/others/20261112/fm-cho-to-visit-china-this-week-for-talks-with-wang-yi-on-n-korea-bilateral-ties?utm_source=rss"
+      },
+      {
+        "headline": "Lee says Samsung chip packaging expansion will spur $30 billion in additional investment",
+        "source": "Reuters",
+        "url": "https://www.reuters.com/world/asia-pacific/south-koreas-lee-says-samsung-chip-packaging-expansion-spur-30-billion-2026-11-12/"
+      }
+    ],
+    "transcript": "digest_2026-11-12.vtt",
+    "chapters": "digest_2026-11-12.chapters.json",
+    "page": "listen/2026-11-12.html"
   }
 ]
