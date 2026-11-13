@@ -1,6 +1,19 @@
 {
   "days": [
     {
+      "date": "2026-11-13",
+      "silence_today": false,
+      "watch_flag": false,
+      "bottom_line": "State media led with Kim's east-coast naval base inspection and the DPRK flag redesign embedded in the revised constitution; NK News separately reported that North Korea faked its November 4 cluster warhead test using 2022 imagery.",
+      "quotes": [
+        {
+          "speaker": "Kim Jong Un",
+          "quote": "Modern naval base construction is a major core project directly linked to our state's safety and defense of maritime sovereignty, and must unconditionally be completed within the period decided by the party central and at the quality level demanded by the party central.",
+          "source": "(LEAD) N. Korea's Kim inspects east coast naval base under construction, urges timely completion"
+        }
+      ]
+    },
+    {
       "date": "2026-11-12",
       "silence_today": false,
       "watch_flag": false,
@@ -98,20 +111,7 @@
           "source": "Kim Jong Un inspects new stealth drone, calls for 'absolute' UAV superiority"
         }
       ]
-    },
-    {
-      "date": "2026-10-30",
-      "silence_today": false,
-      "watch_flag": false,
-      "bottom_line": "State media led with Kim's drone-supremacy call and the 600mm 'Sniper' live-fire debut, while Switzerland's diplomatic office opening in Pyongyang marked the most significant Western re-engagement signal in Pyongyang in years.",
-      "quotes": [
-        {
-          "speaker": "Kim Jong Un",
-          "quote": "The aim to seize the absolute superiority in the drone technology is an indispensable option in the light of the ever-changing patterns of modern warfare. Strength precisely means peace and peace is guaranteed only by strength.",
-          "source": "North Korea displays drones, missiles as Kim Jong-un urges AI weapons push"
-        }
-      ]
     }
   ],
-  "last_updated": "2026-11-12T12:09:20.874250+00:00"
+  "last_updated": "2026-11-13T12:10:41.830903+00:00"
 }

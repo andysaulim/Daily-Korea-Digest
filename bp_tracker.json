@@ -10,8 +10,8 @@
     "Sinpo South Shipyard": {
       "name": "Sinpo South Shipyard",
       "status": "activity",
-      "note": "As of May 2025: Hero Kim Kun Ok SLBM submarine exited drydock after 2+ years of fitting-out but was still not operational. New submarine construction begun in separate bay. NK Pro satellite analysis (Oct 20 2026) separately reports North Korea's Nampho Shipyard missed a deadline earlier in Oct 2026 to launch a 5,000-ton naval destroyer, with hull sections visible at two potential outdoor assembly areas. 38 North analysis published Oct 30 documents public display of a vessel described as a 'Tactical Nuclear Attack' submarine. Kim Jong Un inspected Nampho Shipyard on Nov 7 (reported Nov 8 by KCNA), announcing a new warship under construction larger than the destroyer built last year. NK News reported on Nov 6 that North Korea has expanded warship construction to a third shipyard. 38 North published analysis on Nov 11 of the Choe Hyon destroyer and its strategic implications for the West Sea Fleet.",
-      "last_source_date": "2026-11-11",
+      "note": "As of May 2025: Hero Kim Kun Ok SLBM submarine exited drydock after 2+ years of fitting-out but was still not operational. New submarine construction begun in separate bay. NK Pro satellite analysis (Oct 20 2026) separately reports North Korea's Nampho Shipyard missed a deadline earlier in Oct 2026 to launch a 5,000-ton naval destroyer, with hull sections visible at two potential outdoor assembly areas. 38 North analysis published Oct 30 documents public display of a vessel described as a 'Tactical Nuclear Attack' submarine. Kim Jong Un inspected Nampho Shipyard on Nov 7 (reported Nov 8 by KCNA), announcing a new warship under construction larger than the destroyer built last year. NK News reported on Nov 6 that North Korea has expanded warship construction to a third shipyard. 38 North published analysis on Nov 11 of the Choe Hyon destroyer and its strategic implications for the West Sea Fleet. NK News identified a second major east-coast naval base project on Nov 13, beyond the Munchon-area site Kim inspected on Nov 12.",
+      "last_source_date": "2026-11-13",
       "direction": "up"
     },
     "THAAD Site — Seongju County": {
@@ -38,15 +38,15 @@
     "Tumangang–Khasan (NK-Russia border)": {
       "name": "Tumangang–Khasan (NK-Russia border)",
       "status": "activity",
-      "note": "As of March 2026: Road bridge construction accelerated, completion target moved to Summer 2026. Passenger rail service resumed mid-2025. Ore and tank car traffic at highest levels since project began. This report is over six months old and may not reflect the current state.",
-      "last_source_date": "2026-03",
+      "note": "As of March 2026: Road bridge construction accelerated, completion target moved to Summer 2026. Passenger rail service resumed mid-2025. Ore and tank car traffic at highest levels since project began. This report is over six months old and may not reflect the current state. Russian Transport Ministry applications filed Nov 13 for a 14-daily-round-trip Vladivostok-Rason bus route over the new vehicle bridge, with experts noting the service will likely transport DPRK workers more than Russian tourists.",
+      "last_source_date": "2026-11-13",
       "direction": "up"
     },
     "Sinuiju–Dandong (NK-China border)": {
       "name": "Sinuiju–Dandong (NK-China border)",
       "status": "activity",
-      "note": "38 North satellite imagery from October 16 confirms trucks traversing the New Yalu River (DPRK-Friendship) Bridge one day after the October 15 official opening, marking the start of commercial vehicle traffic. Daily NK reports (Oct 31) that North Korean trucks have still not joined Chinese cargo trucks on the bridge two weeks after the Oct 15 opening; North Korean transport officials are still preparing vehicles. North Korea-China trade reached $299M in September 2026, the second-highest monthly total in 2026. Kim Jong Un crossed the New Yalu River Bridge on October 24 during his unannounced visit to Dandong. Daily NK reports on Nov 3, 2026 that North Korea is courting Chinese investors to build hotels and shopping complexes in Sinuiju. NK News reports a surge in North Korean delegations visiting China, putting commercial ties in focus. Daily NK reports Nov 12 that Chinese truck drivers who relied on side income ferrying parcels across the new bridge are souring on operations due to tighter customs checks and movement controls since the October opening.",
-      "last_source_date": "2026-11-12",
+      "note": "38 North satellite imagery from October 16 confirms trucks traversing the New Yalu River (DPRK-Friendship) Bridge one day after the October 15 official opening, marking the start of commercial vehicle traffic. Daily NK reports (Oct 31) that North Korean trucks have still not joined Chinese cargo trucks on the bridge two weeks after the Oct 15 opening; North Korean transport officials are still preparing vehicles. North Korea-China trade reached $299M in September 2026, the second-highest monthly total in 2026. Kim Jong Un crossed the New Yalu River Bridge on October 24 during his unannounced visit to Dandong. Daily NK reports on Nov 3, 2026 that North Korea is courting Chinese investors to build hotels and shopping complexes in Sinuiju. NK News reports a surge in North Korean delegations visiting China, putting commercial ties in focus. Daily NK reports Nov 12 that Chinese truck drivers who relied on side income ferrying parcels across the new bridge are souring on operations due to tighter customs checks and movement controls since the October opening. Huanghai Automobile's Dandong bus factory announced it is operating at full capacity on Nov 13 following Kim Jong Un's October visit, raising questions about potential vehicle exports to the DPRK.",
+      "last_source_date": "2026-11-13",
       "direction": "up"
     },
     "Rason SEZ": {
@@ -73,10 +73,10 @@
     "Vostochny/Dunai (Russian Far East)": {
       "name": "Vostochny/Dunai (Russian Far East)",
       "status": "activity",
-      "note": "As of January 2026: Arms shipments slowed due to ice — one Russian vessel (likely Angara or Lady R) visited Rason, docked January 14 at arms export berth. Cargo routed to Vostochny. Since September 2023: 64 voyages by 4 vessels (Angara, Maria, Maya-1, Lady R) delivered approximately 15,800 containers (approximately 4.2-5.8 million munitions) from Rajin to Vostochny/Dunai. This report is over six months old and may not reflect the current state.",
-      "last_source_date": "2026-01",
+      "note": "As of January 2026: Arms shipments slowed due to ice — one Russian vessel (likely Angara or Lady R) visited Rason, docked January 14 at arms export berth. Cargo routed to Vostochny. Since September 2023: 64 voyages by 4 vessels (Angara, Maria, Maya-1, Lady R) delivered approximately 15,800 containers (approximately 4.2-5.8 million munitions) from Rajin to Vostochny/Dunai. This report is over six months old and may not reflect the current state. Russian Transport Ministry applications filed Nov 13 for a Vladivostok-Rason bus route operating 14 daily round trips.",
+      "last_source_date": "2026-11-13",
       "direction": "up"
     }
   },
-  "last_updated": "2026-11-12T12:09:20.875181+00:00"
+  "last_updated": "2026-11-13T12:10:41.832023+00:00"
 }
