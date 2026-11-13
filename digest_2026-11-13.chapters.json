@@ -1,0 +1,53 @@
+{
+ "version": "1.2.0",
+ "chapters": [
+  {
+   "startTime": 0.0,
+   "title": "Today's headlines",
+   "endTime": 47.5
+  },
+  {
+   "startTime": 47.5,
+   "title": "FM Cho, Wang Yi meet in Beijing ahead of Lee-Xi APEC summit",
+   "url": "https://www.hani.co.kr/arti/international/china/1287289.html",
+   "endTime": 126.97
+  },
+  {
+   "startTime": 126.97,
+   "title": "DOJ obtains court authorization to seize $1.2B in DPRK-linked Binance…",
+   "url": "https://www.nknews.org/2026/11/us-moves-to-disrupt-north-korean-crypto-theft-seize-1-2b-in-binance-funds/",
+   "endTime": 199.14
+  },
+  {
+   "startTime": 199.14,
+   "title": "North Korea changes flag aspect ratio for first time since 1948",
+   "url": "https://www.nknews.org/2026/11/north-korea-modifies-national-flag-in-break-with-decades-old-design/",
+   "endTime": 272.61
+  },
+  {
+   "startTime": 272.61,
+   "title": "Pyongyang",
+   "endTime": 341.6
+  },
+  {
+   "startTime": 341.6,
+   "title": "The round-up",
+   "endTime": 583.55
+  },
+  {
+   "startTime": 583.55,
+   "title": "Capitol Hill",
+   "endTime": 602.13
+  },
+  {
+   "startTime": 602.13,
+   "title": "Korea and the World",
+   "endTime": 635.17
+  },
+  {
+   "startTime": 635.17,
+   "title": "Markets",
+   "endTime": 668.47
+  }
+ ]
+}

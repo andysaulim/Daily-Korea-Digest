@@ -1,22 +1,5 @@
 [
   {
-    "date": "2026-10-14",
-    "title": "Korea Daily Brief | Wednesday, October 14",
-    "summary": "NK museum flaunts Hwasong-20, New Yalu Bridge opens Thu, DOJ North Korea IT crackdown, Sue Mi Terry charges dropped, Lee names new CoS.",
-    "file": "digest_2026-10-14.mp3",
-    "bytes": 5675928,
-    "seconds": 709,
-    "script": "assembled",
-    "script_rejected": [
-      "quotation not in the brief: ' meet Kim during his upcoming November Asia trip. The CSIS K'",
-      "quotation not in the brief: ' That inspection followed trilateral consultations between S'",
-      "quotation not in the brief: \" — a story this brief led with, and state media's framing em\"",
-      "quotation not in the brief: \"\\n\\nSouth Korea's Financial Supervisory Service confirmed hack\"",
-      "name not in the brief: Vice",
-      "name not in the brief: Supervisory"
-    ]
-  },
-  {
     "date": "2026-10-15",
     "title": "Korea Daily Brief | Thursday, October 15",
     "summary": "North Korea SLCM test, 5th in month, New Yalu Bridge opens, KOSPI -7.6% circuit breaker, OPCON row, Sue Mi Terry charges dropped.",
@@ -878,5 +861,40 @@
     "transcript": "digest_2026-11-12.vtt",
     "chapters": "digest_2026-11-12.chapters.json",
     "page": "listen/2026-11-12.html"
+  },
+  {
+    "date": "2026-11-13",
+    "title": "Korea Daily Brief | Friday, November 13",
+    "summary": "Kim inspects 2nd east-coast naval base, North Korean flag redesigned, Cho-Wang Yi Beijing talks, Nvidia GPU pledges confirmed, Justice Department seizes 1.2 billion dollars in North Korean crypto.",
+    "file": "digest_2026-11-13.mp3",
+    "bytes": 5348728,
+    "seconds": 668,
+    "script": "written",
+    "transcript_text": "digest_2026-11-13.txt",
+    "notes": [
+      {
+        "headline": "FM Cho, Wang Yi meet in Beijing ahead of Lee-Xi APEC summit",
+        "source": "Hankyoreh",
+        "url": "https://www.hani.co.kr/arti/international/china/1287289.html"
+      },
+      {
+        "headline": "DOJ obtains court authorization to seize $1.2B in DPRK-linked Binance funds",
+        "source": "NK News / Bloomberg",
+        "url": "https://www.nknews.org/2026/11/us-moves-to-disrupt-north-korean-crypto-theft-seize-1-2b-in-binance-funds/"
+      },
+      {
+        "headline": "North Korea changes flag aspect ratio for first time since 1948",
+        "source": "NK News / Yonhap",
+        "url": "https://www.nknews.org/2026/11/north-korea-modifies-national-flag-in-break-with-decades-old-design/"
+      },
+      {
+        "headline": "South Korea confirms Nvidia will keep GPU supply pledges after Jensen Huang's resignation",
+        "source": "Reuters / Korea Times",
+        "url": "https://www.reuters.com/world/asia-pacific/south-korea-says-nvidia-will-keep-gpu-pledges-after-huangs-resignation-2026-11-13/"
+      }
+    ],
+    "transcript": "digest_2026-11-13.vtt",
+    "chapters": "digest_2026-11-13.chapters.json",
+    "page": "listen/2026-11-13.html"
   }
 ]
