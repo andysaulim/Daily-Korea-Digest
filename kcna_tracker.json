@@ -1,6 +1,19 @@
 {
   "days": [
     {
+      "date": "2026-11-14",
+      "silence_today": false,
+      "watch_flag": false,
+      "bottom_line": "State media led with Kim's second consecutive east-coast naval base inspection; NK News separately reported the November 4 cluster warhead test was fabricated using 2022 imagery.",
+      "quotes": [
+        {
+          "speaker": "Kim Jong Un",
+          "quote": "Modern naval base construction is a major core project directly linked to our state's safety and defense of maritime sovereignty, and must unconditionally be completed within the period decided by the party central and at the quality level demanded by the party central.",
+          "source": "N. Korea's Kim inspects east coast naval base under construction, urges timely completion"
+        }
+      ]
+    },
+    {
       "date": "2026-11-13",
       "silence_today": false,
       "watch_flag": false,
@@ -98,20 +111,7 @@
           "source": "Kim Jong Un inspects new stealth drone, calls for 'absolute' UAV superiority"
         }
       ]
-    },
-    {
-      "date": "2026-10-31",
-      "silence_today": false,
-      "watch_flag": false,
-      "bottom_line": "State media's lead items were the Swiss FM Pyongyang visit and a Foreign Ministry press statement rejecting sanctions and nuclear weapons-state denial, while KCNA reported the October 29 drone exhibition and 600mm 'Sniper' rocket live-fire demonstration without yet acknowledging the simultaneous ballistic missile salvo.",
-      "quotes": [
-        {
-          "speaker": "Kim Jong Un",
-          "quote": "The aim to seize the absolute superiority in the drone technology is an indispensable option in the light of the ever-changing patterns of modern warfare. Strength precisely means peace and peace is guaranteed only by strength.",
-          "source": "Kim Jong Un inspects new stealth drone, calls for 'absolute' UAV superiority"
-        }
-      ]
     }
   ],
-  "last_updated": "2026-11-13T12:10:41.830903+00:00"
+  "last_updated": "2026-11-14T12:09:27.431732+00:00"
 }
