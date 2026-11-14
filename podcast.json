@@ -1,14 +1,5 @@
 [
   {
-    "date": "2026-10-15",
-    "title": "Korea Daily Brief | Thursday, October 15",
-    "summary": "North Korea SLCM test, 5th in month, New Yalu Bridge opens, KOSPI -7.6% circuit breaker, OPCON row, Sue Mi Terry charges dropped.",
-    "file": "digest_2026-10-15.mp3",
-    "bytes": 4700620,
-    "seconds": 587,
-    "script": "written"
-  },
-  {
     "date": "2026-10-16",
     "title": "Korea Daily Brief | Friday, October 16",
     "summary": "NK-China bridge opens, SLCM test confirmed, U.S.-South Korea 2+2 finance debut, KOSPI rebounds 2%, OPCON row deepens.",
@@ -896,5 +887,33 @@
     "transcript": "digest_2026-11-13.vtt",
     "chapters": "digest_2026-11-13.chapters.json",
     "page": "listen/2026-11-13.html"
+  },
+  {
+    "date": "2026-11-14",
+    "title": "Korea Daily Brief | Saturday, November 14",
+    "summary": "wartime operational control-as-withdrawal signal, Wang Yi briefs Seoul on Kim's Dandong visit, People Power Party Busan rally, North Korean naval buildup continues.",
+    "file": "digest_2026-11-14.mp3",
+    "bytes": 4665096,
+    "seconds": 583,
+    "script": "written",
+    "script_repaired": [
+      "Brent crude was near 95 dollars and 84 cents."
+    ],
+    "transcript_text": "digest_2026-11-14.txt",
+    "notes": [
+      {
+        "headline": "Trump seen using OPCON transfer as path to US troop withdrawal, experts warn",
+        "source": "Yonhap English",
+        "url": "https://en.yna.co.kr/view/AEN20261114000600315"
+      },
+      {
+        "headline": "China gives Seoul detailed account of Kim's Dandong visit; calls ties 'economic, not political'",
+        "source": "Yonhap English / Korea Times",
+        "url": "https://en.yna.co.kr/view/AEN20261114001900315"
+      }
+    ],
+    "transcript": "digest_2026-11-14.vtt",
+    "chapters": "digest_2026-11-14.chapters.json",
+    "page": "listen/2026-11-14.html"
   }
 ]
