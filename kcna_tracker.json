@@ -1,6 +1,12 @@
 {
   "days": [
     {
+      "date": "2026-11-15",
+      "silence_today": false,
+      "watch_flag": false,
+      "bottom_line": "State media led with the departure of the Jo Yong-won delegation to Russia, framing the visit as an expression of deepening DPRK-Russia alliance relations; domestic content covered welfare and technology topics, with all recent weapons tests remaining absent from internal KCNA output."
+    },
+    {
       "date": "2026-11-14",
       "silence_today": false,
       "watch_flag": false,
@@ -98,20 +104,7 @@
       "silence_today": false,
       "watch_flag": false,
       "bottom_line": "State media led with the cluster warhead test confirmation and a fierce condemnation of US-ROK nuclear drills, while North Korean coal officials pursued Chinese smart-mining technology — no Kim appearance reported today."
-    },
-    {
-      "date": "2026-11-01",
-      "silence_today": false,
-      "watch_flag": false,
-      "bottom_line": "State media's lead today was the Missile Administration's cluster warhead test confirmation, with the Foreign Ministry reiterating the nuclear-weapons-state position; Kim's drone exhibition quote from October 30 remains the current headline from state media, and the New Yalu River Bridge vehicle gap persists.",
-      "quotes": [
-        {
-          "speaker": "Kim Jong Un",
-          "quote": "The aim to seize the absolute superiority in the drone technology is an indispensable option in the light of the ever-changing patterns of modern warfare. Strength precisely means peace and peace is guaranteed only by strength.",
-          "source": "Kim Jong Un inspects new stealth drone, calls for 'absolute' UAV superiority"
-        }
-      ]
     }
   ],
-  "last_updated": "2026-11-14T12:09:27.431732+00:00"
+  "last_updated": "2026-11-15T12:08:37.544542+00:00"
 }
