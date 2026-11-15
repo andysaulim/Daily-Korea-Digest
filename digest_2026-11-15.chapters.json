@@ -1,0 +1,48 @@
+{
+ "version": "1.2.0",
+ "chapters": [
+  {
+   "startTime": 0.0,
+   "title": "Today's headlines",
+   "endTime": 51.39
+  },
+  {
+   "startTime": 51.39,
+   "title": "Kim Jong Un's closest aide Jo Yong-won leads delegation to Moscow…",
+   "url": "https://www.nknews.org/2026/11/kim-jong-uns-top-aide-heads-to-moscow-days-before-putin-xi-trump-summit/",
+   "endTime": 137.51
+  },
+  {
+   "startTime": 137.51,
+   "title": "AI exam cheating scandal triggers presidential office emergency…",
+   "url": "https://en.yna.co.kr/view/AEN20261115000753315",
+   "endTime": 214.88
+  },
+  {
+   "startTime": 214.88,
+   "title": "APEC Concluding Senior Officials' Meeting wraps in Shenzhen",
+   "url": "https://www.mofa.go.kr/www/brd/m_4080/view.do?seq=377775",
+   "endTime": 286.46
+  },
+  {
+   "startTime": 286.46,
+   "title": "Pyongyang",
+   "endTime": 328.26
+  },
+  {
+   "startTime": 328.26,
+   "title": "The round-up",
+   "endTime": 537.87
+  },
+  {
+   "startTime": 537.87,
+   "title": "Korea and the World",
+   "endTime": 565.91
+  },
+  {
+   "startTime": 565.91,
+   "title": "Markets",
+   "endTime": 597.86
+  }
+ ]
+}

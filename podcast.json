@@ -1,17 +1,5 @@
 [
   {
-    "date": "2026-10-16",
-    "title": "Korea Daily Brief | Friday, October 16",
-    "summary": "NK-China bridge opens, SLCM test confirmed, U.S.-South Korea 2+2 finance debut, KOSPI rebounds 2%, OPCON row deepens.",
-    "file": "digest_2026-10-16.mp3",
-    "bytes": 6058570,
-    "seconds": 757,
-    "script": "assembled",
-    "script_rejected": [
-      "name not in the brief: Demarcation"
-    ]
-  },
-  {
     "date": "2026-10-17",
     "title": "Korea Daily Brief | Saturday, October 17",
     "summary": "North Korea tests AI-equipped 'Zam-2.0' torpedo, Belarus opens Pyongyang embassy, Takaichi Yasukuni offering draws Seoul rebuke, USFK commander sovereignty row.",
@@ -915,5 +903,35 @@
     "transcript": "digest_2026-11-14.vtt",
     "chapters": "digest_2026-11-14.chapters.json",
     "page": "listen/2026-11-14.html"
+  },
+  {
+    "date": "2026-11-15",
+    "title": "Korea Daily Brief | Sunday, November 15",
+    "summary": "Jo Yong-won in Moscow days before U.S.-China-Russia summit, AI exam cheating scandal triggers national security review, APEC CSOM concludes in Shenzhen.",
+    "file": "digest_2026-11-15.mp3",
+    "bytes": 4783858,
+    "seconds": 597,
+    "script": "written",
+    "transcript_text": "digest_2026-11-15.txt",
+    "notes": [
+      {
+        "headline": "Kim Jong Un's closest aide Jo Yong-won leads delegation to Moscow ahead of US-China-Russia summit",
+        "source": "NK News",
+        "url": "https://www.nknews.org/2026/11/kim-jong-uns-top-aide-heads-to-moscow-days-before-putin-xi-trump-summit/"
+      },
+      {
+        "headline": "AI exam cheating scandal triggers presidential office emergency response ahead of college entrance exam",
+        "source": "Yonhap English",
+        "url": "https://en.yna.co.kr/view/AEN20261115000753315"
+      },
+      {
+        "headline": "APEC Concluding Senior Officials' Meeting wraps in Shenzhen; ROK pushes AI cooperation and energy supply chain resilience",
+        "source": "ROK MOFA",
+        "url": "https://www.mofa.go.kr/www/brd/m_4080/view.do?seq=377775"
+      }
+    ],
+    "transcript": "digest_2026-11-15.vtt",
+    "chapters": "digest_2026-11-15.chapters.json",
+    "page": "listen/2026-11-15.html"
   }
 ]
