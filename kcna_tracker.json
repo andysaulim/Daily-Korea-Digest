@@ -1,6 +1,12 @@
 {
   "days": [
     {
+      "date": "2026-11-16",
+      "silence_today": false,
+      "watch_flag": false,
+      "bottom_line": "State media focused on domestic welfare and construction themes; the most significant DPRK external event was the Jo Yong-won delegation to Moscow, reported via external sources rather than KCNA."
+    },
+    {
       "date": "2026-11-15",
       "silence_today": false,
       "watch_flag": false,
@@ -98,13 +104,7 @@
       "silence_today": false,
       "watch_flag": false,
       "bottom_line": "State media led with Kim Yo Jong's rare personal denial of the Binance hack attribution and KCNA's confirmation of the cruise missile dispersal warhead test, while a Chinese Communist Party Central Party School delegation arrived in Pyongyang and North Korea continued to court Chinese investment in Sinuiju."
-    },
-    {
-      "date": "2026-11-02",
-      "silence_today": false,
-      "watch_flag": false,
-      "bottom_line": "State media led with the cluster warhead test confirmation and a fierce condemnation of US-ROK nuclear drills, while North Korean coal officials pursued Chinese smart-mining technology — no Kim appearance reported today."
     }
   ],
-  "last_updated": "2026-11-15T12:08:37.544542+00:00"
+  "last_updated": "2026-11-16T12:09:25.074893+00:00"
 }

@@ -38,15 +38,15 @@
     "Tumangang–Khasan (NK-Russia border)": {
       "name": "Tumangang–Khasan (NK-Russia border)",
       "status": "activity",
-      "note": "As of March 2026: Road bridge construction accelerated, completion target moved to Summer 2026. Passenger rail service resumed mid-2025. Ore and tank car traffic at highest levels since project began. This report is over six months old and may not reflect the current state. Russian Transport Ministry applications filed Nov 13 for a 14-daily-round-trip Vladivostok-Rason bus route over the new vehicle bridge, with experts noting the service will likely transport DPRK workers more than Russian tourists.",
+      "note": "As of March 2026: Road bridge construction accelerated, completion target moved to Summer 2026. Passenger rail service resumed mid-2025. Ore and tank car traffic at highest levels since project began. This report is over six months old and may not reflect the current state. Russian Transport Ministry applications filed November 13, 2026 for a 14-daily-round-trip Vladivostok-Rason bus route over the new vehicle bridge, with experts noting the service will likely transport DPRK workers more than Russian tourists.",
       "last_source_date": "2026-11-13",
       "direction": "up"
     },
     "Sinuiju–Dandong (NK-China border)": {
       "name": "Sinuiju–Dandong (NK-China border)",
       "status": "activity",
-      "note": "38 North satellite imagery from October 16 confirms trucks traversing the New Yalu River (DPRK-Friendship) Bridge one day after the October 15 official opening, marking the start of commercial vehicle traffic. Daily NK reports (Oct 31) that North Korean trucks have still not joined Chinese cargo trucks on the bridge two weeks after the Oct 15 opening; North Korean transport officials are still preparing vehicles. North Korea-China trade reached $299M in September 2026, the second-highest monthly total in 2026. Kim Jong Un crossed the New Yalu River Bridge on October 24 during his unannounced visit to Dandong. Daily NK reports on Nov 3, 2026 that North Korea is courting Chinese investors to build hotels and shopping complexes in Sinuiju. NK News reports a surge in North Korean delegations visiting China, putting commercial ties in focus. Daily NK reports Nov 12 that Chinese truck drivers who relied on side income ferrying parcels across the new bridge are souring on operations due to tighter customs checks and movement controls since the October opening. Huanghai Automobile's Dandong bus factory announced it is operating at full capacity on Nov 13 following Kim Jong Un's October visit, raising questions about potential vehicle exports to the DPRK.",
-      "last_source_date": "2026-11-13",
+      "note": "NK News Planet Labs satellite imagery analyzed through November 15, 2026 confirms trucks filling Sinuiju customs facility from October 16, the day after the New Yalu River Bridge officially opened, with activity peaking October 19–20. A wall of 40-foot containers bearing Maersk and COSCO markings was visible on the Chinese side. Kim Jong Un crossed the New Yalu River Bridge on October 24 during his unannounced visit to Dandong. Daily NK reported November 12 that Chinese truck drivers who relied on side income ferrying parcels across the new bridge are souring on operations due to tighter customs checks and movement controls. Huanghai Automobile's Dandong bus factory announced November 13 it is operating at full capacity following Kim Jong Un's October visit.",
+      "last_source_date": "2026-11-15",
       "direction": "up"
     },
     "Rason SEZ": {
@@ -59,7 +59,7 @@
     "Yellow Sea NLL": {
       "name": "Yellow Sea NLL",
       "status": "normal",
-      "note": "As of September 26, 2025: 140m DPRK merchant vessel Toksong crossed the Northern Limit Line near Baengnyeong Island, advanced 5km south. ROK Navy fired approximately 60 warning shots; vessel retreated after 1 hour. ROK Marine Corps Commandant Gen. Ju Il-suk stated October 20 2026 that North Korea has made 'various changes' to forces facing South Korea's border islands, with Seoul stepping up surveillance along the maritime border. 38 North satellite imagery published October 29 shows North Korea continuing to install new fencing along its border. North Korean propaganda loudspeakers were visible at two border locations on Nov 4 from Odusan Unification Observatory and Key Observatory in Gyeonggi Province. ROK Joint Chiefs confirmed Nov 6 that a drifting North Korean fishing vessel was spotted in international waters off Ulleung Island on Nov 3 and is under investigation.",
+      "note": "As of September 26, 2025: 140m DPRK merchant vessel Toksong crossed the Northern Limit Line near Baengnyeong Island, advanced 5km south. ROK Navy fired approximately 60 warning shots; vessel retreated after 1 hour. ROK Marine Corps Commandant Gen. Ju Il-suk stated October 20, 2026 that North Korea has made 'various changes' to forces facing South Korea's border islands, with Seoul stepping up surveillance along the maritime border. 38 North satellite imagery published October 29 shows North Korea continuing to install new fencing along its border. North Korean propaganda loudspeakers were visible at two border locations on November 4, 2026 from Odusan Unification Observatory and Key Observatory in Gyeonggi Province. ROK Joint Chiefs confirmed November 6, 2026 that a drifting North Korean fishing vessel was spotted in international waters off Ulleung Island on November 3 and is under investigation.",
       "last_source_date": "2026-11-06",
       "direction": ""
     },
@@ -73,10 +73,10 @@
     "Vostochny/Dunai (Russian Far East)": {
       "name": "Vostochny/Dunai (Russian Far East)",
       "status": "activity",
-      "note": "As of January 2026: Arms shipments slowed due to ice — one Russian vessel (likely Angara or Lady R) visited Rason, docked January 14 at arms export berth. Cargo routed to Vostochny. Since September 2023: 64 voyages by 4 vessels (Angara, Maria, Maya-1, Lady R) delivered approximately 15,800 containers (approximately 4.2-5.8 million munitions) from Rajin to Vostochny/Dunai. This report is over six months old and may not reflect the current state. Russian Transport Ministry applications filed Nov 13 for a Vladivostok-Rason bus route operating 14 daily round trips.",
+      "note": "As of January 2026: Arms shipments slowed due to ice — one Russian vessel (likely Angara or Lady R) visited Rason, docked January 14, 2026 at arms export berth. Cargo routed to Vostochny. Since September 2023: 64 voyages by 4 vessels (Angara, Maria, Maya-1, Lady R) delivered approximately 15,800 containers (approximately 4.2-5.8 million munitions) from Rajin to Vostochny/Dunai. This report is over six months old and may not reflect the current state. Russian Transport Ministry applications filed November 13, 2026 for a Vladivostok-Rason bus route operating 14 daily round trips.",
       "last_source_date": "2026-11-13",
       "direction": "up"
     }
   },
-  "last_updated": "2026-11-15T12:08:37.545655+00:00"
+  "last_updated": "2026-11-16T12:09:25.075997+00:00"
 }
