@@ -1,0 +1,75 @@
+This is the Korea Daily Brief from the CSIS Korea Chair, read by an AI voice. It's Monday, November 16.
+
+Three things today: Seoul scrambles ahead of a U.S.-China-Russia summit it won't be in the room for, South Korea mandates glasses inspections after an AI cheating scandal rocks its biggest exam, and Foreign Minister Cho Hyun presses Beijing to help bring North Korea back to talks. The trilateral summit lands Wednesday in Shenzhen, and Seoul is watching from the outside as decisions that could touch the Korean Peninsula get made without it. Also today: South Korea's Foreign Ministry is hosting its fourth forum on North Korean human rights and humanitarian cooperation, and the second Global New Space Forum is under way in Seoul.
+
+First, the Trump-Xi-Putin summit and what it means for Seoul.
+
+Secretary of State Marco Rubio this week offered a window into how Washington reads Kim Jong Un's nuclear ambitions. Speaking at a Washington convention, Rubio said Kim "just wants to survive in his regime" and "is not expansionist," drawing a contrast with Iran. That framing matters because it shapes how the U.S. might approach any nuclear conversation at the highest levels.
+
+And those conversations could come very soon. The first-ever trilateral summit between the United States, China and Russia is set for Wednesday, November 19, in Shenzhen, on the sidelines of APEC. Seoul's fear is direct: that North Korea's nuclear program could be discussed there without any Korean voice in the room. Korean analysts have raised the possibility of nuclear recognition being floated. A senior South Korean Foreign Ministry official said a North Korea-U.S. summit on the APEC sidelines "cannot be ruled out," but assessed it as unlikely given variables on both sides.
+
+Seoul moved quickly to register its concerns with Beijing. Foreign Minister Cho Hyun met Chinese Foreign Minister Wang Yi in Beijing on November 14 and warned that the trilateral gathering must not become, in Cho's words, "a second Yalta Conference." Wang told Cho that China's policy on the peninsula remains unchanged and that Beijing will continue to play a constructive role.
+
+Adding to the picture, senior Workers' Party of Korea official Jo Yong-won led a North Korean delegation to Moscow in the days before the summit, a visit Seoul said it would closely monitor. The Chosun Ilbo, in an editorial today, argues that North Korea is consolidating its position through that Moscow visit while Seoul risks being left on the margins of a gathering that could reshape the peninsula's security architecture.
+
+The core fact to hold: a summit that could touch the Korean Peninsula's future takes place Wednesday, and Seoul is not at the table.
+
+Second, South Korea's AI cheating crisis ahead of the CSAT.
+
+About 550,000 students are scheduled to sit South Korea's College Scholastic Ability Test on Thursday, November 19. That exam is the country's most consequential annual test. This week it arrives in the middle of an AI cheating scandal that has rattled the government.
+
+On Sunday, the top scorer in the national tax accountant certification exam confessed to cheating using a miniature camera, a smartphone and artificial intelligence. Seoul Metropolitan Police have since secured the miniature camera, a laptop and a mobile phone submitted by the suspect's lawyer, and are planning to form a nationwide response team ahead of Thursday's exam.
+
+Prime Minister Han Seong-sook convened an emergency meeting Monday. She directed officials to ensure all smart devices are surrendered before the test begins, and asked the Ministry of Science and ICT to examine whether public Wi-Fi could be disabled at all 1,312 test sites. Education Minister Choi Kyo-jin told parliament that smart glasses have been added to the prohibited items list, and that cheating with smart devices could carry criminal punishment.
+
+That means students on Thursday will have their glasses physically inspected before they sit the exam. The government is racing to close a loophole that, until this week, did not officially exist in Korean exam rules.
+
+About 550,000 students. Thursday. Glasses checks required.
+
+Third, Seoul's diplomacy at ASEAN and the push to keep North Korea on the agenda.
+
+President Lee Jae-myung is in Manila this week for a run of summit meetings. At the 27th Korea-ASEAN Summit and the third Korea-Mekong Summit, Lee called South Korea an "ideal partner" for the region, proposed two new initiatives, an AI Companion Initiative and a Cultural and Creative Industries Initiative, and set a 300 billion dollar bilateral trade goal with ASEAN. At a sideline meeting, Lee and Thai Prime Minister Anutin Charnvirakul agreed to accelerate negotiations on a comprehensive economic partnership agreement, and discussed cooperation in defense manufacturing, AI and nuclear energy.
+
+Lee's bilateral summit with Japanese Prime Minister Takaichi Sanae is scheduled for Tuesday, their fourth meeting since Takaichi took office in October 2025, continuing a shuttle diplomacy format launched at the Gyeongju APEC summit.
+
+Meanwhile, back in Beijing, Foreign Minister Cho Hyun's November 14 meeting with Wang Yi was not only about the trilateral summit. Cho also asked China to help bring North Korea back to the negotiation table, stressing that peninsula peace serves the common interests of both countries. Wang said Beijing's policy on the peninsula remains unchanged.
+
+The diplomatic picture this week is of Seoul working multiple channels at once, ASEAN in Manila, Beijing on the nuclear question, and an eye on Shenzhen, to avoid being bypassed on decisions about its own security.
+
+Now to Pyongyang.
+
+North Korean state media today led with domestic themes. KCNA reported scientists and technicians are applying technical innovations to the construction of the Tanchon Power Station, a major infrastructure priority. The other notable item, reported via Daily N.K. rather than KCNA directly, describes a gold smuggling case in Ryanggang Province where a driver accepted full blame for contraband found in a senior official's government vehicle, with the official escaping punishment.
+
+Kim Jong Un has not appeared publicly in two days. The most significant external development from Pyongyang's side this week is the Jo Yong-won delegation to Moscow, reported through outside sources. State media's silence on that visit is itself a data point.
+
+The rest of the news, quickly.
+
+On the courts: South Korea's Supreme Court has set November 19 as the date for its ruling on former Prime Minister Han Duck-soo's insurrection-related charges, one day before his detention expires at midnight November 20. The verdict for first lady Kim Keon-hee is also scheduled the same day.
+
+On satellite imagery: Planet Labs imagery analyzed by N.K. News shows trucks filling the Sinuiju customs facility from October 16, with activity peaking October 19 and 20. A wall of 40-foot containers bearing Maersk and COSCO markings was visible on the Chinese side. The imagery covers October 13 to November 15 and shows sustained bilateral traffic since the opening of the New Yalu Bridge, though long queues on both sides raise the possibility of clearance delays.
+
+On North Korea's cyber activity: Global cybersecurity firm CYFIRMA reports hackers affiliated with the Lazarus group, believed linked to North Korea's Reconnaissance General Bureau, identified 30 South Korean servers among 216 worldwide as potential targets. That ranks South Korea fourth after the United States, Japan and India. The hackers exploited two vulnerabilities with a severity rating of 9.2 out of 10. South Korea's Ministry of Science and ICT raised the national cyberthreat alert from "Attention" to "Caution."
+
+On DMZ diplomacy: N.K. News reports, citing multiple informed sources, that the U.N. Command Military Armistice Commission had contacted the Korean People's Army after the September 21 DMZ mine explosions to arrange talks, but the effort stalled after South Korea publicly demanded an apology from Pyongyang.
+
+On personnel: President Lee approved confirmation hearing requests for two nominees announced November 6: Justice Minister nominee Lee Yong-cheol, with his hearing set for November 24, and National Tax Service Commissioner nominee Ahn Duk-su.
+
+On defense spending: The National Assembly Defense Committee approved approximately 103.1 billion won to accelerate the relocation of Gwangju military airport, pulling forward funding from 2028. The committee also approved 300 billion won for follow-on KF-21 Boramae production.
+
+On semiconductors: SK Hynix plans a chip-testing hub at its Trinity Fab facility in Yongin to help smaller Korean suppliers cut factory-approval time by at least 30 percent. Bloomberg projected South Korea's GDP growth could reach 4 percent in 2027 if semiconductor production accelerates rapidly. South Korea's domestic sourcing rate for semiconductor materials, parts and equipment stands at approximately 30 percent. And foreign investors recorded a net outflow of 13.7 billion dollars from Korean securities in October.
+
+The latest Gallup Korea poll, taken November 3 to 5, puts President Lee's approval at 41 percent, up. The Democratic Party stands at 36 percent, also up. The People Power Party is at 28 percent, down.
+
+On Capitol Hill.
+
+Analysts cited by Daegu MBC assess that despite Democratic gains in the U.S. midterm elections, tariffs on Korean exports will remain largely unchanged, with interest rates and exchange rates as additional variables for Korean exporters. The Hudson Institute is holding a forum Tuesday in Washington on U.S.-South Korea alliance challenges covering trade, technology and China.
+
+Beyond the region.
+
+ASEAN leaders sought deeper technology cooperation with South Korea at the Manila summit, with Nikkei Asia noting ASEAN is also pursuing energy links with Australia in parallel, underscoring the region's multi-partner approach. The European Parliament passed sanctions targeting Russia and North Korea over the relocation of children. And South Korea's National Assembly is weighing a hearing on the Korea Hydro and Nuclear Power contract for the Czech Dukovany nuclear plant expansion, as construction continues at the site.
+
+Finally, the markets.
+
+Seoul's main stock index, the KOSPI, closed down about 3.6 percent on Monday, partly on foreign selling of Samsung and SK Hynix shares. The dollar bought about 1,335 won. Brent crude stood at about 95 dollars a barrel, down about 1 percent. The Bank of Korea's policy rate is 3.00 percent, set in October.
+
+That's the Korea Daily Brief for Monday, November 16. The full text, with a link to every source, is in today's email.

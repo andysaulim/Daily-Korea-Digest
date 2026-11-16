@@ -1,0 +1,53 @@
+{
+ "version": "1.2.0",
+ "chapters": [
+  {
+   "startTime": 0.0,
+   "title": "Today's headlines",
+   "endTime": 52.16
+  },
+  {
+   "startTime": 52.16,
+   "title": "Rubio: Kim seeks nukes for survival, not expansion, but North Korea…",
+   "url": "https://www.nknews.org/2026/11/rubio-says-kim-jong-un-wants-nukes-for-regime-survival-not-to-support-invasions/",
+   "endTime": 175.14
+  },
+  {
+   "startTime": 175.14,
+   "title": "South Korea mandates glasses inspection at CSAT after AI cheating…",
+   "url": "https://www.cnn.com/2026/11/16/asia/south-korea-ai-glasses-cheating-intl-hnk",
+   "endTime": 269.61
+  },
+  {
+   "startTime": 269.61,
+   "title": "Seoul asks Beijing to help return North Korea to talks before APEC…",
+   "url": "https://www.nknews.org/2026/11/seoul-asks-beijing-to-help-bring-north-korea-back-to-talks-ahead-of-apec-summit/",
+   "endTime": 364.88
+  },
+  {
+   "startTime": 364.88,
+   "title": "Pyongyang",
+   "endTime": 413.65
+  },
+  {
+   "startTime": 413.65,
+   "title": "The round-up",
+   "endTime": 609.12
+  },
+  {
+   "startTime": 609.12,
+   "title": "Capitol Hill",
+   "endTime": 635.65
+  },
+  {
+   "startTime": 635.65,
+   "title": "Korea and the World",
+   "endTime": 669.1
+  },
+  {
+   "startTime": 669.1,
+   "title": "Markets",
+   "endTime": 706.51
+  }
+ ]
+}

@@ -1,18 +1,5 @@
 [
   {
-    "date": "2026-10-17",
-    "title": "Korea Daily Brief | Saturday, October 17",
-    "summary": "North Korea tests AI-equipped 'Zam-2.0' torpedo, Belarus opens Pyongyang embassy, Takaichi Yasukuni offering draws Seoul rebuke, USFK commander sovereignty row.",
-    "file": "digest_2026-10-17.mp3",
-    "bytes": 5055677,
-    "seconds": 631,
-    "script": "written",
-    "script_repaired": [
-      "North Korea has now conducted six weapons tests this October alone — and the latest one carries a label we haven't seen before: artificial intelligence.",
-      "A statement made at a Washington seminar three days ago is now driving a political confrontation between South Korean lawmakers and the United States Forces Korea commander."
-    ]
-  },
-  {
     "date": "2026-10-18",
     "title": "Korea Daily Brief | Sunday, October 18",
     "summary": "North Korea AI torpedo confirmed, USFK commander sovereignty row, South Korea trade surplus nears record, Bank of Korea hold expected.",
@@ -933,5 +920,35 @@
     "transcript": "digest_2026-11-15.vtt",
     "chapters": "digest_2026-11-15.chapters.json",
     "page": "listen/2026-11-15.html"
+  },
+  {
+    "date": "2026-11-16",
+    "title": "Korea Daily Brief | Monday, November 16",
+    "summary": "Jo Yong-won in Moscow before Trump-Xi-Putin summit, AI cheating crisis ahead of CSAT, Lee at ASEAN Manila, Han Duck-soo ruling November 19.",
+    "file": "digest_2026-11-16.mp3",
+    "bytes": 5653149,
+    "seconds": 706,
+    "script": "written",
+    "transcript_text": "digest_2026-11-16.txt",
+    "notes": [
+      {
+        "headline": "Rubio: Kim seeks nukes for survival, not expansion, but North Korea still on APEC agenda",
+        "source": "NK News",
+        "url": "https://www.nknews.org/2026/11/rubio-says-kim-jong-un-wants-nukes-for-regime-survival-not-to-support-invasions/"
+      },
+      {
+        "headline": "South Korea mandates glasses inspection at CSAT after AI cheating confession",
+        "source": "CNN / Korea Herald / FT / Reuters",
+        "url": "https://www.cnn.com/2026/11/16/asia/south-korea-ai-glasses-cheating-intl-hnk"
+      },
+      {
+        "headline": "Seoul asks Beijing to help return North Korea to talks before APEC summit",
+        "source": "NK News / Hankyoreh",
+        "url": "https://www.nknews.org/2026/11/seoul-asks-beijing-to-help-bring-north-korea-back-to-talks-ahead-of-apec-summit/"
+      }
+    ],
+    "transcript": "digest_2026-11-16.vtt",
+    "chapters": "digest_2026-11-16.chapters.json",
+    "page": "listen/2026-11-16.html"
   }
 ]
