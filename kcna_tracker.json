@@ -1,6 +1,12 @@
 {
   "days": [
     {
+      "date": "2026-11-17",
+      "silence_today": false,
+      "watch_flag": false,
+      "bottom_line": "State media led with Kim's Samjiyon tourism inspection and domestic welfare content; Jo Yong Won's Moscow visit signaling DPRK-Russia alignment dominated external coverage days before the APEC summit."
+    },
+    {
       "date": "2026-11-16",
       "silence_today": false,
       "watch_flag": false,
@@ -98,13 +104,7 @@
       "silence_today": false,
       "watch_flag": false,
       "bottom_line": "State media led with Kim's Nampho Shipyard inspection and Kim Yo Jong's dual-track message pairing conditional dialogue with the same day's missile launches, while KCNA also confirmed a cruise missile dispersal warhead test announced by Yonhap on Nov 3."
-    },
-    {
-      "date": "2026-11-03",
-      "silence_today": false,
-      "watch_flag": false,
-      "bottom_line": "State media led with Kim Yo Jong's rare personal denial of the Binance hack attribution and KCNA's confirmation of the cruise missile dispersal warhead test, while a Chinese Communist Party Central Party School delegation arrived in Pyongyang and North Korea continued to court Chinese investment in Sinuiju."
     }
   ],
-  "last_updated": "2026-11-16T12:09:25.074893+00:00"
+  "last_updated": "2026-11-17T12:09:01.165851+00:00"
 }
