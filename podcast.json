@@ -1,19 +1,5 @@
 [
   {
-    "date": "2026-10-18",
-    "title": "Korea Daily Brief | Sunday, October 18",
-    "summary": "North Korea AI torpedo confirmed, USFK commander sovereignty row, South Korea trade surplus nears record, Bank of Korea hold expected.",
-    "file": "digest_2026-10-18.mp3",
-    "bytes": 4366880,
-    "seconds": 545,
-    "script": "written",
-    "script_repaired": [
-      "Six weapons events in a single month represents a concentrated testing surge, and KCNA's confirmation of AI-guided precision guidance on an underwater weapon adds a capability dimension worth watching.",
-      "On the same day Brunson's sovereignty remarks were generating bipartisan calls for an apology, the official USFK social media account posted a historical commemoration of Korean War-era events — a juxtaposition that drew notice given the ongoing tensions over the alliance's communication.",
-      "He told CNBC on the sidelines of the same IMF and World Bank meeting that the semiconductor market outlook remains solid through at least 2027."
-    ]
-  },
-  {
     "date": "2026-10-19",
     "title": "Korea Daily Brief | Monday, October 19",
     "summary": "Kim Yo Jong threatens loudspeaker restart, Lee demands wartime operational control return, Hoguk exercise begins with U.S. drills, North Korea-China trade surges to 299 million dollars.",
@@ -950,5 +936,35 @@
     "transcript": "digest_2026-11-16.vtt",
     "chapters": "digest_2026-11-16.chapters.json",
     "page": "listen/2026-11-16.html"
+  },
+  {
+    "date": "2026-11-17",
+    "title": "Korea Daily Brief | Tuesday, November 17",
+    "summary": "Trump floats Kim summit at APEC, Jo Yong Won meets Putin, Lee-Takaichi fourth summit in Manila, KOSPI breaks 5,000, CSAT AI-cheating emergency.",
+    "file": "digest_2026-11-17.mp3",
+    "bytes": 4949563,
+    "seconds": 618,
+    "script": "written",
+    "transcript_text": "digest_2026-11-17.txt",
+    "notes": [
+      {
+        "headline": "Trump floats Kim Jong Un meeting at APEC; Kremlin says Putin would 'of course' meet Kim",
+        "source": "Yonhap / NK News / Reuters",
+        "url": "https://en.yna.co.kr/view/AEN20261116010052315"
+      },
+      {
+        "headline": "Lee and Takaichi hold fourth bilateral summit in Manila, confirm January Japan visit",
+        "source": "Yonhap English",
+        "url": "https://en.yna.co.kr/view/AEN20261117010051315"
+      },
+      {
+        "headline": "Kim Jong Un's top aide Jo Yong Won meets Putin in Moscow, pledges support against US 'neo-Nazism'",
+        "source": "NK News / KCNA via Yonhap",
+        "url": "https://www.nknews.org/2026/11/kim-jong-uns-top-aide-meets-putin-backs-fight-against-us-neo-nazism/"
+      }
+    ],
+    "transcript": "digest_2026-11-17.vtt",
+    "chapters": "digest_2026-11-17.chapters.json",
+    "page": "listen/2026-11-17.html"
   }
 ]
