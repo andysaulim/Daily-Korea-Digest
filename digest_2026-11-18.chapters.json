@@ -1,0 +1,53 @@
+{
+ "version": "1.2.0",
+ "chapters": [
+  {
+   "startTime": 0.0,
+   "title": "Today's headlines",
+   "endTime": 53.48
+  },
+  {
+   "startTime": 53.48,
+   "title": "Lee-Xi summit in Shenzhen clinches FTA phase 2, backs US-North Korea…",
+   "url": "http://en.people.cn/n3/2026/1118/c90000-20520611.html",
+   "endTime": 159.18
+  },
+  {
+   "startTime": 159.18,
+   "title": "Rubio says Trump 'serious' about Kim meeting",
+   "url": "https://www.nknews.org/2026/11/rubio-says-trump-serious-about-meeting-kim-jong-un-but-doesnt-confirm-talks/",
+   "endTime": 258.04
+  },
+  {
+   "startTime": 258.04,
+   "title": "ROK-US Combined Forces Command holds senior meeting on AI-driven…",
+   "url": "https://en.yna.co.kr/view/AEN20261118009200315",
+   "endTime": 345.2
+  },
+  {
+   "startTime": 345.2,
+   "title": "Pyongyang",
+   "endTime": 404.44
+  },
+  {
+   "startTime": 404.44,
+   "title": "The round-up",
+   "endTime": 609.32
+  },
+  {
+   "startTime": 609.32,
+   "title": "Capitol Hill",
+   "endTime": 654.12
+  },
+  {
+   "startTime": 654.12,
+   "title": "Korea and the World",
+   "endTime": 686.42
+  },
+  {
+   "startTime": 686.42,
+   "title": "Markets",
+   "endTime": 717.58
+  }
+ ]
+}

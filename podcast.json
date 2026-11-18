@@ -1,35 +1,5 @@
 [
   {
-    "date": "2026-10-19",
-    "title": "Korea Daily Brief | Monday, October 19",
-    "summary": "Kim Yo Jong threatens loudspeaker restart, Lee demands wartime operational control return, Hoguk exercise begins with U.S. drills, North Korea-China trade surges to 299 million dollars.",
-    "file": "digest_2026-10-19.mp3",
-    "bytes": 4858122,
-    "seconds": 607,
-    "script": "written",
-    "transcript_text": "digest_2026-10-19.txt",
-    "notes": [
-      {
-        "headline": "Kim Yo Jong threatens loudspeaker restart, calls southern border 'very unstable'",
-        "source": "NK News",
-        "url": "https://www.nknews.org/2026/10/kim-yo-jong-threatens-restart-of-north-korean-loudspeakers-amid-border-tensions/"
-      },
-      {
-        "headline": "Lee demands early OPCON return, calls it 'repatriation' not 'transfer'",
-        "source": "Yonhap English",
-        "url": "https://en.yna.co.kr/view/AEN20261019010552315"
-      },
-      {
-        "headline": "North Korea-China trade hits $299M in September, second-highest this year",
-        "source": "NK News",
-        "url": "https://www.nknews.org/2026/10/north-korea-china-trade-soared-to-300m-last-month-ahead-of-bridge-opening-data/"
-      }
-    ],
-    "transcript": "digest_2026-10-19.vtt",
-    "chapters": "digest_2026-10-19.chapters.json",
-    "page": "listen/2026-10-19.html"
-  },
-  {
     "date": "2026-10-20",
     "title": "Korea Daily Brief | Tuesday, October 20",
     "summary": "North Korean loudspeaker threat, Trump cold on Kim summit, Seoul withdraws Ukraine staff, KOSPI down 3.73 percent on AI selloff, Elice IPO plunges 32 percent.",
@@ -966,5 +936,35 @@
     "transcript": "digest_2026-11-17.vtt",
     "chapters": "digest_2026-11-17.chapters.json",
     "page": "listen/2026-11-17.html"
+  },
+  {
+    "date": "2026-11-18",
+    "title": "Korea Daily Brief | Wednesday, November 18",
+    "summary": "Lee-Xi summit clinches FTA phase 2, Rubio: Trump 'serious' on Kim meet, South Korea-U.S. CJADO drill, Suneung AI crackdown, Han Deok-su verdict tomorrow.",
+    "file": "digest_2026-11-18.mp3",
+    "bytes": 5741666,
+    "seconds": 717,
+    "script": "written",
+    "transcript_text": "digest_2026-11-18.txt",
+    "notes": [
+      {
+        "headline": "Lee-Xi summit in Shenzhen clinches FTA phase 2, backs US-North Korea dialogue",
+        "source": "People's Daily Online / Yonhap English / NK News",
+        "url": "http://en.people.cn/n3/2026/1118/c90000-20520611.html"
+      },
+      {
+        "headline": "Rubio says Trump 'serious' about Kim meeting; Kremlin says Putin would join if Kim attends APEC",
+        "source": "NK News / Reuters",
+        "url": "https://www.nknews.org/2026/11/rubio-says-trump-serious-about-meeting-kim-jong-un-but-doesnt-confirm-talks/"
+      },
+      {
+        "headline": "ROK-US Combined Forces Command holds senior meeting on AI-driven all-domain operations",
+        "source": "Yonhap News Agency",
+        "url": "https://en.yna.co.kr/view/AEN20261118009200315"
+      }
+    ],
+    "transcript": "digest_2026-11-18.vtt",
+    "chapters": "digest_2026-11-18.chapters.json",
+    "page": "listen/2026-11-18.html"
   }
 ]
