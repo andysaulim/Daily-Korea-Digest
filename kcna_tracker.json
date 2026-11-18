@@ -1,6 +1,12 @@
 {
   "days": [
     {
+      "date": "2026-11-18",
+      "silence_today": false,
+      "watch_flag": false,
+      "bottom_line": "State media led with Kim's Samjiyon tourism inspection and domestic welfare content; the KCNA report that Russia will erect a Kursk monument honoring North Korean troops marks the first domestic acknowledgment of DPRK military participation in the Ukraine conflict."
+    },
+    {
       "date": "2026-11-17",
       "silence_today": false,
       "watch_flag": false,
@@ -98,13 +104,7 @@
       "silence_today": false,
       "watch_flag": false,
       "bottom_line": "State media confirmed North Korea's fourth weapons test in a week — a new air-defense SAM and a cruise missile airport-strike drill — while Kim Yo Jong publicly conditioned any US talks on abandonment of hostile policy, and the WPK international secretary met Wang Yi in Beijing."
-    },
-    {
-      "date": "2026-11-04",
-      "silence_today": false,
-      "watch_flag": false,
-      "bottom_line": "State media led with Kim's Nampho Shipyard inspection and Kim Yo Jong's dual-track message pairing conditional dialogue with the same day's missile launches, while KCNA also confirmed a cruise missile dispersal warhead test announced by Yonhap on Nov 3."
     }
   ],
-  "last_updated": "2026-11-17T12:09:01.165851+00:00"
+  "last_updated": "2026-11-18T12:10:08.635118+00:00"
 }
