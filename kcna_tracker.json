@@ -1,6 +1,19 @@
 {
   "days": [
     {
+      "date": "2026-11-19",
+      "silence_today": false,
+      "watch_flag": false,
+      "bottom_line": "State media led with Kim's east-coast naval university and construction site inspection and his criticism of adversary naval activity; Russia's announcement of a Kursk monument honoring DPRK troops marks the first KCNA acknowledgment of North Korean military participation in Ukraine.",
+      "quotes": [
+        {
+          "speaker": "Kim Jong Un",
+          "quote": "The university's primary duty is to train professional naval commanders.",
+          "source": "Kim Jong Un slams 'enemy' naval activities amid Trump's calls to meet in China"
+        }
+      ]
+    },
+    {
       "date": "2026-11-18",
       "silence_today": false,
       "watch_flag": false,
@@ -98,13 +111,7 @@
       "silence_today": false,
       "watch_flag": false,
       "bottom_line": "State media confirmed North Korea's new air-defense SAM test and cruise missile airport-strike drill — its fourth weapons test in a week — while simultaneously keeping all tests off the domestic news agenda; 38 North separately documented a stealth UAV soft reveal from last week's exhibition."
-    },
-    {
-      "date": "2026-11-05",
-      "silence_today": false,
-      "watch_flag": false,
-      "bottom_line": "State media confirmed North Korea's fourth weapons test in a week — a new air-defense SAM and a cruise missile airport-strike drill — while Kim Yo Jong publicly conditioned any US talks on abandonment of hostile policy, and the WPK international secretary met Wang Yi in Beijing."
     }
   ],
-  "last_updated": "2026-11-18T12:10:08.635118+00:00"
+  "last_updated": "2026-11-19T12:16:06.013635+00:00"
 }

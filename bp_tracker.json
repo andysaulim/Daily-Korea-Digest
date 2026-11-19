@@ -4,7 +4,7 @@
       "name": "Yongbyon Nuclear Complex",
       "status": "elevated",
       "note": "As of April 2026: Enrichment building expansion complete, new centrifuge hall operational. 5 MWe reactor and IRT-2000 both running. Thermal signatures consistent with increased plutonium/HEU production.",
-      "last_source_date": "2026-10-20",
+      "last_source_date": "2026-11-19",
       "direction": "up"
     },
     "Sinpo South Shipyard": {
@@ -78,5 +78,5 @@
       "direction": "up"
     }
   },
-  "last_updated": "2026-11-18T12:10:08.635845+00:00"
+  "last_updated": "2026-11-19T12:16:06.014363+00:00"
 }
