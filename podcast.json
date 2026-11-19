@@ -1,35 +1,5 @@
 [
   {
-    "date": "2026-10-20",
-    "title": "Korea Daily Brief | Tuesday, October 20",
-    "summary": "North Korean loudspeaker threat, Trump cold on Kim summit, Seoul withdraws Ukraine staff, KOSPI down 3.73 percent on AI selloff, Elice IPO plunges 32 percent.",
-    "file": "digest_2026-10-20.mp3",
-    "bytes": 4560230,
-    "seconds": 569,
-    "script": "written",
-    "transcript_text": "digest_2026-10-20.txt",
-    "notes": [
-      {
-        "headline": "Seoul vows decisive retaliation as North Korea threatens loudspeakers, additional strike assets at border",
-        "source": "Yonhap English / NK News",
-        "url": "https://en.yna.co.kr/view/AEN20261020003852315"
-      },
-      {
-        "headline": "Trump casts doubt on Kim meeting at China APEC summit next month",
-        "source": "NK News",
-        "url": "https://www.nknews.org/2026/10/trump-appears-to-cast-doubt-on-prospects-for-meeting-kim-jong-un-next-month/"
-      },
-      {
-        "headline": "KOSPI drops 3.73% as Elice AI data center IPO plunges 32% on debut",
-        "source": "Bloomberg / Reuters / Financial Times / CNBC / Yonhap English",
-        "url": "https://www.bloomberg.com/news/articles/2026-10-20/south-korea-pulls-embassy-staff-from-ukraine-after-envoy-recall"
-      }
-    ],
-    "transcript": "digest_2026-10-20.vtt",
-    "chapters": "digest_2026-10-20.chapters.json",
-    "page": "listen/2026-10-20.html"
-  },
-  {
     "date": "2026-10-21",
     "title": "Korea Daily Brief | Wednesday, October 21",
     "summary": "Kim Yo Jong orders loudspeakers along full border by month-end, Kim inspects fortifications, South Korean exports surge 105 percent, Ukraine staff pullback, North Korea sites go offline.",
@@ -966,5 +936,43 @@
     "transcript": "digest_2026-11-18.vtt",
     "chapters": "digest_2026-11-18.chapters.json",
     "page": "listen/2026-11-18.html"
+  },
+  {
+    "date": "2026-11-19",
+    "title": "Korea Daily Brief | Thursday, November 19",
+    "summary": "Trump-Xi-Putin trilateral omits North Korea, International Atomic Energy Agency confirms Yongbyon expansion, Korea hits 1 trillion dollar exports, Democratic Party moves to impeach chief justice.",
+    "file": "digest_2026-11-19.mp3",
+    "bytes": 5778751,
+    "seconds": 722,
+    "script": "written",
+    "script_repaired": [
+      "Three things today: Trump, Xi, and Putin meet in Shenzhen and say nothing about North Korea; the IAEA confirms Pyongyang is expanding its enrichment capacity at Yongbyon; and South Korea's Democrats move to impeach the Supreme Court chief justice after a ruling favoring the former prime minister."
+    ],
+    "transcript_text": "digest_2026-11-19.txt",
+    "notes": [
+      {
+        "headline": "Trump, Xi, Putin issue first trilateral joint declaration, Korean Peninsula absent",
+        "source": "Yonhap English",
+        "url": "https://en.yna.co.kr/view/AEN20261119001357315"
+      },
+      {
+        "headline": "IAEA confirms Yongbyon enrichment annex externally complete, reactor operating",
+        "source": "NK News",
+        "url": "https://www.nknews.org/2026/11/un-watchdog-voices-serious-concern-over-upgrades-at-north-korean-nuclear-site/"
+      },
+      {
+        "headline": "Democratic Party moves to impeach Supreme Court Chief Justice after Han Duck-soo ruling",
+        "source": "Yonhap English",
+        "url": "https://en.yna.co.kr/view/AEN20261119010300315"
+      },
+      {
+        "headline": "South Korea hits $1 trillion in annual exports, fourth country globally",
+        "source": "Reuters",
+        "url": "https://news.google.com/rss/articles/CBMivgFBVV95cUxQYjJyUW83NEllOTVXWDNHUnY0UW85MjF2dzVVQ1NxOVBGaW1EY0trbjRZZU5zZWFLUnZnQ1RGUkhiM3ZmZVA2VUxZNm5UQlpJR2F2OXotX0EzOUJJdHNkZlhCUXVnM2xqaEZ1Zmh6R19sSmUyelZzSVJSSkVTZHBvd2ZUQkNJOFZPaEZ6amhLd1BGWlcxd2M4N0pLa0J5Z28taFE2M293Z1puMWViY3FhZDh6WXd4SjFsNzg0dkZ3?oc=5"
+      }
+    ],
+    "transcript": "digest_2026-11-19.vtt",
+    "chapters": "digest_2026-11-19.chapters.json",
+    "page": "listen/2026-11-19.html"
   }
 ]

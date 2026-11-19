@@ -1,0 +1,53 @@
+{
+ "version": "1.2.0",
+ "chapters": [
+  {
+   "startTime": 0.0,
+   "title": "Today's headlines",
+   "endTime": 29.37
+  },
+  {
+   "startTime": 29.37,
+   "title": "Trump, Xi, Putin issue first trilateral joint declaration, Korean…",
+   "url": "https://en.yna.co.kr/view/AEN20261119001357315",
+   "endTime": 152.37
+  },
+  {
+   "startTime": 152.37,
+   "title": "IAEA confirms Yongbyon enrichment annex externally complete, reactor…",
+   "url": "https://www.nknews.org/2026/11/un-watchdog-voices-serious-concern-over-upgrades-at-north-korean-nuclear-site/",
+   "endTime": 246.91
+  },
+  {
+   "startTime": 246.91,
+   "title": "Democratic Party moves to impeach Supreme Court Chief Justice after…",
+   "url": "https://en.yna.co.kr/view/AEN20261119010300315",
+   "endTime": 354.55
+  },
+  {
+   "startTime": 354.55,
+   "title": "Pyongyang",
+   "endTime": 432.95
+  },
+  {
+   "startTime": 432.95,
+   "title": "The round-up",
+   "endTime": 614.86
+  },
+  {
+   "startTime": 614.86,
+   "title": "Capitol Hill",
+   "endTime": 640.79
+  },
+  {
+   "startTime": 640.79,
+   "title": "Korea and the World",
+   "endTime": 685.71
+  },
+  {
+   "startTime": 685.71,
+   "title": "Markets",
+   "endTime": 722.21
+  }
+ ]
+}
