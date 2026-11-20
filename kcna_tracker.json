@@ -1,6 +1,19 @@
 {
   "days": [
     {
+      "date": "2026-11-20",
+      "silence_today": false,
+      "watch_flag": false,
+      "bottom_line": "State media led with Kim's east-coast naval university and construction site inspection and his criticism of adversary naval activities; North Korea's display of a domestic AI chatbot at a national IT exhibition marked a new public step in the country's technology signaling.",
+      "quotes": [
+        {
+          "speaker": "Kim Jong Un",
+          "quote": "The university's primary duty is to train professional naval commanders.",
+          "source": "Kim Jong Un slams 'enemy' naval activities amid Trump's calls to meet in China"
+        }
+      ]
+    },
+    {
       "date": "2026-11-19",
       "silence_today": false,
       "watch_flag": false,
@@ -105,13 +118,7 @@
       "silence_today": false,
       "watch_flag": false,
       "bottom_line": "State media confirmed the SPA Standing Committee plenary and Kim Sung-nam's third Beijing high-level meeting, while maintaining a complete domestic blackout on the week's four weapons tests."
-    },
-    {
-      "date": "2026-11-06",
-      "silence_today": false,
-      "watch_flag": false,
-      "bottom_line": "State media confirmed North Korea's new air-defense SAM test and cruise missile airport-strike drill — its fourth weapons test in a week — while simultaneously keeping all tests off the domestic news agenda; 38 North separately documented a stealth UAV soft reveal from last week's exhibition."
     }
   ],
-  "last_updated": "2026-11-19T12:16:06.013635+00:00"
+  "last_updated": "2026-11-20T12:09:23.084968+00:00"
 }
