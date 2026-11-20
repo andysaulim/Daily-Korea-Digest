@@ -1837,5 +1837,12 @@
     "top_stories_count": 4,
     "word_count": 2822,
     "url": "digest_2026-11-19.html"
+  },
+  {
+    "date": "2026-11-20",
+    "headline_re": "Trump-Kim no-show at APEC · DP moves to impeach chief justice · ROK hits $1T exports · IAEA flags Yongbyon expansion · AI cheating crisis",
+    "top_stories_count": 3,
+    "word_count": 2659,
+    "url": "digest_2026-11-20.html"
   }
 ]

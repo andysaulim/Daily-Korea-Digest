@@ -1,35 +1,5 @@
 [
   {
-    "date": "2026-10-21",
-    "title": "Korea Daily Brief | Wednesday, October 21",
-    "summary": "Kim Yo Jong orders loudspeakers along full border by month-end, Kim inspects fortifications, South Korean exports surge 105 percent, Ukraine staff pullback, North Korea sites go offline.",
-    "file": "digest_2026-10-21.mp3",
-    "bytes": 5209767,
-    "seconds": 651,
-    "script": "written",
-    "transcript_text": "digest_2026-10-21.txt",
-    "notes": [
-      {
-        "headline": "Kim Yo Jong orders loudspeakers along full border by October month-end",
-        "source": "Yonhap English / Yonhap North Korea KO / NK News Oct 21",
-        "url": "https://en.yna.co.kr/view/AEN20261021010600320"
-      },
-      {
-        "headline": "South Korea October 1-20 exports surge 105% on record chip sales",
-        "source": "Reuters / Yonhap English",
-        "url": "https://www.reuters.com/world/asia-pacific/south-korea-october-1-20-exports-surge-105-record-chip-sales-2026-10-21/"
-      },
-      {
-        "headline": "Seoul withdraws more embassy staff from Ukraine as North Korean POW row deepens",
-        "source": "AP News / Korea JoongAng Daily / Yonhap English",
-        "url": "https://apnews.com/article/south-korea-ukraine-zelenskyy-pow-70cd52e7d282fa918e394f2eea714e82"
-      }
-    ],
-    "transcript": "digest_2026-10-21.vtt",
-    "chapters": "digest_2026-10-21.chapters.json",
-    "page": "listen/2026-10-21.html"
-  },
-  {
     "date": "2026-10-22",
     "title": "Korea Daily Brief | Thursday, October 22",
     "summary": "Kim Yo Jong sets loudspeaker deadline, Bank of Korea holds at 3 percent, North Korea-Russia prosecutors pact, Seoul files U.N. Security Council letter on DMZ mines, wartime operational control friction.",
@@ -974,5 +944,39 @@
     "transcript": "digest_2026-11-19.vtt",
     "chapters": "digest_2026-11-19.chapters.json",
     "page": "listen/2026-11-19.html"
+  },
+  {
+    "date": "2026-11-20",
+    "title": "Korea Daily Brief | Friday, November 20",
+    "summary": "Trump-Kim no-show at APEC, Democratic Party moves to impeach chief justice, South Korea hits 1 trillion dollar exports, International Atomic Energy Agency flags Yongbyon expansion, AI cheating crisis.",
+    "file": "digest_2026-11-20.mp3",
+    "bytes": 5003785,
+    "seconds": 625,
+    "script": "written",
+    "script_repaired": [
+      "Three things today: Trump leaves Asia without meeting Kim, South Korea's Democrats move to impeach the chief justice, and the nuclear watchdog flags a completed expansion at Yongbyon.",
+      "The cheating response task force met today, one day after more than a hundred examinees were caught with smart devices at the college entrance exam."
+    ],
+    "transcript_text": "digest_2026-11-20.txt",
+    "notes": [
+      {
+        "headline": "Democratic Party formally adopts impeachment of Supreme Court Chief Justice Cho Hee-dae as party line",
+        "source": "Yonhap English",
+        "url": "https://en.yna.co.kr/view/AEN20261120008800315"
+      },
+      {
+        "headline": "Trump leaves Asia without meeting Kim Jong Un, says encounter will happen 'at some point'",
+        "source": "NK News",
+        "url": "https://www.nknews.org/2026/11/trump-wraps-up-asia-trip-without-meeting-north-korean-leader-kim-jong-un/"
+      },
+      {
+        "headline": "IAEA says North Korea has completed external works on Yongbyon enrichment facility extension",
+        "source": "AP News / Daily NK",
+        "url": "https://apnews.com/article/north-korea-nuclear-uranium-iaea-a74218014e9c141712e3abebdd9334ac"
+      }
+    ],
+    "transcript": "digest_2026-11-20.vtt",
+    "chapters": "digest_2026-11-20.chapters.json",
+    "page": "listen/2026-11-20.html"
   }
 ]

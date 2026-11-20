@@ -1,0 +1,48 @@
+{
+ "version": "1.2.0",
+ "chapters": [
+  {
+   "startTime": 0.0,
+   "title": "Today's headlines",
+   "endTime": 19.1
+  },
+  {
+   "startTime": 19.1,
+   "title": "Trump leaves Asia without meeting Kim Jong Un, says encounter will…",
+   "url": "https://www.nknews.org/2026/11/trump-wraps-up-asia-trip-without-meeting-north-korean-leader-kim-jong-un/",
+   "endTime": 104.06
+  },
+  {
+   "startTime": 104.06,
+   "title": "Democratic Party formally adopts impeachment of Supreme Court Chief…",
+   "url": "https://en.yna.co.kr/view/AEN20261120008800315",
+   "endTime": 199.64
+  },
+  {
+   "startTime": 199.64,
+   "title": "IAEA says North Korea has completed external works on Yongbyon…",
+   "url": "https://apnews.com/article/north-korea-nuclear-uranium-iaea-a74218014e9c141712e3abebdd9334ac",
+   "endTime": 282.44
+  },
+  {
+   "startTime": 282.44,
+   "title": "Pyongyang",
+   "endTime": 340.57
+  },
+  {
+   "startTime": 340.57,
+   "title": "The round-up",
+   "endTime": 566.23
+  },
+  {
+   "startTime": 566.23,
+   "title": "Korea and the World",
+   "endTime": 594.28
+  },
+  {
+   "startTime": 594.28,
+   "title": "Markets",
+   "endTime": 625.35
+  }
+ ]
+}
