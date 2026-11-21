@@ -2945,6 +2945,10 @@ def is_index_page(article: dict) -> bool:
     title = re.sub(r"\s+", " ", str(article.get("title") or "")).strip().lower()
     if not title:
         return False
+    # An organization's legal name as the whole title: "재단법인 아산정책연구원"
+    # (the Asan Institute's homepage, through Google News, most days in November).
+    if re.fullmatch(r"(?:재단법인|사단법인|\(재\)|\(사\))\s*\S+(?:\s\S+)?", title):
+        return True
     names = {str(article.get(k) or "").strip().lower() for k in ("source", "feed", "publisher")}
     host = links.base_domain(url).split(".")[0] if url else ""
     return title in names or (bool(host) and title.replace(" ", "") == host)
