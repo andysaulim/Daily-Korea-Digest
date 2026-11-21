@@ -1,40 +1,5 @@
 [
   {
-    "date": "2026-10-22",
-    "title": "Korea Daily Brief | Thursday, October 22",
-    "summary": "Kim Yo Jong sets loudspeaker deadline, Bank of Korea holds at 3 percent, North Korea-Russia prosecutors pact, Seoul files U.N. Security Council letter on DMZ mines, wartime operational control friction.",
-    "file": "digest_2026-10-22.mp3",
-    "bytes": 4976623,
-    "seconds": 621,
-    "script": "written",
-    "transcript_text": "digest_2026-10-22.txt",
-    "notes": [
-      {
-        "headline": "Kim Yo Jong sets 'days' deadline for border loudspeakers, personally denounces ROK lawmaker",
-        "source": "NK News / Reuters / France 24",
-        "url": "https://www.nknews.org/2026/10/kim-yo-jong-denounces-south-korean-lawmaker-who-criticized-loudspeaker-plans/"
-      },
-      {
-        "headline": "Bank of Korea holds rate at 3.00% after back-to-back hikes, BOK governor warns on fiscal expansion",
-        "source": "WSJ / Reuters / CNBC",
-        "url": "https://www.wsj.com/economy/central-banking/bank-of-korea-holds-rate-steady-after-back-to-back-hikes-f25fc515"
-      },
-      {
-        "headline": "Seoul sends UNSC letter demanding North Korea account for DMZ land mine blast",
-        "source": "Yonhap English / Korea Herald",
-        "url": "https://en.yna.co.kr/view/AEN20261022007552315"
-      },
-      {
-        "headline": "Seoul and Washington spar over wartime operational control transfer",
-        "source": "Nikkei",
-        "url": "https://asia.nikkei.com/politics/defense/south-korea-us-spar-over-transfer-of-wartime-command"
-      }
-    ],
-    "transcript": "digest_2026-10-22.vtt",
-    "chapters": "digest_2026-10-22.chapters.json",
-    "page": "listen/2026-10-22.html"
-  },
-  {
     "date": "2026-10-23",
     "title": "Korea Daily Brief | Friday, October 23",
     "summary": "The Defense Ministry proposes inter-Korean military talks, Seoul appeals court acquits Oh Se-hoon, Reuters: Trump-Kim summit unlikely in 2026, National Intelligence Service dismisses Kim death rumors, 960K DMZ mines estimated.",
@@ -978,5 +943,39 @@
     "transcript": "digest_2026-11-20.vtt",
     "chapters": "digest_2026-11-20.chapters.json",
     "page": "listen/2026-11-20.html"
+  },
+  {
+    "date": "2026-11-21",
+    "title": "Korea Daily Brief | Saturday, November 21",
+    "summary": "Kim inspects factories as Trump-Kim meeting fails, Democrats target Supreme Court chief, Yongbyon enrichment expansion confirmed, KOSPI drops 5.2 percent.",
+    "file": "digest_2026-11-21.mp3",
+    "bytes": 5399449,
+    "seconds": 674,
+    "script": "written",
+    "script_repaired": [
+      "Switzerland has added North Korea's Songdowon International Youth Camp to its Russia-related sanctions list, following similar designations by the U.K.",
+      "and the E.U."
+    ],
+    "transcript_text": "digest_2026-11-21.txt",
+    "notes": [
+      {
+        "headline": "New satellite photos confirm expansion of North Korea's Yongbyon uranium-enrichment plant",
+        "source": "WSJ / Reuters",
+        "url": "https://www.wsj.com/world/asia/new-satellite-photos-show-expansion-of-north-korean-uranium-enrichment-plant-f23c5512"
+      },
+      {
+        "headline": "Democratic Party targets December 3 for Supreme Court chief justice impeachment motion",
+        "source": "Dong-A Ilbo",
+        "url": "https://www.donga.com/en/article/all/20261121/6467950/1"
+      },
+      {
+        "headline": "Kim inspects educational factory sites as KCNA ignores Trump's Asia trip outreach",
+        "source": "CNA / Yahoo",
+        "url": "https://www.channelnewsasia.com/east-asia/north-korea-kim-jong-un-donald-trump-snub-6571201"
+      }
+    ],
+    "transcript": "digest_2026-11-21.vtt",
+    "chapters": "digest_2026-11-21.chapters.json",
+    "page": "listen/2026-11-21.html"
   }
 ]

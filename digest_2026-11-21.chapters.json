@@ -1,0 +1,53 @@
+{
+ "version": "1.2.0",
+ "chapters": [
+  {
+   "startTime": 0.0,
+   "title": "Today's headlines",
+   "endTime": 45.81
+  },
+  {
+   "startTime": 45.81,
+   "title": "New satellite photos confirm expansion of North Korea's Yongbyon…",
+   "url": "https://www.wsj.com/world/asia/new-satellite-photos-show-expansion-of-north-korean-uranium-enrichment-plant-f23c5512",
+   "endTime": 157.88
+  },
+  {
+   "startTime": 157.88,
+   "title": "Democratic Party targets December 3 for Supreme Court chief justice…",
+   "url": "https://www.donga.com/en/article/all/20261121/6467950/1",
+   "endTime": 258.73
+  },
+  {
+   "startTime": 258.73,
+   "title": "Kim inspects educational factory sites as KCNA ignores Trump's Asia…",
+   "url": "https://www.channelnewsasia.com/east-asia/north-korea-kim-jong-un-donald-trump-snub-6571201",
+   "endTime": 349.76
+  },
+  {
+   "startTime": 349.76,
+   "title": "Pyongyang",
+   "endTime": 400.51
+  },
+  {
+   "startTime": 400.51,
+   "title": "The round-up",
+   "endTime": 569.76
+  },
+  {
+   "startTime": 569.76,
+   "title": "Capitol Hill",
+   "endTime": 599.34
+  },
+  {
+   "startTime": 599.34,
+   "title": "Korea and the World",
+   "endTime": 630.01
+  },
+  {
+   "startTime": 630.01,
+   "title": "Markets",
+   "endTime": 674.8
+  }
+ ]
+}
