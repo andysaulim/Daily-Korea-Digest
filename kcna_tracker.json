@@ -1,6 +1,12 @@
 {
   "days": [
     {
+      "date": "2026-11-21",
+      "silence_today": false,
+      "watch_flag": false,
+      "bottom_line": "State media released Kim's educational factory inspection as the dominant domestic image of the day, maintaining silence on Trump's failed outreach and the Shenzhen APEC trilateral discussion of Korean Peninsula dangers."
+    },
+    {
       "date": "2026-11-20",
       "silence_today": false,
       "watch_flag": false,
@@ -112,13 +118,7 @@
       "silence_today": false,
       "watch_flag": false,
       "bottom_line": "State media confirmed Kim Jong Un's Nampho Shipyard inspection and naval modernization orders, while KCNA also carried the 10th Congress of the Union of Agricultural Workers — all four recent weapons tests remain off the domestic news agenda."
-    },
-    {
-      "date": "2026-11-07",
-      "silence_today": false,
-      "watch_flag": false,
-      "bottom_line": "State media confirmed the SPA Standing Committee plenary and Kim Sung-nam's third Beijing high-level meeting, while maintaining a complete domestic blackout on the week's four weapons tests."
     }
   ],
-  "last_updated": "2026-11-20T12:09:23.084968+00:00"
+  "last_updated": "2026-11-21T12:10:41.374070+00:00"
 }

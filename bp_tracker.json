@@ -4,41 +4,41 @@
       "name": "Yongbyon Nuclear Complex",
       "status": "elevated",
       "note": "As of April 2026: Enrichment building expansion complete, new centrifuge hall operational. 5 MWe reactor and IRT-2000 both running. Thermal signatures consistent with increased plutonium/HEU production.",
-      "last_source_date": "2026-11-19",
+      "last_source_date": "2026-11-21",
       "direction": "up"
     },
     "Sinpo South Shipyard": {
       "name": "Sinpo South Shipyard",
       "status": "activity",
-      "note": "As of May 2025: Hero Kim Kun Ok SLBM submarine exited drydock after 2+ years of fitting-out but was still not operational. New submarine construction begun in separate bay. NK Pro satellite analysis (Oct 20 2026) separately reports North Korea's Nampho Shipyard missed a deadline earlier in Oct 2026 to launch a 5,000-ton naval destroyer, with hull sections visible at two potential outdoor assembly areas. 38 North analysis published Oct 30 documents public display of a vessel described as a 'Tactical Nuclear Attack' submarine. Kim Jong Un inspected Nampho Shipyard on Nov 7 (reported Nov 8 by KCNA), announcing a new warship under construction larger than the destroyer built last year. NK News reported on Nov 6 that North Korea has expanded warship construction to a third shipyard. 38 North published analysis on Nov 11 of the Choe Hyon destroyer and its strategic implications for the West Sea Fleet. NK News identified a second major east-coast naval base project on Nov 13, beyond the Munchon-area site Kim inspected on Nov 12.",
+      "note": "As of May 2025: Hero Kim Kun Ok SLBM submarine exited drydock after more than two years of fitting-out but was still not operational. New submarine construction begun in separate bay. NK Pro satellite analysis (Oct 20 2026) separately reports North Korea's Nampho Shipyard missed a deadline earlier in Oct 2026 to launch a 5,000-ton naval destroyer, with hull sections visible at two potential outdoor assembly areas. 38 North analysis published Oct 30 documents public display of a vessel described as a 'Tactical Nuclear Attack' submarine. Kim Jong Un inspected Nampho Shipyard on Nov 7 (reported Nov 8 by KCNA), announcing a new warship under construction larger than the destroyer built last year. NK News reported on Nov 6 that North Korea has expanded warship construction to a third shipyard. 38 North published analysis on Nov 11 of the Choe Hyon destroyer and its strategic implications for the West Sea Fleet. NK News identified a second major east-coast naval base project on Nov 13, beyond the Munchon-area site Kim inspected on Nov 12.",
       "last_source_date": "2026-11-13",
       "direction": "up"
     },
     "THAAD Site — Seongju County": {
       "name": "THAAD Site — Seongju County",
       "status": "activity",
-      "note": "As of March 2026: All 6 THAAD launchers were redeployed to the Middle East amid Iran tensions. At least 2 launchers may have returned to Seongju by late March 2026. Battery operational status remains uncertain. This report is over six months old and may not reflect the current state.",
+      "note": "As of March 2026: All 6 THAAD launchers were redeployed to the Middle East amid Iran tensions. At least 2 launchers may have returned to Seongju by late March 2026. Battery operational status remains uncertain. This report is from March 2026 and may not reflect the current state.",
       "last_source_date": "2026-03",
       "direction": "down"
     },
     "Sohae Satellite Launch Station": {
       "name": "Sohae Satellite Launch Station",
       "status": "elevated",
-      "note": "As of March 2026: 2,500 kN engine test stand firing observed. Two villages razed for facility expansion. New seaport and large assembly building nearing completion. This report is over six months old and may not reflect the current state.",
+      "note": "As of March 2026: 2,500 kN engine test stand firing observed. Two villages razed for facility expansion. New seaport and large assembly building nearing completion. This report is from March 2026 and may not reflect the current state.",
       "last_source_date": "2026-03",
       "direction": "up"
     },
     "Punggye-ri Nuclear Test Site": {
       "name": "Punggye-ri Nuclear Test Site",
       "status": "activity",
-      "note": "As of November 2025: ROK Defense Intelligence Agency assessed Tunnel No. 3 is test-ready and a nuclear test can be conducted at any time upon political decision. Site maintained at high readiness since mid-2024. This report is over six months old and may not reflect the current state.",
+      "note": "As of November 2025: ROK Defense Intelligence Agency assessed Tunnel No. 3 is test-ready and a nuclear test can be conducted at any time upon political decision. Site maintained at high readiness since mid-2024. This report is from November 2025 and may not reflect the current state.",
       "last_source_date": "2025-11",
       "direction": "up"
     },
     "Tumangang–Khasan (NK-Russia border)": {
       "name": "Tumangang–Khasan (NK-Russia border)",
       "status": "activity",
-      "note": "As of March 2026: Road bridge construction accelerated, completion target moved to Summer 2026. Passenger rail service resumed mid-2025. Ore and tank car traffic at highest levels since project began. This report is over six months old and may not reflect the current state. Russian Transport Ministry applications filed November 13, 2026 for a 14-daily-round-trip Vladivostok-Rason bus route over the new vehicle bridge, with experts noting the service will likely transport DPRK workers more than Russian tourists.",
+      "note": "As of March 2026: Road bridge construction accelerated, completion target moved to Summer 2026. Passenger rail service resumed mid-2025. Ore and tank car traffic at highest levels since project began. This report is from March 2026 and may not reflect the current state. Russian Transport Ministry applications filed November 13, 2026 for a 14-daily-round-trip Vladivostok-Rason bus route over the new vehicle bridge, with experts noting the service will likely transport DPRK workers more than Russian tourists.",
       "last_source_date": "2026-11-13",
       "direction": "up"
     },
@@ -52,7 +52,7 @@
     "Rason SEZ": {
       "name": "Rason SEZ",
       "status": "activity",
-      "note": "As of November 2025: Chinese businesspeople re-entry to Rason SEZ expanded. Coal exports through Rason at highest levels in years throughout 2025. Arms export berth also active. This report is over six months old and may not reflect the current state.",
+      "note": "As of November 2025: Chinese businesspeople re-entry to Rason SEZ expanded. Coal exports through Rason at highest levels in years throughout 2025. Arms export berth also active. This report is from November 2025 and may not reflect the current state.",
       "last_source_date": "2025-11",
       "direction": "up"
     },
@@ -66,17 +66,17 @@
     "Yellow Sea PMZ": {
       "name": "Yellow Sea PMZ",
       "status": "activity",
-      "note": "As of January 27-28, 2026: Atlantic Amsterdam (converted oil rig, Chinese aquaculture platform) relocated out of the Provisional Measures Zone to Weihai shipyard following President Lee Jae-myung's Beijing state visit. Two giant aquaculture cages (Shen Lan 1, Shen Lan 2) and 13 buoys remain in the PMZ. This report is over six months old and may not reflect the current state.",
+      "note": "As of January 27-28, 2026: Atlantic Amsterdam (converted oil rig, Chinese aquaculture platform) relocated out of the Provisional Measures Zone to Weihai shipyard following President Lee Jae-myung's Beijing state visit. Two giant aquaculture cages (Shen Lan 1, Shen Lan 2) and 13 buoys remain in the PMZ. This report is from January 2026 and may not reflect the current state.",
       "last_source_date": "2026-01-28",
       "direction": "down"
     },
     "Vostochny/Dunai (Russian Far East)": {
       "name": "Vostochny/Dunai (Russian Far East)",
       "status": "activity",
-      "note": "As of January 2026: Arms shipments slowed due to ice — one Russian vessel (likely Angara or Lady R) visited Rason, docked January 14, 2026 at arms export berth. Cargo routed to Vostochny. Since September 2023: 64 voyages by 4 vessels (Angara, Maria, Maya-1, Lady R) delivered approximately 15,800 containers (approximately 4.2-5.8 million munitions) from Rajin to Vostochny/Dunai. This report is over six months old and may not reflect the current state. Russian Transport Ministry applications filed November 13, 2026 for a Vladivostok-Rason bus route operating 14 daily round trips.",
+      "note": "As of January 2026: Arms shipments slowed due to ice — one Russian vessel (likely Angara or Lady R) visited Rason, docked January 14, 2026 at arms export berth. Cargo routed to Vostochny. Since September 2023: 64 voyages by 4 vessels (Angara, Maria, Maya-1, Lady R) delivered approximately 15,800 containers (approximately 4.2-5.8 million munitions) from Rajin to Vostochny/Dunai. This report is from January 2026 and may not reflect the current state. Russian Transport Ministry applications filed November 13, 2026 for a Vladivostok-Rason bus route operating 14 daily round trips.",
       "last_source_date": "2026-11-13",
       "direction": "up"
     }
   },
-  "last_updated": "2026-11-20T12:09:23.086186+00:00"
+  "last_updated": "2026-11-21T12:10:41.374813+00:00"
 }
