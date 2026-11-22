@@ -1,35 +1,5 @@
 [
   {
-    "date": "2026-10-23",
-    "title": "Korea Daily Brief | Friday, October 23",
-    "summary": "The Defense Ministry proposes inter-Korean military talks, Seoul appeals court acquits Oh Se-hoon, Reuters: Trump-Kim summit unlikely in 2026, National Intelligence Service dismisses Kim death rumors, 960K DMZ mines estimated.",
-    "file": "digest_2026-10-23.mp3",
-    "bytes": 4557689,
-    "seconds": 569,
-    "script": "written",
-    "transcript_text": "digest_2026-10-23.txt",
-    "notes": [
-      {
-        "headline": "Seoul proposes inter-Korean military talks on MDL as mine estimates reach 960,000",
-        "source": "NK News / AP News / Yonhap",
-        "url": "https://www.nknews.org/2026/10/seoul-again-proposes-talks-with-north-korea-on-border-lines-amid-rising-tensions/"
-      },
-      {
-        "headline": "US and ROK officials see little chance of Trump-Kim summit in 2026",
-        "source": "Reuters / Korea Times",
-        "url": "https://www.reuters.com/world/china/us-south-korean-officials-see-little-chance-trump-kim-meeting-this-year-2026-10-23/"
-      },
-      {
-        "headline": "Seoul appeals court acquits Oh Se-hoon of political funds violation",
-        "source": "Yonhap English",
-        "url": "https://en.yna.co.kr/view/AEN20261023001053315"
-      }
-    ],
-    "transcript": "digest_2026-10-23.vtt",
-    "chapters": "digest_2026-10-23.chapters.json",
-    "page": "listen/2026-10-23.html"
-  },
-  {
     "date": "2026-10-24",
     "title": "Korea Daily Brief | Saturday, October 24",
     "summary": "Kim Jong Un makes surprise China visit via new Yalu bridge, Kim calls for 'military revolution' at KPA commanders meeting, Seoul proposes border talks, Bank of Korea holds rates.",
@@ -977,5 +947,40 @@
     "transcript": "digest_2026-11-21.vtt",
     "chapters": "digest_2026-11-21.chapters.json",
     "page": "listen/2026-11-21.html"
+  },
+  {
+    "date": "2026-11-22",
+    "title": "Korea Daily Brief | Sunday, November 22",
+    "summary": "Kim snubs Trump meeting, Education minister resigns over AI cheating, KOSPI plunges 5.21 percent, the Wall Street Journal and ArmsControlWonk: Yongbyon enrichment expansion confirmed, Democratic Party targets chief justice impeachment by December.",
+    "file": "digest_2026-11-22.mp3",
+    "bytes": 4749423,
+    "seconds": 593,
+    "script": "written",
+    "transcript_text": "digest_2026-11-22.txt",
+    "notes": [
+      {
+        "headline": "Kim Jong Un spurned Trump's meeting offer; Trump administration had explored Korean War end declaration to secure a summit",
+        "source": "WSJ / Yonhap / CNA",
+        "url": "https://www.wsj.com/world/asia/kim-jong-un-north-korea-trump-2920ff49"
+      },
+      {
+        "headline": "Education Minister Choi Kyo-jin resigns over AI cheating chaos ahead of Suneung; Lee accepts within one hour",
+        "source": "Yonhap English",
+        "url": "https://en.yna.co.kr/view/AEN20261122001052315"
+      },
+      {
+        "headline": "New satellite imagery confirms additional expansion at Yongbyon uranium enrichment plant",
+        "source": "ArmsControlWonk",
+        "url": "https://www.armscontrolwonk.com/archive/1222510/keeping-up-with-the-kangs-a-small-addition-to-yongbyons-original-uep/"
+      },
+      {
+        "headline": "KOSPI plunges 5.21% on November 20; government convenes emergency 'F4' meeting and prepares market stabilization fund",
+        "source": "Hankyoreh",
+        "url": "https://www.hani.co.kr/arti/economy/finance/1288551.html"
+      }
+    ],
+    "transcript": "digest_2026-11-22.vtt",
+    "chapters": "digest_2026-11-22.chapters.json",
+    "page": "listen/2026-11-22.html"
   }
 ]
