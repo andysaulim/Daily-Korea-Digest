@@ -1,6 +1,12 @@
 {
   "days": [
     {
+      "date": "2026-11-22",
+      "silence_today": false,
+      "watch_flag": false,
+      "bottom_line": "State media's dominant image was Kim's direct receipt of the Russian ambassador's credentials — an unusual protocol shift — while domestic content covered light industry and social welfare; the failed Trump summit offer remained absent from KCNA output."
+    },
+    {
       "date": "2026-11-21",
       "silence_today": false,
       "watch_flag": false,
@@ -112,13 +118,7 @@
       "silence_today": false,
       "watch_flag": false,
       "bottom_line": "State media led with the agricultural workers' congress and domestic welfare content; all five recent weapons tests remain absent from the domestic news agenda."
-    },
-    {
-      "date": "2026-11-08",
-      "silence_today": false,
-      "watch_flag": false,
-      "bottom_line": "State media confirmed Kim Jong Un's Nampho Shipyard inspection and naval modernization orders, while KCNA also carried the 10th Congress of the Union of Agricultural Workers — all four recent weapons tests remain off the domestic news agenda."
     }
   ],
-  "last_updated": "2026-11-21T12:10:41.374070+00:00"
+  "last_updated": "2026-11-22T12:10:39.314420+00:00"
 }
