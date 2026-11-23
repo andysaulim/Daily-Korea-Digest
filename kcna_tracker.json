@@ -1,6 +1,19 @@
 {
   "days": [
     {
+      "date": "2026-11-23",
+      "silence_today": false,
+      "watch_flag": false,
+      "bottom_line": "State media led with Kim's first-ever direct reception of foreign ambassadors' credentials and his assertion that North Korea's military buildup constitutes self-defense, with domestic content covering a party cell leaders' conference; the failed Trump summit offer remained absent from KCNA output.",
+      "quotes": [
+        {
+          "speaker": "Kim Jong Un",
+          "quote": "The security situation in the DPRK and the political and military environment in East Asia urgently demand that we provide for ourselves the power and capability.",
+          "source": "N. Korea's Kim says Pyongyang seeks no regional dominance, defending arms buildup as self-defense"
+        }
+      ]
+    },
+    {
       "date": "2026-11-22",
       "silence_today": false,
       "watch_flag": false,
@@ -112,13 +125,7 @@
       "silence_today": false,
       "watch_flag": false,
       "bottom_line": "State media confirmed a new high-speed torpedo test with an early-2027 deployment timeline, Kim Yo Jong attacked the UN Secretary-General over the DMZ mine dispute, and domestic content continued to focus on agriculture and welfare — with all recent weapons tests remaining absent from internal DPRK news."
-    },
-    {
-      "date": "2026-11-09",
-      "silence_today": false,
-      "watch_flag": false,
-      "bottom_line": "State media led with the agricultural workers' congress and domestic welfare content; all five recent weapons tests remain absent from the domestic news agenda."
     }
   ],
-  "last_updated": "2026-11-22T12:10:39.314420+00:00"
+  "last_updated": "2026-11-23T12:09:18.069043+00:00"
 }
