@@ -1,0 +1,53 @@
+{
+ "version": "1.2.0",
+ "chapters": [
+  {
+   "startTime": 0.0,
+   "title": "Today's headlines",
+   "endTime": 44.33
+  },
+  {
+   "startTime": 44.33,
+   "title": "Lee reshuffles security team, names first female spy chief in NIS…",
+   "url": "https://www.koreaherald.com/article/10946349",
+   "endTime": 152.43
+  },
+  {
+   "startTime": 152.43,
+   "title": "Seoul activates market stabilization measures as KOSPI drops 3.3% on…",
+   "url": "https://www.korea.net/Government/Briefing-Room/Press-Releases/view?articleId=2019578&type=N&insttCode=A260122",
+   "endTime": 241.29
+  },
+  {
+   "startTime": 241.29,
+   "title": "Kim Jong Un holds first direct ambassador credentials ceremony in…",
+   "url": "https://www.nknews.org/2026/11/kim-jong-un-personally-accepts-foreign-ambassadors-credentials-for-first-time/",
+   "endTime": 327.0
+  },
+  {
+   "startTime": 327.0,
+   "title": "Pyongyang",
+   "endTime": 366.66
+  },
+  {
+   "startTime": 366.66,
+   "title": "The round-up",
+   "endTime": 516.23
+  },
+  {
+   "startTime": 516.23,
+   "title": "Capitol Hill",
+   "endTime": 547.66
+  },
+  {
+   "startTime": 547.66,
+   "title": "Korea and the World",
+   "endTime": 586.41
+  },
+  {
+   "startTime": 586.41,
+   "title": "Markets",
+   "endTime": 615.58
+  }
+ ]
+}
