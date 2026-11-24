@@ -1,6 +1,19 @@
 {
   "days": [
     {
+      "date": "2026-11-24",
+      "silence_today": false,
+      "watch_flag": false,
+      "bottom_line": "State media's dominant output Tuesday was Kim Yo Jong's threat to expel Switzerland's Pyongyang mission, the first such diplomatic coercive move against a European neutral since Switzerland opened the office, as KCNA continued to carry Kim Jong Un's credentials-ceremony speech asserting arms buildup as self-defense.",
+      "quotes": [
+        {
+          "speaker": "Kim Jong Un",
+          "quote": "The security situation in the DPRK and the political and military environment in East Asia urgently demand that we provide for ourselves the power and capability.",
+          "source": "N. Korea's Kim says Pyongyang seeks no regional dominance, defending arms buildup as self-defense"
+        }
+      ]
+    },
+    {
       "date": "2026-11-23",
       "silence_today": false,
       "watch_flag": false,
@@ -119,13 +132,7 @@
       "silence_today": false,
       "watch_flag": false,
       "bottom_line": "State media confirmed the publication of the revised constitution's full text formalizing Kim's expanded powers and the two-state framework, while the North Korean ballistic missile launches from Muncheon remain absent from domestic KCNA output."
-    },
-    {
-      "date": "2026-11-10",
-      "silence_today": false,
-      "watch_flag": false,
-      "bottom_line": "State media confirmed a new high-speed torpedo test with an early-2027 deployment timeline, Kim Yo Jong attacked the UN Secretary-General over the DMZ mine dispute, and domestic content continued to focus on agriculture and welfare — with all recent weapons tests remaining absent from internal DPRK news."
     }
   ],
-  "last_updated": "2026-11-23T12:09:18.069043+00:00"
+  "last_updated": "2026-11-24T12:10:16.726115+00:00"
 }

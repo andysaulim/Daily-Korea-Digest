@@ -10,8 +10,8 @@
     "Sinpo South Shipyard": {
       "name": "Sinpo South Shipyard",
       "status": "activity",
-      "note": "As of May 2025: Hero Kim Kun Ok SLBM submarine exited drydock after more than two years of fitting-out but was still not operational. New submarine construction begun in separate bay. NK Pro satellite analysis (Oct 20 2026) separately reports North Korea's Nampho Shipyard missed a deadline earlier in Oct 2026 to launch a 5,000-ton naval destroyer, with hull sections visible at two potential outdoor assembly areas. 38 North analysis published Oct 30 documents public display of a vessel described as a 'Tactical Nuclear Attack' submarine. Kim Jong Un inspected Nampho Shipyard on Nov 7 (reported Nov 8 by KCNA), announcing a new warship under construction larger than the destroyer built last year. NK News reported on Nov 6 that North Korea has expanded warship construction to a third shipyard. 38 North published analysis on Nov 11 of the Choe Hyon destroyer and its strategic implications for the West Sea Fleet. NK News identified a second major east-coast naval base project on Nov 13, beyond the Munchon-area site Kim inspected on Nov 12.",
-      "last_source_date": "2026-11-13",
+      "note": "As of May 2025: Hero Kim Kun Ok SLBM submarine exited drydock after more than two years of fitting-out but was still not operational. New submarine construction begun in separate bay. NK Pro satellite analysis (Oct 20 2026) separately reports North Korea's Nampho Shipyard missed a deadline earlier in Oct 2026 to launch a 5,000-ton naval destroyer, with hull sections visible at two potential outdoor assembly areas. 38 North analysis published Oct 30 documents public display of a vessel described as a 'Tactical Nuclear Attack' submarine. Kim Jong Un inspected Nampho Shipyard on Nov 7 (reported Nov 8 by KCNA), announcing a new warship under construction larger than the destroyer built last year. NK News reported on Nov 6 that North Korea has expanded warship construction to a third shipyard. 38 North published analysis on Nov 11 of the Choe Hyon destroyer and its strategic implications for the West Sea Fleet. NK News identified a second major east-coast naval base project on Nov 13, beyond the Munchon-area site Kim inspected on Nov 12. Daily NK satellite imagery analyzed Nov 24 places the Kang Kon at Mayang Island naval base and the Choe Hyon at Nampo, with shipyard expansion visible at Chongjin and Nampo consistent with additional large-warship construction.",
+      "last_source_date": "2026-11-24",
       "direction": "up"
     },
     "THAAD Site — Seongju County": {
@@ -73,10 +73,10 @@
     "Vostochny/Dunai (Russian Far East)": {
       "name": "Vostochny/Dunai (Russian Far East)",
       "status": "activity",
-      "note": "As of January 2026: Arms shipments slowed due to ice — one Russian vessel (likely Angara or Lady R) visited Rason, docked January 14, 2026 at arms export berth. Cargo routed to Vostochny. Since September 2023: 64 voyages by 4 vessels (Angara, Maria, Maya-1, Lady R) delivered approximately 15,800 containers (approximately 4.2-5.8 million munitions) from Rajin to Vostochny/Dunai. Russian Transport Ministry applications filed November 13, 2026 for a Vladivostok-Rason bus route operating 14 daily round trips.",
-      "last_source_date": "2026-11-13",
+      "note": "As of January 2026: Arms shipments slowed due to ice — one Russian vessel (likely Angara or Lady R) visited Rason, docked January 14, 2026 at arms export berth. Cargo routed to Vostochny. Since September 2023: 64 voyages by 4 vessels (Angara, Maria, Maya-1, Lady R) delivered approximately 15,800 containers (approximately 4.2-5.8 million munitions) from Rajin to Vostochny/Dunai. Russian Transport Ministry applications filed November 13, 2026 for a Vladivostok-Rason bus route operating 14 daily round trips. NK News reported November 24 that the Ukrainian military struck the cargo freighter Angara — one of the four vessels in the documented arms-transfer fleet — in a drone attack that also sank the Russian corvette Merkury.",
+      "last_source_date": "2026-11-24",
       "direction": "up"
     }
   },
-  "last_updated": "2026-11-23T12:09:18.069792+00:00"
+  "last_updated": "2026-11-24T12:10:16.727356+00:00"
 }
