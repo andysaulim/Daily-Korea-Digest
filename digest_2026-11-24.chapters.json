@@ -1,0 +1,48 @@
+{
+ "version": "1.2.0",
+ "chapters": [
+  {
+   "startTime": 0.0,
+   "title": "Today's headlines",
+   "endTime": 46.24
+  },
+  {
+   "startTime": 46.24,
+   "title": "Russian warplanes approach Ulleung Island, triggering air raid alert…",
+   "url": "https://en.yna.co.kr/view/AEN20261124002254315",
+   "endTime": 136.72
+  },
+  {
+   "startTime": 136.72,
+   "title": "Kim Yo Jong threatens to force closure of Switzerland's newly opened…",
+   "url": "https://www.nknews.org/2026/11/north-korea-threatens-to-expel-swiss-diplomatic-mission-following-sanctions/",
+   "endTime": 220.18
+  },
+  {
+   "startTime": 220.18,
+   "title": "KOSPI surges 6.32% to reclaim 5,000 as Jensen Huang returns to Nvidia",
+   "url": "https://www.koreaherald.com/article/10946708",
+   "endTime": 305.86
+  },
+  {
+   "startTime": 305.86,
+   "title": "Pyongyang",
+   "endTime": 356.63
+  },
+  {
+   "startTime": 356.63,
+   "title": "The round-up",
+   "endTime": 514.21
+  },
+  {
+   "startTime": 514.21,
+   "title": "Korea and the World",
+   "endTime": 545.17
+  },
+  {
+   "startTime": 545.17,
+   "title": "Markets",
+   "endTime": 575.92
+  }
+ ]
+}

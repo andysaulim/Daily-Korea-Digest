@@ -1,35 +1,5 @@
 [
   {
-    "date": "2026-10-25",
-    "title": "Korea Daily Brief | Sunday, October 25",
-    "summary": "Kim Jong Un returns from Dandong after surprise China visit, KCNA touts 'blood alliance', Lee cites record current account surplus, Justice minister shortlist narrows.",
-    "file": "digest_2026-10-25.mp3",
-    "bytes": 4906419,
-    "seconds": 613,
-    "script": "written",
-    "transcript_text": "digest_2026-10-25.txt",
-    "notes": [
-      {
-        "headline": "Kim returns from Dandong after first China visit since September 2025, touts 'blood alliance'",
-        "source": "NK News / Korea Times / Yonhap / Reuters / WSJ / AP / Oct 25",
-        "url": "https://www.nknews.org/2026/10/kim-jong-un-says-north-korea-inspired-by-chinas-success-in-border-city-visit/"
-      },
-      {
-        "headline": "Lee says South Korea's Q2 current account surplus surpassed Germany and Japan combined",
-        "source": "Yonhap English / Maeil Business",
-        "url": "https://en.yna.co.kr/view/AEN20261025005400320"
-      },
-      {
-        "headline": "Lee narrows Justice Ministry shortlist to two prosecutor-turned-ruling-party lawmakers",
-        "source": "Korea Times / Chosun Ilbo",
-        "url": "https://www.koreatimes.co.kr/southkorea/politics/20261025/president-lee-mulls-picking-justice-minister-nominee-from-2-prosecutor-turned-lawmakers?utm_source=rss"
-      }
-    ],
-    "transcript": "digest_2026-10-25.vtt",
-    "chapters": "digest_2026-10-25.chapters.json",
-    "page": "listen/2026-10-25.html"
-  },
-  {
     "date": "2026-10-26",
     "title": "Korea Daily Brief | Monday, October 26",
     "summary": "Kim returns from Dandong, North Korea howitzers face south, KUIC earns sovereign credit ratings, Lee rules out CPTPP this term, wartime operational control coordination active.",
@@ -986,5 +956,40 @@
     "transcript": "digest_2026-11-23.vtt",
     "chapters": "digest_2026-11-23.chapters.json",
     "page": "listen/2026-11-23.html"
+  },
+  {
+    "date": "2026-11-24",
+    "title": "Korea Daily Brief | Tuesday, November 24",
+    "summary": "Russian jets trigger KADIZ alert, Nvidia and Huang KOSPI rebound, Kim Yo Jong threatens Swiss office, Lee cabinet reshuffle analysis, Justice Department seeks 1.1 billion dollars North Korean crypto forfeiture.",
+    "file": "digest_2026-11-24.mp3",
+    "bytes": 4608343,
+    "seconds": 575,
+    "script": "written",
+    "transcript_text": "digest_2026-11-24.txt",
+    "notes": [
+      {
+        "headline": "Russian warplanes approach Ulleung Island, triggering air raid alert and fighter scramble",
+        "source": "Yonhap / Korea Times / Korea Herald / Bloomberg / NK News",
+        "url": "https://en.yna.co.kr/view/AEN20261124002254315"
+      },
+      {
+        "headline": "Kim Yo Jong threatens to force closure of Switzerland's newly opened Pyongyang mission over children's camp sanctions",
+        "source": "NK News / Nov 24 / Reuters / AP / Nikkei Asia / Washington Post / Arirang TV",
+        "url": "https://www.nknews.org/2026/11/north-korea-threatens-to-expel-swiss-diplomatic-mission-following-sanctions/"
+      },
+      {
+        "headline": "KOSPI surges 6.32% to reclaim 5,000 as Jensen Huang returns to Nvidia",
+        "source": "Korea Herald / Korea Times / Yonhap English",
+        "url": "https://www.koreaherald.com/article/10946708"
+      },
+      {
+        "headline": "US DOJ seeks civil forfeiture of $1.17B in cryptocurrency stolen by North Korean hackers from Binance",
+        "source": "NK News",
+        "url": "https://www.nknews.org/2026/11/us-seeks-forfeiture-of-1b-in-binance-crypto-stolen-by-north-korean-hackers/"
+      }
+    ],
+    "transcript": "digest_2026-11-24.vtt",
+    "chapters": "digest_2026-11-24.chapters.json",
+    "page": "listen/2026-11-24.html"
   }
 ]
