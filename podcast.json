@@ -1,43 +1,5 @@
 [
   {
-    "date": "2026-10-26",
-    "title": "Korea Daily Brief | Monday, October 26",
-    "summary": "Kim returns from Dandong, North Korea howitzers face south, KUIC earns sovereign credit ratings, Lee rules out CPTPP this term, wartime operational control coordination active.",
-    "file": "digest_2026-10-26.mp3",
-    "bytes": 4983513,
-    "seconds": 622,
-    "script": "written",
-    "script_repaired": [
-      "The border tension has a parallel track at the United Nations."
-    ],
-    "transcript_text": "digest_2026-10-26.txt",
-    "notes": [
-      {
-        "headline": "North Korean 122mm howitzers aimed south spotted at western border for second day",
-        "source": "Newsis",
-        "url": "https://www.newsis.com/view/NISX20261026_0003841859"
-      },
-      {
-        "headline": "North Korea sends UN Security Council letter claiming DMZ mine blast was Seoul fabrication",
-        "source": "NK News",
-        "url": "https://www.nknews.org/2026/10/north-korea-accuses-south-of-fabricating-dmz-land-mine-blasts-in-letter-to-un/"
-      },
-      {
-        "headline": "Korea-US Strategic Investment Corporation receives Aa2 and AA sovereign-linked credit ratings",
-        "source": "Korea Times",
-        "url": "https://www.koreatimes.co.kr/economy/20261026/korea-us-investment-firm-gets-credit-ratings-with-stable-outlooks?utm_source=rss"
-      },
-      {
-        "headline": "Lee says CPTPP membership unavoidable but rules out joining during his term",
-        "source": "Yonhap English",
-        "url": "https://en.yna.co.kr/view/AEN20261026006751315"
-      }
-    ],
-    "transcript": "digest_2026-10-26.vtt",
-    "chapters": "digest_2026-10-26.chapters.json",
-    "page": "listen/2026-10-26.html"
-  },
-  {
     "date": "2026-10-27",
     "title": "Korea Daily Brief | Tuesday, October 27",
     "summary": "South Korean the third quarter GDP hits 1 percent on chip boom, North Korean artillery forward-deployed at western border, Swiss Foreign Minister to visit Pyongyang, Kim Gun-hee new warrant issued.",
@@ -991,5 +953,38 @@
     "transcript": "digest_2026-11-24.vtt",
     "chapters": "digest_2026-11-24.chapters.json",
     "page": "listen/2026-11-24.html"
+  },
+  {
+    "date": "2026-11-25",
+    "title": "Korea Daily Brief | Wednesday, November 25",
+    "summary": "North Korea expels Swiss diplomat, KOSPI down 6.16 percent on AI selloff, Cheonghae unit expanded, Chief Justice impeachment push, Russia Tu-160 near Ulleungdo.",
+    "file": "digest_2026-11-25.mp3",
+    "bytes": 5316392,
+    "seconds": 664,
+    "script": "written",
+    "script_repaired": [
+      "Pyongyang just shut down a Western diplomatic mission over a children's camp in occupied Ukraine, and the question now is whether this is the start of something broader."
+    ],
+    "transcript_text": "digest_2026-11-25.txt",
+    "notes": [
+      {
+        "headline": "North Korea expels Swiss diplomat, orders Pyongyang mission closed within 48 hours",
+        "source": "NK News",
+        "url": "https://www.nknews.org/2026/11/north-korea-expels-swiss-diplomat-over-sanctions-on-childrens-camp/"
+      },
+      {
+        "headline": "Lee reaffirms Cheonghae unit expansion to Arabian Sea, bars Strait of Hormuz operations",
+        "source": "Yonhap English",
+        "url": "https://en.yna.co.kr/view/AEN20261125010300315"
+      },
+      {
+        "headline": "KOSPI drops 6.16% as AI trade reverses; Democratic Party formally proposes five-party coalition to impeach Chief Justice",
+        "source": "Yonhap English",
+        "url": "https://en.yna.co.kr/view/AEN20261125009200315"
+      }
+    ],
+    "transcript": "digest_2026-11-25.vtt",
+    "chapters": "digest_2026-11-25.chapters.json",
+    "page": "listen/2026-11-25.html"
   }
 ]

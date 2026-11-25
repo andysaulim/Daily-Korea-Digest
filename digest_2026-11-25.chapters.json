@@ -1,0 +1,53 @@
+{
+ "version": "1.2.0",
+ "chapters": [
+  {
+   "startTime": 0.0,
+   "title": "Today's headlines",
+   "endTime": 32.06
+  },
+  {
+   "startTime": 32.06,
+   "title": "North Korea expels Swiss diplomat, orders Pyongyang mission closed…",
+   "url": "https://www.nknews.org/2026/11/north-korea-expels-swiss-diplomat-over-sanctions-on-childrens-camp/",
+   "endTime": 146.64
+  },
+  {
+   "startTime": 146.64,
+   "title": "Lee reaffirms Cheonghae unit expansion to Arabian Sea, bars Strait of…",
+   "url": "https://en.yna.co.kr/view/AEN20261125010300315",
+   "endTime": 266.04
+  },
+  {
+   "startTime": 266.04,
+   "title": "KOSPI drops 6.16% as AI trade reverses",
+   "url": "https://en.yna.co.kr/view/AEN20261125009200315",
+   "endTime": 360.36
+  },
+  {
+   "startTime": 360.36,
+   "title": "Pyongyang",
+   "endTime": 417.96
+  },
+  {
+   "startTime": 417.96,
+   "title": "The round-up",
+   "endTime": 597.08
+  },
+  {
+   "startTime": 597.08,
+   "title": "Capitol Hill",
+   "endTime": 601.57
+  },
+  {
+   "startTime": 601.57,
+   "title": "Korea and the World",
+   "endTime": 628.24
+  },
+  {
+   "startTime": 628.24,
+   "title": "Markets",
+   "endTime": 664.42
+  }
+ ]
+}
