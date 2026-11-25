@@ -1,6 +1,12 @@
 {
   "days": [
     {
+      "date": "2026-11-25",
+      "silence_today": false,
+      "watch_flag": false,
+      "bottom_line": "State media's dominant output Wednesday was the expulsion of Switzerland's Pyongyang mission head and the demand for the office's closure, while domestic content covered mushroom production and health unit achievements; KCNA remained silent on the failed Trump-Kim summit offer and NK Pro's reported ICBM engine test."
+    },
+    {
       "date": "2026-11-24",
       "silence_today": false,
       "watch_flag": false,
@@ -126,13 +132,7 @@
           "source": "N. Korea's Kim inspects east coast naval base under construction, urges timely completion"
         }
       ]
-    },
-    {
-      "date": "2026-11-11",
-      "silence_today": false,
-      "watch_flag": false,
-      "bottom_line": "State media confirmed the publication of the revised constitution's full text formalizing Kim's expanded powers and the two-state framework, while the North Korean ballistic missile launches from Muncheon remain absent from domestic KCNA output."
     }
   ],
-  "last_updated": "2026-11-24T12:10:16.726115+00:00"
+  "last_updated": "2026-11-25T12:09:26.027402+00:00"
 }
