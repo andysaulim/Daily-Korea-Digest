@@ -1,38 +1,5 @@
 [
   {
-    "date": "2026-10-27",
-    "title": "Korea Daily Brief | Tuesday, October 27",
-    "summary": "South Korean the third quarter GDP hits 1 percent on chip boom, North Korean artillery forward-deployed at western border, Swiss Foreign Minister to visit Pyongyang, Kim Gun-hee new warrant issued.",
-    "file": "digest_2026-10-27.mp3",
-    "bytes": 4458768,
-    "seconds": 557,
-    "script": "written",
-    "script_repaired": [
-      "Two hundred and thirty-two personnel and 70 pieces of equipment responded."
-    ],
-    "transcript_text": "digest_2026-10-27.txt",
-    "notes": [
-      {
-        "headline": "South Korea Q3 GDP grows 1.0%, triple Bank of Korea forecast, on AI chip surge",
-        "source": "Korea Times",
-        "url": "https://www.koreatimes.co.kr/economy/20261027/cover-story-chip-exports-drive-koreas-q3-growth-to-1-triple-bok-forecast?utm_source=rss"
-      },
-      {
-        "headline": "North Korea forward-deploys 122mm self-propelled artillery along western border, visible from Gimpo",
-        "source": "NK News / Korea Times",
-        "url": "https://www.nknews.org/2026/10/photos-capture-north-korean-artillery-deployed-on-south-koreas-doorstep/"
-      },
-      {
-        "headline": "Swiss foreign minister to visit Pyongyang Oct 29-30 to open first dedicated Swiss political office",
-        "source": "NK News",
-        "url": "https://www.nknews.org/2026/10/swiss-foreign-minister-to-visit-north-korea-this-week-to-open-political-office/"
-      }
-    ],
-    "transcript": "digest_2026-10-27.vtt",
-    "chapters": "digest_2026-10-27.chapters.json",
-    "page": "listen/2026-10-27.html"
-  },
-  {
     "date": "2026-10-28",
     "title": "Korea Daily Brief | Wednesday, October 28",
     "summary": "Kang-Hegseth first face-to-face, SCM delayed to early 2027, Bank of Korea holds, Financial sector hacks, Kim's Dandong visit aftermath.",
@@ -986,5 +953,35 @@
     "transcript": "digest_2026-11-25.vtt",
     "chapters": "digest_2026-11-25.chapters.json",
     "page": "listen/2026-11-25.html"
+  },
+  {
+    "date": "2026-11-26",
+    "title": "Korea Daily Brief | Thursday, November 26",
+    "summary": "Kim inspects nuclear sites, urges tactical nuke expansion, Bank of Korea hikes to 3.25 percent, Section 301 targets Korea at 15 percent cap, Russia KADIZ talks, Swiss mission closed.",
+    "file": "digest_2026-11-26.mp3",
+    "bytes": 5201950,
+    "seconds": 650,
+    "script": "written",
+    "transcript_text": "digest_2026-11-26.txt",
+    "notes": [
+      {
+        "headline": "Kim inspects nuclear warheads and enrichment sites, rejects recognition from any country",
+        "source": "NK News",
+        "url": "https://www.nknews.org/2026/11/kim-jong-un-inspects-nuke-facilities-says-not-seeking-recognition-from-anyone/"
+      },
+      {
+        "headline": "Bank of Korea raises rate to 3.25%, third hike this year, as AI boom fuels growth and inflation",
+        "source": "WSJ",
+        "url": "https://www.wsj.com/economy/central-banking/bank-of-korea-resumes-rate-hikes-as-ai-boom-fuels-growth-f28c5cdb"
+      },
+      {
+        "headline": "Trump's new Section 301 tariff proposal targets 14 economies but preserves Korea's 15% ceiling",
+        "source": "Korea Herald",
+        "url": "https://www.koreaherald.com/article/10949511"
+      }
+    ],
+    "transcript": "digest_2026-11-26.vtt",
+    "chapters": "digest_2026-11-26.chapters.json",
+    "page": "listen/2026-11-26.html"
   }
 ]

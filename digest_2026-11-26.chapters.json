@@ -1,0 +1,53 @@
+{
+ "version": "1.2.0",
+ "chapters": [
+  {
+   "startTime": 0.0,
+   "title": "Today's headlines",
+   "endTime": 41.15
+  },
+  {
+   "startTime": 41.15,
+   "title": "Kim inspects nuclear warheads and enrichment sites, rejects…",
+   "url": "https://www.nknews.org/2026/11/kim-jong-un-inspects-nuke-facilities-says-not-seeking-recognition-from-anyone/",
+   "endTime": 143.8
+  },
+  {
+   "startTime": 143.8,
+   "title": "Bank of Korea raises rate to 3.25%, third hike this year, as AI boom…",
+   "url": "https://www.wsj.com/economy/central-banking/bank-of-korea-resumes-rate-hikes-as-ai-boom-fuels-growth-f28c5cdb",
+   "endTime": 194.08
+  },
+  {
+   "startTime": 194.08,
+   "title": "Trump's new Section 301 tariff proposal targets 14 economies but…",
+   "url": "https://www.koreaherald.com/article/10949511",
+   "endTime": 268.89
+  },
+  {
+   "startTime": 268.89,
+   "title": "Pyongyang",
+   "endTime": 328.81
+  },
+  {
+   "startTime": 328.81,
+   "title": "The round-up",
+   "endTime": 552.17
+  },
+  {
+   "startTime": 552.17,
+   "title": "Capitol Hill",
+   "endTime": 579.74
+  },
+  {
+   "startTime": 579.74,
+   "title": "Korea and the World",
+   "endTime": 619.18
+  },
+  {
+   "startTime": 619.18,
+   "title": "Markets",
+   "endTime": 650.11
+  }
+ ]
+}
