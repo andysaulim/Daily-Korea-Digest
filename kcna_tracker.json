@@ -1,6 +1,19 @@
 {
   "days": [
     {
+      "date": "2026-11-26",
+      "silence_today": false,
+      "watch_flag": true,
+      "bottom_line": "State media led with Kim's inspection of nuclear warhead and enrichment facilities and his order for wider tactical nuclear deployment, while the WPK cell secretaries conference reinforced ideological control — KCNA maintained silence on Trump's APEC outreach and the ballistic missile engine test reported by NK News.",
+      "quotes": [
+        {
+          "speaker": "Kim Jong Un",
+          "quote": "The nuclear forces of the DPRK have been built up as a powerful treasured sword to protect the sovereignty and dignity of the state and people, and their status will never change.",
+          "source": "North Korea's Kim vows to build more nuclear weapons after ignoring Trump's overture"
+        }
+      ]
+    },
+    {
       "date": "2026-11-25",
       "silence_today": false,
       "watch_flag": false,
@@ -119,20 +132,7 @@
           "source": "(LEAD) N. Korea's Kim inspects east coast naval base under construction, urges timely completion"
         }
       ]
-    },
-    {
-      "date": "2026-11-12",
-      "silence_today": false,
-      "watch_flag": false,
-      "bottom_line": "State media led with Kim's east coast naval base inspection and DPRK FM rejection of G7 denuclearization; all recent weapons tests remain absent from domestic KCNA output.",
-      "quotes": [
-        {
-          "speaker": "Kim Jong Un",
-          "quote": "Modern naval base construction is a major core project directly linked to our state's safety and defense of maritime sovereignty, and must unconditionally be completed within the period decided by the party central and at the quality level demanded by the party central.",
-          "source": "N. Korea's Kim inspects east coast naval base under construction, urges timely completion"
-        }
-      ]
     }
   ],
-  "last_updated": "2026-11-25T12:09:26.027402+00:00"
+  "last_updated": "2026-11-26T12:09:57.303756+00:00"
 }
