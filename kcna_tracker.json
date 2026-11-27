@@ -1,6 +1,19 @@
 {
   "days": [
     {
+      "date": "2026-11-27",
+      "silence_today": false,
+      "watch_flag": true,
+      "bottom_line": "KCNA led with Kim's nuclear facility inspections and order for wider tactical nuclear deployment across multiple domains, while his attendance at a Russian art troupe performance in Pyongyang reinforced the DPRK-Russia partnership; KCNA maintained complete silence on Trump's APEC outreach.",
+      "quotes": [
+        {
+          "speaker": "Kim Jong Un",
+          "quote": "The nuclear forces of the DPRK have been built up as a powerful treasured sword to protect the sovereignty and dignity of the state and people, and their status will never change.",
+          "source": "N. Korea's Kim inspects nuclear material sites, calls for broader use of tactical nukes"
+        }
+      ]
+    },
+    {
       "date": "2026-11-26",
       "silence_today": false,
       "watch_flag": true,
@@ -119,20 +132,7 @@
           "source": "N. Korea's Kim inspects east coast naval base under construction, urges timely completion"
         }
       ]
-    },
-    {
-      "date": "2026-11-13",
-      "silence_today": false,
-      "watch_flag": false,
-      "bottom_line": "State media led with Kim's east-coast naval base inspection and the DPRK flag redesign embedded in the revised constitution; NK News separately reported that North Korea faked its November 4 cluster warhead test using 2022 imagery.",
-      "quotes": [
-        {
-          "speaker": "Kim Jong Un",
-          "quote": "Modern naval base construction is a major core project directly linked to our state's safety and defense of maritime sovereignty, and must unconditionally be completed within the period decided by the party central and at the quality level demanded by the party central.",
-          "source": "(LEAD) N. Korea's Kim inspects east coast naval base under construction, urges timely completion"
-        }
-      ]
     }
   ],
-  "last_updated": "2026-11-26T12:09:57.303756+00:00"
+  "last_updated": "2026-11-27T12:09:41.054084+00:00"
 }
