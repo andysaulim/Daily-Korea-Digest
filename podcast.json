@@ -1,38 +1,5 @@
 [
   {
-    "date": "2026-10-28",
-    "title": "Korea Daily Brief | Wednesday, October 28",
-    "summary": "Kang-Hegseth first face-to-face, SCM delayed to early 2027, Bank of Korea holds, Financial sector hacks, Kim's Dandong visit aftermath.",
-    "file": "digest_2026-10-28.mp3",
-    "bytes": 5721978,
-    "seconds": 715,
-    "script": "written",
-    "script_repaired": [
-      "The fertility rate for August was 0.87, with births rising for a twenty-sixth consecutive month."
-    ],
-    "transcript_text": "digest_2026-10-28.txt",
-    "notes": [
-      {
-        "headline": "Seoul and Washington agree to postpone Security Consultative Meeting to early 2027",
-        "source": "Yonhap English",
-        "url": "https://en.yna.co.kr/view/AEN20261028007652315"
-      },
-      {
-        "headline": "North Korean IPs attempt 4.4 million scans on Korean financial sector; breaches confirmed at Bithumb, securities firms",
-        "source": "Dong-A Ilbo / Yonhap Politics / Reuters",
-        "url": "https://www.donga.com/news/Economy/article/all/20261028/134927684/1"
-      },
-      {
-        "headline": "Bank of Korea holds rate steady at 2.50% after back-to-back hikes",
-        "source": "WSJ",
-        "url": "https://www.wsj.com/economy/central-banking/bank-of-korea-holds-rate-steady-after-back-to-back-hikes-f25fc515"
-      }
-    ],
-    "transcript": "digest_2026-10-28.vtt",
-    "chapters": "digest_2026-10-28.chapters.json",
-    "page": "listen/2026-10-28.html"
-  },
-  {
     "date": "2026-10-29",
     "title": "Korea Daily Brief | Thursday, October 29",
     "summary": "North Korea fires about 10 short-range ballistic missiles after Seoul dialogue offer, National Intelligence Service: Kim China visit had U.S.-talks agenda, North Korea-Russia labor network exposed, Yoon prosecutor seeks death penalty, KHNP Czech contractor collapse.",
@@ -983,5 +950,35 @@
     "transcript": "digest_2026-11-26.vtt",
     "chapters": "digest_2026-11-26.chapters.json",
     "page": "listen/2026-11-26.html"
+  },
+  {
+    "date": "2026-11-27",
+    "title": "Korea Daily Brief | Friday, November 27",
+    "summary": "Kim inspects nuclear sites, orders tactical nuke expansion, Bank of Korea hikes to 3.25 percent, Iran warns Seoul on Cheonghae, Democratic Party disciplines lawmaker, North Korean military demarcation line crossings at 40.",
+    "file": "digest_2026-11-27.mp3",
+    "bytes": 4662665,
+    "seconds": 582,
+    "script": "written",
+    "transcript_text": "digest_2026-11-27.txt",
+    "notes": [
+      {
+        "headline": "Kim inspects nuclear sites, orders tactical nuke expansion after snubbing Trump",
+        "source": "Washington Post / Bloomberg / Korea JoongAng Daily",
+        "url": "https://www.washingtonpost.com/world/2026/11/25/north-korea-kim-nuclear-uranium-trump/ec5ea97a-e936-11f1-8db0-6f1e3c389e7c_story.html"
+      },
+      {
+        "headline": "Bank of Korea raises policy rate to 3.25% on strong AI-driven growth",
+        "source": "Nikkei",
+        "url": "https://asia.nikkei.com/economy/central-banks/bank-of-korea-hikes-rate-to-3.25-against-backdrop-of-strong-economy"
+      },
+      {
+        "headline": "Iran warns Seoul on Gulf deployment as Cheonghae expansion reviewed in National Assembly",
+        "source": "Reuters / Straits Times",
+        "url": "https://www.straitstimes.com/asia/iran-warns-on-gulf-military-presence-as-south-korea-readies-expanded-naval-role?ref=latest-headlines"
+      }
+    ],
+    "transcript": "digest_2026-11-27.vtt",
+    "chapters": "digest_2026-11-27.chapters.json",
+    "page": "listen/2026-11-27.html"
   }
 ]

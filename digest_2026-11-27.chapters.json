@@ -1,0 +1,48 @@
+{
+ "version": "1.2.0",
+ "chapters": [
+  {
+   "startTime": 0.0,
+   "title": "Today's headlines",
+   "endTime": 32.16
+  },
+  {
+   "startTime": 32.16,
+   "title": "Kim inspects nuclear sites, orders tactical nuke expansion after…",
+   "url": "https://www.washingtonpost.com/world/2026/11/25/north-korea-kim-nuclear-uranium-trump/ec5ea97a-e936-11f1-8db0-6f1e3c389e7c_story.html",
+   "endTime": 121.02
+  },
+  {
+   "startTime": 121.02,
+   "title": "Bank of Korea raises policy rate to 3.25% on strong AI-driven growth",
+   "url": "https://asia.nikkei.com/economy/central-banks/bank-of-korea-hikes-rate-to-3.25-against-backdrop-of-strong-economy",
+   "endTime": 184.57
+  },
+  {
+   "startTime": 184.57,
+   "title": "Iran warns Seoul on Gulf deployment as Cheonghae expansion reviewed…",
+   "url": "https://www.straitstimes.com/asia/iran-warns-on-gulf-military-presence-as-south-korea-readies-expanded-naval-role?ref=latest-headlines",
+   "endTime": 248.95
+  },
+  {
+   "startTime": 248.95,
+   "title": "Pyongyang",
+   "endTime": 300.81
+  },
+  {
+   "startTime": 300.81,
+   "title": "The round-up",
+   "endTime": 522.99
+  },
+  {
+   "startTime": 522.99,
+   "title": "Korea and the World",
+   "endTime": 549.88
+  },
+  {
+   "startTime": 549.88,
+   "title": "Markets",
+   "endTime": 582.71
+  }
+ ]
+}
