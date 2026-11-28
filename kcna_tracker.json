@@ -1,6 +1,19 @@
 {
   "days": [
     {
+      "date": "2026-11-28",
+      "silence_today": false,
+      "watch_flag": false,
+      "bottom_line": "KCNA led today with the DPRK-Russia intergovernmental economic cooperation meeting and Kim's attendance at a Russian art troupe performance, while state media maintained complete silence on speculation about Kim's possible China visit.",
+      "quotes": [
+        {
+          "speaker": "Kim Jong Un",
+          "quote": "The nuclear forces of the DPRK have been built up as a powerful treasured sword to protect the sovereignty and dignity of the state and people, and their status will never change.",
+          "source": "North Korea's Kim vows to build more nuclear weapons after ignoring Trump's overture"
+        }
+      ]
+    },
+    {
       "date": "2026-11-27",
       "silence_today": false,
       "watch_flag": true,
@@ -119,20 +132,7 @@
       "silence_today": false,
       "watch_flag": false,
       "bottom_line": "State media led with the departure of the Jo Yong-won delegation to Russia, framing the visit as an expression of deepening DPRK-Russia alliance relations; domestic content covered welfare and technology topics, with all recent weapons tests remaining absent from internal KCNA output."
-    },
-    {
-      "date": "2026-11-14",
-      "silence_today": false,
-      "watch_flag": false,
-      "bottom_line": "State media led with Kim's second consecutive east-coast naval base inspection; NK News separately reported the November 4 cluster warhead test was fabricated using 2022 imagery.",
-      "quotes": [
-        {
-          "speaker": "Kim Jong Un",
-          "quote": "Modern naval base construction is a major core project directly linked to our state's safety and defense of maritime sovereignty, and must unconditionally be completed within the period decided by the party central and at the quality level demanded by the party central.",
-          "source": "N. Korea's Kim inspects east coast naval base under construction, urges timely completion"
-        }
-      ]
     }
   ],
-  "last_updated": "2026-11-27T12:09:41.054084+00:00"
+  "last_updated": "2026-11-28T12:09:04.414440+00:00"
 }
