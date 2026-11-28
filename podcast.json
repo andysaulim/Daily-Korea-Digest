@@ -1,38 +1,5 @@
 [
   {
-    "date": "2026-10-29",
-    "title": "Korea Daily Brief | Thursday, October 29",
-    "summary": "North Korea fires about 10 short-range ballistic missiles after Seoul dialogue offer, National Intelligence Service: Kim China visit had U.S.-talks agenda, North Korea-Russia labor network exposed, Yoon prosecutor seeks death penalty, KHNP Czech contractor collapse.",
-    "file": "digest_2026-10-29.mp3",
-    "bytes": 5262770,
-    "seconds": 657,
-    "script": "written",
-    "script_repaired": [
-      "And 38 North analyst Nika Pasko argues that shared Korean War and World War Two memorialization, including the new Tumen River road bridge opened in September, is being used to legitimize the Russia-North Korea military alliance domestically and internationally."
-    ],
-    "transcript_text": "digest_2026-10-29.txt",
-    "notes": [
-      {
-        "headline": "North Korea fires ~10 short-range ballistic missiles from Wonsan, days after Seoul dialogue offer",
-        "source": "NK News",
-        "url": "https://www.nknews.org/2026/10/north-korea-fires-unidentified-projectile-toward-sea-rok-military/"
-      },
-      {
-        "headline": "NIS: Kim Jong Un may have used Dandong visit to convey Pyongyang's position on US talks",
-        "source": "Korea Times / Yonhap English",
-        "url": "https://www.koreatimes.co.kr/foreignaffairs/northkorea/20261029/nk-leader-may-have-discussed-potential-talks-with-us-during-china-visit-spy-agency?utm_source=rss"
-      },
-      {
-        "headline": "Prosecutors seek death penalty for former President Yoon Suk Yeol over December martial law",
-        "source": "Washington Post / AP News",
-        "url": "https://www.washingtonpost.com/world/2026/10/29/korea-yoon-martial-law-death-penalty/df1a0f7e-d36b-11f1-9931-2a41b76fc976_story.html"
-      }
-    ],
-    "transcript": "digest_2026-10-29.vtt",
-    "chapters": "digest_2026-10-29.chapters.json",
-    "page": "listen/2026-10-29.html"
-  },
-  {
     "date": "2026-10-30",
     "title": "Korea Daily Brief | Friday, October 30",
     "summary": "Kim drones missile salvo, National Intelligence Service confirms U.S. intel cutoff, KHNP Czech collapse, Lee-Merz strategic partnership, Binance 6.3 billion dollars North Korea hack.",
@@ -980,5 +947,35 @@
     "transcript": "digest_2026-11-27.vtt",
     "chapters": "digest_2026-11-27.chapters.json",
     "page": "listen/2026-11-27.html"
+  },
+  {
+    "date": "2026-11-28",
+    "title": "Korea Daily Brief | Saturday, November 28",
+    "summary": "Kim possible China visit imminent, North Korea-Russia economic cooperation meeting, GS AI data center groundbreaking, Bank of Korea rate hike household pressure.",
+    "file": "digest_2026-11-28.mp3",
+    "bytes": 4840337,
+    "seconds": 604,
+    "script": "written",
+    "transcript_text": "digest_2026-11-28.txt",
+    "notes": [
+      {
+        "headline": "NIS monitors signs of imminent Kim Jong Un visit to China",
+        "source": "Yonhap English",
+        "url": "https://en.yna.co.kr/view/AEN20261128000751315"
+      },
+      {
+        "headline": "North Korea and Russia hold 13th economic cooperation committee meeting, agree to boost joint projects",
+        "source": "Yonhap News Agency / KCNA",
+        "url": "https://en.yna.co.kr/view/AEN20261128000500315"
+      },
+      {
+        "headline": "Lee breaks ground on GS Group's 2.4 GW AI data center campus in Gangwon, calling AI race a 'silent war'",
+        "source": "Korea Herald / Yonhap English",
+        "url": "https://www.koreaherald.com/article/10952453"
+      }
+    ],
+    "transcript": "digest_2026-11-28.vtt",
+    "chapters": "digest_2026-11-28.chapters.json",
+    "page": "listen/2026-11-28.html"
   }
 ]

@@ -1,0 +1,53 @@
+{
+ "version": "1.2.0",
+ "chapters": [
+  {
+   "startTime": 0.0,
+   "title": "Today's headlines",
+   "endTime": 42.83
+  },
+  {
+   "startTime": 42.83,
+   "title": "NIS monitors signs of imminent Kim Jong Un visit to China",
+   "url": "https://en.yna.co.kr/view/AEN20261128000751315",
+   "endTime": 115.42
+  },
+  {
+   "startTime": 115.42,
+   "title": "North Korea and Russia hold 13th economic cooperation committee…",
+   "url": "https://en.yna.co.kr/view/AEN20261128000500315",
+   "endTime": 189.31
+  },
+  {
+   "startTime": 189.31,
+   "title": "Lee breaks ground on GS Group's 2.4 GW AI data center campus in…",
+   "url": "https://www.koreaherald.com/article/10952453",
+   "endTime": 268.64
+  },
+  {
+   "startTime": 268.64,
+   "title": "Pyongyang",
+   "endTime": 315.16
+  },
+  {
+   "startTime": 315.16,
+   "title": "The round-up",
+   "endTime": 500.37
+  },
+  {
+   "startTime": 500.37,
+   "title": "Capitol Hill",
+   "endTime": 522.7
+  },
+  {
+   "startTime": 522.7,
+   "title": "Korea and the World",
+   "endTime": 568.89
+  },
+  {
+   "startTime": 568.89,
+   "title": "Markets",
+   "endTime": 604.92
+  }
+ ]
+}
